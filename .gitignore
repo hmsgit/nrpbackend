@@ -1,0 +1,11 @@
+ContinuousIntegration/
+platform_venv/
+.gitreview
+**~
+.coverage
+ci_dep.txt
+dist/
+pep8.txt
+pylint.txt
+test-reports/
+
