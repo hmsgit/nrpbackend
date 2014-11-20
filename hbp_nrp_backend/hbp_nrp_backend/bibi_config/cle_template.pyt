@@ -3,6 +3,7 @@
 This file is generated. The original demo script this file is based on has been created by Lorenzo Vanucci
 meanwhile the Template has been created by Georg Hinkel.
 """
+# pragma: no cover
 
 __author__ = 'BIBI Configuration Script'
 

@@ -1,2 +1,4 @@
 lxml==3.3.3
 Jinja2==2.7.1
+flask==0.10.1
+Flask-Testing==0.4.2
