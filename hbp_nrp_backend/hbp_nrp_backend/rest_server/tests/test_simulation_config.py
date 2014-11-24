@@ -8,7 +8,7 @@ import unittest
 
 import hbp_nrp_backend.simulation_control.unit_tests as utc
 from hbp_nrp_backend.rest_server import app
-from hbp_nrp_backend.simulation_control import simulations
+from hbp_nrp_backend.simulation_control import simulations, Simulation
 
 
 class TestSimulationConfig(unittest.TestCase):
@@ -16,15 +16,15 @@ class TestSimulationConfig(unittest.TestCase):
         self.client = app.test_client()
 
         del simulations[:]
-        simulations.append({'experimentID': 'experiment1', 'state': 'created'})
-        simulations.append({'experimentID': 'experiment2', 'state': 'started'})
-        simulations.append({'experimentID': 'experiment2', 'state': 'started'})
-        simulations.append({'experimentID': 'experiment3', 'state': 'paused'})
-        simulations.append({'experimentID': 'experiment3', 'state': 'paused'})
-        simulations.append({'experimentID': 'experiment4', 'state': 'resumed'})
-        simulations.append({'experimentID': 'experiment4', 'state': 'resumed'})
-        simulations.append({'experimentID': 'experiment5', 'state': 'stopped'})
-        simulations.append({'experimentID': 'experiment6', 'state': 'released'})
+        simulations.append(Simulation(0, 'experiment1', 'created'))
+        simulations.append(Simulation(1, 'experiment2', 'started'))
+        simulations.append(Simulation(2, 'experiment2', 'started'))
+        simulations.append(Simulation(3, 'experiment3', 'paused'))
+        simulations.append(Simulation(4, 'experiment3', 'paused'))
+        simulations.append(Simulation(5, 'experiment4', 'resumed'))
+        simulations.append(Simulation(6, 'experiment4', 'resumed'))
+        simulations.append(Simulation(7, 'experiment5', 'stopped'))
+        simulations.append(Simulation(8, 'experiment6', 'released'))
 
         utc.use_unit_test_transitions()
 
