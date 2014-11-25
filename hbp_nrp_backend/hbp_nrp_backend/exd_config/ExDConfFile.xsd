@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!--Contains a timeline condition -->
+<xs:element name="timeline">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="time" type="xs:time"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains a hardware condition -->
+<xs:element name="hardware">
+  <xs:complexType>
+    <xs:choice>
+      <xs:element name="key" type="xs:string"/>
+    </xs:choice>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains a property condition -->
+<xs:element name="property">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="identifier" type="xs:string"/>
+      <xs:element name="value" type="xs:anyType"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains a generic condition -->
+<xs:element name="condition">
+  <xs:complexType>
+    <xs:choice>
+      <xs:element ref="timeline"/>
+      <xs:element ref="hardware"/>
+      <xs:element ref="property"/>
+    </xs:choice>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains an or -->
+<xs:element name="or">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="conditions" minOccurs="2" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains an and -->
+<xs:element name="and">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="conditions" minOccurs="2" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains actions -->
+<xs:element name="actions">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="property" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains conditions -->
+<xs:element name="conditions">
+  <xs:complexType>
+    <xs:choice>
+      <xs:element ref="and"/>
+      <xs:element ref="or"/>
+      <xs:element ref="condition"/>
+    </xs:choice>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains a generic event -->
+<xs:element name="event">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="conditions"/>
+      <xs:element ref="actions"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Root element of the ExD file -->
+<xs:element name="ExD">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="environmentModel" type="xs:string"/>
+      <xs:element name="bibiConf" type="xs:string"/>
+      <xs:element ref="event" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+</xs:schema>

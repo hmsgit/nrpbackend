@@ -1,15 +1,49 @@
 # -*- coding: utf-8 -*-
 """
-This file is generated. The original demo script this file is based on has been created by Lorenzo Vanucci
+This file is generated. The original demo script this file is based on has been created by Lorenzo Vannucci
 meanwhile the Template has been created by Georg Hinkel.
 """
 # pragma: no cover
 
 __author__ = 'BIBI Configuration Script'
 
+import rospy
+from gazebo_msgs.srv import SpawnModel
+from geometry_msgs.msg import Point, Pose, Quaternion
+from os.path import expanduser
+
+def spawn_gazebo_sdf(model_name, model_file):
+    """
+    Generates Code to run the experiment based on the given configuration file
+    :param model_name: Name of the model inside the gazebo scene
+    :param model_file: The name of the model inside the ~/.gazebo/models folder
+    """
+
+    # find & open sdf file
+    home = expanduser("~")
+    filepath = home + '/.gazebo/models/' + model_file + '/model.sdf'
+    mdl = open(filepath, 'r')
+    sdff = mdl.read()
+    mdl.close()
+
+    # set initial pose
+    initial_pose = Pose()
+    initial_pose.position = Point(0, 0, 0)
+    initial_pose.orientation = Quaternion(0, 0, 0, 1)
+
+    # spawn model
+    rospy.wait_for_service('/gazebo/spawn_sdf_model')
+    spawn_model_prox = rospy.ServiceProxy('gazebo/spawn_sdf_model', SpawnModel)
+    spawn_model_prox(model_name,
+                     sdff,
+                     "",
+                     initial_pose,
+                     "")
+    spawn_model_prox.close()
+
 from python_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
 
-import {{remove_extension(config.brainModel)}} as PyNNScript
+from python_cle.brainsim import BrainLoader
 from python_cle.robotsim.RobotInterface import Topic
 from python_cle.robotsim.RosControlAdapter import RosControlAdapter
 from python_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
@@ -21,7 +55,8 @@ import python_cle.tf_framework as nrp
 
 # import dependencies from BIBI configuration
 {% for dep in dependencies %}
-import {{dep}}{% endfor %}
+import {{dep[:dep.rfind('.')]}} #import {{dep.split('.')|last()}}
+{% endfor %}
 
 # import transfer functions specified in Python
 {% if len(config.transferFunctionImport) > 0 %}# pylint: disable=W0401
@@ -63,6 +98,9 @@ signal.signal(signal.SIGINT, handler)
 
 # Create interfaces to Gazebo
 
+# spawn robot model
+spawn_gazebo_sdf('robot', '{{config.bodyModel}}')
+
 # control adapter
 roscontrol = RosControlAdapter()
 # communication adapter
@@ -72,6 +110,8 @@ roscomm = RosCommunicationAdapter()
 
 # control adapter
 braincontrol = PyNNControlAdapter()
+BrainLoader.load_h5_network('{{config.brainModel}}', [0, 1, 2], [3, 4, 5])
+import PyNNScript
 PyNNScript.init_brain_simulation()
 # communication adapter
 braincomm = PyNNCommunicationAdapter()

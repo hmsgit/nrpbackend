@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ExD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="ExDConfFile.xsd">
+  <environmentModel>"/virtual_room/virtual_room.sdf"</environmentModel>
+  <bibiConf>milestone2.xml</bibiConf>
+  <event>
+    <conditions>
+      <condition>
+        <timeline>
+          <time>00:00:00</time>
+        </timeline>
+      </condition>
+    </conditions>
+    <actions>
+      <property>
+        <identifier>&lt;model name=&quot;husky&quot;&gt;&lt;pose /&gt;&lt;/model&gt;</identifier>
+        <value>0 0 .5 0 0 0</value>
+      </property>
+    </actions>
+  </event>
+  <event>
+    <conditions>
+      <and>
+        <conditions>
+          <condition>
+            <hardware>
+              <key>X</key>
+            </hardware>
+          </condition>
+        </conditions>
+        <conditions>
+          <condition>
+            <property>
+              <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+              <value>Gazebo/Blue</value>
+            </property>
+          </condition>
+        </conditions>
+      </and>
+    </conditions>
+    <actions>
+      <property>
+        <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+        <value>Gazebo/Red</value>
+      </property>
+    </actions>
+  </event>
+  <event>
+    <conditions>
+      <and>
+        <conditions>
+          <condition>
+            <hardware>
+              <key>Y</key>
+            </hardware>
+          </condition>
+        </conditions>
+        <conditions>
+          <condition>
+            <property>
+              <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+              <value>Gazebo/Red</value>
+            </property>
+          </condition>
+        </conditions>
+      </and>
+    </conditions>
+    <actions>
+      <property>
+        <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+        <value>Gazebo/Blue</value>
+      </property>
+    </actions>
+  </event>
+</ExD>
