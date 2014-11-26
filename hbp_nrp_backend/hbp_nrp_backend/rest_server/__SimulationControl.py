@@ -11,11 +11,9 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.simulation_control import simulations, Simulation, \
     InvalidStateTransitionException
 
-# from gazebo_msgs.srv import SetVisualProperties
-# import rospy
-
-# __set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties', SetVisualProperties)
-# __set_light_properties = rospy.ServiceProxy('/gazebo/set_light_properties', None)
+from std_msgs.msg import ColorRGBA
+from gazebo_msgs.srv import SetVisualProperties, SetLightProperties
+import rospy
 
 # pylint: disable=R0201
 # pylint: disable=W0612
@@ -35,6 +33,7 @@ class SimulationControl(Resource):
     """
     The resource to control the simulation
     """
+
     @swagger.operation(
         notes='Gets the state of the given simulation',
         responseClass=Simulation.__name__,
@@ -62,11 +61,13 @@ class SimulationControl(Resource):
         """
         Gets the simulation with the specified simulation id
         """
-        return _get_simulation_or_abort(sim_id)
+        return _get_simulation_or_abort(sim_id), 200
 
     @swagger.model
     class __SimulationState(object):
-        "State of a simulation. Allowed values are: started, paused, resumed, stopped, released"
+        """
+        State of a simulation. Allowed values are: started, paused, resumed, stopped, released
+        """
         resource_fields = {
             'state': fields.String,
         }
@@ -114,12 +115,12 @@ class SimulationControl(Resource):
             simulation.state = body['state']
         except InvalidStateTransitionException:
             return "Invalid state transition", 400
-        return simulation
+        return simulation, 200
 
 
 @swagger.model
 class _RGBADescription(object):
-    "Describe a RGBA color"
+    """Describe a RGBA color"""
     resource_fields = {
         'r': fields.Float,
         'g': fields.Float,
@@ -129,10 +130,9 @@ class _RGBADescription(object):
 
 
 @swagger.model
-@swagger.nested(
-    diffuse=_RGBADescription.__name__,)
+@swagger.nested(diffuse=_RGBADescription.__name__,)
 class _LightDescription(object):
-    "Describe a light"
+    """Describe a light"""
     resource_fields = {
         'name': fields.String,
         'diffuse': fields.Nested(_RGBADescription.resource_fields),
@@ -187,11 +187,32 @@ class LightControl(Resource):
         body = request.get_json(force=True)
         if not 'name' in body:
             return "No name given", 400
-        name = body['name']
-        diffuse = body.get('diffuse')
-        attenuation_constant = body.get('attenuation_constant', 0.0)
-        attenuation_linear = body.get('attenuation_linear', 0.0)
-        attenuation_quadratic = body.get('attenuation_quadratic', 0.0)
+
+        in_name = body['name']
+        in_diffuse = body.get('diffuse')
+        in_attenuation_constant = body.get('attenuation_constant', 0.0)
+        in_attenuation_linear = body.get('attenuation_linear', 0.0)
+        in_attenuation_quadratic = body.get('attenuation_quadratic', 0.0)
+
+        try:
+            rospy.wait_for_service('/gazebo/set_light_properties', 1)
+        except rospy.ROSException as exc:
+            return "ROS service not available: " + str(exc), 400
+
+        set_light_properties = rospy.ServiceProxy('/gazebo/set_light_properties',
+                                                  SetLightProperties)
+
+        try:
+            set_light_properties(light_name=in_name,
+                                 diffuse=ColorRGBA(in_diffuse['r'], in_diffuse['g'],
+                                                   in_diffuse['b'], in_diffuse['a']),
+                                 attenuation_constant=in_attenuation_constant,
+                                 attenuation_linear=in_attenuation_linear,
+                                 attenuation_quadratic=in_attenuation_quadratic)
+        except rospy.ServiceException as exc:
+            return "Service did not process request: " + str(exc), 400
+
+        return "Changed light intensity", 200
 
 
 class CustomEventControl(Resource):
@@ -201,7 +222,7 @@ class CustomEventControl(Resource):
 
     @swagger.model
     class CustomEvent(object):
-        "Describe an event"
+        """Describe an event"""
         resource_fields = {
             'name': fields.String,
         }
@@ -248,9 +269,21 @@ class CustomEventControl(Resource):
             return "No name given", 400
         name = body['name']
         if name == 'RightScreenToRed':
-            # __set_visual_properties(model_name='right_vr_screen', link_name='body',
-            #  visual_name='screen_glass',
-            #                         property_name='material:script:name',
-            #                         property_value='Gazebo/Red')
+            try:
+                rospy.wait_for_service('/gazebo/set_visual_properties', 1)
+            except rospy.ROSException as exc:
+                return "ROS service not available: " + str(exc), 400
+
+            set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
+                                                       SetVisualProperties)
+
+            try:
+                set_visual_properties(model_name='right_vr_screen', link_name='body',
+                                      visual_name='screen_glass',
+                                      property_name='material:script:name',
+                                      property_value='Gazebo/Red')
+            except rospy.ServiceException as exc:
+                return "Service did not process request: " + str(exc), 400
+
             return "Changed color", 200
         return "Interaction not found", 404

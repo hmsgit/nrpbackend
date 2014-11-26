@@ -1,10 +1,10 @@
 """
 Script to run CLE from BIBI Configuration File
 """
+from hbp_nrp_backend.bibi_config.generated import generated_bibi_api
 
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_backend.bibi_config import generated_bibi_api
 import jinja2
 import os
 

@@ -1,10 +1,10 @@
 """
 Script to run Experiment from ExperimentDesigner Configuration File
 """
+from hbp_nrp_backend.exd_config.generated import generated_experiment_api
 
 __author__ = 'Lorenzo Vannucci'
 
-from hbp_nrp_backend.exd_config import generated_experiment_api
 from hbp_nrp_backend.bibi_config import bibi_configuration_script
 import os
 import jinja2
