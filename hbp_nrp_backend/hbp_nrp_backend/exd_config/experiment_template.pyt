@@ -8,6 +8,7 @@ import rospy
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Point, Pose, Quaternion
 from os.path import expanduser
+import imp
 
 def spawn_gazebo_sdf(model_name, model_file):
     """
@@ -40,7 +41,10 @@ def spawn_gazebo_sdf(model_name, model_file):
 
 __author__ = 'ExD Configuration Script'
 
+cle = None
 
-if __name__ == "__main__":
+def start():
     spawn_gazebo_sdf('environment', '{{model}}')
-    execfile("{{bibi_script}}")
+    bibi_script = imp.load_source('bibi_configuration', "{{bibi_script}}")
+    global cle
+    cle = bibi_script.cle

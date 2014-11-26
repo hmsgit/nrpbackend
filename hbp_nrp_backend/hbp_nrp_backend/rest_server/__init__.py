@@ -9,9 +9,21 @@ from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
 
-app = Flask(__name__)
-api = swagger.docs(Api(app), apiVersion='0.1')
 
+class ErrorForwardingApi(Api):
+    """
+    An API class that forwards error routing using usual Flask
+    """
+    def error_router(self, original_handler, e):
+        """
+        Route the error
+        :param original_handler: Flask handler
+        :param e: Error
+        """
+        return original_handler(e)
+
+app = Flask(__name__)
+api = swagger.docs(ErrorForwardingApi(app), apiVersion='0.1')
 
 # import rospy
 

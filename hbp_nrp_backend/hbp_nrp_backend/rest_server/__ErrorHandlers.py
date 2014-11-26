@@ -23,4 +23,4 @@ def internal_error(error):
     Handles internal server errors
     :param error: The error object
     """
-    return "Internal server error", 500
+    return "Internal server error: " + repr(error), 500

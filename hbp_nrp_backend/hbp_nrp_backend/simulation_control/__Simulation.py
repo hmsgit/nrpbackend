@@ -24,6 +24,7 @@ class Simulation(object):
         self.__state = state
         self.__sim_id = sim_id
         self.__experiment_id = experiment_id
+        self.__cle = None
 
     @property
     def experiment_id(self):
@@ -57,6 +58,22 @@ class Simulation(object):
             raise InvalidStateTransitionException()
         transitions[new_state](self.__sim_id)
         self.__state = new_state
+
+    @property
+    def cle(self):
+        """
+        The CLE for this simulation
+        :return: The CLE instance
+        """
+        return self.__cle
+
+    @cle.setter
+    def cle(self, cle):
+        """
+        Sets the CLE for this simulation
+        :param cle: The new CLE
+        """
+        self.__cle = cle
 
     resource_fields = {
         'state': fields.String,

@@ -131,11 +131,3 @@ tfmanager.brain_adapter = braincomm
 cle = SerialClosedLoopEngine(roscontrol, braincontrol, tfmanager, TIMESTEP)
 # initialize everything
 cle.initialize()
-
-# run simulation
-for i in range(0, int(MAX_SIM_TIME/TIMESTEP)):
-    if flag:
-        break
-    cle.run_step(TIMESTEP)
-
-#cle.shutdown()
