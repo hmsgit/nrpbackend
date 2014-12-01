@@ -9,4 +9,5 @@ pep8.txt
 pylint.txt
 test-reports/
 coverage.xml
+build/
 
