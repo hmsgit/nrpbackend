@@ -5,7 +5,7 @@ This module contains the REST implementation for the simulation control
 __author__ = 'GeorgHinkel'
 
 from flask import request
-from flask_restful import Resource, abort, marshal_with
+from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation, \
@@ -42,7 +42,7 @@ class SimulationControl(Resource):
             {
                 "name": "sim_id",
                 "description": "The ID of the simulation whose state shall be retrieved",
-                "paramType": "requestURI",
+                "paramType": "path",
                 "dataType": int.__name__
             }
         ],
@@ -61,25 +61,30 @@ class SimulationControl(Resource):
     def get(self, sim_id):
         """
         Gets the simulation with the specified simulation id
-        :param sim_id: The simulation id
         """
         return _get_simulation_or_abort(sim_id)
 
+    @swagger.model
+    class __SimulationState(object):
+        "State of a simulation. Allowed values are: started, paused, resumed, stopped, released"
+        resource_fields = {
+            'state': fields.String,
+        }
+
     @swagger.operation(
         notes='Sets the state of the given simulation',
-        responseClass=Simulation.__name__,
         parameters=[
             {
                 "name": "sim_id",
-                "description": "The ID of the simulation whose state shall be retrieved",
-                "paramType": "requestURI",
+                "description": "The ID of the simulation whose state shall be set",
+                "paramType": "path",
                 "dataType": int.__name__
             },
             {
                 "name": "state",
-                "description": "The new state of the simulation in question",
+                "description": "The new state of the simulation",
                 "paramType": "body",
-                "dataType": str.__name__
+                "dataType": __SimulationState.__name__
             }
         ],
         responseMessages=[
@@ -93,7 +98,7 @@ class SimulationControl(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. The simulation with the given ID is retrieved"
+                "message": "Success. The new state has been correctly applied"
             }
         ]
     )
@@ -112,42 +117,50 @@ class SimulationControl(Resource):
         return simulation
 
 
+@swagger.model
+class _RGBADescription(object):
+    "Describe a RGBA color"
+    resource_fields = {
+        'r': fields.Float,
+        'g': fields.Float,
+        'b': fields.Float,
+        'a': fields.Float,
+    }
+
+
+@swagger.model
+@swagger.nested(
+    diffuse=_RGBADescription.__name__,)
+class _LightDescription(object):
+    "Describe a light"
+    resource_fields = {
+        'name': fields.String,
+        'diffuse': fields.Nested(_RGBADescription.resource_fields),
+        'attenuation_constant': fields.Float,
+        'attenuation_linear': fields.Float,
+        'attenuation_quadratic': fields.Float,
+    }
+
+
 class LightControl(Resource):
     """
     The resource to change the light intensity
     """
+
     @swagger.operation(
         notes='Controls the light of the given light source',
         parameters=[
             {
                 "name": "sim_id",
-                "description": "The ID of the simulation whose state shall be retrieved",
-                "paramType": "requestURI",
+                "description": "The ID of the simulation on which light should be changed",
+                "paramType": "path",
                 "dataType": int.__name__
             },
             {
-                "name": "name",
-                "description": "The name of the light source",
+                "name": "light",
+                "description": "Description of the light to change",
                 "paramType": "body",
-                "dataType": str.__name__
-            },
-            {
-                "name": "attenuation_constant",
-                "description": "The constant attenuation of the light",
-                "paramType": "body",
-                "dataType": float.__name__
-            },
-            {
-                "name": "attenuation_linear",
-                "description": "The linear attenuation of the light",
-                "paramType": "body",
-                "dataType": float.__name__
-            },
-            {
-                "name": "attenuation_quadratic",
-                "description": "The quadratic attenuation of the light",
-                "paramType": "body",
-                "dataType": float.__name__
+                "dataType": _LightDescription.__name__
             }
         ],
         responseMessages=[
@@ -185,20 +198,28 @@ class CustomEventControl(Resource):
     """
     The resource to raise custom events
     """
+
+    @swagger.model
+    class CustomEvent(object):
+        "Describe an event"
+        resource_fields = {
+            'name': fields.String,
+        }
+
     @swagger.operation(
         notes='Currently, only RightScreenToRed is implemented',
         parameters=[
             {
                 "name": "sim_id",
-                "description": "The ID of the simulation whose state shall be retrieved",
-                "paramType": "requestURI",
+                "description": "The ID of the simulation on which to raise the event",
+                "paramType": "path",
                 "dataType": int.__name__
             },
             {
-                "name": "name",
-                "description": "The name of the custom event that should be raised",
+                "name": "event",
+                "description": "Custom event to raise",
                 "paramType": "body",
-                "dataType": str.__name__
+                "dataType": CustomEvent.__name__
             }
         ],
         responseMessages=[
