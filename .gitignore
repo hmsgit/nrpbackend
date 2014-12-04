@@ -2,6 +2,7 @@ ContinuousIntegration/
 platform_venv/
 .gitreview
 **~
+.idea/
 .coverage
 ci_dep.txt
 dist/

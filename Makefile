@@ -2,7 +2,7 @@
 TEST_MODULES=hbp_nrp_backend/hbp_nrp_backend/
 
 #modules that are installable (ie: ones w/ setup.py)
-INSTALL_MODULES=hbp_nrp_backend
+INSTALL_MODULES=hbp_flask-restful-swagger-master hbp_nrp_backend
 
 #packages to cover
 COVER_PACKAGES=hbp_nrp_backend

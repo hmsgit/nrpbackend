@@ -23,7 +23,7 @@ cd ../..
 
 deactivate
 
-export IGNORE_LINT="platform_venv|generated|build|CLE"
+export IGNORE_LINT="platform_venv|generated|build|CLE|hbp_flask-restful-swagger-master"
 rm hbp_nrp_backend/hbp_nrp_backend/bibi_config/tests/generated_cle_script.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment_bibi.py

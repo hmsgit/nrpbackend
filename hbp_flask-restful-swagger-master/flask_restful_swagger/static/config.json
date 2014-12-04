@@ -1,0 +1,71 @@
+{
+    "api": {
+        "task": {
+            "v1": "https://services-dev.humanbrainproject.eu/task/v0/api",
+            "v0": "https://services-dev.humanbrainproject.eu/task/v0/api"
+        },
+        "bluepy": {
+            "v0": "https://services-dev.humanbrainproject.eu/bluepy/v0/api"
+        },
+        "simconfig": {
+            "v0": "https://services-dev.humanbrainproject.eu/bluepy/v0/api"
+        },
+        "user": {
+            "v1": "https://services-dev.humanbrainproject.eu/oidc/v0/api",
+            "v0": "https://services-dev.humanbrainproject.eu/oidc/v0/api"
+        },
+        "document": {
+            "v1": "https://services-dev.humanbrainproject.eu/document/v0/api",
+            "v0": "https://services-dev.humanbrainproject.eu/document/v0/api"
+        },
+        "provenance": {
+            "v2": "https://services-dev.humanbrainproject.eu/provenance/v0/api",
+            "v1": "https://services-dev.humanbrainproject.eu/provenance/v0/api",
+            "v0": "https://services-dev.humanbrainproject.eu/provenance/v0/api"
+        },
+        "neurorobotics": {
+            "gzweb": {
+                "development1": {
+                    "websocket": "ws://localhost:7681",
+                    "assets": "http://localhost:8080/assets"
+                }
+            }
+        }
+    },
+    "auth": {
+        "url": "https://services-dev.humanbrainproject.eu/oidc",
+        "clientId": "portal-client"
+    },
+    "oidc": {
+        "debug": false
+    },
+    "up": {
+        "sites": [{
+            "name": "Public",
+            "url": "https://humanbrainproject.eu"
+        }, {
+            "name": "Unified Platform",
+            "url": "http://localhost:9999"
+        }, {
+            "name": "Collaboration",
+            "url": "https://collaboration.humanbrainproject.eu"
+        }, {
+            "name": "Education",
+            "url": "https://education.humanbrainproject.eu"
+        }],
+        "apps": [{
+            "name": "Different Domain",
+            "type": "external",
+            "url": "http://localhost:9880"
+        }, {
+            "name": "Same Domain",
+            "type": "external",
+            "url": "http://localhost:9999"
+        }],
+        "resourceUrlWhitelist": [
+            "https://humanbrainproject.eu/**",
+            "https://*.humanbrainproject.eu/**",
+            "http://localhost:*/"
+        ]
+    }
+}
