@@ -1,6 +1,5 @@
 ContinuousIntegration/
 platform_venv/
-.gitreview
 **~
 .coverage
 ci_dep.txt
