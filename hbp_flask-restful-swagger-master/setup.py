@@ -6,8 +6,10 @@ except ImportError:
 with open('README') as file:
     long_description = file.read()
 
+import flask_restful_swagger
+
 setup(name='hbp_flask-restful-swagger',
-      version='0.15',
+      version=flask_restful_swagger.__version__,
       url='https://github.com/rantav/flask-restful-swagger',
       zip_safe=False,
       packages=['flask_restful_swagger'],
