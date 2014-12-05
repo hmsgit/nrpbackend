@@ -33,7 +33,7 @@ def __pause_simulation(sim_id):
     last_transition = "pause"
 
 
-def __resume_simulation(sim_id):
+def __reset_simulation(sim_id):
     """
     Resumes the simulation with the given simulation id
     :param sim_id: The simulation id
@@ -41,7 +41,7 @@ def __resume_simulation(sim_id):
     global last_sim_id
     global last_transition
     last_sim_id = sim_id
-    last_transition = "resume"
+    last_transition = "reset"
 
 
 def __stop_simulation(sim_id):
@@ -55,7 +55,7 @@ def __stop_simulation(sim_id):
     last_transition = "stop"
 
 
-def __release_simulation(sim_id):
+def __initialize_simulation(sim_id):
     """
     Releases the simulation with the given id
     :param sim_id: The simulation id
@@ -63,7 +63,7 @@ def __release_simulation(sim_id):
     global last_sim_id
     global last_transition
     last_sim_id = sim_id
-    last_transition = "release"
+    last_transition = "initialize"
 
 
 def use_unit_test_transitions():
@@ -72,6 +72,6 @@ def use_unit_test_transitions():
     """
     sm.pause_simulation = __pause_simulation
     sm.start_simulation = __start_simulation
-    sm.release_simulation = __release_simulation
+    sm.reset_simulation = __reset_simulation
     sm.stop_simulation = __stop_simulation
-    sm.resume_simulation = __resume_simulation
+    sm.initialize_simulation = __initialize_simulation
