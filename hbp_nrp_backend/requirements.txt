@@ -1,4 +1,4 @@
 lxml==3.3.3
 Jinja2==2.7.1
-hbp_flask-restful-swagger==0.15.2.dev0
+hbp-flask-restful-swagger==0.15.2.dev0
 

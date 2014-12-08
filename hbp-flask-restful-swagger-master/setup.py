@@ -8,7 +8,7 @@ with open('README') as file:
 
 import flask_restful_swagger
 
-setup(name='hbp_flask-restful-swagger',
+setup(name='hbp-flask-restful-swagger',
       version=flask_restful_swagger.__version__,
       url='https://github.com/rantav/flask-restful-swagger',
       zip_safe=False,
