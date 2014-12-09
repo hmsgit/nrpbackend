@@ -50,7 +50,3 @@ def generate_experiment(experiment_conf, script_file_name):
     output_file = open(script_file_name, 'w')
     output_file.write(template.render(names))
     output_file.close()
-
-    print "Experiment script successfully generated from file: %s" \
-        % experiment_conf
-    print "Run \n\t python %s\nto launch the experiment" % script_file_name
