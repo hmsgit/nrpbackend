@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Sun Nov 23 16:40:36 2014 by generateDS.py version 2.13a.
+# Generated Wed Dec 10 15:20:02 2014 by generateDS.py version 2.13a.
 #
 # Command line options:
 #   ('-o', 'generated_experiment_api.py')
@@ -14,7 +14,7 @@
 #   /usr/bin/generateDS.py -o "generated_experiment_api.py" ExDConfFile.xsd
 #
 # Current working directory (os.getcwd()):
-#   starteverything
+#   generated
 #
 
 import sys
@@ -1485,6 +1485,291 @@ class event(GeneratedsSuper):
 # end class event
 
 
+class pose(GeneratedsSuper):
+    subclass = None
+    superclass = None
+    def __init__(self, x=None, y=None, z=None, ux=None, uy=None, uz=None, theta=None):
+        self.original_tagname_ = None
+        self.x = x
+        self.y = y
+        self.z = z
+        self.ux = ux
+        self.uy = uy
+        self.uz = uz
+        self.theta = theta
+    def factory(*args_, **kwargs_):
+        if pose.subclass:
+            return pose.subclass(*args_, **kwargs_)
+        else:
+            return pose(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_x(self): return self.x
+    def set_x(self, x): self.x = x
+    def get_y(self): return self.y
+    def set_y(self, y): self.y = y
+    def get_z(self): return self.z
+    def set_z(self, z): self.z = z
+    def get_ux(self): return self.ux
+    def set_ux(self, ux): self.ux = ux
+    def get_uy(self): return self.uy
+    def set_uy(self, uy): self.uy = uy
+    def get_uz(self): return self.uz
+    def set_uz(self, uz): self.uz = uz
+    def get_theta(self): return self.theta
+    def set_theta(self, theta): self.theta = theta
+    def hasContent_(self):
+        if (
+            self.x is not None or
+            self.y is not None or
+            self.z is not None or
+            self.ux is not None or
+            self.uy is not None or
+            self.uz is not None or
+            self.theta is not None
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='', name_='pose', namespacedef_='', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='pose')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='', name_='pose', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='pose'):
+        pass
+    def exportChildren(self, outfile, level, namespace_='', name_='pose', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.x is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sx>%s</%sx>%s' % (namespace_, self.gds_format_double(self.x, input_name='x'), namespace_, eol_))
+        if self.y is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sy>%s</%sy>%s' % (namespace_, self.gds_format_double(self.y, input_name='y'), namespace_, eol_))
+        if self.z is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sz>%s</%sz>%s' % (namespace_, self.gds_format_double(self.z, input_name='z'), namespace_, eol_))
+        if self.ux is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sux>%s</%sux>%s' % (namespace_, self.gds_format_double(self.ux, input_name='ux'), namespace_, eol_))
+        if self.uy is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%suy>%s</%suy>%s' % (namespace_, self.gds_format_double(self.uy, input_name='uy'), namespace_, eol_))
+        if self.uz is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%suz>%s</%suz>%s' % (namespace_, self.gds_format_double(self.uz, input_name='uz'), namespace_, eol_))
+        if self.theta is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%stheta>%s</%stheta>%s' % (namespace_, self.gds_format_double(self.theta, input_name='theta'), namespace_, eol_))
+    def exportLiteral(self, outfile, level, name_='pose'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        if self.x is not None:
+            showIndent(outfile, level)
+            outfile.write('x=%e,\n' % self.x)
+        if self.y is not None:
+            showIndent(outfile, level)
+            outfile.write('y=%e,\n' % self.y)
+        if self.z is not None:
+            showIndent(outfile, level)
+            outfile.write('z=%e,\n' % self.z)
+        if self.ux is not None:
+            showIndent(outfile, level)
+            outfile.write('ux=%e,\n' % self.ux)
+        if self.uy is not None:
+            showIndent(outfile, level)
+            outfile.write('uy=%e,\n' % self.uy)
+        if self.uz is not None:
+            showIndent(outfile, level)
+            outfile.write('uz=%e,\n' % self.uz)
+        if self.theta is not None:
+            showIndent(outfile, level)
+            outfile.write('theta=%e,\n' % self.theta)
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        pass
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'x':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'x')
+            self.x = fval_
+        elif nodeName_ == 'y':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'y')
+            self.y = fval_
+        elif nodeName_ == 'z':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'z')
+            self.z = fval_
+        elif nodeName_ == 'ux':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'ux')
+            self.ux = fval_
+        elif nodeName_ == 'uy':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'uy')
+            self.uy = fval_
+        elif nodeName_ == 'uz':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'uz')
+            self.uz = fval_
+        elif nodeName_ == 'theta':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'theta')
+            self.theta = fval_
+# end class pose
+
+
+class environmentModel(GeneratedsSuper):
+    subclass = None
+    superclass = None
+    def __init__(self, location=None, pose=None):
+        self.original_tagname_ = None
+        self.location = location
+        self.pose = pose
+    def factory(*args_, **kwargs_):
+        if environmentModel.subclass:
+            return environmentModel.subclass(*args_, **kwargs_)
+        else:
+            return environmentModel(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_location(self): return self.location
+    def set_location(self, location): self.location = location
+    def get_pose(self): return self.pose
+    def set_pose(self, pose): self.pose = pose
+    def hasContent_(self):
+        if (
+            self.location is not None or
+            self.pose is not None
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='', name_='environmentModel', namespacedef_='', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='environmentModel')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='', name_='environmentModel', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='environmentModel'):
+        pass
+    def exportChildren(self, outfile, level, namespace_='', name_='environmentModel', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.location is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%slocation>%s</%slocation>%s' % (namespace_, self.gds_format_string(quote_xml(self.location).encode(ExternalEncoding), input_name='location'), namespace_, eol_))
+        if self.pose is not None:
+            self.pose.export(outfile, level, namespace_, name_='pose', pretty_print=pretty_print)
+    def exportLiteral(self, outfile, level, name_='environmentModel'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        if self.location is not None:
+            showIndent(outfile, level)
+            outfile.write('location=%s,\n' % quote_python(self.location).encode(ExternalEncoding))
+        if self.pose is not None:
+            showIndent(outfile, level)
+            outfile.write('pose=model_.pose(\n')
+            self.pose.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        pass
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'location':
+            location_ = child_.text
+            location_ = self.gds_validate_string(location_, node, 'location')
+            self.location = location_
+        elif nodeName_ == 'pose':
+            obj_ = pose.factory()
+            obj_.build(child_)
+            self.pose = obj_
+            obj_.original_tagname_ = 'pose'
+# end class environmentModel
+
+
 class ExD(GeneratedsSuper):
     subclass = None
     superclass = None
@@ -1546,8 +1831,7 @@ class ExD(GeneratedsSuper):
         else:
             eol_ = ''
         if self.environmentModel is not None:
-            showIndent(outfile, level, pretty_print)
-            outfile.write('<%senvironmentModel>%s</%senvironmentModel>%s' % (namespace_, self.gds_format_string(quote_xml(self.environmentModel).encode(ExternalEncoding), input_name='environmentModel'), namespace_, eol_))
+            self.environmentModel.export(outfile, level, namespace_, name_='environmentModel', pretty_print=pretty_print)
         if self.bibiConf is not None:
             showIndent(outfile, level, pretty_print)
             outfile.write('<%sbibiConf>%s</%sbibiConf>%s' % (namespace_, self.gds_format_string(quote_xml(self.bibiConf).encode(ExternalEncoding), input_name='bibiConf'), namespace_, eol_))
@@ -1564,7 +1848,10 @@ class ExD(GeneratedsSuper):
     def exportLiteralChildren(self, outfile, level, name_):
         if self.environmentModel is not None:
             showIndent(outfile, level)
-            outfile.write('environmentModel=%s,\n' % quote_python(self.environmentModel).encode(ExternalEncoding))
+            outfile.write('environmentModel=model_.environmentModel(\n')
+            self.environmentModel.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
         if self.bibiConf is not None:
             showIndent(outfile, level)
             outfile.write('bibiConf=%s,\n' % quote_python(self.bibiConf).encode(ExternalEncoding))
@@ -1591,9 +1878,10 @@ class ExD(GeneratedsSuper):
         pass
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'environmentModel':
-            environmentModel_ = child_.text
-            environmentModel_ = self.gds_validate_string(environmentModel_, node, 'environmentModel')
-            self.environmentModel = environmentModel_
+            obj_ = environmentModel.factory()
+            obj_.build(child_)
+            self.environmentModel = obj_
+            obj_.original_tagname_ = 'environmentModel'
         elif nodeName_ == 'bibiConf':
             bibiConf_ = child_.text
             bibiConf_ = self.gds_validate_string(bibiConf_, node, 'bibiConf')
@@ -1730,9 +2018,11 @@ __all__ = [
     "and_",
     "condition",
     "conditions",
+    "environmentModel",
     "event",
     "hardware",
     "or_",
+    "pose",
     "property",
     "timeline"
 ]

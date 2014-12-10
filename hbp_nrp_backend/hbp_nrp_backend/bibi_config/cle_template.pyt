@@ -11,6 +11,7 @@ import rospy
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Point, Pose, Quaternion
 from os.path import expanduser
+import os
 
 def spawn_gazebo_sdf(model_name, model_file):
     """
@@ -20,8 +21,9 @@ def spawn_gazebo_sdf(model_name, model_file):
     """
 
     # find & open sdf file
-    home = expanduser("~")
-    filepath = home + '/.gazebo/models/' + model_file + '/model.sdf'
+    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if models_path is not None:
+        filepath = os.path.join(models_path, model_file)
     mdl = open(filepath, 'r')
     sdff = mdl.read()
     mdl.close()
@@ -112,7 +114,10 @@ def cle_function():
     # Create interfaces to brain
 
     # control adapter
-    braincontrol = PyNNControlAdapter('{{config.brainModel}}',
+    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if models_path is not None:
+        brainfilepath = os.path.join(models_path, '{{config.brainModel}}')
+    braincontrol = PyNNControlAdapter(brainfilepath,
                                       [0, 1, 2],
                                       [3, 4, 5])
     # communication adapter

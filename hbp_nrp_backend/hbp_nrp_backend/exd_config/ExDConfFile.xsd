@@ -88,11 +88,36 @@
   </xs:complexType>
 </xs:element>
 
+<!--Contains a pose -->
+<xs:element name="pose">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="x" type="xs:double"/>
+      <xs:element name="y" type="xs:double"/>
+      <xs:element name="z" type="xs:double"/>
+      <xs:element name="ux" type="xs:double"/>
+      <xs:element name="uy" type="xs:double"/>
+      <xs:element name="uz" type="xs:double"/>
+      <xs:element name="theta" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
+<!--Contains a environmentModel -->
+<xs:element name="environmentModel">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="location" type="xs:string"/>
+      <xs:element ref="pose"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:element>
+
 <!--Root element of the ExD file -->
 <xs:element name="ExD">
   <xs:complexType>
     <xs:sequence>
-      <xs:element name="environmentModel" type="xs:string"/>
+      <xs:element ref="environmentModel"/>
       <xs:element name="bibiConf" type="xs:string"/>
       <xs:element ref="event" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>

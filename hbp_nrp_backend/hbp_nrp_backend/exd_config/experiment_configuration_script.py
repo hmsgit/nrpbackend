@@ -40,7 +40,7 @@ def generate_experiment(experiment_conf, script_file_name):
     # generate experiment script
     env = config.environmentModel
 
-    names = {'model': env,
+    names = {'model': env.location,
              'bibi_script': basename + '_bibi.py'}
 
     template_path = os.path.join(os.path.split(__file__)[0],
