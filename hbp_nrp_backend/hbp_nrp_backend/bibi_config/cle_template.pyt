@@ -43,17 +43,17 @@ def spawn_gazebo_sdf(model_name, model_file):
 
 def cle_function():
 
-    from python_cle.cle.ROSCLEWrapper import ROSCLEServer
-    from python_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
+    from hbp_nrp_cle.cle.ROSCLEWrapper import ROSCLEServer
+    from hbp_nrp_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
 
-    from python_cle.robotsim.RobotInterface import Topic
-    from python_cle.robotsim.RosControlAdapter import RosControlAdapter
-    from python_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
+    from hbp_nrp_cle.robotsim.RobotInterface import Topic
+    from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
+    from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
 
-    from python_cle.brainsim.PyNNControlAdapter import PyNNControlAdapter
-    from python_cle.brainsim.PyNNCommunicationAdapter import PyNNCommunicationAdapter
+    from hbp_nrp_cle.brainsim.PyNNControlAdapter import PyNNControlAdapter
+    from hbp_nrp_cle.brainsim.PyNNCommunicationAdapter import PyNNCommunicationAdapter
 
-    import python_cle.tf_framework as nrp
+    import hbp_nrp_cle.tf_framework as nrp
 
     # import dependencies from BIBI configuration
     {% for dep in dependencies %}

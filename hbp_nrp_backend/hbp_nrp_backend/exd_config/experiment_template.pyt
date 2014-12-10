@@ -6,7 +6,7 @@ This file is generated.
 
 import imp
 import multiprocessing
-from python_cle.cle.ROSCLEWrapper import ROSCLEClient
+from hbp_nrp_cle.cle.ROSCLEWrapper import ROSCLEClient
 
 __author__ = 'ExD Configuration Script'
 

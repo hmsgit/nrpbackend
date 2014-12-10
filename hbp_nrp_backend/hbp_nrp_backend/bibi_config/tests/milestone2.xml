@@ -52,7 +52,7 @@
   </transferFunction>
   <transferFunction xsi:type="Robot2Neuron" name="eye_sensor_transmit">
     <local name="image_results">
-      <body xsi:type="Call" type="python_cle.tf_framework.tf_lib.detect_red">
+      <body xsi:type="Call" type="hbp_nrp_cle.tf_framework.tf_lib.detect_red">
         <argument name="image">
           <value xsi:type="ArgumentReference" name="camera" property="value"/>
         </argument>
