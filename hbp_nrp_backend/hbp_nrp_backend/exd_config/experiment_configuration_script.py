@@ -27,9 +27,11 @@ def generate_experiment(experiment_conf, script_file_name):
     # generate bibi script
     bibi_conf = config.bibiConf
     basename = os.path.splitext(script_file_name)[0]
-    path = os.path.dirname(experiment_conf)
+    path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if path is None:
+        path = os.path.dirname(experiment_conf)
     if not path == '':
-        complete_bibi_conf = path + '/' + bibi_conf
+        complete_bibi_conf = os.path.join(path, bibi_conf)
     else:
         complete_bibi_conf = bibi_conf
     bibi_configuration_script.generate_cle(complete_bibi_conf,

@@ -8,6 +8,7 @@ __author__ = 'GeorgHinkel'
 from hbp_nrp_backend.exd_config import generate_experiment
 from hbp_nrp_backend.simulation_control import simulations
 import imp
+import os
 
 
 def start_simulation(sim_id):
@@ -54,6 +55,9 @@ def initialize_simulation(sim_id):
     # generate script
     simulation = simulations[sim_id]
     experiment = simulation.experiment_id
+    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if models_path is not None:
+        experiment = os.path.join(models_path, experiment)
     target = '__generated_experiment.py'
     generate_experiment(experiment, target)
 
