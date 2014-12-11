@@ -6,7 +6,7 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.bibi_config.bibi_configuration_script import generate_cle
 import unittest
-import filecmp
+import difflib
 import os
 
 
@@ -19,7 +19,13 @@ class TestScript(unittest.TestCase):
         generated_script = os.path.join(directory, 'generated_cle_script.py')
         milestone2_script = os.path.join(directory, 'milestone2_cle_script.py')
         generate_cle(milestone2, generated_script)
-        assert filecmp.cmp(generated_script, milestone2_script)
+
+        file1 = open(generated_script, 'r')
+        file2 = open(milestone2_script, 'r')
+        diff = difflib.context_diff(file1.readlines(), file2.readlines())
+        delta = ''.join(diff)
+        self.maxDiff = None
+        self.assertMultiLineEqual(delta, "")
 
 
 if __name__ == '__main__':
