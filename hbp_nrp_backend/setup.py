@@ -30,6 +30,8 @@ config = {
                  'hbp_nrp_backend.bibi_config.generated',
                  'hbp_nrp_backend.exd_config',
                  'hbp_nrp_backend.exd_config.generated'],
+    'data_files': ['hbp_nrp_backend/bibi_config/*.pyt',
+                   'hbp_nrp_backend/exd_config/*.pyt'],
     'scripts': [],
     'name': 'hbp_nrp_backend',
     'include_package_data': True,

@@ -1,1 +1,3 @@
 include requirements.txt
+include hbp_nrp_backend/bibi_config/*.pyt
+include hbp_nrp_backend/exd_config/*.pyt
