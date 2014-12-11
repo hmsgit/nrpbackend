@@ -18,7 +18,7 @@ def initialize():
     """
     bibi_script = imp.load_source('bibi_configuration', "{{bibi_script}}")
 
-    bibi_script.spawn_gazebo_sdf('environment', '{{model}}')
+    #bibi_script.spawn_gazebo_sdf('environment', '{{model}}')
 
     p = multiprocessing.Process(target=bibi_script.cle_function)
     p.start()
