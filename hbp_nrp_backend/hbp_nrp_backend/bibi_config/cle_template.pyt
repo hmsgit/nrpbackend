@@ -35,7 +35,7 @@ def spawn_gazebo_sdf(model_name, model_file):
 
     # spawn model
     rospy.wait_for_service('/gazebo/spawn_sdf_model')
-    spawn_model_prox = rospy.ServiceProxy('gazebo/spawn_sdf_model', SpawnModel)
+    spawn_model_prox = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
     spawn_model_prox(model_name,
                      sdff,
                      "",
