@@ -12,7 +12,7 @@ from hbp_nrp_backend.simulation_control import simulations, Simulation, \
     InvalidStateTransitionException
 
 from std_msgs.msg import ColorRGBA
-from gazebo_msgs.srv import SetVisualProperties, SetLightProperties
+from gazebo_msgs.srv import SetVisualProperties, SetLightProperties, GetLightProperties
 import rospy
 
 # pylint: disable=R0201
@@ -130,7 +130,7 @@ class _RGBADescription(object):
 
 
 @swagger.model
-@swagger.nested(diffuse=_RGBADescription.__name__,)
+@swagger.nested(diffuse=_RGBADescription.__name__, )
 class _LightDescription(object):
     """Describe a light"""
     resource_fields = {
@@ -190,9 +190,41 @@ class LightControl(Resource):
 
         in_name = body['name']
         in_diffuse = body.get('diffuse')
-        in_attenuation_constant = body.get('attenuation_constant', 0.0)
-        in_attenuation_linear = body.get('attenuation_linear', 0.0)
-        in_attenuation_quadratic = body.get('attenuation_quadratic', 0.0)
+        in_attenuation_constant = body.get('attenuation_constant')
+        in_attenuation_linear = body.get('attenuation_linear')
+        in_attenuation_quadratic = body.get('attenuation_quadratic')
+
+        diffuse = None
+
+        if in_diffuse is not None:
+            diffuse = ColorRGBA(in_diffuse['r'], in_diffuse['g'],
+                                in_diffuse['b'], in_diffuse['a'])
+
+        if in_diffuse is None or in_attenuation_constant is None \
+                or in_attenuation_linear is None or in_attenuation_quadratic is None:
+
+            try:
+                rospy.wait_for_service('/gazebo/get_light_properties', 1)
+            except rospy.ROSException as exc:
+                return "ROS service not available: " + str(exc), 400
+
+            get_light_properties = rospy.ServiceProxy('/gazebo/get_light_properties',
+                                                      GetLightProperties)
+
+            try:
+                light_properties = get_light_properties(light_name=in_name)
+
+                if in_attenuation_constant is None:
+                    in_attenuation_constant = light_properties.attenuation_constant
+                if in_attenuation_linear is None:
+                    in_attenuation_linear = light_properties.attenuation_linear
+                if in_attenuation_quadratic is None:
+                    in_attenuation_quadratic = light_properties.attenuation_quadratic
+                if in_diffuse is None:
+                    diffuse = light_properties.diffuse
+
+            except rospy.ServiceException as exc:
+                return "Service did not process request:" + str(exc), 400
 
         try:
             rospy.wait_for_service('/gazebo/set_light_properties', 1)
@@ -204,8 +236,7 @@ class LightControl(Resource):
 
         try:
             set_light_properties(light_name=in_name,
-                                 diffuse=ColorRGBA(in_diffuse['r'], in_diffuse['g'],
-                                                   in_diffuse['b'], in_diffuse['a']),
+                                 diffuse=diffuse,
                                  attenuation_constant=in_attenuation_constant,
                                  attenuation_linear=in_attenuation_linear,
                                  attenuation_quadratic=in_attenuation_quadratic)
@@ -226,6 +257,28 @@ class CustomEventControl(Resource):
         resource_fields = {
             'name': fields.String,
         }
+
+    def __set_light(self, vr_name, color):
+        """
+        Sets the light of a particular visual
+        :param vr_name: The visual name
+        :param color: The color
+        :return: The response
+        """
+        try:
+            rospy.wait_for_service('/gazebo/set_visual_properties', 1)
+        except rospy.ROSException as exc:
+            return "ROS service not available: " + str(exc), 400
+        set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
+                                                   SetVisualProperties)
+        try:
+            set_visual_properties(model_name=vr_name, link_name='body',
+                                  visual_name='screen_glass',
+                                  property_name='material:script:name',
+                                  property_value=color)
+        except rospy.ServiceException as exc:
+            return "Service did not process request: " + str(exc), 400
+        return "Changed color", 200
 
     @swagger.operation(
         notes='Currently, only RightScreenToRed is implemented',
@@ -269,21 +322,11 @@ class CustomEventControl(Resource):
             return "No name given", 400
         name = body['name']
         if name == 'RightScreenToRed':
-            try:
-                rospy.wait_for_service('/gazebo/set_visual_properties', 1)
-            except rospy.ROSException as exc:
-                return "ROS service not available: " + str(exc), 400
-
-            set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
-                                                       SetVisualProperties)
-
-            try:
-                set_visual_properties(model_name='right_vr_screen', link_name='body',
-                                      visual_name='screen_glass',
-                                      property_name='material:script:name',
-                                      property_value='Gazebo/Red')
-            except rospy.ServiceException as exc:
-                return "Service did not process request: " + str(exc), 400
-
-            return "Changed color", 200
+            return self.__set_light('right_vr_screen', 'Gazebo/Red')
+        if name == "RightScreenToBlue":
+            return self.__set_light('right_vr_screen', 'Gazebo/Blue')
+        if name == "LeftScreenToRed":
+            return self.__set_light('left_vr_screen', 'Gazebo/Red')
+        if name == "LeftScreenToBlue":
+            return self.__set_light('left_vr_screen', 'Gazebo/Blue')
         return "Interaction not found", 404
