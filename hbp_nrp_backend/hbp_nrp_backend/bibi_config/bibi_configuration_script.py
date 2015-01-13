@@ -101,7 +101,11 @@ def get_neurons(device):
     if isinstance(neurons, generated_bibi_api.Index):
         return neurons.population + '[' + str(neurons.index) + ']'
     if isinstance(neurons, generated_bibi_api.Range):
-        return neurons.population + '[' + str(neurons.from_) + ',' + str(neurons.to) + ']'
+        step_string = ""
+        if neurons.step is not None:
+            step_string = ', ' + str(neurons.step)
+        return neurons.population + '[range(' + str(neurons.from_) + ', ' + str(neurons.to)\
+               + step_string + ')]'
     raise Exception("Dont know how to process neuron selector " + device.extensiontype_)
 
 

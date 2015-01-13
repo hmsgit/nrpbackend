@@ -118,8 +118,8 @@ def cle_function():
     if models_path is not None:
         brainfilepath = os.path.join(models_path, '{{config.brainModel}}')
     braincontrol = PyNNControlAdapter(brainfilepath,
-                                      [0, 1, 2],
-                                      [3, 4, 5])
+                                      [0, 1, 2, 3, 4],
+                                      [5, 6, 7])
     # communication adapter
     braincomm = PyNNCommunicationAdapter()
 
