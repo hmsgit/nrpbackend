@@ -69,7 +69,7 @@ def print_expression(expression):
             return expression.name + '.' + expression.property
     if isinstance(expression, generated_bibi_api.Constant):
         return str(expression.value)
-    raise Exception('No idea how to print expression of type ' + type(expression))
+    raise Exception('No idea how to print expression of type ' + repr(type(expression)))
 
 
 def print_operator(expression):
@@ -98,15 +98,31 @@ def get_neurons(device):
     :param device: The device
     """
     neurons = device.neurons
+    return neurons.population + '[' + print_neurons(neurons) + ']'
+
+
+def print_neurons(neurons):
+    """
+    Prints the given neurons
+    :param neurons: The neurons group
+    :return: The neurons group
+    """
     if isinstance(neurons, generated_bibi_api.Index):
-        return neurons.population + '[' + str(neurons.index) + ']'
+        return str(neurons.index)
     if isinstance(neurons, generated_bibi_api.Range):
         step_string = ""
         if neurons.step is not None:
             step_string = ', ' + str(neurons.step)
-        return neurons.population + '[range(' + str(neurons.from_) + ', ' + str(neurons.to)\
-               + step_string + ')]'
-    raise Exception("Dont know how to process neuron selector " + device.extensiontype_)
+        return 'range(' + str(neurons.from_) + ', ' + str(neurons.to)\
+               + step_string + ')'
+    if isinstance(neurons, generated_bibi_api.List):
+        if len(neurons.element) == 0:
+            return '[]'
+        neuron_list = '[' + str(neurons.element[0])
+        for i in range(1, len(neurons.element)):
+            neuron_list = neuron_list + ', ' + str(neurons.element[i])
+        return neuron_list + ']'
+    raise Exception("Don't know how to process neuron selector " + neurons.extensiontype_)
 
 
 def compute_dependencies(config):
@@ -118,11 +134,10 @@ def compute_dependencies(config):
     for tf in config.transferFunction:
         for local in tf.local:
             __add_dependencies_for_expression(local.body, dependencies)
-        if isinstance(tf, generated_bibi_api.Neuron2Robot):
-            dependencies.add(tf.topic.type_)
-        else:
-            for topic in tf.topic:
-                dependencies.add(topic.type_)
+        if isinstance(tf, generated_bibi_api.Neuron2Robot) and tf.returnValue is not None:
+            dependencies.add(tf.returnValue.type_)
+        for topic in tf.topic:
+            dependencies.add(topic.type_)
     return dependencies
 
 
@@ -141,6 +156,15 @@ def __add_dependencies_for_expression(expression, dependencies):
     if isinstance(expression, generated_bibi_api.Operator):
         for operand in expression.operand:
             __add_dependencies_for_expression(operand, dependencies)
+
+
+def is_not_none(item):
+    """
+    Gets whether the given item is None (required since Jinja2 does not understand None tests)
+    :param item: The item that should be tested
+    :return: True if the item is not None, otherwise False
+    """
+    return item is not None
 
 
 def generate_cle(bibi_conf, script_file_name):

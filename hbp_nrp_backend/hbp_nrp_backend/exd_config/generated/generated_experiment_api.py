@@ -440,7 +440,7 @@ def quote_python(inStr):
             return "'''%s'''" % s1
     else:
         if s1.find('"') != -1:
-            s1 = s1.replace('"', '\\"')
+            s1 = s1.create_adapter('"', '\\"')
         if s1.find('\n') == -1:
             return '"%s"' % s1
         else:
