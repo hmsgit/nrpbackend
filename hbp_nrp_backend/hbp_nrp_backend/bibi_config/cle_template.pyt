@@ -68,23 +68,34 @@ def cle_function():
     import {{remove_extension(imp)}}{% endfor %}{% endif %}
 
     {% for tf in config.transferFunction %}{% if tf.extensiontype_ == 'Neuron2Robot' %}
-    {% for dev in tf.device %}
-    @nrp.MapNeuronParameter("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endfor %}
-    @nrp.Neuron2Robot(Topic('{{tf.topic.topic}}', {{tf.topic.type_}}))
+    {% for topic in tf.topic %}{% if is_not_none(tf.body) %}
+    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
+    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
+    @nrp.MapNeuronSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
+    @nrp.MapNeuronSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
+    @nrp.Neuron2Robot({% if is_not_none(tf.returnValue) %}Topic('{{tf.returnValue.topic}}', {{tf.returnValue.type_}}{% endif %}))
     def {{tf.name}}(t{% for dev in tf.device %}, {{dev.name}}{%endfor%}):
         {% for local in tf.local %}{{local.name}} = {{print_expression(local.body)}}
         {% endfor %}
-        return {{print_expression(tf.topic.body)}}
+        {% for dev in tf.device %}{% if is_not_none(dev.body) %}{{dev.name}}.{{get_default_property(dev.type_)}} = {{print_expression(dev.body)}}
+        {% endif %}{% endfor %}
+        {% for top in tf.topic %}{% if is_not_none(top.body) %}{{top.name}}.send_message({{print_expression(top.body)}})
+        {% endif %}{% endfor %}{% if is_not_none(tf.topic.body) %}
+        {% if is_not_none(tf.returnValue) %}return {{print_expression(tf.returnValue.body)}}{% endif %}{% endif %}
 
-    {% else %}{% for topic in tf.topic %}
-    @nrp.MapRobotParameter("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endfor %}{% for dev in tf.device %}
-    @nrp.MapNeuronParameter("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endfor %}
+    {% else %}{% for topic in tf.topic %}{% if is_not_none(tf.body) %}
+    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
+    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
+    @nrp.MapNeuronSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
+    @nrp.MapNeuronSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
     @nrp.Robot2Neuron()
     def {{tf.name}}(t{% for topic in tf.topic %}, {{topic.name}}{%endfor%}{% for dev in tf.device %}, {{dev.name}}{%endfor%}):
         {% for local in tf.local %}{{local.name}} = {{print_expression(local.body)}}
         {% endfor %}
-        {% for dev in tf.device %}{{dev.name}}.{{get_default_property(dev.type_)}} = {{print_expression(dev.body)}}
-        {% endfor %}{% endif %}{% endfor %}
+        {% for dev in tf.device %}{% if is_not_none(dev.body) %}{{dev.name}}.{{get_default_property(dev.type_)}} = {{print_expression(dev.body)}}
+        {% endif %}{% endfor %}
+        {% for top in tf.topic %}{% if is_not_none(top.body) %}{{top.name}}.send_message({{print_expression(top.body)}})
+        {% endif %}{% endfor %}{% endif %}{% endfor %}
 
     import signal
 
@@ -115,11 +126,11 @@ def cle_function():
 
     # control adapter
     models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+    brainfilepath = '{{config.brainModel.file}}'
     if models_path is not None:
-        brainfilepath = os.path.join(models_path, '{{config.brainModel}}')
-    braincontrol = PyNNControlAdapter(brainfilepath,
-                                      [0, 1, 2, 3, 4],
-                                      [5, 6, 7])
+        brainfilepath = os.path.join(models_path, brainfilepath)
+    braincontrol = PyNNControlAdapter(brainfilepath{% for p in config.brainModel.neuronGroup %},
+                                      {{p.population}}={{print_neurons(p)}}{% endfor %})
     # communication adapter
     braincomm = PyNNCommunicationAdapter()
 
@@ -135,7 +146,7 @@ def cle_function():
 
 
     # Create CLE
-    cle = SerialClosedLoopEngine(roscontrol, braincontrol, tfmanager, TIMESTEP)
+    cle = SerialClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, TIMESTEP)
     # initialize everything
     cle.initialize()
 

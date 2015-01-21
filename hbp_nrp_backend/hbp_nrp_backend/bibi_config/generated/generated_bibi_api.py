@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Tue Nov 11 14:07:02 2014 by generateDS.py version 2.13a.
+# Generated Tue Jan 13 16:16:18 2015 by generateDS.py version 2.14a.
 #
 # Command line options:
 #   ('-o', 'generated_bibi_api.py')
@@ -11,15 +11,21 @@
 #   bibi_configuration.xsd
 #
 # Command line:
-#   python generateDS.py -o "generated_bibi_api.py" bibi_configuration.xsd
+#   /home/GeorgHinkel/generateDS-2.14a/generateDS.py -o "generated_bibi_api.py" bibi_configuration.xsd
 #
-# pragma: no cover
+# Current working directory (os.getcwd()):
+#   BIBI
+#
 
 import sys
-import getopt
 import re as re_
 import base64
 import datetime as datetime_
+import warnings as warnings_
+
+
+Validate_simpletypes_ = True
+
 
 etree_ = None
 Verbose_import_ = False
@@ -101,64 +107,68 @@ except ImportError, exp:
                 return None
         def gds_format_string(self, input_data, input_name=''):
             return input_data
-        def gds_validate_string(self, input_data, node, input_name=''):
+        def gds_validate_string(self, input_data, node=None, input_name=''):
             if not input_data:
                 return ''
             else:
                 return input_data
         def gds_format_base64(self, input_data, input_name=''):
             return base64.b64encode(input_data)
-        def gds_validate_base64(self, input_data, node, input_name=''):
+        def gds_validate_base64(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_integer(self, input_data, input_name=''):
             return '%d' % input_data
-        def gds_validate_integer(self, input_data, node, input_name=''):
+        def gds_validate_integer(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_integer_list(self, input_data, input_name=''):
-            return '%s' % input_data
-        def gds_validate_integer_list(self, input_data, node, input_name=''):
+            return '%s' % ' '.join(input_data)
+        def gds_validate_integer_list(
+                self, input_data, node=None, input_name=''):
             values = input_data.split()
             for value in values:
                 try:
-                    float(value)
+                    int(value)
                 except (TypeError, ValueError):
                     raise_parse_error(node, 'Requires sequence of integers')
-            return input_data
+            return values
         def gds_format_float(self, input_data, input_name=''):
             return ('%.15f' % input_data).rstrip('0')
-        def gds_validate_float(self, input_data, node, input_name=''):
+        def gds_validate_float(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_float_list(self, input_data, input_name=''):
-            return '%s' % input_data
-        def gds_validate_float_list(self, input_data, node, input_name=''):
+            return '%s' % ' '.join(input_data)
+        def gds_validate_float_list(
+                self, input_data, node=None, input_name=''):
             values = input_data.split()
             for value in values:
                 try:
                     float(value)
                 except (TypeError, ValueError):
                     raise_parse_error(node, 'Requires sequence of floats')
-            return input_data
+            return values
         def gds_format_double(self, input_data, input_name=''):
             return '%e' % input_data
-        def gds_validate_double(self, input_data, node, input_name=''):
+        def gds_validate_double(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_double_list(self, input_data, input_name=''):
-            return '%s' % input_data
-        def gds_validate_double_list(self, input_data, node, input_name=''):
+            return '%s' % ' '.join(input_data)
+        def gds_validate_double_list(
+                self, input_data, node=None, input_name=''):
             values = input_data.split()
             for value in values:
                 try:
                     float(value)
                 except (TypeError, ValueError):
                     raise_parse_error(node, 'Requires sequence of doubles')
-            return input_data
+            return values
         def gds_format_boolean(self, input_data, input_name=''):
             return ('%s' % input_data).lower()
-        def gds_validate_boolean(self, input_data, node, input_name=''):
+        def gds_validate_boolean(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_boolean_list(self, input_data, input_name=''):
-            return '%s' % input_data
-        def gds_validate_boolean_list(self, input_data, node, input_name=''):
+            return '%s' % ' '.join(input_data)
+        def gds_validate_boolean_list(
+                self, input_data, node=None, input_name=''):
             values = input_data.split()
             for value in values:
                 if value not in ('true', '1', 'false', '0', ):
@@ -166,8 +176,8 @@ except ImportError, exp:
                         node,
                         'Requires sequence of booleans '
                         '("true", "1", "false", "0")')
-            return input_data
-        def gds_validate_datetime(self, input_data, node, input_name=''):
+            return values
+        def gds_validate_datetime(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_datetime(self, input_data, input_name=''):
             if input_data.microsecond == 0:
@@ -232,7 +242,7 @@ except ImportError, exp:
                     input_data, '%Y-%m-%dT%H:%M:%S')
             dt = dt.replace(tzinfo=tz)
             return dt
-        def gds_validate_date(self, input_data, node, input_name=''):
+        def gds_validate_date(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_date(self, input_data, input_name=''):
             _svalue = '%04d-%02d-%02d' % (
@@ -278,7 +288,7 @@ except ImportError, exp:
             dt = datetime_.datetime.strptime(input_data, '%Y-%m-%d')
             dt = dt.replace(tzinfo=tz)
             return dt.date()
-        def gds_validate_time(self, input_data, node, input_name=''):
+        def gds_validate_time(self, input_data, node=None, input_name=''):
             return input_data
         def gds_format_time(self, input_data, input_name=''):
             if input_data.microsecond == 0:
@@ -310,6 +320,21 @@ except ImportError, exp:
                         minutes = (total_seconds - (hours * 3600)) // 60
                         _svalue += '{0:02d}:{1:02d}'.format(hours, minutes)
             return _svalue
+        def gds_validate_simple_patterns(self, patterns, target):
+            # pat is a list of lists of strings/patterns.  We should:
+            # - AND the outer elements
+            # - OR the inner elements
+            found1 = True
+            for patterns1 in patterns:
+                found2 = False
+                for patterns2 in patterns1:
+                    if re_.search(patterns2, target) is not None:
+                        found2 = True
+                        break
+                if not found2:
+                    found1 = False
+                    break
+            return found1
         @classmethod
         def gds_parse_time(cls, input_data):
             tz = None
@@ -631,6 +656,7 @@ class BIBIConfiguration(GeneratedsSuper):
         self.original_tagname_ = None
         self.brainModel = brainModel
         self.bodyModel = bodyModel
+        self.validate_SDF_Filename(self.bodyModel)
         if transferFunction is None:
             self.transferFunction = []
         else:
@@ -659,15 +685,20 @@ class BIBIConfiguration(GeneratedsSuper):
     def add_transferFunctionImport(self, value): self.transferFunctionImport.append(value)
     def insert_transferFunctionImport_at(self, index, value): self.transferFunctionImport.insert(index, value)
     def replace_transferFunctionImport_at(self, index, value): self.transferFunctionImport[index] = value
-    def validate_H5_Filename(self, value):
-        # Validate type H5_Filename, a restriction on xs:string.
-        pass
     def validate_SDF_Filename(self, value):
         # Validate type SDF_Filename, a restriction on xs:string.
-        pass
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_SDF_Filename_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_SDF_Filename_patterns_, ))
+    validate_SDF_Filename_patterns_ = [['^[a-zA-Z0-9\\._/]*\\.sdf$']]
     def validate_Python_Filename(self, value):
         # Validate type Python_Filename, a restriction on xs:string.
-        pass
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_Python_Filename_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_Python_Filename_patterns_, ))
+    validate_Python_Filename_patterns_ = [['^[a-zA-Z0-9\\._/]*\\.py$']]
     def hasContent_(self):
         if (
             self.brainModel is not None or
@@ -704,8 +735,7 @@ class BIBIConfiguration(GeneratedsSuper):
         else:
             eol_ = ''
         if self.brainModel is not None:
-            showIndent(outfile, level, pretty_print)
-            outfile.write('<%sbrainModel>%s</%sbrainModel>%s' % (namespace_, self.gds_format_string(quote_xml(self.brainModel).encode(ExternalEncoding), input_name='brainModel'), namespace_, eol_))
+            self.brainModel.export(outfile, level, namespace_, name_='brainModel', pretty_print=pretty_print)
         if self.bodyModel is not None:
             showIndent(outfile, level, pretty_print)
             outfile.write('<%sbodyModel>%s</%sbodyModel>%s' % (namespace_, self.gds_format_string(quote_xml(self.bodyModel).encode(ExternalEncoding), input_name='bodyModel'), namespace_, eol_))
@@ -725,7 +755,10 @@ class BIBIConfiguration(GeneratedsSuper):
     def exportLiteralChildren(self, outfile, level, name_):
         if self.brainModel is not None:
             showIndent(outfile, level)
-            outfile.write('brainModel=%s,\n' % quote_python(self.brainModel).encode(ExternalEncoding))
+            outfile.write('brainModel=model_.BrainModel(\n')
+            self.brainModel.exportLiteral(outfile, level, name_='brainModel')
+            showIndent(outfile, level)
+            outfile.write('),\n')
         if self.bodyModel is not None:
             showIndent(outfile, level)
             outfile.write('bodyModel=%s,\n' % quote_python(self.bodyModel).encode(ExternalEncoding))
@@ -761,10 +794,10 @@ class BIBIConfiguration(GeneratedsSuper):
         pass
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'brainModel':
-            brainModel_ = child_.text
-            brainModel_ = self.gds_validate_string(brainModel_, node, 'brainModel')
-            self.brainModel = brainModel_
-            self.validate_H5_Filename(self.brainModel)    # validate type H5_Filename
+            obj_ = BrainModel.factory()
+            obj_.build(child_)
+            self.brainModel = obj_
+            obj_.original_tagname_ = 'brainModel'
         elif nodeName_ == 'bodyModel':
             bodyModel_ = child_.text
             bodyModel_ = self.gds_validate_string(bodyModel_, node, 'bodyModel')
@@ -797,16 +830,158 @@ class BIBIConfiguration(GeneratedsSuper):
 # end class BIBIConfiguration
 
 
+class BrainModel(GeneratedsSuper):
+    subclass = None
+    superclass = None
+    def __init__(self, file=None, neuronGroup=None):
+        self.original_tagname_ = None
+        self.file = file
+        self.validate_H5_Filename(self.file)
+        if neuronGroup is None:
+            self.neuronGroup = []
+        else:
+            self.neuronGroup = neuronGroup
+    def factory(*args_, **kwargs_):
+        if BrainModel.subclass:
+            return BrainModel.subclass(*args_, **kwargs_)
+        else:
+            return BrainModel(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_file(self): return self.file
+    def set_file(self, file): self.file = file
+    def get_neuronGroup(self): return self.neuronGroup
+    def set_neuronGroup(self, neuronGroup): self.neuronGroup = neuronGroup
+    def add_neuronGroup(self, value): self.neuronGroup.append(value)
+    def insert_neuronGroup_at(self, index, value): self.neuronGroup.insert(index, value)
+    def replace_neuronGroup_at(self, index, value): self.neuronGroup[index] = value
+    def validate_H5_Filename(self, value):
+        # Validate type H5_Filename, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_H5_Filename_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_H5_Filename_patterns_, ))
+    validate_H5_Filename_patterns_ = [['^[a-zA-Z0-9\\._/]*\\.h5$']]
+    def hasContent_(self):
+        if (
+            self.file is not None or
+            self.neuronGroup
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='', name_='BrainModel', namespacedef_='', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='BrainModel')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='', name_='BrainModel', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='BrainModel'):
+        pass
+    def exportChildren(self, outfile, level, namespace_='', name_='BrainModel', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.file is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sfile>%s</%sfile>%s' % (namespace_, self.gds_format_string(quote_xml(self.file).encode(ExternalEncoding), input_name='file'), namespace_, eol_))
+        for neuronGroup_ in self.neuronGroup:
+            neuronGroup_.export(outfile, level, namespace_, name_='neuronGroup', pretty_print=pretty_print)
+    def exportLiteral(self, outfile, level, name_='BrainModel'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        if self.file is not None:
+            showIndent(outfile, level)
+            outfile.write('file=%s,\n' % quote_python(self.file).encode(ExternalEncoding))
+        showIndent(outfile, level)
+        outfile.write('neuronGroup=[\n')
+        level += 1
+        for neuronGroup_ in self.neuronGroup:
+            showIndent(outfile, level)
+            outfile.write('model_.NeuronSelector(\n')
+            neuronGroup_.exportLiteral(outfile, level, name_='NeuronSelector')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        pass
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'file':
+            file_ = child_.text
+            file_ = self.gds_validate_string(file_, node, 'file')
+            self.file = file_
+            self.validate_H5_Filename(self.file)    # validate type H5_Filename
+        elif nodeName_ == 'neuronGroup':
+            type_name_ = child_.attrib.get(
+                '{http://www.w3.org/2001/XMLSchema-instance}type')
+            if type_name_ is None:
+                type_name_ = child_.attrib.get('type')
+            if type_name_ is not None:
+                type_names_ = type_name_.split(':')
+                if len(type_names_) == 1:
+                    type_name_ = type_names_[0]
+                else:
+                    type_name_ = type_names_[1]
+                class_ = globals()[type_name_]
+                obj_ = class_.factory()
+                obj_.build(child_)
+            else:
+                raise NotImplementedError(
+                    'Class not implemented for <neuronGroup> element')
+            self.neuronGroup.append(obj_)
+            obj_.original_tagname_ = 'neuronGroup'
+# end class BrainModel
+
+
 class TransferFunction(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, name=None, local=None, extensiontype_=None):
+    def __init__(self, name=None, local=None, device=None, deviceGroup=None, topic=None, extensiontype_=None):
         self.original_tagname_ = None
         self.name = _cast(None, name)
         if local is None:
             self.local = []
         else:
             self.local = local
+        if device is None:
+            self.device = []
+        else:
+            self.device = device
+        if deviceGroup is None:
+            self.deviceGroup = []
+        else:
+            self.deviceGroup = deviceGroup
+        if topic is None:
+            self.topic = []
+        else:
+            self.topic = topic
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
         if TransferFunction.subclass:
@@ -819,13 +994,31 @@ class TransferFunction(GeneratedsSuper):
     def add_local(self, value): self.local.append(value)
     def insert_local_at(self, index, value): self.local.insert(index, value)
     def replace_local_at(self, index, value): self.local[index] = value
+    def get_device(self): return self.device
+    def set_device(self, device): self.device = device
+    def add_device(self, value): self.device.append(value)
+    def insert_device_at(self, index, value): self.device.insert(index, value)
+    def replace_device_at(self, index, value): self.device[index] = value
+    def get_deviceGroup(self): return self.deviceGroup
+    def set_deviceGroup(self, deviceGroup): self.deviceGroup = deviceGroup
+    def add_deviceGroup(self, value): self.deviceGroup.append(value)
+    def insert_deviceGroup_at(self, index, value): self.deviceGroup.insert(index, value)
+    def replace_deviceGroup_at(self, index, value): self.deviceGroup[index] = value
+    def get_topic(self): return self.topic
+    def set_topic(self, topic): self.topic = topic
+    def add_topic(self, value): self.topic.append(value)
+    def insert_topic_at(self, index, value): self.topic.insert(index, value)
+    def replace_topic_at(self, index, value): self.topic[index] = value
     def get_name(self): return self.name
     def set_name(self, name): self.name = name
     def get_extensiontype_(self): return self.extensiontype_
     def set_extensiontype_(self, extensiontype_): self.extensiontype_ = extensiontype_
     def hasContent_(self):
         if (
-            self.local
+            self.local or
+            self.device or
+            self.deviceGroup or
+            self.topic
         ):
             return True
         else:
@@ -863,6 +1056,12 @@ class TransferFunction(GeneratedsSuper):
             eol_ = ''
         for local_ in self.local:
             local_.export(outfile, level, namespace_, name_='local', pretty_print=pretty_print)
+        for device_ in self.device:
+            device_.export(outfile, level, namespace_, name_='device', pretty_print=pretty_print)
+        for deviceGroup_ in self.deviceGroup:
+            deviceGroup_.export(outfile, level, namespace_, name_='deviceGroup', pretty_print=pretty_print)
+        for topic_ in self.topic:
+            topic_.export(outfile, level, namespace_, name_='topic', pretty_print=pretty_print)
     def exportLiteral(self, outfile, level, name_='TransferFunction'):
         level += 1
         already_processed = set()
@@ -882,6 +1081,42 @@ class TransferFunction(GeneratedsSuper):
             showIndent(outfile, level)
             outfile.write('model_.Local(\n')
             local_.exportLiteral(outfile, level, name_='Local')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
+        showIndent(outfile, level)
+        outfile.write('device=[\n')
+        level += 1
+        for device_ in self.device:
+            showIndent(outfile, level)
+            outfile.write('model_.DeviceChannel(\n')
+            device_.exportLiteral(outfile, level, name_='DeviceChannel')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
+        showIndent(outfile, level)
+        outfile.write('deviceGroup=[\n')
+        level += 1
+        for deviceGroup_ in self.deviceGroup:
+            showIndent(outfile, level)
+            outfile.write('model_.DeviceGroupChannel(\n')
+            deviceGroup_.exportLiteral(outfile, level, name_='DeviceGroupChannel')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
+        showIndent(outfile, level)
+        outfile.write('topic=[\n')
+        level += 1
+        for topic_ in self.topic:
+            showIndent(outfile, level)
+            outfile.write('model_.TopicChannel(\n')
+            topic_.exportLiteral(outfile, level, name_='TopicChannel')
             showIndent(outfile, level)
             outfile.write('),\n')
         level -= 1
@@ -909,53 +1144,42 @@ class TransferFunction(GeneratedsSuper):
             obj_.build(child_)
             self.local.append(obj_)
             obj_.original_tagname_ = 'local'
+        elif nodeName_ == 'device':
+            obj_ = DeviceChannel.factory()
+            obj_.build(child_)
+            self.device.append(obj_)
+            obj_.original_tagname_ = 'device'
+        elif nodeName_ == 'deviceGroup':
+            obj_ = DeviceGroupChannel.factory()
+            obj_.build(child_)
+            self.deviceGroup.append(obj_)
+            obj_.original_tagname_ = 'deviceGroup'
+        elif nodeName_ == 'topic':
+            obj_ = TopicChannel.factory()
+            obj_.build(child_)
+            self.topic.append(obj_)
+            obj_.original_tagname_ = 'topic'
 # end class TransferFunction
 
 
 class Robot2Neuron(TransferFunction):
     subclass = None
     superclass = TransferFunction
-    def __init__(self, name=None, local=None, device=None, deviceGroup=None, topic=None):
+    def __init__(self, name=None, local=None, device=None, deviceGroup=None, topic=None, returnValue=None):
         self.original_tagname_ = None
-        super(Robot2Neuron, self).__init__(name, local, )
-        if device is None:
-            self.device = []
-        else:
-            self.device = device
-        if deviceGroup is None:
-            self.deviceGroup = []
-        else:
-            self.deviceGroup = deviceGroup
-        if topic is None:
-            self.topic = []
-        else:
-            self.topic = topic
+        super(Robot2Neuron, self).__init__(name, local, device, deviceGroup, topic, )
+        self.returnValue = returnValue
     def factory(*args_, **kwargs_):
         if Robot2Neuron.subclass:
             return Robot2Neuron.subclass(*args_, **kwargs_)
         else:
             return Robot2Neuron(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_device(self): return self.device
-    def set_device(self, device): self.device = device
-    def add_device(self, value): self.device.append(value)
-    def insert_device_at(self, index, value): self.device.insert(index, value)
-    def replace_device_at(self, index, value): self.device[index] = value
-    def get_deviceGroup(self): return self.deviceGroup
-    def set_deviceGroup(self, deviceGroup): self.deviceGroup = deviceGroup
-    def add_deviceGroup(self, value): self.deviceGroup.append(value)
-    def insert_deviceGroup_at(self, index, value): self.deviceGroup.insert(index, value)
-    def replace_deviceGroup_at(self, index, value): self.deviceGroup[index] = value
-    def get_topic(self): return self.topic
-    def set_topic(self, topic): self.topic = topic
-    def add_topic(self, value): self.topic.append(value)
-    def insert_topic_at(self, index, value): self.topic.insert(index, value)
-    def replace_topic_at(self, index, value): self.topic[index] = value
+    def get_returnValue(self): return self.returnValue
+    def set_returnValue(self, returnValue): self.returnValue = returnValue
     def hasContent_(self):
         if (
-            self.device or
-            self.deviceGroup or
-            self.topic or
+            self.returnValue is not None or
             super(Robot2Neuron, self).hasContent_()
         ):
             return True
@@ -987,12 +1211,8 @@ class Robot2Neuron(TransferFunction):
             eol_ = '\n'
         else:
             eol_ = ''
-        for device_ in self.device:
-            device_.export(outfile, level, namespace_, name_='device', pretty_print=pretty_print)
-        for deviceGroup_ in self.deviceGroup:
-            deviceGroup_.export(outfile, level, namespace_, name_='deviceGroup', pretty_print=pretty_print)
-        for topic_ in self.topic:
-            topic_.export(outfile, level, namespace_, name_='topic', pretty_print=pretty_print)
+        if self.returnValue is not None:
+            self.returnValue.export(outfile, level, namespace_, name_='returnValue', pretty_print=pretty_print)
     def exportLiteral(self, outfile, level, name_='Robot2Neuron'):
         level += 1
         already_processed = set()
@@ -1003,42 +1223,12 @@ class Robot2Neuron(TransferFunction):
         super(Robot2Neuron, self).exportLiteralAttributes(outfile, level, already_processed, name_)
     def exportLiteralChildren(self, outfile, level, name_):
         super(Robot2Neuron, self).exportLiteralChildren(outfile, level, name_)
-        showIndent(outfile, level)
-        outfile.write('device=[\n')
-        level += 1
-        for device_ in self.device:
+        if self.returnValue is not None:
             showIndent(outfile, level)
-            outfile.write('model_.DeviceChannel(\n')
-            device_.exportLiteral(outfile, level, name_='DeviceChannel')
+            outfile.write('returnValue=model_.DeviceChannel(\n')
+            self.returnValue.exportLiteral(outfile, level, name_='returnValue')
             showIndent(outfile, level)
             outfile.write('),\n')
-        level -= 1
-        showIndent(outfile, level)
-        outfile.write('],\n')
-        showIndent(outfile, level)
-        outfile.write('deviceGroup=[\n')
-        level += 1
-        for deviceGroup_ in self.deviceGroup:
-            showIndent(outfile, level)
-            outfile.write('model_.DeviceGroupChannel(\n')
-            deviceGroup_.exportLiteral(outfile, level, name_='DeviceGroupChannel')
-            showIndent(outfile, level)
-            outfile.write('),\n')
-        level -= 1
-        showIndent(outfile, level)
-        outfile.write('],\n')
-        showIndent(outfile, level)
-        outfile.write('topic=[\n')
-        level += 1
-        for topic_ in self.topic:
-            showIndent(outfile, level)
-            outfile.write('model_.RobotTopic(\n')
-            topic_.exportLiteral(outfile, level, name_='RobotTopic')
-            showIndent(outfile, level)
-            outfile.write('),\n')
-        level -= 1
-        showIndent(outfile, level)
-        outfile.write('],\n')
     def build(self, node):
         already_processed = set()
         self.buildAttributes(node, node.attrib, already_processed)
@@ -1049,22 +1239,11 @@ class Robot2Neuron(TransferFunction):
     def buildAttributes(self, node, attrs, already_processed):
         super(Robot2Neuron, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        if nodeName_ == 'device':
+        if nodeName_ == 'returnValue':
             obj_ = DeviceChannel.factory()
             obj_.build(child_)
-            self.device.append(obj_)
-            obj_.original_tagname_ = 'device'
-        elif nodeName_ == 'deviceGroup':
-            obj_ = DeviceGroupChannel.factory()
-            obj_.build(child_)
-            self.deviceGroup.append(obj_)
-            obj_.original_tagname_ = 'deviceGroup'
-        elif nodeName_ == 'topic':
-            class_obj_ = self.get_class_obj_(child_, RobotTopic)
-            obj_ = class_obj_.factory()
-            obj_.build(child_)
-            self.topic.append(obj_)
-            obj_.original_tagname_ = 'topic'
+            self.returnValue = obj_
+            obj_.original_tagname_ = 'returnValue'
         super(Robot2Neuron, self).buildChildren(child_, node, nodeName_, True)
 # end class Robot2Neuron
 
@@ -1072,41 +1251,21 @@ class Robot2Neuron(TransferFunction):
 class Neuron2Robot(TransferFunction):
     subclass = None
     superclass = TransferFunction
-    def __init__(self, name=None, local=None, device=None, deviceGroup=None, topic=None):
+    def __init__(self, name=None, local=None, device=None, deviceGroup=None, topic=None, returnValue=None):
         self.original_tagname_ = None
-        super(Neuron2Robot, self).__init__(name, local, )
-        if device is None:
-            self.device = []
-        else:
-            self.device = device
-        if deviceGroup is None:
-            self.deviceGroup = []
-        else:
-            self.deviceGroup = deviceGroup
-        self.topic = topic
+        super(Neuron2Robot, self).__init__(name, local, device, deviceGroup, topic, )
+        self.returnValue = returnValue
     def factory(*args_, **kwargs_):
         if Neuron2Robot.subclass:
             return Neuron2Robot.subclass(*args_, **kwargs_)
         else:
             return Neuron2Robot(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_device(self): return self.device
-    def set_device(self, device): self.device = device
-    def add_device(self, value): self.device.append(value)
-    def insert_device_at(self, index, value): self.device.insert(index, value)
-    def replace_device_at(self, index, value): self.device[index] = value
-    def get_deviceGroup(self): return self.deviceGroup
-    def set_deviceGroup(self, deviceGroup): self.deviceGroup = deviceGroup
-    def add_deviceGroup(self, value): self.deviceGroup.append(value)
-    def insert_deviceGroup_at(self, index, value): self.deviceGroup.insert(index, value)
-    def replace_deviceGroup_at(self, index, value): self.deviceGroup[index] = value
-    def get_topic(self): return self.topic
-    def set_topic(self, topic): self.topic = topic
+    def get_returnValue(self): return self.returnValue
+    def set_returnValue(self, returnValue): self.returnValue = returnValue
     def hasContent_(self):
         if (
-            self.device or
-            self.deviceGroup or
-            self.topic is not None or
+            self.returnValue is not None or
             super(Neuron2Robot, self).hasContent_()
         ):
             return True
@@ -1138,12 +1297,8 @@ class Neuron2Robot(TransferFunction):
             eol_ = '\n'
         else:
             eol_ = ''
-        for device_ in self.device:
-            device_.export(outfile, level, namespace_, name_='device', pretty_print=pretty_print)
-        for deviceGroup_ in self.deviceGroup:
-            deviceGroup_.export(outfile, level, namespace_, name_='deviceGroup', pretty_print=pretty_print)
-        if self.topic is not None:
-            self.topic.export(outfile, level, namespace_, name_='topic', pretty_print=pretty_print)
+        if self.returnValue is not None:
+            self.returnValue.export(outfile, level, namespace_, name_='returnValue', pretty_print=pretty_print)
     def exportLiteral(self, outfile, level, name_='Neuron2Robot'):
         level += 1
         already_processed = set()
@@ -1154,34 +1309,10 @@ class Neuron2Robot(TransferFunction):
         super(Neuron2Robot, self).exportLiteralAttributes(outfile, level, already_processed, name_)
     def exportLiteralChildren(self, outfile, level, name_):
         super(Neuron2Robot, self).exportLiteralChildren(outfile, level, name_)
-        showIndent(outfile, level)
-        outfile.write('device=[\n')
-        level += 1
-        for device_ in self.device:
+        if self.returnValue is not None:
             showIndent(outfile, level)
-            outfile.write('model_.DeviceConfiguration(\n')
-            device_.exportLiteral(outfile, level, name_='DeviceConfiguration')
-            showIndent(outfile, level)
-            outfile.write('),\n')
-        level -= 1
-        showIndent(outfile, level)
-        outfile.write('],\n')
-        showIndent(outfile, level)
-        outfile.write('deviceGroup=[\n')
-        level += 1
-        for deviceGroup_ in self.deviceGroup:
-            showIndent(outfile, level)
-            outfile.write('model_.DeviceGroupConfiguration(\n')
-            deviceGroup_.exportLiteral(outfile, level, name_='DeviceGroupConfiguration')
-            showIndent(outfile, level)
-            outfile.write('),\n')
-        level -= 1
-        showIndent(outfile, level)
-        outfile.write('],\n')
-        if self.topic is not None:
-            showIndent(outfile, level)
-            outfile.write('topic=model_.TopicChannel(\n')
-            self.topic.exportLiteral(outfile, level, name_='topic')
+            outfile.write('returnValue=model_.TopicChannel(\n')
+            self.returnValue.exportLiteral(outfile, level, name_='returnValue')
             showIndent(outfile, level)
             outfile.write('),\n')
     def build(self, node):
@@ -1194,168 +1325,23 @@ class Neuron2Robot(TransferFunction):
     def buildAttributes(self, node, attrs, already_processed):
         super(Neuron2Robot, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        if nodeName_ == 'device':
-            class_obj_ = self.get_class_obj_(child_, DeviceConfiguration)
-            obj_ = class_obj_.factory()
-            obj_.build(child_)
-            self.device.append(obj_)
-            obj_.original_tagname_ = 'device'
-        elif nodeName_ == 'deviceGroup':
-            class_obj_ = self.get_class_obj_(child_, DeviceGroupConfiguration)
-            obj_ = class_obj_.factory()
-            obj_.build(child_)
-            self.deviceGroup.append(obj_)
-            obj_.original_tagname_ = 'deviceGroup'
-        elif nodeName_ == 'topic':
+        if nodeName_ == 'returnValue':
             obj_ = TopicChannel.factory()
             obj_.build(child_)
-            self.topic = obj_
-            obj_.original_tagname_ = 'topic'
+            self.returnValue = obj_
+            obj_.original_tagname_ = 'returnValue'
         super(Neuron2Robot, self).buildChildren(child_, node, nodeName_, True)
 # end class Neuron2Robot
 
 
-class DeviceConfiguration(GeneratedsSuper):
+class DeviceChannel(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, type_=None, name=None, neurons=None, extensiontype_=None):
+    def __init__(self, type_=None, name=None, neurons=None, body=None):
         self.original_tagname_ = None
         self.type_ = _cast(None, type_)
         self.name = _cast(None, name)
         self.neurons = neurons
-        self.extensiontype_ = extensiontype_
-    def factory(*args_, **kwargs_):
-        if DeviceConfiguration.subclass:
-            return DeviceConfiguration.subclass(*args_, **kwargs_)
-        else:
-            return DeviceConfiguration(*args_, **kwargs_)
-    factory = staticmethod(factory)
-    def get_neurons(self): return self.neurons
-    def set_neurons(self, neurons): self.neurons = neurons
-    def get_type(self): return self.type_
-    def set_type(self, type_): self.type_ = type_
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
-    def get_extensiontype_(self): return self.extensiontype_
-    def set_extensiontype_(self, extensiontype_): self.extensiontype_ = extensiontype_
-    def validate_DeviceType(self, value):
-        # Validate type DeviceType, a restriction on xs:string.
-        pass
-    def hasContent_(self):
-        if (
-            self.neurons is not None
-        ):
-            return True
-        else:
-            return False
-    def export(self, outfile, level, namespace_='', name_='DeviceConfiguration', namespacedef_='', pretty_print=True):
-        if pretty_print:
-            eol_ = '\n'
-        else:
-            eol_ = ''
-        if self.original_tagname_ is not None:
-            name_ = self.original_tagname_
-        showIndent(outfile, level, pretty_print)
-        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
-        already_processed = set()
-        self.exportAttributes(outfile, level, already_processed, namespace_, name_='DeviceConfiguration')
-        if self.hasContent_():
-            outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='DeviceConfiguration', pretty_print=pretty_print)
-            showIndent(outfile, level, pretty_print)
-            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
-        else:
-            outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='DeviceConfiguration'):
-        if self.type_ is not None and 'type_' not in already_processed:
-            already_processed.add('type_')
-            outfile.write(' type=%s' % (quote_attrib(self.type_), ))
-        if self.name is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            outfile.write(' name=%s' % (self.gds_format_string(quote_attrib(self.name).encode(ExternalEncoding), input_name='name'), ))
-        if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
-            already_processed.add('xsi:type')
-            outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
-            outfile.write(' xsi:type="%s"' % self.extensiontype_)
-    def exportChildren(self, outfile, level, namespace_='', name_='DeviceConfiguration', fromsubclass_=False, pretty_print=True):
-        if pretty_print:
-            eol_ = '\n'
-        else:
-            eol_ = ''
-        if self.neurons is not None:
-            self.neurons.export(outfile, level, namespace_, name_='neurons', pretty_print=pretty_print)
-    def exportLiteral(self, outfile, level, name_='DeviceConfiguration'):
-        level += 1
-        already_processed = set()
-        self.exportLiteralAttributes(outfile, level, already_processed, name_)
-        if self.hasContent_():
-            self.exportLiteralChildren(outfile, level, name_)
-    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
-        if self.type_ is not None and 'type_' not in already_processed:
-            already_processed.add('type_')
-            showIndent(outfile, level)
-            outfile.write('type_="%s",\n' % (self.type_,))
-        if self.name is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            showIndent(outfile, level)
-            outfile.write('name="%s",\n' % (self.name,))
-    def exportLiteralChildren(self, outfile, level, name_):
-        if self.NeuronSelector is not None:
-            showIndent(outfile, level)
-            outfile.write('NeuronSelector=model_.NeuronSelector(\n')
-            self.NeuronSelector.exportLiteral(outfile, level)
-            showIndent(outfile, level)
-            outfile.write('),\n')
-    def build(self, node):
-        already_processed = set()
-        self.buildAttributes(node, node.attrib, already_processed)
-        for child in node:
-            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
-            self.buildChildren(child, node, nodeName_)
-        return self
-    def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('type', node)
-        if value is not None and 'type' not in already_processed:
-            already_processed.add('type')
-            self.type_ = value
-            self.validate_DeviceType(self.type_)    # validate type DeviceType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-        value = find_attr_value_('xsi:type', node)
-        if value is not None and 'xsi:type' not in already_processed:
-            already_processed.add('xsi:type')
-            self.extensiontype_ = value
-    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        if nodeName_ == 'neurons':
-            type_name_ = child_.attrib.get(
-                '{http://www.w3.org/2001/XMLSchema-instance}type')
-            if type_name_ is None:
-                type_name_ = child_.attrib.get('type')
-            if type_name_ is not None:
-                type_names_ = type_name_.split(':')
-                if len(type_names_) == 1:
-                    type_name_ = type_names_[0]
-                else:
-                    type_name_ = type_names_[1]
-                class_ = globals()[type_name_]
-                obj_ = class_.factory()
-                obj_.build(child_)
-            else:
-                raise NotImplementedError(
-                    'Class not implemented for <neurons> element')
-            self.neurons = obj_
-            obj_.original_tagname_ = 'neurons'
-# end class DeviceConfiguration
-
-
-class DeviceChannel(DeviceConfiguration):
-    subclass = None
-    superclass = DeviceConfiguration
-    def __init__(self, type_=None, name=None, neurons=None, body=None):
-        self.original_tagname_ = None
-        super(DeviceChannel, self).__init__(type_, name, neurons, )
         self.body = body
     def factory(*args_, **kwargs_):
         if DeviceChannel.subclass:
@@ -1363,12 +1349,29 @@ class DeviceChannel(DeviceConfiguration):
         else:
             return DeviceChannel(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_neurons(self): return self.neurons
+    def set_neurons(self, neurons): self.neurons = neurons
     def get_body(self): return self.body
     def set_body(self, body): self.body = body
+    def get_type(self): return self.type_
+    def set_type(self, type_): self.type_ = type_
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
+    def validate_DeviceType(self, value):
+        # Validate type DeviceType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on DeviceType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
-            self.body is not None or
-            super(DeviceChannel, self).hasContent_()
+            self.neurons is not None or
+            self.body is not None
         ):
             return True
         else:
@@ -1392,134 +1395,22 @@ class DeviceChannel(DeviceConfiguration):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='DeviceChannel'):
-        super(DeviceChannel, self).exportAttributes(outfile, level, already_processed, namespace_, name_='DeviceChannel')
-    def exportChildren(self, outfile, level, namespace_='', name_='DeviceChannel', fromsubclass_=False, pretty_print=True):
-        super(DeviceChannel, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
-        if pretty_print:
-            eol_ = '\n'
-        else:
-            eol_ = ''
-        if self.body is not None:
-            self.body.export(outfile, level, namespace_, name_='body', pretty_print=pretty_print)
-    def exportLiteral(self, outfile, level, name_='DeviceChannel'):
-        level += 1
-        already_processed = set()
-        self.exportLiteralAttributes(outfile, level, already_processed, name_)
-        if self.hasContent_():
-            self.exportLiteralChildren(outfile, level, name_)
-    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
-        super(DeviceChannel, self).exportLiteralAttributes(outfile, level, already_processed, name_)
-    def exportLiteralChildren(self, outfile, level, name_):
-        super(DeviceChannel, self).exportLiteralChildren(outfile, level, name_)
-        if self.FlowExpression is not None:
-            showIndent(outfile, level)
-            outfile.write('FlowExpression=model_.FlowExpression(\n')
-            self.FlowExpression.exportLiteral(outfile, level)
-            showIndent(outfile, level)
-            outfile.write('),\n')
-    def build(self, node):
-        already_processed = set()
-        self.buildAttributes(node, node.attrib, already_processed)
-        for child in node:
-            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
-            self.buildChildren(child, node, nodeName_)
-        return self
-    def buildAttributes(self, node, attrs, already_processed):
-        super(DeviceChannel, self).buildAttributes(node, attrs, already_processed)
-    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        if nodeName_ == 'body':
-            type_name_ = child_.attrib.get(
-                '{http://www.w3.org/2001/XMLSchema-instance}type')
-            if type_name_ is None:
-                type_name_ = child_.attrib.get('type')
-            if type_name_ is not None:
-                type_names_ = type_name_.split(':')
-                if len(type_names_) == 1:
-                    type_name_ = type_names_[0]
-                else:
-                    type_name_ = type_names_[1]
-                class_ = globals()[type_name_]
-                obj_ = class_.factory()
-                obj_.build(child_)
-            else:
-                raise NotImplementedError(
-                    'Class not implemented for <body> element')
-            self.body = obj_
-            obj_.original_tagname_ = 'body'
-        super(DeviceChannel, self).buildChildren(child_, node, nodeName_, True)
-# end class DeviceChannel
-
-
-class DeviceGroupConfiguration(GeneratedsSuper):
-    subclass = None
-    superclass = None
-    def __init__(self, type_=None, name=None, neurons=None, extensiontype_=None):
-        self.original_tagname_ = None
-        self.type_ = _cast(None, type_)
-        self.name = _cast(None, name)
-        self.neurons = neurons
-        self.extensiontype_ = extensiontype_
-    def factory(*args_, **kwargs_):
-        if DeviceGroupConfiguration.subclass:
-            return DeviceGroupConfiguration.subclass(*args_, **kwargs_)
-        else:
-            return DeviceGroupConfiguration(*args_, **kwargs_)
-    factory = staticmethod(factory)
-    def get_neurons(self): return self.neurons
-    def set_neurons(self, neurons): self.neurons = neurons
-    def get_type(self): return self.type_
-    def set_type(self, type_): self.type_ = type_
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
-    def get_extensiontype_(self): return self.extensiontype_
-    def set_extensiontype_(self, extensiontype_): self.extensiontype_ = extensiontype_
-    def validate_DeviceType(self, value):
-        # Validate type DeviceType, a restriction on xs:string.
-        pass
-    def hasContent_(self):
-        if (
-            self.neurons is not None
-        ):
-            return True
-        else:
-            return False
-    def export(self, outfile, level, namespace_='', name_='DeviceGroupConfiguration', namespacedef_='', pretty_print=True):
-        if pretty_print:
-            eol_ = '\n'
-        else:
-            eol_ = ''
-        if self.original_tagname_ is not None:
-            name_ = self.original_tagname_
-        showIndent(outfile, level, pretty_print)
-        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
-        already_processed = set()
-        self.exportAttributes(outfile, level, already_processed, namespace_, name_='DeviceGroupConfiguration')
-        if self.hasContent_():
-            outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='DeviceGroupConfiguration', pretty_print=pretty_print)
-            showIndent(outfile, level, pretty_print)
-            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
-        else:
-            outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='DeviceGroupConfiguration'):
         if self.type_ is not None and 'type_' not in already_processed:
             already_processed.add('type_')
             outfile.write(' type=%s' % (quote_attrib(self.type_), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (self.gds_format_string(quote_attrib(self.name).encode(ExternalEncoding), input_name='name'), ))
-        if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
-            already_processed.add('xsi:type')
-            outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
-            outfile.write(' xsi:type="%s"' % self.extensiontype_)
-    def exportChildren(self, outfile, level, namespace_='', name_='DeviceGroupConfiguration', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='', name_='DeviceChannel', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
             eol_ = ''
         if self.neurons is not None:
             self.neurons.export(outfile, level, namespace_, name_='neurons', pretty_print=pretty_print)
-    def exportLiteral(self, outfile, level, name_='DeviceGroupConfiguration'):
+        if self.body is not None:
+            self.body.export(outfile, level, namespace_, name_='body', pretty_print=pretty_print)
+    def exportLiteral(self, outfile, level, name_='DeviceChannel'):
         level += 1
         already_processed = set()
         self.exportLiteralAttributes(outfile, level, already_processed, name_)
@@ -1541,6 +1432,12 @@ class DeviceGroupConfiguration(GeneratedsSuper):
             self.NeuronSelector.exportLiteral(outfile, level)
             showIndent(outfile, level)
             outfile.write('),\n')
+        if self.FlowExpression is not None:
+            showIndent(outfile, level)
+            outfile.write('FlowExpression=model_.FlowExpression(\n')
+            self.FlowExpression.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
     def build(self, node):
         already_processed = set()
         self.buildAttributes(node, node.attrib, already_processed)
@@ -1558,10 +1455,6 @@ class DeviceGroupConfiguration(GeneratedsSuper):
         if value is not None and 'name' not in already_processed:
             already_processed.add('name')
             self.name = value
-        value = find_attr_value_('xsi:type', node)
-        if value is not None and 'xsi:type' not in already_processed:
-            already_processed.add('xsi:type')
-            self.extensiontype_ = value
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'neurons':
             type_name_ = child_.attrib.get(
@@ -1582,15 +1475,36 @@ class DeviceGroupConfiguration(GeneratedsSuper):
                     'Class not implemented for <neurons> element')
             self.neurons = obj_
             obj_.original_tagname_ = 'neurons'
-# end class DeviceGroupConfiguration
+        elif nodeName_ == 'body':
+            type_name_ = child_.attrib.get(
+                '{http://www.w3.org/2001/XMLSchema-instance}type')
+            if type_name_ is None:
+                type_name_ = child_.attrib.get('type')
+            if type_name_ is not None:
+                type_names_ = type_name_.split(':')
+                if len(type_names_) == 1:
+                    type_name_ = type_names_[0]
+                else:
+                    type_name_ = type_names_[1]
+                class_ = globals()[type_name_]
+                obj_ = class_.factory()
+                obj_.build(child_)
+            else:
+                raise NotImplementedError(
+                    'Class not implemented for <body> element')
+            self.body = obj_
+            obj_.original_tagname_ = 'body'
+# end class DeviceChannel
 
 
-class DeviceGroupChannel(DeviceGroupConfiguration):
+class DeviceGroupChannel(GeneratedsSuper):
     subclass = None
-    superclass = DeviceGroupConfiguration
+    superclass = None
     def __init__(self, type_=None, name=None, neurons=None, body=None):
         self.original_tagname_ = None
-        super(DeviceGroupChannel, self).__init__(type_, name, neurons, )
+        self.type_ = _cast(None, type_)
+        self.name = _cast(None, name)
+        self.neurons = neurons
         self.body = body
     def factory(*args_, **kwargs_):
         if DeviceGroupChannel.subclass:
@@ -1598,12 +1512,29 @@ class DeviceGroupChannel(DeviceGroupConfiguration):
         else:
             return DeviceGroupChannel(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_neurons(self): return self.neurons
+    def set_neurons(self, neurons): self.neurons = neurons
     def get_body(self): return self.body
     def set_body(self, body): self.body = body
+    def get_type(self): return self.type_
+    def set_type(self, type_): self.type_ = type_
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
+    def validate_DeviceType(self, value):
+        # Validate type DeviceType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on DeviceType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
-            self.body is not None or
-            super(DeviceGroupChannel, self).hasContent_()
+            self.neurons is not None or
+            self.body is not None
         ):
             return True
         else:
@@ -1627,13 +1558,19 @@ class DeviceGroupChannel(DeviceGroupConfiguration):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='DeviceGroupChannel'):
-        super(DeviceGroupChannel, self).exportAttributes(outfile, level, already_processed, namespace_, name_='DeviceGroupChannel')
+        if self.type_ is not None and 'type_' not in already_processed:
+            already_processed.add('type_')
+            outfile.write(' type=%s' % (quote_attrib(self.type_), ))
+        if self.name is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            outfile.write(' name=%s' % (self.gds_format_string(quote_attrib(self.name).encode(ExternalEncoding), input_name='name'), ))
     def exportChildren(self, outfile, level, namespace_='', name_='DeviceGroupChannel', fromsubclass_=False, pretty_print=True):
-        super(DeviceGroupChannel, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
         else:
             eol_ = ''
+        if self.neurons is not None:
+            self.neurons.export(outfile, level, namespace_, name_='neurons', pretty_print=pretty_print)
         if self.body is not None:
             self.body.export(outfile, level, namespace_, name_='body', pretty_print=pretty_print)
     def exportLiteral(self, outfile, level, name_='DeviceGroupChannel'):
@@ -1643,9 +1580,21 @@ class DeviceGroupChannel(DeviceGroupConfiguration):
         if self.hasContent_():
             self.exportLiteralChildren(outfile, level, name_)
     def exportLiteralAttributes(self, outfile, level, already_processed, name_):
-        super(DeviceGroupChannel, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.type_ is not None and 'type_' not in already_processed:
+            already_processed.add('type_')
+            showIndent(outfile, level)
+            outfile.write('type_="%s",\n' % (self.type_,))
+        if self.name is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            showIndent(outfile, level)
+            outfile.write('name="%s",\n' % (self.name,))
     def exportLiteralChildren(self, outfile, level, name_):
-        super(DeviceGroupChannel, self).exportLiteralChildren(outfile, level, name_)
+        if self.NeuronSelector is not None:
+            showIndent(outfile, level)
+            outfile.write('NeuronSelector=model_.NeuronSelector(\n')
+            self.NeuronSelector.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
         if self.FlowExpression is not None:
             showIndent(outfile, level)
             outfile.write('FlowExpression=model_.FlowExpression(\n')
@@ -1660,9 +1609,36 @@ class DeviceGroupChannel(DeviceGroupConfiguration):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        super(DeviceGroupChannel, self).buildAttributes(node, attrs, already_processed)
+        value = find_attr_value_('type', node)
+        if value is not None and 'type' not in already_processed:
+            already_processed.add('type')
+            self.type_ = value
+            self.validate_DeviceType(self.type_)    # validate type DeviceType
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        if nodeName_ == 'body':
+        if nodeName_ == 'neurons':
+            type_name_ = child_.attrib.get(
+                '{http://www.w3.org/2001/XMLSchema-instance}type')
+            if type_name_ is None:
+                type_name_ = child_.attrib.get('type')
+            if type_name_ is not None:
+                type_names_ = type_name_.split(':')
+                if len(type_names_) == 1:
+                    type_name_ = type_names_[0]
+                else:
+                    type_name_ = type_names_[1]
+                class_ = globals()[type_name_]
+                obj_ = class_.factory()
+                obj_.build(child_)
+            else:
+                raise NotImplementedError(
+                    'Class not implemented for <neurons> element')
+            self.neurons = obj_
+            obj_.original_tagname_ = 'neurons'
+        elif nodeName_ == 'body':
             type_name_ = child_.attrib.get(
                 '{http://www.w3.org/2001/XMLSchema-instance}type')
             if type_name_ is None:
@@ -1681,7 +1657,6 @@ class DeviceGroupChannel(DeviceGroupConfiguration):
                     'Class not implemented for <body> element')
             self.body = obj_
             obj_.original_tagname_ = 'body'
-        super(DeviceGroupChannel, self).buildChildren(child_, node, nodeName_, True)
 # end class DeviceGroupChannel
 
 
@@ -1980,40 +1955,36 @@ class Range(NeuronSelector):
 # end class Range
 
 
-class RobotTopic(GeneratedsSuper):
+class List(NeuronSelector):
     subclass = None
-    superclass = None
-    def __init__(self, topic=None, type_=None, name=None, extensiontype_=None):
+    superclass = NeuronSelector
+    def __init__(self, population=None, element=None):
         self.original_tagname_ = None
-        self.topic = _cast(None, topic)
-        self.type_ = _cast(None, type_)
-        self.name = _cast(None, name)
-        self.extensiontype_ = extensiontype_
-    def factory(*args_, **kwargs_):
-        if RobotTopic.subclass:
-            return RobotTopic.subclass(*args_, **kwargs_)
+        super(List, self).__init__(population, )
+        if element is None:
+            self.element = []
         else:
-            return RobotTopic(*args_, **kwargs_)
+            self.element = element
+    def factory(*args_, **kwargs_):
+        if List.subclass:
+            return List.subclass(*args_, **kwargs_)
+        else:
+            return List(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_topic(self): return self.topic
-    def set_topic(self, topic): self.topic = topic
-    def get_type(self): return self.type_
-    def set_type(self, type_): self.type_ = type_
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
-    def get_extensiontype_(self): return self.extensiontype_
-    def set_extensiontype_(self, extensiontype_): self.extensiontype_ = extensiontype_
-    def validate_RobotTopicAddress(self, value):
-        # Validate type RobotTopicAddress, a restriction on xs:string.
-        pass
+    def get_element(self): return self.element
+    def set_element(self, element): self.element = element
+    def add_element(self, value): self.element.append(value)
+    def insert_element_at(self, index, value): self.element.insert(index, value)
+    def replace_element_at(self, index, value): self.element[index] = value
     def hasContent_(self):
         if (
-
+            self.element or
+            super(List, self).hasContent_()
         ):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='RobotTopic', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='', name_='List', namespacedef_='', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2023,50 +1994,44 @@ class RobotTopic(GeneratedsSuper):
         showIndent(outfile, level, pretty_print)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
         already_processed = set()
-        self.exportAttributes(outfile, level, already_processed, namespace_, name_='RobotTopic')
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='List')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='RobotTopic', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='', name_='List', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='RobotTopic'):
-        if self.topic is not None and 'topic' not in already_processed:
-            already_processed.add('topic')
-            outfile.write(' topic=%s' % (quote_attrib(self.topic), ))
-        if self.type_ is not None and 'type_' not in already_processed:
-            already_processed.add('type_')
-            outfile.write(' type=%s' % (self.gds_format_string(quote_attrib(self.type_).encode(ExternalEncoding), input_name='type'), ))
-        if self.name is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            outfile.write(' name=%s' % (self.gds_format_string(quote_attrib(self.name).encode(ExternalEncoding), input_name='name'), ))
-        if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
-            already_processed.add('xsi:type')
-            outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
-            outfile.write(' xsi:type="%s"' % self.extensiontype_)
-    def exportChildren(self, outfile, level, namespace_='', name_='RobotTopic', fromsubclass_=False, pretty_print=True):
-        pass
-    def exportLiteral(self, outfile, level, name_='RobotTopic'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='List'):
+        super(List, self).exportAttributes(outfile, level, already_processed, namespace_, name_='List')
+    def exportChildren(self, outfile, level, namespace_='', name_='List', fromsubclass_=False, pretty_print=True):
+        super(List, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        for element_ in self.element:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%selement>%s</%selement>%s' % (namespace_, self.gds_format_integer(element_, input_name='element'), namespace_, eol_))
+    def exportLiteral(self, outfile, level, name_='List'):
         level += 1
         already_processed = set()
         self.exportLiteralAttributes(outfile, level, already_processed, name_)
         if self.hasContent_():
             self.exportLiteralChildren(outfile, level, name_)
     def exportLiteralAttributes(self, outfile, level, already_processed, name_):
-        if self.topic is not None and 'topic' not in already_processed:
-            already_processed.add('topic')
-            showIndent(outfile, level)
-            outfile.write('topic="%s",\n' % (self.topic,))
-        if self.type_ is not None and 'type_' not in already_processed:
-            already_processed.add('type_')
-            showIndent(outfile, level)
-            outfile.write('type_="%s",\n' % (self.type_,))
-        if self.name is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            showIndent(outfile, level)
-            outfile.write('name="%s",\n' % (self.name,))
+        super(List, self).exportLiteralAttributes(outfile, level, already_processed, name_)
     def exportLiteralChildren(self, outfile, level, name_):
-        pass
+        super(List, self).exportLiteralChildren(outfile, level, name_)
+        showIndent(outfile, level)
+        outfile.write('element=[\n')
+        level += 1
+        for element_ in self.element:
+            showIndent(outfile, level)
+            outfile.write('%d,\n' % element_)
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
     def build(self, node):
         already_processed = set()
         self.buildAttributes(node, node.attrib, already_processed)
@@ -2075,34 +2040,30 @@ class RobotTopic(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('topic', node)
-        if value is not None and 'topic' not in already_processed:
-            already_processed.add('topic')
-            self.topic = value
-            self.validate_RobotTopicAddress(self.topic)    # validate type RobotTopicAddress
-        value = find_attr_value_('type', node)
-        if value is not None and 'type' not in already_processed:
-            already_processed.add('type')
-            self.type_ = value
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-        value = find_attr_value_('xsi:type', node)
-        if value is not None and 'xsi:type' not in already_processed:
-            already_processed.add('xsi:type')
-            self.extensiontype_ = value
+        super(List, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        pass
-# end class RobotTopic
+        if nodeName_ == 'element':
+            sval_ = child_.text
+            try:
+                ival_ = int(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires integer: %s' % exp)
+            if ival_ < 0:
+                raise_parse_error(child_, 'requires nonNegativeInteger')
+            ival_ = self.gds_validate_integer(ival_, node, 'element')
+            self.element.append(ival_)
+        super(List, self).buildChildren(child_, node, nodeName_, True)
+# end class List
 
 
-class TopicChannel(RobotTopic):
+class TopicChannel(GeneratedsSuper):
     subclass = None
-    superclass = RobotTopic
+    superclass = None
     def __init__(self, topic=None, type_=None, name=None, body=None):
         self.original_tagname_ = None
-        super(TopicChannel, self).__init__(topic, type_, name, )
+        self.topic = _cast(None, topic)
+        self.type_ = _cast(None, type_)
+        self.name = _cast(None, name)
         self.body = body
     def factory(*args_, **kwargs_):
         if TopicChannel.subclass:
@@ -2112,10 +2073,22 @@ class TopicChannel(RobotTopic):
     factory = staticmethod(factory)
     def get_body(self): return self.body
     def set_body(self, body): self.body = body
+    def get_topic(self): return self.topic
+    def set_topic(self, topic): self.topic = topic
+    def get_type(self): return self.type_
+    def set_type(self, type_): self.type_ = type_
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
+    def validate_RobotTopicAddress(self, value):
+        # Validate type RobotTopicAddress, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_RobotTopicAddress_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RobotTopicAddress_patterns_, ))
+    validate_RobotTopicAddress_patterns_ = [['^(/[a-zA-Z0-9_-]+)+(/)?$']]
     def hasContent_(self):
         if (
-            self.body is not None or
-            super(TopicChannel, self).hasContent_()
+            self.body is not None
         ):
             return True
         else:
@@ -2139,9 +2112,16 @@ class TopicChannel(RobotTopic):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='TopicChannel'):
-        super(TopicChannel, self).exportAttributes(outfile, level, already_processed, namespace_, name_='TopicChannel')
+        if self.topic is not None and 'topic' not in already_processed:
+            already_processed.add('topic')
+            outfile.write(' topic=%s' % (quote_attrib(self.topic), ))
+        if self.type_ is not None and 'type_' not in already_processed:
+            already_processed.add('type_')
+            outfile.write(' type=%s' % (self.gds_format_string(quote_attrib(self.type_).encode(ExternalEncoding), input_name='type'), ))
+        if self.name is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            outfile.write(' name=%s' % (self.gds_format_string(quote_attrib(self.name).encode(ExternalEncoding), input_name='name'), ))
     def exportChildren(self, outfile, level, namespace_='', name_='TopicChannel', fromsubclass_=False, pretty_print=True):
-        super(TopicChannel, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2155,9 +2135,19 @@ class TopicChannel(RobotTopic):
         if self.hasContent_():
             self.exportLiteralChildren(outfile, level, name_)
     def exportLiteralAttributes(self, outfile, level, already_processed, name_):
-        super(TopicChannel, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.topic is not None and 'topic' not in already_processed:
+            already_processed.add('topic')
+            showIndent(outfile, level)
+            outfile.write('topic="%s",\n' % (self.topic,))
+        if self.type_ is not None and 'type_' not in already_processed:
+            already_processed.add('type_')
+            showIndent(outfile, level)
+            outfile.write('type_="%s",\n' % (self.type_,))
+        if self.name is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            showIndent(outfile, level)
+            outfile.write('name="%s",\n' % (self.name,))
     def exportLiteralChildren(self, outfile, level, name_):
-        super(TopicChannel, self).exportLiteralChildren(outfile, level, name_)
         if self.FlowExpression is not None:
             showIndent(outfile, level)
             outfile.write('FlowExpression=model_.FlowExpression(\n')
@@ -2172,7 +2162,19 @@ class TopicChannel(RobotTopic):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        super(TopicChannel, self).buildAttributes(node, attrs, already_processed)
+        value = find_attr_value_('topic', node)
+        if value is not None and 'topic' not in already_processed:
+            already_processed.add('topic')
+            self.topic = value
+            self.validate_RobotTopicAddress(self.topic)    # validate type RobotTopicAddress
+        value = find_attr_value_('type', node)
+        if value is not None and 'type' not in already_processed:
+            already_processed.add('type')
+            self.type_ = value
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'body':
             type_name_ = child_.attrib.get(
@@ -2193,7 +2195,6 @@ class TopicChannel(RobotTopic):
                     'Class not implemented for <body> element')
             self.body = obj_
             obj_.original_tagname_ = 'body'
-        super(TopicChannel, self).buildChildren(child_, node, nodeName_, True)
 # end class TopicChannel
 
 
@@ -3411,8 +3412,9 @@ class Constant(FlowExpression):
 
 GDSClassesMapping = {
     'bibi': BIBIConfiguration,
+    'neuronGroup': NeuronSelector,
+    'deviceGroup': DeviceGroupChannel,
     'transferFunction': TransferFunction,
-    'deviceGroup': DeviceGroupConfiguration,
     'body': FlowExpression,
     'argument': Argument,
     'value': FlowExpression,
@@ -3420,7 +3422,9 @@ GDSClassesMapping = {
     'operand': FlowExpression,
     'neurons': NeuronSelector,
     'inner': FlowExpression,
-    'device': DeviceConfiguration,
+    'returnValue': TopicChannel,
+    'device': DeviceChannel,
+    'brainModel': BrainModel,
     'local': Local,
 }
 
@@ -3518,8 +3522,8 @@ def parseLiteral(inFileName, silence=False):
     # Enable Python to collect the space used by the DOM.
     doc = None
     if not silence:
-        sys.stdout.write('#from bibi_api import *\n\n')
-        sys.stdout.write('import bibi_api as model_\n\n')
+        sys.stdout.write('#from generated_bibi_api import *\n\n')
+        sys.stdout.write('import generated_bibi_api as model_\n\n')
         sys.stdout.write('rootObj = model_.rootClass(\n')
         rootObj.exportLiteral(sys.stdout, 0, name_=rootTag)
         sys.stdout.write(')\n')
@@ -3544,15 +3548,15 @@ __all__ = [
     "Argument",
     "ArgumentReference",
     "BIBIConfiguration",
+    "BrainModel",
     "Call",
     "Constant",
     "DeviceChannel",
-    "DeviceConfiguration",
     "DeviceGroupChannel",
-    "DeviceGroupConfiguration",
     "Divide",
     "FlowExpression",
     "Index",
+    "List",
     "Local",
     "Max",
     "Min",
@@ -3562,7 +3566,6 @@ __all__ = [
     "Operator",
     "Range",
     "Robot2Neuron",
-    "RobotTopic",
     "Scale",
     "Subtract",
     "TopicChannel",
