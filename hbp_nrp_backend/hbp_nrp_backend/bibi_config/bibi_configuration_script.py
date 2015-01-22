@@ -113,7 +113,7 @@ def print_neurons(neurons):
         step_string = ""
         if neurons.step is not None:
             step_string = ', ' + str(neurons.step)
-        return 'range(' + str(neurons.from_) + ', ' + str(neurons.to)\
+        return 'slice(' + str(neurons.from_) + ', ' + str(neurons.to)\
                + step_string + ')'
     if isinstance(neurons, generated_bibi_api.List):
         if len(neurons.element) == 0:

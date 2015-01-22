@@ -58,44 +58,42 @@ def cle_function():
     import hbp_nrp_cle.tf_framework as nrp
 
     # import dependencies from BIBI configuration
-    {% for dep in dependencies %}
-    import {{dep[:dep.rfind('.')]}} #import {{dep.split('.')|last()}}
-    {% endfor %}
+    
+    import geometry_msgs.msg #import Twist
+    
+    import hbp_nrp_cle.tf_framework.tf_lib #import detect_red
+    
+    import sensor_msgs.msg #import Image
+    
 
     # import transfer functions specified in Python
-    {% if len(config.transferFunctionImport) > 0 %}# pylint: disable=W0401
-    {% for imp in config.transferFunctionImport %}
-    import {{remove_extension(imp)}}{% endfor %}{% endif %}
+    
 
-    {% for tf in config.transferFunction %}{% if tf.extensiontype_ == 'Neuron2Robot' %}
-    {% for topic in tf.topic %}{% if is_not_none(tf.body) %}
-    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
-    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
-    @nrp.MapSpikeSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
-    @nrp.MapSpikeSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
-    @nrp.Neuron2Robot({% if is_not_none(tf.returnValue) %}Topic('{{tf.returnValue.topic}}', {{tf.returnValue.type_}}){% endif %})
-    def {{tf.name}}(t{% for dev in tf.device %}, {{dev.name}}{%endfor%}):
-        {% for local in tf.local %}{{local.name}} = {{print_expression(local.body)}}
-        {% endfor %}
-        {% for dev in tf.device %}{% if is_not_none(dev.body) %}{{dev.name}}.{{get_default_property(dev.type_)}} = {{print_expression(dev.body)}}
-        {% endif %}{% endfor %}
-        {% for top in tf.topic %}{% if is_not_none(top.body) %}{{top.name}}.send_message({{print_expression(top.body)}})
-        {% endif %}{% endfor %}{% if is_not_none(tf.topic.body) %}
-        {% if is_not_none(tf.returnValue) %}return {{print_expression(tf.returnValue.body)}}{% endif %}{% endif %}
+    
+    
+    @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[0], nrp.leaky_integrator_alpha)
+    @nrp.MapSpikeSink("right_wheel_neuron", nrp.brain.actors[1], nrp.leaky_integrator_alpha)
+    @nrp.Neuron2Robot(Topic('/husky/cmd_vel', geometry_msgs.msg.Twist))
+    def linear_twist(t, left_wheel_neuron, right_wheel_neuron):
+        
+        
+        
+        return geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=100.0 * min(left_wheel_neuron.voltage, right_wheel_neuron.voltage), y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=300.0 * (left_wheel_neuron.voltage - right_wheel_neuron.voltage)))
 
-    {% else %}{% for topic in tf.topic %}{% if is_not_none(tf.body) %}
-    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
-    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
-    @nrp.MapSpikeSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
-    @nrp.MapSpikeSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
+    
+    @nrp.MapRobotPublisher("camera", Topic('/husky/camera', sensor_msgs.msg.Image))
+    @nrp.MapSpikeSource("red_left_eye", nrp.brain.sensors[slice(0, 3, 2)], nrp.poisson)
+    @nrp.MapSpikeSource("red_right_eye", nrp.brain.sensors[slice(1, 4, 2)], nrp.poisson)
+    @nrp.MapSpikeSource("green_blue_eye", nrp.brain.sensors[4], nrp.poisson)
     @nrp.Robot2Neuron()
-    def {{tf.name}}(t{% for topic in tf.topic %}, {{topic.name}}{%endfor%}{% for dev in tf.device %}, {{dev.name}}{%endfor%}):
-        {% for local in tf.local %}{{local.name}} = {{print_expression(local.body)}}
-        {% endfor %}
-        {% for dev in tf.device %}{% if is_not_none(dev.body) %}{{dev.name}}.{{get_default_property(dev.type_)}} = {{print_expression(dev.body)}}
-        {% endif %}{% endfor %}
-        {% for top in tf.topic %}{% if is_not_none(top.body) %}{{top.name}}.send_message({{print_expression(top.body)}})
-        {% endif %}{% endfor %}{% endif %}{% endfor %}
+    def eye_sensor_transmit(t, camera, red_left_eye, red_right_eye, green_blue_eye):
+        image_results = hbp_nrp_cle.tf_framework.tf_lib.detect_red(image=camera.value)
+        
+        red_left_eye.rate = 1000.0 * image_results.left
+        red_right_eye.rate = 1000.0 * image_results.right
+        green_blue_eye.rate = 1000.0 * image_results.go_on
+        
+        
 
     import signal
 
@@ -114,7 +112,7 @@ def cle_function():
     # Create interfaces to Gazebo
 
     # spawn robot model
-    spawn_gazebo_sdf('robot', '{{config.bodyModel}}')
+    spawn_gazebo_sdf('robot', 'husky_model/model.sdf')
 
     # control adapter
     roscontrol = RosControlAdapter()
@@ -126,11 +124,12 @@ def cle_function():
 
     # control adapter
     models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-    brainfilepath = '{{config.brainModel.file}}'
+    brainfilepath = 'brain_model/braitenberg.h5'
     if models_path is not None:
         brainfilepath = os.path.join(models_path, brainfilepath)
-    braincontrol = PyNNControlAdapter(brainfilepath{% for p in config.brainModel.neuronGroup %},
-                                      {{p.population}}={{print_neurons(p)}}{% endfor %})
+    braincontrol = PyNNControlAdapter(brainfilepath,
+                                      actors=slice(0, 5),
+                                      sensors=slice(5, 8))
     # communication adapter
     braincomm = PyNNCommunicationAdapter()
 
