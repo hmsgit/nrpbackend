@@ -16,7 +16,7 @@ while getopts ":rh" optname
   do
     case "$optname" in
       "r")
-        $RELEASE=true
+        RELEASE=true
         ;;
       "h")
         echo "$USAGE"
