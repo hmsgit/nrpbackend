@@ -8,7 +8,7 @@ from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import api
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl
 from flask import request
-from flask_restful import Resource, fields
+from flask_restful import Resource, fields, marshal_with
 from flask_restful_swagger import swagger
 
 # pylint: disable=R0201
@@ -27,8 +27,8 @@ class SimulationSetup(Resource):
         }
 
     @swagger.operation(
-        notes='This is the entry point for the NRP REST server since this is where you'
-              ' actually create simulations',
+        notes='This is the entry point for the NRP REST server since'
+              ' this is where you actually create simulations',
         responseMessages=[
             {
                 "code": 400,
@@ -60,3 +60,20 @@ class SimulationSetup(Resource):
             return "Experiment ID is not valid", 400
         return "Simulation created successfully", 201, \
                {'location': api.url_for(SimulationControl, sim_id=sim_id)}
+
+    @swagger.operation(
+        notes='Gets the list of all simulations on the server,'
+              ' no matter what state',
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "Simulations retrieved successfully"
+            }
+        ]
+    )
+    @marshal_with(Simulation.resource_fields)
+    def get(self):
+        """
+        Gets the list of simulations
+        """
+        return simulations, 200
