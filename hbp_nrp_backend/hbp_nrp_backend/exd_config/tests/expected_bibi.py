@@ -90,7 +90,7 @@ def cle_function():
         
 
     
-    @nrp.MapRobotPublisher("camera", Topic('/husky/camera', sensor_msgs.msg.Image))
+    @nrp.MapRobotSubscriber("camera", Topic('/husky/camera', sensor_msgs.msg.Image))
     @nrp.MapSpikeSource("red_left_eye", nrp.brain.sensors[0], nrp.poisson)
     @nrp.MapSpikeSource("red_right_eye", nrp.brain.sensors[1], nrp.poisson)
     @nrp.MapSpikeSource("green_blue_eye", nrp.brain.sensors[2], nrp.poisson)
