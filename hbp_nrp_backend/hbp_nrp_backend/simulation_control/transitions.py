@@ -5,9 +5,8 @@ This file loads the production transitions
 
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_backend.exd_config import generate_experiment
+from hbp_nrp_backend.exd_config import generate_bibi, initialize_experiment
 from hbp_nrp_backend.simulation_control import simulations
-import imp
 import os
 
 
@@ -59,9 +58,6 @@ def initialize_simulation(sim_id):
     if models_path is not None:
         experiment = os.path.join(models_path, experiment)
     target = '__generated_experiment.py'
-    generate_experiment(experiment, target)
 
-    # run script
-    exd_script = imp.load_source('generated_exd', target)
-    exd_script.initialize()
-    simulation.cle = exd_script.cle
+    generate_bibi(experiment, target)
+    simulation.cle = initialize_experiment(experiment, target)

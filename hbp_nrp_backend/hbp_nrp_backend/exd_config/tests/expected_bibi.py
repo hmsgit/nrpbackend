@@ -78,27 +78,29 @@ def cle_function():
 
     
     
-    @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[0], nrp.leaky_integrator_alpha)
-    @nrp.MapSpikeSink("right_wheel_neuron", nrp.brain.actors[1], nrp.leaky_integrator_alpha)
-    @nrp.Neuron2Robot(Topic('/husky/cmd_vel', geometry_msgs.msg.Twist))
+    @nrp.MapRobotPublisher("wheel", Topic('/husky/cmd_vel', geometry_msgs.msg.Twist))
+    @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[1], nrp.leaky_integrator_alpha)
+    @nrp.MapSpikeSink("right_wheel_neuron", nrp.brain.actors[2], nrp.leaky_integrator_alpha)
+    @nrp.Neuron2Robot()
     def linear_twist(t, left_wheel_neuron, right_wheel_neuron):
         
         
+        wheel.send_message(geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=500.0 * min(left_wheel_neuron.voltage, right_wheel_neuron.voltage), y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=1500.0 * (left_wheel_neuron.voltage - right_wheel_neuron.voltage))))
         
-        return geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=100.0 * min(left_wheel_neuron.voltage, right_wheel_neuron.voltage), y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=300.0 * (left_wheel_neuron.voltage - right_wheel_neuron.voltage)))
+        
 
     
     @nrp.MapRobotPublisher("camera", Topic('/husky/camera', sensor_msgs.msg.Image))
-    @nrp.MapSpikeSource("red_left_eye", nrp.brain.sensors[slice(0, 3, 2)], nrp.poisson)
-    @nrp.MapSpikeSource("red_right_eye", nrp.brain.sensors[slice(1, 4, 2)], nrp.poisson)
-    @nrp.MapSpikeSource("green_blue_eye", nrp.brain.sensors[4], nrp.poisson)
+    @nrp.MapSpikeSource("red_left_eye", nrp.brain.sensors[0], nrp.poisson)
+    @nrp.MapSpikeSource("red_right_eye", nrp.brain.sensors[1], nrp.poisson)
+    @nrp.MapSpikeSource("green_blue_eye", nrp.brain.sensors[2], nrp.poisson)
     @nrp.Robot2Neuron()
     def eye_sensor_transmit(t, camera, red_left_eye, red_right_eye, green_blue_eye):
         image_results = hbp_nrp_cle.tf_framework.tf_lib.detect_red(image=camera.value)
         
-        red_left_eye.rate = 1000.0 * image_results.left
-        red_right_eye.rate = 1000.0 * image_results.right
-        green_blue_eye.rate = 1000.0 * image_results.go_on
+        red_left_eye.rate = 0.002 * image_results.left
+        red_right_eye.rate = 0.002 * image_results.right
+        green_blue_eye.rate = 0.00025 * image_results.go_on
         
         
 
@@ -119,7 +121,7 @@ def cle_function():
     # Create interfaces to Gazebo
 
     # spawn robot model
-    spawn_gazebo_sdf('robot', 'husky_model/model.sdf')
+    spawn_gazebo_sdf('robot', 'husky.sdf')
 
     # control adapter
     roscontrol = RosControlAdapter()
@@ -131,12 +133,10 @@ def cle_function():
 
     # control adapter
     models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-    brainfilepath = 'brain_model/braitenberg.h5'
+    brainfilepath = 'None'
     if models_path is not None:
         brainfilepath = os.path.join(models_path, brainfilepath)
-    braincontrol = PyNNControlAdapter(brainfilepath,
-                                      actors=slice(0, 5),
-                                      sensors=slice(5, 8))
+    braincontrol = PyNNControlAdapter(brainfilepath)
     # communication adapter
     braincomm = PyNNCommunicationAdapter()
 

@@ -13,25 +13,31 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 from os.path import expanduser
 import os
 
-def spawn_gazebo_sdf(model_name, model_file):
+
+def spawn_gazebo_sdf(model_name, model_file, initial_pose=None):
     """
     Generates Code to run the experiment based on the given configuration file
     :param model_name: Name of the model inside the gazebo scene
-    :param model_file: The name of the model inside the ~/.gazebo/models folder
+    :param model_file: The name of the model inside the NRP_MODELS_DIRECTORY \
+        folder. If the NRP_MODELS_DIRECTORY environment variable is not set, \
+        this script will search the model in its own folder.
+    :param initial_pose: Initial pose of the model. Uses the Gazebo \
+        "Pose" type.
     """
 
     # find & open sdf file
     models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-    if models_path is not None:
-        filepath = os.path.join(models_path, model_file)
-    mdl = open(filepath, 'r')
+    if models_path is None:
+        models_path = os.path.dirname(__file__)
+    mdl = open(os.path.join(models_path, model_file), 'r')
     sdff = mdl.read()
     mdl.close()
 
     # set initial pose
-    initial_pose = Pose()
-    initial_pose.position = Point(0, 0, 0)
-    initial_pose.orientation = Quaternion(0, 0, 0, 1)
+    if initial_pose is None:
+        initial_pose = Pose()
+        initial_pose.position = Point(0, 0, 0)
+        initial_pose.orientation = Quaternion(0, 0, 0, 1)
 
     # spawn model
     rospy.wait_for_service('/gazebo/spawn_sdf_model')
@@ -42,6 +48,7 @@ def spawn_gazebo_sdf(model_name, model_file):
                      initial_pose,
                      "")
     spawn_model_prox.close()
+
 
 def cle_function():
 
