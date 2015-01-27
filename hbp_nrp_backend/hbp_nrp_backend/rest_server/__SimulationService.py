@@ -6,25 +6,29 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import api
-from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl
+from hbp_nrp_backend.rest_server.__SimulationControl import \
+    SimulationControl
 from flask import request
-from flask_restful import Resource, fields, marshal_with
+from flask_restful import Resource, marshal_with, fields
 from flask_restful_swagger import swagger
 
 # pylint: disable=R0201
 
 
-class SimulationSetup(Resource):
+class SimulationService(Resource):
     """
     The module to setup simulations
     """
-
     @swagger.model
-    class __NewSimulation(object):
-        "Object needed to setup a new simulation"
+    class _ExperimentID(object):
+        """
+        Represents a simulation ID object. Only used for swagger documentation
+        """
+
         resource_fields = {
-            'experimentID': fields.String,
+            'experimentID': fields.String()
         }
+        required = ['experimentID']
 
     @swagger.operation(
         notes='This is the entry point for the NRP REST server since'
@@ -43,7 +47,7 @@ class SimulationSetup(Resource):
             {
                 "name": "body",
                 "paramType": "body",
-                "dataType": __NewSimulation.__name__,
+                "dataType": _ExperimentID.__name__,
                 "required": True
             }
         ]
@@ -64,6 +68,7 @@ class SimulationSetup(Resource):
     @swagger.operation(
         notes='Gets the list of all simulations on the server,'
               ' no matter what state',
+        responseClass=list.__name__,
         responseMessages=[
             {
                 "code": 200,

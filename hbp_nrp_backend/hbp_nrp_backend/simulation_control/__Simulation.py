@@ -80,6 +80,7 @@ class Simulation(object):
         'simulationID': fields.Integer(attribute='sim_id'),
         'experimentID': fields.String(attribute='experiment_id')
     }
+    required = ['state', 'simulationID', 'experimentID']
 
 
 class InvalidStateTransitionException(Exception):

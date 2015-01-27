@@ -8,8 +8,7 @@ from flask import request
 from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.simulation_control import simulations, Simulation, \
-    InvalidStateTransitionException
+from hbp_nrp_backend.simulation_control import simulations, Simulation
 
 from std_msgs.msg import ColorRGBA
 from gazebo_msgs.srv import SetVisualProperties, SetLightProperties, GetLightProperties
@@ -35,12 +34,14 @@ class SimulationControl(Resource):
     """
 
     @swagger.operation(
-        notes='Gets the state of the given simulation',
+        notes='Gets the simulation with given sim_id',
         responseClass=Simulation.__name__,
         parameters=[
             {
                 "name": "sim_id",
                 "description": "The ID of the simulation whose state shall be retrieved",
+                "required": True,
+                "allowMultiple": False,
                 "paramType": "path",
                 "dataType": int.__name__
             }
@@ -62,60 +63,6 @@ class SimulationControl(Resource):
         Gets the simulation with the specified simulation id
         """
         return _get_simulation_or_abort(sim_id), 200
-
-    @swagger.model
-    class __SimulationState(object):
-        """
-        State of a simulation. Allowed values are: started, paused, resumed, stopped, released
-        """
-        resource_fields = {
-            'state': fields.String,
-        }
-
-    @swagger.operation(
-        notes='Sets the state of the given simulation',
-        parameters=[
-            {
-                "name": "sim_id",
-                "description": "The ID of the simulation whose state shall be set",
-                "paramType": "path",
-                "dataType": int.__name__
-            },
-            {
-                "name": "state",
-                "description": "The new state of the simulation",
-                "paramType": "body",
-                "dataType": __SimulationState.__name__
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 404,
-                "message": "The simulation was not found"
-            },
-            {
-                "code": 400,
-                "message": "The state transition is invalid"
-            },
-            {
-                "code": 200,
-                "message": "Success. The new state has been correctly applied"
-            }
-        ]
-    )
-    @marshal_with(Simulation.resource_fields)
-    def put(self, sim_id):
-        """
-        Sets the simulation with the given name into a new state
-        :param sim_id: The simulation id
-        """
-        simulation = _get_simulation_or_abort(sim_id)
-        body = request.get_json(force=True)
-        try:
-            simulation.state = body['state']
-        except InvalidStateTransitionException:
-            return "Invalid state transition", 400
-        return simulation, 200
 
 
 @swagger.model
@@ -154,12 +101,14 @@ class LightControl(Resource):
                 "name": "sim_id",
                 "description": "The ID of the simulation on which light should be changed",
                 "paramType": "path",
+                "required": True,
                 "dataType": int.__name__
             },
             {
                 "name": "light",
                 "description": "Description of the light to change",
                 "paramType": "body",
+                "required": True,
                 "dataType": _LightDescription.__name__
             }
         ],
@@ -252,7 +201,7 @@ class CustomEventControl(Resource):
     """
 
     @swagger.model
-    class CustomEvent(object):
+    class _CustomEvent(object):
         """Describe an event"""
         resource_fields = {
             'name': fields.String,
@@ -287,13 +236,15 @@ class CustomEventControl(Resource):
                 "name": "sim_id",
                 "description": "The ID of the simulation on which to raise the event",
                 "paramType": "path",
+                "required": True,
                 "dataType": int.__name__
             },
             {
                 "name": "event",
                 "description": "Custom event to raise",
                 "paramType": "body",
-                "dataType": CustomEvent.__name__
+                "required": True,
+                "dataType": _CustomEvent.__name__
             }
         ],
         responseMessages=[
