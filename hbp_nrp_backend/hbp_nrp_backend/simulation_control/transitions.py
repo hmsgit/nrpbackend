@@ -30,7 +30,7 @@ def pause_simulation(sim_id):
 
 def reset_simulation(sim_id):
     """
-    Resumes the simulation with the given simulation id
+    Reset the simulation with the given simulation id
     :param sim_id: The simulation id
     """
     simulation = simulations[sim_id]

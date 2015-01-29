@@ -10,7 +10,7 @@ import os
 import imp
 import multiprocessing
 from hbp_nrp_cle.cle.ROSCLEWrapper import ROSCLEClient
-from geometry_msgs.msg import Point, Pose, Quaternion
+from hbp_nrp_cle.robotsim.GazeboLoadingHelper import load_gazebo_world_file
 
 # pylint: disable=E1103
 # pylint infers the wrong type for config
@@ -32,7 +32,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
 
     # retrieve the bibi configuration file name.
-    bibi_conf = os.path.join(__get_basepath(experiment_conf),
+    bibi_conf = os.path.join(_get_basepath(experiment_conf),
                              experiment.bibiConf)
 
     bibi_configuration_script.generate_cle(bibi_conf,
@@ -52,27 +52,14 @@ def initialize_experiment(experiment_conf, bibi_script_file_name):
 
     # parse experiment configuration to get the environment to spawn.
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
-    pose = experiment.environmentModel.pose
-    initial_pose = None
-    if pose is not None:
-        initial_pose = Pose()
-        initial_pose.position = Point(pose.x, pose.y, pose.z)
-        initial_pose.orientation = Quaternion(pose.ux,
-                                              pose.uy,
-                                              pose.uz,
-                                              pose.theta)
-
     bibi_script = imp.load_source('bibi_configuration', bibi_script_file_name)
-    # Will be fix in a later commit
-    # bibi_script.spawn_gazebo_sdf('environment',
-    #                              experiment.environmentModel.location, initial_pose, "")
-
+    load_gazebo_world_file(experiment.environmentModel.location)
     p = multiprocessing.Process(target=bibi_script.cle_function)
     p.start()
     return ROSCLEClient()
 
 
-def __get_basepath(configuration_file=None):
+def _get_basepath(configuration_file=None):
     """
     :return the basepath for retrieving and storing scripts / \
     configuration files. There are three possible cases. They

@@ -13,48 +13,12 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 from os.path import expanduser
 import os
 
-
-def spawn_gazebo_sdf(model_name, model_file, initial_pose=None):
-    """
-    Generates Code to run the experiment based on the given configuration file
-    :param model_name: Name of the model inside the gazebo scene
-    :param model_file: The name of the model inside the NRP_MODELS_DIRECTORY \
-        folder. If the NRP_MODELS_DIRECTORY environment variable is not set, \
-        this script will search the model in its own folder.
-    :param initial_pose: Initial pose of the model. Uses the Gazebo \
-        "Pose" type.
-    """
-
-    # find & open sdf file
-    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-    if models_path is None:
-        models_path = os.path.dirname(__file__)
-    mdl = open(os.path.join(models_path, model_file), 'r')
-    sdff = mdl.read()
-    mdl.close()
-
-    # set initial pose
-    if initial_pose is None:
-        initial_pose = Pose()
-        initial_pose.position = Point(0, 0, 0)
-        initial_pose.orientation = Quaternion(0, 0, 0, 1)
-
-    # spawn model
-    rospy.wait_for_service('/gazebo/spawn_sdf_model')
-    spawn_model_prox = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
-    spawn_model_prox(model_name,
-                     sdff,
-                     "",
-                     initial_pose,
-                     "")
-    spawn_model_prox.close()
-
-
 def cle_function():
 
     from hbp_nrp_cle.cle.ROSCLEWrapper import ROSCLEServer
     from hbp_nrp_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
-
+    
+    from hbp_nrp_cle.robotsim.GazeboLoadingHelper import load_gazebo_model_file
     from hbp_nrp_cle.robotsim.RobotInterface import Topic
     from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
     from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
@@ -119,7 +83,7 @@ def cle_function():
     # Create interfaces to Gazebo
 
     # spawn robot model
-    spawn_gazebo_sdf('robot', 'husky_model/model.sdf')
+    load_gazebo_model_file('robot', 'husky_model/model.sdf')
 
     # control adapter
     roscontrol = RosControlAdapter()
