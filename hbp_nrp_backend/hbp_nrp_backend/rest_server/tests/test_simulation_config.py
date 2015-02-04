@@ -6,7 +6,7 @@ __author__ = 'GeorgHinkel'
 
 import unittest
 
-import hbp_nrp_backend.simulation_control.unit_tests as utc
+import hbp_nrp_backend.simulation_control.tests.unit_tests as utc
 from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 
