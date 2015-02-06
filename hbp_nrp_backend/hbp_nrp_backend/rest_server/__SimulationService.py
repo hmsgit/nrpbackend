@@ -52,6 +52,7 @@ class SimulationService(Resource):
             }
         ]
     )
+    @marshal_with(Simulation.resource_fields)
     def post(self):
         """
         Creates a new simulation. The simulation is not started
@@ -61,8 +62,8 @@ class SimulationService(Resource):
         if 'experimentID' in body:
             simulations.append(Simulation(sim_id, body['experimentID']))
         else:
-            return "Experiment ID is not valid", 400
-        return "Simulation created successfully", 201, \
+            return None, 400
+        return simulations[sim_id], 201, \
                {'location': api.url_for(SimulationControl, sim_id=sim_id)}
 
     @swagger.operation(
