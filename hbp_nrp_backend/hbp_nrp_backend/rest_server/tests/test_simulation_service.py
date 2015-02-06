@@ -7,6 +7,7 @@ __author__ = 'GeorgHinkel'
 from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations
 import unittest
+import json
 
 
 class TestSimulationService(unittest.TestCase):
@@ -19,6 +20,9 @@ class TestSimulationService(unittest.TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/' + str(n))
+        expectedResponseData = {'state': "created", 'simulationID': n, 'experimentID': "MyExample.xml"}
+        erd = json.dumps(expectedResponseData)
+        self.assertEqual(response.data, erd)
         self.assertEqual(len(simulations), n + 1)
         simulation = simulations[n]
         self.assertEqual(simulation.experiment_id, 'MyExample.xml')

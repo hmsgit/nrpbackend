@@ -33,6 +33,7 @@ class SimulationService(Resource):
     @swagger.operation(
         notes='This is the entry point for the NRP REST server since'
               ' this is where you actually create simulations',
+        responseClass=Simulation.__name__,
         responseMessages=[
             {
                 "code": 400,
