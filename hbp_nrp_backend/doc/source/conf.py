@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# python_cle documentation build configuration file, created by
+# hbp_nrp_backend documentation build configuration file, created by
 # sphinx-quickstart on Wed Jan 29 14:44:00 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -26,7 +26,8 @@ import hbp_nrp_backend
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
+              'sphinxcontrib.autohttp.flask']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
