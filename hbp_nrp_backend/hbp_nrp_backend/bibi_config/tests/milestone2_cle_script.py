@@ -11,6 +11,7 @@ import rospy
 import cle_ros_msgs.msg
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Point, Pose, Quaternion
+from std_msgs.msg import Float32, Int32, String
 from os.path import expanduser
 import os
 
@@ -24,9 +25,9 @@ def cle_function(world_file):
     update_progress_function = lambda subtask, update_progress: cle_server.notify_current_task(subtask, update_progress, True)
 
     cle_server.notify_start_task("Initializing the Neurorobotic Close Loop Engine",
-                              "Importing needed packages",
-                              5, # number of subtasks
-                              True)  # block_ui
+                                 "Importing needed packages",
+                                 5, # number of subtasks
+                                 True)  # block_ui
 
     from hbp_nrp_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
     
@@ -56,15 +57,22 @@ def cle_function(world_file):
     
 
     
+    @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[1], nrp.population_rate)
+    @nrp.Neuron2Robot(Topic('/monitor/population_rate', cle_ros_msgs.msg.SpikeRate))
+    def left_wheel_neuron_monitor(t, left_wheel_neuron):
+        return cle_ros_msgs.msg.SpikeRate(Float32(t), Int32(left_wheel_neuron.rate), String("left_wheel_neuron_monitor"))
+
+
     
-    @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[0], nrp.leaky_integrator_alpha)
-    @nrp.MapSpikeSink("right_wheel_neuron", nrp.brain.actors[1], nrp.leaky_integrator_alpha)
+    
+    @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[1], nrp.leaky_integrator_alpha)
+    @nrp.MapSpikeSink("right_wheel_neuron", nrp.brain.actors[2], nrp.leaky_integrator_alpha)
     @nrp.Neuron2Robot(Topic('/husky/cmd_vel', geometry_msgs.msg.Twist))
     def linear_twist(t, left_wheel_neuron, right_wheel_neuron):
         
         
         
-        return geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=100.0 * min(left_wheel_neuron.voltage, right_wheel_neuron.voltage), y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=300.0 * (left_wheel_neuron.voltage - right_wheel_neuron.voltage)))
+        return geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=20.0 * min(left_wheel_neuron.voltage, right_wheel_neuron.voltage), y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=100.0 * (right_wheel_neuron.voltage - left_wheel_neuron.voltage)))
 
     
     @nrp.MapRobotSubscriber("camera", Topic('/husky/camera', sensor_msgs.msg.Image))
@@ -117,8 +125,8 @@ def cle_function(world_file):
     if models_path is not None:
         brainfilepath = os.path.join(models_path, brainfilepath)
     braincontrol = PyNNControlAdapter(brainfilepath,
-                                      actors=slice(0, 5),
-                                      sensors=slice(5, 8))
+                                      sensors=slice(0, 5),
+                                      actors=slice(5, 8))
     # communication adapter
     braincomm = PyNNCommunicationAdapter()
 

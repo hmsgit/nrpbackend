@@ -54,7 +54,7 @@ def run_server(server, args):  # pragma: no cover
         root_logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
 
     root_logger.info("Starting the REST backend server now ...")
-    #server.debug=True
+    # server.debug=True
     server.run(port=port, host=DEFAULT_HOST)
     root_logger.info("REST backend server terminated.")
 

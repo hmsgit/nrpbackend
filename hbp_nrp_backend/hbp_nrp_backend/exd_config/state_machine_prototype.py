@@ -42,26 +42,26 @@ class StateMachineTimedColorChange(DefaultStateMachine):  # pragma: no cover
     """
     State machine generated for the following event of an ExD configuration:
 
-    >>> Example of an experiment configuration:
-    <event>
-     <conditions>
-      <condition>
-       <!-- trigger after 30 seconds of simulation time -->
-       <timeline>
-        <time>00:00:90</time>
-       </timeline>
-      </condition>
-     </conditions>
-     <actions>
-      <!-- set screen color to red -->
-      <property>
-       <identifier>model:right_vr_screen/link:body/visual:screen_glass/material/script/uri
-       </identifier>
-       <value>Gazebo/Red</value>
-      </property>
-     </actions>
-    </event>
+    .. code-block:: xml
 
+        <event>
+         <conditions>
+          <condition>
+           <!-- trigger after 30 seconds of simulation time -->
+           <timeline>
+            <time>00:00:90</time>
+           </timeline>
+          </condition>
+         </conditions>
+         <actions>
+          <!-- set screen color to red -->
+          <property>
+           <identifier>model:right_vr_screen/link:body/visual:screen_glass/material/script/uri
+           </identifier>
+           <value>Gazebo/Red</value>
+          </property>
+         </actions>
+        </event>
     """
 
     @staticmethod

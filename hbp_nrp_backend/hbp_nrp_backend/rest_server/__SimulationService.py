@@ -21,6 +21,7 @@ class SimulationService(Resource):
     """
     The module to setup simulations
     """
+
     @swagger.model
     class _ExperimentID(object):
         """

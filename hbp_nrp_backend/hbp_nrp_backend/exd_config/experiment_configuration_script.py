@@ -42,10 +42,11 @@ def initialize_experiment(experiment_conf, generated_cle_script_file):
     Initialize experiment based on generated code by generate_bibi.
 
     :param experiment_conf: The Experiment Designer configuration. The code will
-                            search in the folder set in NRP_MODELS_DIRECTORY
-                            environment variable for this file. relative path from
-                            there must be included.
-    :param generated_cle_script_file: The file name of the generated cle script
+        search in the folder set in NRP_MODELS_DIRECTORY
+        environment variable for this file. relative path from there must be included.
+
+    :param generated_cle_script_file: The file name of the generated cle script,
+        including .py and the complete path.
     """
 
     # parse experiment configuration to get the environment to spawn.

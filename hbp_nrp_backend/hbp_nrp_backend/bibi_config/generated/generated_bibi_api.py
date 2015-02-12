@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Tue Jan 13 16:16:18 2015 by generateDS.py version 2.14a.
+# Generated Mon Mar  2 15:51:40 2015 by generateDS.py version 2.14a.
 #
 # Command line options:
 #   ('-o', 'generated_bibi_api.py')
@@ -11,7 +11,7 @@
 #   bibi_configuration.xsd
 #
 # Command line:
-#   /home/GeorgHinkel/generateDS-2.14a/generateDS.py -o "generated_bibi_api.py" bibi_configuration.xsd
+#   /usr/local/bin/generateDS.py -o "generated_bibi_api.py" bibi_configuration.xsd
 #
 # Current working directory (os.getcwd()):
 #   BIBI
@@ -1248,6 +1248,133 @@ class Robot2Neuron(TransferFunction):
 # end class Robot2Neuron
 
 
+class Neuron2Monitor(TransferFunction):
+    subclass = None
+    superclass = TransferFunction
+    def __init__(self, name=None, local=None, device=None, deviceGroup=None, topic=None):
+        self.original_tagname_ = None
+        super(Neuron2Monitor, self).__init__(name, local, device, deviceGroup, topic, )
+        self.name = _cast(None, name)
+        if local is None:
+            self.local = []
+        else:
+            self.local = local
+        self.device = device
+    def factory(*args_, **kwargs_):
+        if Neuron2Monitor.subclass:
+            return Neuron2Monitor.subclass(*args_, **kwargs_)
+        else:
+            return Neuron2Monitor(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_local(self): return self.local
+    def set_local(self, local): self.local = local
+    def add_local(self, value): self.local.append(value)
+    def insert_local_at(self, index, value): self.local.insert(index, value)
+    def replace_local_at(self, index, value): self.local[index] = value
+    def get_device(self): return self.device
+    def set_device(self, device): self.device = device
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
+    def hasContent_(self):
+        if (
+            self.local or
+            self.device is not None or
+            super(Neuron2Monitor, self).hasContent_()
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='', name_='Neuron2Monitor', namespacedef_='', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='Neuron2Monitor')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='', name_='Neuron2Monitor', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Neuron2Monitor'):
+        super(Neuron2Monitor, self).exportAttributes(outfile, level, already_processed, namespace_, name_='Neuron2Monitor')
+        if self.name is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            outfile.write(' name=%s' % (self.gds_format_string(quote_attrib(self.name).encode(ExternalEncoding), input_name='name'), ))
+    def exportChildren(self, outfile, level, namespace_='', name_='Neuron2Monitor', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        for local_ in self.local:
+            local_.export(outfile, level, namespace_, name_='local', pretty_print=pretty_print)
+        if self.device is not None:
+            self.device.export(outfile, level, namespace_, name_='device', pretty_print=pretty_print)
+    def exportLiteral(self, outfile, level, name_='Neuron2Monitor'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        if self.name is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            showIndent(outfile, level)
+            outfile.write('name="%s",\n' % (self.name,))
+        super(Neuron2Monitor, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(Neuron2Monitor, self).exportLiteralChildren(outfile, level, name_)
+        showIndent(outfile, level)
+        outfile.write('local=[\n')
+        level += 1
+        for local_ in self.local:
+            showIndent(outfile, level)
+            outfile.write('model_.Local(\n')
+            local_.exportLiteral(outfile, level, name_='Local')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
+        if self.device is not None:
+            showIndent(outfile, level)
+            outfile.write('device=model_.DeviceChannel(\n')
+            self.device.exportLiteral(outfile, level, name_='device')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+        super(Neuron2Monitor, self).buildAttributes(node, attrs, already_processed)
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'local':
+            obj_ = Local.factory()
+            obj_.build(child_)
+            self.local.append(obj_)
+            obj_.original_tagname_ = 'local'
+        elif nodeName_ == 'device':
+            obj_ = DeviceChannel.factory()
+            obj_.build(child_)
+            self.device = obj_
+            obj_.original_tagname_ = 'device'
+# end class Neuron2Monitor
+
+
 class Neuron2Robot(TransferFunction):
     subclass = None
     superclass = TransferFunction
@@ -1360,7 +1487,7 @@ class DeviceChannel(GeneratedsSuper):
     def validate_DeviceType(self, value):
         # Validate type DeviceType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
-            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson']
+            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson', 'PopulationRate']
             enumeration_respectee = False
             for enum in enumerations:
                 if value == enum:
@@ -1523,7 +1650,7 @@ class DeviceGroupChannel(GeneratedsSuper):
     def validate_DeviceType(self, value):
         # Validate type DeviceType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
-            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson']
+            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson', 'PopulationRate']
             enumeration_respectee = False
             for enum in enumerations:
                 if value == enum:
@@ -3231,6 +3358,73 @@ class Local(GeneratedsSuper):
 # end class Local
 
 
+class SimulationStep(FlowExpression):
+    subclass = None
+    superclass = FlowExpression
+    def __init__(self):
+        self.original_tagname_ = None
+        super(SimulationStep, self).__init__()
+    def factory(*args_, **kwargs_):
+        if SimulationStep.subclass:
+            return SimulationStep.subclass(*args_, **kwargs_)
+        else:
+            return SimulationStep(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def hasContent_(self):
+        if (
+            super(SimulationStep, self).hasContent_()
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='', name_='SimulationStep', namespacedef_='', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='SimulationStep')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='', name_='SimulationStep', pretty_print=pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='SimulationStep'):
+        super(SimulationStep, self).exportAttributes(outfile, level, already_processed, namespace_, name_='SimulationStep')
+    def exportChildren(self, outfile, level, namespace_='', name_='SimulationStep', fromsubclass_=False, pretty_print=True):
+        super(SimulationStep, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
+        pass
+    def exportLiteral(self, outfile, level, name_='SimulationStep'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        super(SimulationStep, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(SimulationStep, self).exportLiteralChildren(outfile, level, name_)
+        pass
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        super(SimulationStep, self).buildAttributes(node, attrs, already_processed)
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        super(SimulationStep, self).buildChildren(child_, node, nodeName_, True)
+        pass
+# end class SimulationStep
+
+
 class ArgumentReference(FlowExpression):
     subclass = None
     superclass = FlowExpression
@@ -3410,6 +3604,87 @@ class Constant(FlowExpression):
 # end class Constant
 
 
+class ConstantString(FlowExpression):
+    subclass = None
+    superclass = FlowExpression
+    def __init__(self, value=None):
+        self.original_tagname_ = None
+        super(ConstantString, self).__init__()
+        self.value = _cast(None, value)
+    def factory(*args_, **kwargs_):
+        if ConstantString.subclass:
+            return ConstantString.subclass(*args_, **kwargs_)
+        else:
+            return ConstantString(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_value(self): return self.value
+    def set_value(self, value): self.value = value
+    def hasContent_(self):
+        if (
+            super(ConstantString, self).hasContent_()
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='', name_='ConstantString', namespacedef_='', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='ConstantString')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='', name_='ConstantString', pretty_print=pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='ConstantString'):
+        super(ConstantString, self).exportAttributes(outfile, level, already_processed, namespace_, name_='ConstantString')
+        if self.value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            outfile.write(' value=%s' % (self.gds_format_string(quote_attrib(self.value).encode(ExternalEncoding), input_name='value'), ))
+    def exportChildren(self, outfile, level, namespace_='', name_='ConstantString', fromsubclass_=False, pretty_print=True):
+        super(ConstantString, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
+        pass
+    def exportLiteral(self, outfile, level, name_='ConstantString'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        if self.value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            showIndent(outfile, level)
+            outfile.write('value="%s",\n' % (self.value,))
+        super(ConstantString, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(ConstantString, self).exportLiteralChildren(outfile, level, name_)
+        pass
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('value', node)
+        if value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            self.value = value
+        super(ConstantString, self).buildAttributes(node, attrs, already_processed)
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        super(ConstantString, self).buildChildren(child_, node, nodeName_, True)
+        pass
+# end class ConstantString
+
+
 GDSClassesMapping = {
     'bibi': BIBIConfiguration,
     'neuronGroup': NeuronSelector,
@@ -3551,6 +3826,7 @@ __all__ = [
     "BrainModel",
     "Call",
     "Constant",
+    "ConstantString",
     "DeviceChannel",
     "DeviceGroupChannel",
     "Divide",
@@ -3561,12 +3837,14 @@ __all__ = [
     "Max",
     "Min",
     "Multiply",
+    "Neuron2Monitor",
     "Neuron2Robot",
     "NeuronSelector",
     "Operator",
     "Range",
     "Robot2Neuron",
     "Scale",
+    "SimulationStep",
     "Subtract",
     "TopicChannel",
     "TransferFunction"

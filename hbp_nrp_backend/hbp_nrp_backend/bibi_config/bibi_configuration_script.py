@@ -13,13 +13,19 @@ __device_types = {'ACSource': 'ac_source', 'DCSource': 'dc_source',
                   'LeakyIntegratorAlpha': 'leaky_integrator_alpha',
                   'LeakyIntegratorExp': 'leaky_integrator_exp',
                   'NCSource': 'nc_source',
-                  'Poisson': 'poisson'}
+                  'Poisson': 'poisson',
+                  'PopulationRate': 'population_rate',
+                  'SpikeRecorder': 'spike_recorder'}
+
 __device_properties = {'ACSource': 'amplitude', 'DCSource': 'amplitude',
                        'FixedFrequency': 'rate',
                        'LeakyIntegratorAlpha': 'voltage',
                        'LeakyIntegratorExp': 'voltage',
                        'NCSource': 'mean',
-                       'Poisson': 'rate'}
+                       'Poisson': 'rate',
+                       'PopulationRate': 'rate',
+                       'SpikeRecorder': 'spiked'}
+
 __operator_symbols = {generated_bibi_api.Subtract: '({0} - {1})',
                       generated_bibi_api.Add: '({0} + {1})',
                       generated_bibi_api.Multiply: '{0} * {1}',
@@ -27,10 +33,20 @@ __operator_symbols = {generated_bibi_api.Subtract: '({0} - {1})',
                       generated_bibi_api.Min: 'min({0}, {1})',
                       generated_bibi_api.Max: 'max({0}, {1})'}
 
+__monitoring_types = {'PopulationRate': 'cle_ros_msgs.msg.SpikeRate',
+                      'SpikeRecorder': 'cle_ros_msgs.msg.SpikeEvent'}
+
+__monitoring_factory = {'PopulationRate': '{0}(Float32(t), Int32({1}), String("{2}"))',
+                        'SpikeRecorder': '{0}(Float32(t), String("{2}")) if {1} else None'}
+
+__monitoring_topics = {'PopulationRate': '/monitor/population_rate',
+                       'SpikeRecorder': '/monitor/spike_recorder'}
+
 
 def remove_extension(fname):
     """
-    Removes the extension from the given file name
+    Removes the extension from the given file name.
+
     :param fname: The file name
     """
     return os.path.splitext(fname)[0]
@@ -39,6 +55,7 @@ def remove_extension(fname):
 def get_device_name(device_type):
     """
     Gets the CLE name of the given device type
+
     :param device_type: The device type
     """
     return __device_types[device_type]
@@ -47,8 +64,11 @@ def get_device_name(device_type):
 def print_expression(expression):
     """
     Prints the given flow expression to a string
+
     :param expression: The expression to be printed
     """
+    # Pylint demands less *if* statements but each *if* is very simple so that should be ok
+    # pylint: disable=R0911
     if isinstance(expression, generated_bibi_api.Scale):
         return str(expression.factor) + ' * ' + print_expression(expression.inner)
     if isinstance(expression, generated_bibi_api.Call):
@@ -69,12 +89,52 @@ def print_expression(expression):
             return expression.name + '.' + expression.property
     if isinstance(expression, generated_bibi_api.Constant):
         return str(expression.value)
+
+    if isinstance(expression, generated_bibi_api.SimulationStep):
+        return "t"
+
     raise Exception('No idea how to print expression of type ' + repr(type(expression)))
+
+
+def get_monitoring_topic(monitor):
+    """
+    Gets the monitoring topic for the given neuron monitor
+
+    :param monitor: The neuron monitor
+    :return: The topic address as string
+    """
+    devtype = monitor.device.type_
+    return __monitoring_topics.get(devtype)
+
+
+def get_monitoring_type(monitor):
+    """
+    Gets the topic type for the given neuron monitor
+
+    :param monitor: The neuron monitor
+    :return: The topic of the monitoring
+    """
+    devtype = monitor.device.type_
+    return __monitoring_types.get(devtype)
+
+
+def get_monitoring_impl(monitor):
+    """
+    Gets the monitoring implementation for the given monitor
+
+    :param monitor: The given monitor
+    :return: The implementation, i.e. the value to send to the monitoring topic as code
+    """
+    dev = monitor.device
+    function = __monitoring_factory.get(monitor.device.type_)
+    return function.format(get_monitoring_type(monitor),
+                           dev.name + "." + get_default_property(dev.type_), monitor.name)
 
 
 def print_operator(expression):
     """
     Prints the given operator expression to a string
+
     :param expression: The operator expression to be printed
     """
     text = print_expression(expression.operand[0])
@@ -87,6 +147,7 @@ def print_operator(expression):
 def get_default_property(device_type):
     """
     Gets the default property for the given device type
+
     :param device_type: The device type
     """
     return __device_properties[device_type]
@@ -95,6 +156,7 @@ def get_default_property(device_type):
 def get_neurons(device):
     """
     Gets a string representing the accessed neuron population
+
     :param device: The device
     """
     neurons = device.neurons
@@ -104,6 +166,7 @@ def get_neurons(device):
 def print_neurons(neurons):
     """
     Prints the given neurons
+
     :param neurons: The neurons group
     :return: The neurons group
     """
@@ -113,7 +176,7 @@ def print_neurons(neurons):
         step_string = ""
         if neurons.step is not None:
             step_string = ', ' + str(neurons.step)
-        return 'slice(' + str(neurons.from_) + ', ' + str(neurons.to)\
+        return 'slice(' + str(neurons.from_) + ', ' + str(neurons.to) \
                + step_string + ')'
     if isinstance(neurons, generated_bibi_api.List):
         if len(neurons.element) == 0:
@@ -127,15 +190,17 @@ def print_neurons(neurons):
 
 def compute_dependencies(config):
     """
-    Computed the dependencies of the given configuration
-    :param config: The BIBI configuration
-    """
+        Computed the dependencies of the given configuration
+
+        :param config: The BIBI configuration
+        """
     dependencies = set()
     for tf in config.transferFunction:
         for local in tf.local:
             __add_dependencies_for_expression(local.body, dependencies)
-        if isinstance(tf, generated_bibi_api.Neuron2Robot) and tf.returnValue is not None:
-            dependencies.add(tf.returnValue.type_)
+        if isinstance(tf, generated_bibi_api.Neuron2Robot):
+            if tf.returnValue is not None:
+                dependencies.add(tf.returnValue.type_)
         for topic in tf.topic:
             dependencies.add(topic.type_)
     return dependencies
@@ -144,6 +209,7 @@ def compute_dependencies(config):
 def __add_dependencies_for_expression(expression, dependencies):
     """
     Adds the dependencies for the given expression to the given set of dependencies
+
     :param expression: The expression that may cause dependencies
     :param dependencies: The dependencies detected so far
     """
@@ -161,6 +227,7 @@ def __add_dependencies_for_expression(expression, dependencies):
 def is_not_none(item):
     """
     Gets whether the given item is None (required since Jinja2 does not understand None tests)
+
     :param item: The item that should be tested
     :return: True if the item is not None, otherwise False
     """
@@ -170,6 +237,7 @@ def is_not_none(item):
 def generate_cle(bibi_conf, script_file_name):
     """
     Generates Code to run the CLE based on the given configuration file
+
     :param bibi_conf: The BIBI configuration
     :param script_file_name: The file name of the script to be generated
     """

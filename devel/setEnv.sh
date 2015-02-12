@@ -6,7 +6,7 @@ export EXDF=$HBP/ExDFrontend
 export NRP_MODELS_DIRECTORY=$HBP/Models
 source /opt/ros/indigo/setup.bash
 source $CLE/GazeboRosPackage/devel/setup.bash
-export PATH=$PATH:$EXDB/etc
+export PATH=$PATH:$EXDB/devel
 export PYTHONPATH=$PYTHONPATH:/opt/nest/lib/python2.7/site-packages
 export PYTHONPATH=$PYTHONPATH:/opt/ros/indigo/lib/python2.7/site-packages
 export PYTHONPATH=$PYTHONPATH:$HBP/CLE/GazeboRosPackage/devel/lib/python2.7/site-packages

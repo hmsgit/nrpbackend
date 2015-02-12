@@ -11,6 +11,7 @@ import rospy
 import cle_ros_msgs.msg
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Point, Pose, Quaternion
+from std_msgs.msg import Float32, Int32, String
 from os.path import expanduser
 import os
 
@@ -24,9 +25,9 @@ def cle_function(world_file):
     update_progress_function = lambda subtask, update_progress: cle_server.notify_current_task(subtask, update_progress, True)
 
     cle_server.notify_start_task("Initializing the Neurorobotic Close Loop Engine",
-                              "Importing needed packages",
-                              5, # number of subtasks
-                              True)  # block_ui
+                                 "Importing needed packages",
+                                 5, # number of subtasks
+                                 True)  # block_ui
 
     from hbp_nrp_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
     
@@ -60,18 +61,25 @@ def cle_function(world_file):
     @nrp.MapSpikeSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
     @nrp.MapSpikeSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
     @nrp.Neuron2Robot({% if is_not_none(tf.returnValue) %}Topic('{{tf.returnValue.topic}}', {{tf.returnValue.type_}}){% endif %})
-    def {{tf.name}}(t{% for dev in tf.device %}, {{dev.name}}{%endfor%}):
+    def {{tf.name}}(t{% for t in tf.topic %}, {{t.name}}{%endfor%}{% for dev in tf.device %}, {{dev.name}}{%endfor%}):
         {% for local in tf.local %}{{local.name}} = {{print_expression(local.body)}}
         {% endfor %}
         {% for dev in tf.device %}{% if is_not_none(dev.body) %}{{dev.name}}.{{get_default_property(dev.type_)}} = {{print_expression(dev.body)}}
         {% endif %}{% endfor %}
         {% for top in tf.topic %}{% if is_not_none(top.body) %}{{top.name}}.send_message({{print_expression(top.body)}})
-        {% endif %}{% endfor %}{% if is_not_none(tf.topic.body) %}
-        {% if is_not_none(tf.returnValue) %}return {{print_expression(tf.returnValue.body)}}{% endif %}{% endif %}
+        {% endif %}{% endfor %}
+        {% if is_not_none(tf.returnValue) %}return {{print_expression(tf.returnValue.body)}}{% endif %}
 
-    {% else %}{% for topic in tf.topic %}{% if is_not_none(topic.body) %}
-    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
-    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
+    {% elif tf.extensiontype_ == 'Neuron2Monitor' %}
+    @nrp.MapSpikeSink("{{tf.device.name}}", nrp.brain.{{get_neurons(tf.device)}}, nrp.{{get_device_name(tf.device.type_)}})
+    @nrp.Neuron2Robot(Topic('{{get_monitoring_topic(tf)}}', {{get_monitoring_type(tf)}}))
+    def {{tf.name}}(t, {{tf.device.name}}):
+        return {{get_monitoring_impl(tf)}}
+
+
+    {% else %}{% for topic in tf.topic %}{% if is_not_none(tf.body) %}
+    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
+    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
     @nrp.MapSpikeSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
     @nrp.MapSpikeSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
     @nrp.Robot2Neuron()

@@ -53,7 +53,6 @@ class TestBibiConfigurationScript(unittest.TestCase):
         self.assertRaises(Exception, print_neurons, x)
 
     def test_script(self):
-        # for testing purposes, delete before check in
         directory = os.path.split(__file__)[0]
         milestone2 = os.path.join(directory, 'milestone2.xml')
         generated_script = os.path.join(directory, 'generated_cle_script.py')
