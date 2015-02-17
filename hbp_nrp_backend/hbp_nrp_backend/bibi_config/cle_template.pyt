@@ -13,12 +13,23 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 from os.path import expanduser
 import os
 
-def cle_function():
 
-    from hbp_nrp_cle.cle.ROSCLEWrapper import ROSCLEServer
+def cle_function(world_file):
+
+    from hbp_nrp_cle.cle.ROSCLEServer import ROSCLEServer
+
+    # Create ROS server
+    cle_server = ROSCLEServer()
+    update_progress_function = lambda subtask, update_progress: cle_server.notify_current_task(subtask, update_progress, True)
+
+    cle_server.notify_start_task("Initializing the Neurorobotic Close Loop Engine",
+                              "Importing needed packages",
+                              5, # number of subtasks
+                              True)  # block_ui
+
     from hbp_nrp_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
     
-    from hbp_nrp_cle.robotsim.GazeboLoadingHelper import load_gazebo_model_file
+    from hbp_nrp_cle.robotsim.GazeboLoadingHelper import load_gazebo_model_file, empty_gazebo_world, load_gazebo_world_file
     from hbp_nrp_cle.robotsim.RobotInterface import Topic
     from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
     from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
@@ -27,6 +38,9 @@ def cle_function():
     from hbp_nrp_cle.brainsim.PyNNCommunicationAdapter import PyNNCommunicationAdapter
 
     import hbp_nrp_cle.tf_framework as nrp
+
+    # Needed in order to cleanup global static variables
+    nrp.start_new_tf_manager()
 
     # import dependencies from BIBI configuration
     {% for dep in dependencies %}
@@ -68,22 +82,23 @@ def cle_function():
         {% for top in tf.topic %}{% if is_not_none(top.body) %}{{top.name}}.send_message({{print_expression(top.body)}})
         {% endif %}{% endfor %}{% endif %}{% endfor %}
 
-    import signal
 
     # consts
     TIMESTEP = 0.01
     MAX_SIM_TIME = 5
 
-    # SIGINT handler
-    flag = False
-    def handler(signum, frame):
-        global flag
-        flag = True
+    update_progress_function("Reseting Gazebo robotic simulator", True)
+    empty_gazebo_world(update_progress_function)
 
-    signal.signal(signal.SIGINT, handler)
+    cle_server.notify_current_task("Loading experiment environment",
+                                True,  # update_progress
+                                True)  # block_ui
+    load_gazebo_world_file(world_file, update_progress_function)
 
     # Create interfaces to Gazebo
-
+    cle_server.notify_current_task("Loading neuRobot",
+                                True,  # update_progress
+                                True)  # block_ui
     # spawn robot model
     load_gazebo_model_file('robot', '{{config.bodyModel}}')
 
@@ -94,7 +109,9 @@ def cle_function():
 
 
     # Create interfaces to brain
-
+    cle_server.notify_current_task("Loading neural Simulator NEST",
+                                True,  # update_progress
+                                True)  # block_ui
     # control adapter
     models_path = os.environ.get('NRP_MODELS_DIRECTORY')
     brainfilepath = '{{config.brainModel.file}}'
@@ -107,10 +124,11 @@ def cle_function():
 
 
     # Create transfer functions manager
-
+    cle_server.notify_current_task("Connecting neural simulator to neurobot",
+                                True,  # update_progress
+                                True)  # block_ui
     # tf manager
     tfmanager = nrp.config.active_node
-    #assert isinstance(tfmanager, _TransferFunctionManager.TransferFunctionManager)
     # set adapters
     tfmanager.robot_adapter = roscomm
     tfmanager.brain_adapter = braincomm
@@ -121,6 +139,13 @@ def cle_function():
     # initialize everything
     cle.initialize()
 
-    # Create ROS Wrapper
-    wrapper = ROSCLEServer(cle)
-    wrapper.main()
+    # Now that we have everything ready, we could prepare the simulation
+    cle_server.prepare_simulation(cle)
+    # Loading is completed.
+    cle_server.notify_finish_task()
+    
+    # Main infinite loop (until the ROS stop service is called)
+    cle_server.main()
+
+    # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
+    cle_server.shutdown()
