@@ -16,15 +16,15 @@ class TestSimulationConfig(unittest.TestCase):
         self.client = app.test_client()
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', 'created'))
-        simulations.append(Simulation(1, 'experiment2', 'initialized'))
-        simulations.append(Simulation(2, 'experiment3', 'started'))
-        simulations.append(Simulation(3, 'experiment3', 'started'))
-        simulations.append(Simulation(4, 'experiment3', 'started'))
-        simulations.append(Simulation(5, 'experiment4', 'paused'))
-        simulations.append(Simulation(6, 'experiment4', 'paused'))
-        simulations.append(Simulation(7, 'experiment4', 'paused'))
-        simulations.append(Simulation(8, 'experiment5', 'stopped'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
+        simulations.append(Simulation(1, 'experiment2', 'default-owner', 'initialized'))
+        simulations.append(Simulation(2, 'experiment3', 'default-owner', 'started'))
+        simulations.append(Simulation(3, 'experiment3', 'default-owner', 'started'))
+        simulations.append(Simulation(4, 'experiment3', 'default-owner', 'started'))
+        simulations.append(Simulation(5, 'experiment4', 'default-owner', 'paused'))
+        simulations.append(Simulation(6, 'experiment4', 'default-owner', 'paused'))
+        simulations.append(Simulation(7, 'experiment4', 'default-owner', 'paused'))
+        simulations.append(Simulation(8, 'experiment5', 'default-owner', 'stopped'))
 
         utc.use_unit_test_transitions()
 
@@ -94,6 +94,11 @@ class TestSimulationConfig(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertTrue(utc.last_sim_id is None)
 
+        response = self.client.put('/simulation/0/state', data='{"state": "initialized"}',
+                                   headers={'X-User-Name': 'Test'})
+        self.assertEqual(response.status_code, 401)
+        self.assertTrue(utc.last_sim_id is None)
+
         response = self.client.put('/simulation/0/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual('{"state": "initialized"}', response.data)
@@ -119,6 +124,11 @@ class TestSimulationConfig(unittest.TestCase):
         response = self.client.put('/simulation/1/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 400)
         self.assertIs(utc.last_sim_id, None)
+
+        response = self.client.put('/simulation/1/state', data='{"state": "started"}',
+                                   headers={'X-User-Name': 'Test'})
+        self.assertEqual(response.status_code, 401)
+        self.assertTrue(utc.last_sim_id is None)
 
         response = self.client.put('/simulation/1/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 200)
@@ -147,6 +157,11 @@ class TestSimulationConfig(unittest.TestCase):
         utc.last_sim_id = None
         utc.last_transition = None
 
+        response = self.client.put('/simulation/3/state', data='{"state": "stopped"}',
+                                   headers={'X-User-Name': 'Test'})
+        self.assertEqual(response.status_code, 401)
+        self.assertIs(utc.last_sim_id, None)
+
         response = self.client.put('/simulation/3/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual('{"state": "stopped"}', response.data)
@@ -172,6 +187,11 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/5/state', data='{"state": "created"}')
         self.assertEqual(response.status_code, 400)
+        self.assertIs(utc.last_sim_id, None)
+
+        response = self.client.put('/simulation/5/state', data='{"state": "started"}',
+                                   headers={'X-User-Name': 'Test'})
+        self.assertEqual(response.status_code, 401)
         self.assertIs(utc.last_sim_id, None)
 
         response = self.client.put('/simulation/5/state', data='{"state": "started"}')
@@ -220,4 +240,9 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/8/state', data='{"state": "paused"}')
         self.assertEqual(response.status_code, 400)
+        self.assertIs(utc.last_sim_id, None)
+
+        response = self.client.put('/simulation/8/state', data='{"state": "paused"}',
+                                   headers={'X-User-Name': 'Test'})
+        self.assertEqual(response.status_code, 401)
         self.assertIs(utc.last_sim_id, None)

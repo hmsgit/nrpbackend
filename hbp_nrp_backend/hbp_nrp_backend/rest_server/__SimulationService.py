@@ -8,6 +8,8 @@ from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import api
 from hbp_nrp_backend.rest_server.__SimulationControl import \
     SimulationControl
+from hbp_nrp_backend.rest_server.__UserAuthentication import \
+    UserAuthentication
 from flask import request
 from flask_restful import Resource, marshal_with, fields
 from flask_restful_swagger import swagger
@@ -61,7 +63,8 @@ class SimulationService(Resource):
         body = request.get_json(force=True)
         sim_id = len(simulations)
         if 'experimentID' in body:
-            simulations.append(Simulation(sim_id, body['experimentID']))
+            sim_owner = UserAuthentication.get_x_user_name_header(request)
+            simulations.append(Simulation(sim_id, body['experimentID'], sim_owner))
         else:
             return None, 400
         return simulations[sim_id], 201, \

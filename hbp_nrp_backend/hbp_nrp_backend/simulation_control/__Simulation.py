@@ -14,16 +14,18 @@ class Simulation(object):
     """
     The data class for simulations
     """
-    def __init__(self, sim_id, experiment_id, state='created'):
+    def __init__(self, sim_id, experiment_id, owner, state='created'):
         """
         Creates a new simulation
         :param sim_id: The simulation id
         :param experiment_id: The experiment id (Path to ExD configuration)
+        :param owner: The name of the user owning the simulation
         :param state: The initial state (created by default)
         """
         self.__state = state
         self.__sim_id = sim_id
         self.__experiment_id = experiment_id
+        self.__owner = owner
         self.__cle = None
 
     @property
@@ -41,6 +43,14 @@ class Simulation(object):
         return self.__sim_id
 
     @property
+    def owner(self):
+        """
+        The owner of this simulation
+        :return: The owner name
+        """
+        return self.__owner
+
+    @property
     def state(self):
         """
         Gets the state of the simulation
@@ -54,7 +64,7 @@ class Simulation(object):
         :param new_state: The new state
         """
         transitions = stateMachine[self.__state]
-        if not new_state in transitions:
+        if new_state not in transitions:
             raise InvalidStateTransitionException()
         transitions[new_state](self.__sim_id)
         self.__state = new_state
@@ -78,7 +88,8 @@ class Simulation(object):
     resource_fields = {
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
-        'experimentID': fields.String(attribute='experiment_id')
+        'experimentID': fields.String(attribute='experiment_id'),
+        'owner': fields.String(attribute='owner')
     }
     required = ['state', 'simulationID', 'experimentID']
 

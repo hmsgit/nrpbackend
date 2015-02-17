@@ -20,7 +20,8 @@ class TestSimulationService(unittest.TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/' + str(n))
-        expectedResponseData = {'state': "created", 'simulationID': n, 'experimentID': "MyExample.xml"}
+        expectedResponseData = {'owner': "default-owner", 'state': "created", 'simulationID': n,
+                                'experimentID': "MyExample.xml"}
         erd = json.dumps(expectedResponseData)
         self.assertEqual(response.data, erd)
         self.assertEqual(len(simulations), n + 1)

@@ -9,13 +9,14 @@ from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
+from hbp_nrp_backend.rest_server.__UserAuthentication import \
+    UserAuthentication
 
 from std_msgs.msg import ColorRGBA
 from gazebo_msgs.srv import SetVisualProperties, SetLightProperties, GetLightProperties
 import rospy
 
 # pylint: disable=R0201
-# pylint: disable=W0612
 
 
 def _get_simulation_or_abort(sim_id):
@@ -122,9 +123,14 @@ class LightControl(Resource):
                 "message": "The parameters are invalid"
             },
             {
+                "code": 401,
+                "message": "Only allowed by simulation owner"
+            },
+            {
                 "code": 200,
                 "message": "Success. "
             }
+            # pylint: disable=R0911
         ]
     )
     def put(self, sim_id):
@@ -133,8 +139,12 @@ class LightControl(Resource):
         :param sim_id: The simulation id
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            return "You need to be the simulation owner to trigger interactions", 401
+
         body = request.get_json(force=True)
-        if not 'name' in body:
+        if 'name' not in body:
             return "No name given", 400
 
         in_name = body['name']
@@ -257,9 +267,14 @@ class CustomEventControl(Resource):
                 "message": "The parameters are invalid"
             },
             {
+                "code": 401,
+                "message": "Only allowed by simulation owner"
+            },
+            {
                 "code": 200,
                 "message": "Success. "
             }
+            # pylint: disable=R0911
         ]
     )
     def put(self, sim_id):
@@ -268,8 +283,12 @@ class CustomEventControl(Resource):
         :param sim_id: The simulation id
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            return "You need to be the simulation owner to trigger interactions", 401
+
         body = request.get_json(force=True)
-        if not 'name' in body:
+        if 'name' not in body:
             return "No name given", 400
         name = body['name']
         if name == 'RightScreenToRed':

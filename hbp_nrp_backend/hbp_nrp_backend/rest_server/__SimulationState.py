@@ -10,9 +10,10 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import InvalidStateTransitionException
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+from hbp_nrp_backend.rest_server.__UserAuthentication import \
+    UserAuthentication
 
 # pylint: disable=R0201
-# pylint: disable=W0612
 
 
 class SimulationState(Resource):
@@ -95,6 +96,10 @@ class SimulationState(Resource):
                 "message": "The state transition is invalid"
             },
             {
+                "code": 401,
+                "message": "Only allowed by simulation owner"
+            },
+            {
                 "code": 200,
                 "message": "Success. The new state has been correctly applied"
             }
@@ -106,9 +111,14 @@ class SimulationState(Resource):
         :param sim_id: The simulation id
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            return None, 401, {'Warning': "You need to be the simulation owner to change the state"}
+
         body = request.get_json(force=True)
         try:
             simulation.state = body['state']
         except InvalidStateTransitionException:
-            return "Invalid state transition", 400
+            return None, 400, {'Warning': "You requested an invalid state transition ('"
+                                          + simulation.state + "'->'" + body['state'] + "')"}
         return {'state': str(simulation.state)}, 200
