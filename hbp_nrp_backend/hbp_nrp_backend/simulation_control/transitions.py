@@ -20,6 +20,7 @@ def start_simulation(sim_id):
     """
     simulation = simulations[sim_id]
     simulation.cle.start()
+    simulation.start_timeout()
     logger.info("simulation started")
 
 
@@ -39,6 +40,7 @@ def reset_simulation(sim_id):
     :param sim_id: The simulation id
     """
     simulation = simulations[sim_id]
+    simulation.stop_timeout()
     simulation.cle.reset()
     logger.info("simulation reset")
 
@@ -49,6 +51,7 @@ def stop_simulation(sim_id):
     :param sim_id: The simulation id
     """
     simulation = simulations[sim_id]
+    simulation.stop_timeout()
     simulation.cle.stop()
     logger.info("simulation stopped")
 
@@ -69,6 +72,6 @@ def initialize_simulation(sim_id):
         logger.warn("NRP_MODELS_DIRECTORY is empty")
     target = '__generated_experiment.py'
 
-    generate_bibi(experiment, target)
+    simulation.timeout = generate_bibi(experiment, target)
     simulation.cle = initialize_experiment(experiment, target)
     logger.info("simulation initialized")

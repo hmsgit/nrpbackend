@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Wed Dec 10 15:20:02 2014 by generateDS.py version 2.13a.
+# Generated Tue Feb 17 18:36:22 2015 by generateDS.py version 2.13a.
 #
 # Command line options:
 #   ('-o', 'generated_experiment_api.py')
@@ -440,7 +440,7 @@ def quote_python(inStr):
             return "'''%s'''" % s1
     else:
         if s1.find('"') != -1:
-            s1 = s1.create_adapter('"', '\\"')
+            s1 = s1.replace('"', '\\"')
         if s1.find('\n') == -1:
             return '"%s"' % s1
         else:
@@ -1773,10 +1773,11 @@ class environmentModel(GeneratedsSuper):
 class ExD(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, environmentModel=None, bibiConf=None, event=None):
+    def __init__(self, environmentModel=None, bibiConf=None, timeout=None, event=None):
         self.original_tagname_ = None
         self.environmentModel = environmentModel
         self.bibiConf = bibiConf
+        self.timeout = timeout
         if event is None:
             self.event = []
         else:
@@ -1791,6 +1792,8 @@ class ExD(GeneratedsSuper):
     def set_environmentModel(self, environmentModel): self.environmentModel = environmentModel
     def get_bibiConf(self): return self.bibiConf
     def set_bibiConf(self, bibiConf): self.bibiConf = bibiConf
+    def get_timeout(self): return self.timeout
+    def set_timeout(self, timeout): self.timeout = timeout
     def get_event(self): return self.event
     def set_event(self, event): self.event = event
     def add_event(self, value): self.event.append(value)
@@ -1800,6 +1803,7 @@ class ExD(GeneratedsSuper):
         if (
             self.environmentModel is not None or
             self.bibiConf is not None or
+            self.timeout is not None or
             self.event
         ):
             return True
@@ -1835,6 +1839,9 @@ class ExD(GeneratedsSuper):
         if self.bibiConf is not None:
             showIndent(outfile, level, pretty_print)
             outfile.write('<%sbibiConf>%s</%sbibiConf>%s' % (namespace_, self.gds_format_string(quote_xml(self.bibiConf).encode(ExternalEncoding), input_name='bibiConf'), namespace_, eol_))
+        if self.timeout is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%stimeout>%s</%stimeout>%s' % (namespace_, self.gds_format_double(self.timeout, input_name='timeout'), namespace_, eol_))
         for event_ in self.event:
             event_.export(outfile, level, namespace_, name_='event', pretty_print=pretty_print)
     def exportLiteral(self, outfile, level, name_='ExD'):
@@ -1855,6 +1862,9 @@ class ExD(GeneratedsSuper):
         if self.bibiConf is not None:
             showIndent(outfile, level)
             outfile.write('bibiConf=%s,\n' % quote_python(self.bibiConf).encode(ExternalEncoding))
+        if self.timeout is not None:
+            showIndent(outfile, level)
+            outfile.write('timeout=%e,\n' % self.timeout)
         showIndent(outfile, level)
         outfile.write('event=[\n')
         level += 1
@@ -1886,6 +1896,14 @@ class ExD(GeneratedsSuper):
             bibiConf_ = child_.text
             bibiConf_ = self.gds_validate_string(bibiConf_, node, 'bibiConf')
             self.bibiConf = bibiConf_
+        elif nodeName_ == 'timeout':
+            sval_ = child_.text
+            try:
+                fval_ = float(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires float or double: %s' % exp)
+            fval_ = self.gds_validate_float(fval_, node, 'timeout')
+            self.timeout = fval_
         elif nodeName_ == 'event':
             obj_ = event.factory()
             obj_.build(child_)

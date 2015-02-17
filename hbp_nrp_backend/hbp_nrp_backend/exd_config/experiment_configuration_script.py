@@ -26,6 +26,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
                             there must be included.
     :param bibi_script_file_name: The file name of the script to be generated, \
                                   including .py and the complete path.
+    :returns: timeout time (seconds), None if not specified in experiment_conf
     """
 
     # parse experiment configuration
@@ -37,6 +38,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
 
     bibi_configuration_script.generate_cle(bibi_conf,
                                            bibi_script_file_name)
+    return experiment.timeout
 
 
 def initialize_experiment(experiment_conf, bibi_script_file_name):

@@ -9,6 +9,7 @@ import unittest
 import hbp_nrp_backend.simulation_control.tests.unit_tests as utc
 from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
+import time
 
 
 class TestSimulationConfig(unittest.TestCase):
@@ -25,6 +26,9 @@ class TestSimulationConfig(unittest.TestCase):
         simulations.append(Simulation(6, 'experiment4', 'default-owner', 'paused'))
         simulations.append(Simulation(7, 'experiment4', 'default-owner', 'paused'))
         simulations.append(Simulation(8, 'experiment5', 'default-owner', 'stopped'))
+        
+        for sim in simulations:
+            sim.timeout = 1.0
 
         utc.use_unit_test_transitions()
 
@@ -51,23 +55,23 @@ class TestSimulationConfig(unittest.TestCase):
 
     def test_get_state(self):
         response = self.client.get('/simulation/0/state')
-        self.assertEqual('{"state": "created"}', response.data)
+        self.assertEqual('{"state": "created", "timeout": 1.0}', response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/1/state')
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized", "timeout": 1.0}', response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/2/state')
-        self.assertEqual('{"state": "started"}', response.data)
+        self.assertEqual('{"state": "started", "timeout": 1.0}', response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/5/state')
-        self.assertEqual('{"state": "paused"}', response.data)
+        self.assertEqual('{"state": "paused", "timeout": 1.0}', response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/8/state')
-        self.assertEqual('{"state": "stopped"}', response.data)
+        self.assertEqual('{"state": "stopped", "timeout": 1.0}', response.data)
         self.assertEqual(response.status_code, 200)
 
     def test_created_transitions(self):
@@ -101,7 +105,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/0/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 0)
         self.assertEqual(utc.last_transition, "initialize")
 
@@ -132,7 +136,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/1/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "started"}', response.data)
+        self.assertEqual('{"state": "started", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 1)
         self.assertEqual(utc.last_transition, "start")
 
@@ -150,7 +154,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/2/state', data='{"state": "paused"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "paused"}', response.data)
+        self.assertEqual('{"state": "paused", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 2)
         self.assertEqual(utc.last_transition, "pause")
 
@@ -164,7 +168,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/3/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "stopped"}', response.data)
+        self.assertEqual('{"state": "stopped", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 3)
         self.assertEqual(utc.last_transition, "stop")
 
@@ -173,7 +177,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/4/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 4)
         self.assertEqual(utc.last_transition, "reset")
 
@@ -196,7 +200,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/5/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "started"}', response.data)
+        self.assertEqual('{"state": "started", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 5)
         self.assertEqual(utc.last_transition, "start")
 
@@ -205,7 +209,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/6/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('{"state": "stopped"}', response.data)
+        self.assertIn('{"state": "stopped", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 6)
         self.assertEqual(utc.last_transition, "stop")
 
@@ -214,7 +218,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/7/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized", "timeout": 1.0}', response.data)
         self.assertEqual(utc.last_sim_id, 7)
         self.assertEqual(utc.last_transition, "reset")
 
@@ -246,3 +250,32 @@ class TestSimulationConfig(unittest.TestCase):
                                    headers={'X-User-Name': 'Test'})
         self.assertEqual(response.status_code, 401)
         self.assertIs(utc.last_sim_id, None)
+
+    def test_timeout(self):
+        simulations[1].timeout = None
+        self.assertEqual(simulations[1].timeout, 300.0)
+
+        simulations[1].timeout = -1.0
+        self.assertEqual(simulations[1].timeout, 300.0)
+
+        simulations[1].timeout = 1.0
+        self.assertEqual(simulations[1].timeout, 1.0)
+
+        response = self.client.put('/simulation/1/state', data='{"state": "started"}')
+        self.assertEqual(response.status_code, 200)
+
+        simulations[1].start_timeout()
+
+        time.sleep(0.5)
+        simulations[1].stop_timeout()
+        response = self.client.get('/simulation/1/state')
+        self.assertEqual('{"state": "started", "timeout": 1.0}', response.data)
+        self.assertEqual(response.status_code, 200)
+
+        simulations[1].start_timeout()
+
+        time.sleep(2)
+        response = self.client.get('/simulation/1/state')
+        self.assertEqual('{"state": "stopped", "timeout": 0.0}', response.data)
+        self.assertEqual(response.status_code, 200)
+
