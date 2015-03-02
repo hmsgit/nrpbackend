@@ -8,8 +8,9 @@
 # Whenever you change the code and want to test (the whole set of tests) on a 
 # deployed VM, you just have to use the following commands: 
 #
-# DEV_VM=bbpce013.epfl.ch
-# rsync -avzP -e ssh --exclude 'platform_venv' . root@$DEV_VM:~/ExDBackend
+# export DEV_VM=bbpce013.epfl.ch # ADAPT TO YOUR VM'S NAME
+# if [ ! -d ContinuousIntegration ]; then make; fi
+# rsync -avzP -e ssh --exclude 'platform_venv' --delete . root@$DEV_VM:~/ExDBackend
 # ssh -t root@$DEV_VM 'cd ~/ExDBackend && ./dev_run_all_tests_remote.sh'
 #
 # Note that this creates the directory if it is not there but synchronizes the 
