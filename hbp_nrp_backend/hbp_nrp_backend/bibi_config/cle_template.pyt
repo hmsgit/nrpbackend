@@ -149,3 +149,5 @@ def cle_function(world_file):
 
     # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
     cle_server.shutdown()
+    # Clean up gazebo after ourselves
+    empty_gazebo_world()

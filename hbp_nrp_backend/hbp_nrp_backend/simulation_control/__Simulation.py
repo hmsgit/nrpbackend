@@ -5,6 +5,7 @@ This module contains the simulation class
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
+from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
 from threading import Timer
@@ -62,8 +63,16 @@ class Simulation(object):
     @property
     def state(self):
         """
-        Gets the state of the simulation
+        Gets the state of the simulation.
+        If the simulation CLE object is created then we do trust the CLE more than
+        ourself and query it !
         """
+        if (self.__cle is not None):
+            try:
+                self.__state = self.__cle.get_simulation_state()
+            except ROSCLEClientException:
+                # If anything goes wrong, we assume that we are in the "stopped" state
+                self.__state = "stopped"
         return self.__state
 
     @state.setter
