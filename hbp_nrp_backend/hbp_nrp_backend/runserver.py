@@ -31,31 +31,34 @@ def run_server(server, args):
     # This way we can access the already set up logger in the other modules.
     # Also the following configuration can later be easily stored in an external
     # configuration file (and then set by the user).
-    logformat = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
-    logger = logging.getLogger(__name__)
+    log_format = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
+    # Warning: We do not use __name__  here, since it translates to "__main__"
+    # when this file is ran directly (such as python runserver.py)
+    root_logger = logging.getLogger('hbp_nrp_backend')
 
     try:
-        fileHandler = logging.FileHandler(args.logfile)
-        fileHandler.setFormatter(logging.Formatter(logformat))
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(fileHandler)
+        file_handler = logging.FileHandler(args.logfile)
+        file_handler.setFormatter(logging.Formatter(log_format))
+        root_logger.setLevel(logging.DEBUG)
+        root_logger.addHandler(file_handler)
     except (AttributeError, IOError) as _:
-        consoleHandler = logging.StreamHandler(sys.stdout)
-        consoleHandler.setFormatter(logging.Formatter(logformat))
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(consoleHandler)
-        logger.warn("Could not write to specified logfile or no logfile specified, " +
-                    "logging to stdout now!")
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(logging.Formatter(log_format))
+        root_logger.setLevel(logging.DEBUG)
+        root_logger.addHandler(console_handler)
+        root_logger.warn("Could not write to specified logfile or no logfile specified, " +
+                         "logging to stdout now!")
 
     port = DEFAULT_PORT
     try:
         port = int(args.port)
     except (TypeError, ValueError) as _:
-        logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
+        root_logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
 
-    logger.info("Starting the REST backend server now ...")
+    root_logger.info("Starting the REST backend server now ...")
+    #server.debug=True
     server.run(port=port, host=DEFAULT_HOST)
-    logger.info("REST backend server terminated.")
+    root_logger.info("REST backend server terminated.")
 
 
 if __name__ == '__main__':
