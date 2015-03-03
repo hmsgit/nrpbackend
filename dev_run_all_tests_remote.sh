@@ -15,6 +15,7 @@
 #
 # Note that this creates the directory if it is not there but synchronizes the 
 # local and remote directories otherwise.
+# The FIRST run may be very long since scipy will be built, but only once.
 # Note further that by defining aliases and setting an env variable you can 
 # boil down the complete test run to only one single command. 
 # 
@@ -62,7 +63,6 @@ function set_environment_and_load_modules() {
 }
 
 function run_all_tests() {
-  source /opt/bbp/nrp-services/nrp-services_venv/bin/activate
   # scl is the Software Collection tool used by Red Hat
   # Here we run the command "make test" with python 2.7
   scl enable python27 "make test"
