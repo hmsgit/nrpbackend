@@ -16,7 +16,8 @@ class TestScript(unittest.TestCase):
 
     def setUp(self):
         # a simple mock for the application server
-        class MockApp: pass
+        class MockApp:
+            pass
         self._app = MockApp()
         self._app.run = MagicMock()
 
@@ -26,21 +27,24 @@ class TestScript(unittest.TestCase):
 
     def tearDown(self):
         # remove all handlers after each test!
-        logging.getLogger(runserver.__name__).handlers = []
+        logging.getLogger('hbp_nrp_backend').handlers = []
 
     @log_capture(level=logging.WARNING)
     def test_run_server_no_arguments(self, logcapture):
         runserver.run_server(self._app, self._args)
         logcapture.check(
-                         (runserver.__name__, 'WARNING', 'Could not write to specified logfile or no logfile specified, logging to stdout now!'),
-                         (runserver.__name__, 'WARNING', 'Could not parse port, will use default port: ' + str(runserver.DEFAULT_PORT))
-                         )
+                        ('hbp_nrp_backend', 'WARNING',
+                            'Could not write to specified logfile or no logfile specified, logging to stdout now!'),
+                        ('hbp_nrp_backend', 'WARNING',
+                            'Could not parse port, will use default port: ' + str(runserver.DEFAULT_PORT))
+        )
         self.assertTrue(self._app.run.called)
         self._app.run.assert_called_with(port=runserver.DEFAULT_PORT, host=runserver.DEFAULT_HOST)
 
     def test_run_server_create_logfile(self):
         # create a logfile in the current working directory
-        self._args.logfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'logfile.log')
+        self._args.logfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          'logfile.log')
         runserver.run_server(self._app, self._args)
 
         # check if the file exists
