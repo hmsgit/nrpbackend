@@ -64,7 +64,7 @@ class SimulationState(Resource):
         Gets the state of the simulation with the specified simulation id
         """
         simulation = _get_simulation_or_abort(sim_id)
-        return {'state': str(simulation.state), 'timeout': simulation.get_remaining_time()}, 200
+        return {'state': str(simulation.state)}, 200
 
     @swagger.operation(
         notes='Sets the state of the given simulation.'
@@ -121,4 +121,4 @@ class SimulationState(Resource):
         except InvalidStateTransitionException:
             return None, 400, {'Warning': "You requested an invalid state transition ('"
                                           + simulation.state + "'->'" + body['state'] + "')"}
-        return {'state': str(simulation.state), 'timeout': simulation.get_remaining_time()}, 200
+        return {'state': str(simulation.state)}, 200

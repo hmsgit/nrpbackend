@@ -8,11 +8,6 @@ from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
-from threading import Timer
-import logging
-import time
-
-logger = logging.getLogger(__name__)
 
 
 @swagger.model
@@ -33,10 +28,6 @@ class Simulation(object):
         self.__experiment_id = experiment_id
         self.__owner = owner
         self.__cle = None
-        self.__timeout = None
-        self.__expiring = False
-        self.__starting_time = None
-        self.__timer = None
 
     @property
     def experiment_id(self):
@@ -102,67 +93,6 @@ class Simulation(object):
         :param cle: The new CLE
         """
         self.__cle = cle
-
-    @property
-    def timeout(self):
-        """
-        The timeout time of this simulation
-        :return: The timeout time
-        """
-        return self.__timeout
-
-    @timeout.setter
-    def timeout(self, timeout):
-        """
-        Sets the timeout time for this simulation, default is 300
-        :param cle: The new timeout time
-        """
-        if timeout is None:
-            self.__timeout = 300.0
-        elif timeout <= 0.0:
-            self.__timeout = 300.0
-        else:
-            self.__timeout = timeout
-
-    def get_remaining_time(self):
-        """
-        Gets the remaining time of the simulation
-        :return: the remaining time
-        """
-        if (not self.__expiring):
-            return self.__timeout
-        time_passed = time.time() - self.__starting_time
-        remaining = self.__timeout - time_passed
-        if (remaining <= 0.0):
-            return 0.0
-        return remaining
-
-    def start_timeout(self):
-        """
-        Start the timeout on the current simulation
-        """
-        self.__timer = Timer(self.__timeout, self.quit_by_timeout)
-        self.__timer.setDaemon(True)
-        self.__timer.start()
-        self.__expiring = True
-        self.__starting_time = time.time()
-        logger.info("Simulation will timeout in %f seconds", self.__timeout)
-
-    def stop_timeout(self):
-        """
-        Stop the timeout
-        """
-        if self.__expiring:
-            self.__timer.cancel()
-            self.__expiring = False
-            logger.info("Timeout cancelled")
-
-    def quit_by_timeout(self):
-        """
-        Stops the simulation
-        """
-        self.state = 'stopped'
-        logger.info("Force quitting the simulation")
 
     resource_fields = {
         'state': fields.String,
