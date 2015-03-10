@@ -4,8 +4,6 @@ Runs the REST server
 
 __author__ = 'GeorgHinkel'
 
-# pragma: no cover
-
 import argparse
 from hbp_nrp_backend.rest_server import app
 import logging
@@ -15,7 +13,7 @@ DEFAULT_PORT = 5000
 DEFAULT_HOST = '0.0.0.0'
 
 
-def run_server(server, args):
+def run_server(server, args):  # pragma: no cover
     """
     Runs the given server with the given arguments. Within the args parameter one
     can specify 'logfile' as well as the 'port' where the server runs. In case
@@ -61,7 +59,7 @@ def run_server(server, args):
     root_logger.info("REST backend server terminated.")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument('--logfile', dest='logfile', help='specify the logfile for the ExDBackend')
     parser.add_argument('--port', dest='port', help='specify the application server\'s port')

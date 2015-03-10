@@ -5,11 +5,13 @@ Subclass DefaultStateMachine for further use
 
 __author__ = 'PatrikScheidecker'
 
+# This file is still wip, so there is no point in testing it
+
 import rospy
 import smach
 
 
-class DefaultState(smach.State):
+class DefaultState(smach.State):  # pragma: no cover
     """
     Defines default state
     """
@@ -21,7 +23,7 @@ class DefaultState(smach.State):
         return 'FINISHED'
 
 
-class DefaultStateMachine(object):
+class DefaultStateMachine(object):  # pragma: no cover
     """
     Defines default state machine
     """
