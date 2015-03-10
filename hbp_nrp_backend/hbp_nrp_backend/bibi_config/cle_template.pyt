@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This file is generated. The original demo script this file is based on has been created by Lorenzo Vannucci
+This file is generated from cle_template.pyt. The original demo script this file is based on has been created by Lorenzo Vannucci
 meanwhile the Template has been created by Georg Hinkel.
 """
 # pragma: no cover
@@ -8,6 +8,7 @@ meanwhile the Template has been created by Georg Hinkel.
 __author__ = 'BIBI Configuration Script'
 
 import rospy
+import cle_ros_msgs.msg
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Point, Pose, Quaternion
 from os.path import expanduser
@@ -148,6 +149,18 @@ def cle_function(world_file):
     cle_server.main()
 
     # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
-    cle_server.shutdown()
     # Clean up gazebo after ourselves
-    empty_gazebo_world()
+    cle_server.notify_start_task("Stopping simulation",
+                              "Emptying 3D world",
+                              2, # number of subtasks
+                              False)  # block_ui
+    empty_gazebo_world(update_progress_function)
+    # Shutdown CLE
+    update_progress_function = lambda subtask, update_progress: cle_server.notify_current_task(subtask, update_progress,
+        False)
+    cle_server.notify_current_task("Shutting down Closed Loop Engine",
+                                True,  # update_progress
+                                False)  # block_ui
+    # we could close the notify task here but it will be closed in any case by shutdown()
+    cle_server.shutdown()
+    # shutdown is complete
