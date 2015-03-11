@@ -1,0 +1,30 @@
+\documentclass[tikz,border=2pt]{standalone}
+
+\usepackage[utf8]{inputenc}
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
+
+\begin{document}
+
+\begin{tikzpicture}[->,>=stealth',auto,semithick,node distance=3cm,text width={width("initialized")},
+                    align=center]
+
+    \node[state] (created) {created};
+    \node[state]         (initialized) [right of=created]{initialized};
+    \node[state]         (started) [right of=initialized]{started};
+    \node[state]         (paused) [above of=started]{paused};
+    \node[state]         (stopped)[right of=started]{stopped};
+
+    \path (created) edge node [left] {} (initialized)
+          (initialized)	edge [bend right] node {} (started)
+          (paused)	edge [bend right] node {} (initialized)
+                    edge [bend left] node{} (started)
+                    edge [bend left] node{} (stopped)
+          (started)	edge [bend left] node[above]{} (paused)
+                    edge [bend right] node{} (initialized)
+                    edge node{} (stopped);
+
+\end{tikzpicture}
+
+\end{document}

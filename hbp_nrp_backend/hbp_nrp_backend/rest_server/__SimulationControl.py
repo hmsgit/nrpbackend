@@ -62,6 +62,14 @@ class SimulationControl(Resource):
     def get(self, sim_id):
         """
         Gets the simulation with the specified simulation id
+
+        :param sim_id: The simulation id
+        :>json string owner: The simulation owner (Unified Portal user id or 'hbp-default')
+        :>json string state: The current state of the simulation
+        :>json integer simulationID: The id of the simulation (needed for further REST calls)
+        :>json string experimentID: Path and name of the experiment configuration file
+        :status 404: The simulation with the given ID was not found
+        :status 200: The simulation with the given ID is successfully retrieved
         """
         return _get_simulation_or_abort(sim_id), 200
 
@@ -80,7 +88,11 @@ class _RGBADescription(object):
 @swagger.model
 @swagger.nested(diffuse=_RGBADescription.__name__, )
 class _LightDescription(object):
-    """Describe a light"""
+    """
+    Describe a light
+
+    :<json string name: name of the light
+    """
     resource_fields = {
         'name': fields.String,
         'diffuse': fields.Nested(_RGBADescription.resource_fields),
@@ -116,7 +128,7 @@ class LightControl(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": "The simulation with the given ID was not found"
             },
             {
                 "code": 400,
@@ -128,15 +140,25 @@ class LightControl(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. "
+                "message": "Successfully raised event"
             }
             # pylint: disable=R0911
         ]
     )
     def put(self, sim_id):
         """
-        Raises a hardware event
+        Raises a light event
+
         :param sim_id: The simulation id
+        :<json string name: The light to change
+        :<json RGBADescription diffuse: the diffuse color
+        :<json float attenuation_constant: the attenuation constant
+        :<json float attenuation_linear: the attenuation linear
+        :<json float attenuation_quadratic: the attenuation quadratic
+        :status 400: The parameters are invalid
+        :status 401: Operation only allowed by simulation owner
+        :status 404: The simulation with the given ID was not found
+        :status 200: Successfully raised event
         """
         simulation = _get_simulation_or_abort(sim_id)
 
@@ -260,7 +282,7 @@ class CustomEventControl(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation or interaction was not found"
+                "message": "The simulation with the given ID was not found"
             },
             {
                 "code": 400,
@@ -268,11 +290,11 @@ class CustomEventControl(Resource):
             },
             {
                 "code": 401,
-                "message": "Only allowed by simulation owner"
+                "message": "Operation only allowed by simulation owner"
             },
             {
                 "code": 200,
-                "message": "Success. "
+                "message": "Successfully raised event"
             }
             # pylint: disable=R0911
         ]
@@ -280,7 +302,13 @@ class CustomEventControl(Resource):
     def put(self, sim_id):
         """
         Raises a hardware event
+
         :param sim_id: The simulation id
+        :<json string name: The name of the event to raise
+        :status 400: The parameters are invalid
+        :status 401: Operation only allowed by simulation owner
+        :status 404: The simulation with the given ID was not found
+        :status 200: Successfully raised event
         """
         simulation = _get_simulation_or_abort(sim_id)
 

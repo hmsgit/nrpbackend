@@ -61,7 +61,14 @@ class SimulationState(Resource):
     )
     def get(self, sim_id):
         """
-        Gets the state of the simulation with the specified simulation id
+        Gets the state of the simulation with the specified simulation id. Possible values are:
+        created, initialized, started, paused, stopped
+
+        :param sim_id: The simulation id
+        :>json string state: The state of the simulation
+        :>json string timeout: The timeout set for the simulation
+        :status 404: The simulation with the given ID was not found
+        :status 200: The state of the simulation with the given ID was successfully retrieved
         """
         simulation = _get_simulation_or_abort(sim_id)
         return {'state': str(simulation.state)}, 200
@@ -97,7 +104,7 @@ class SimulationState(Resource):
             },
             {
                 "code": 401,
-                "message": "Only allowed by simulation owner"
+                "message": "Operation only allowed by simulation owner"
             },
             {
                 "code": 200,
@@ -107,8 +114,17 @@ class SimulationState(Resource):
     )
     def put(self, sim_id):
         """
-        Sets the simulation with the given name into a new state
+        Sets the simulation with the given name into a new state. Allowed values are:
+        created, initialized, started, paused, stopped
+
         :param sim_id: The simulation id
+        :<json string state: The state of the simulation to set
+        :>json string state: The state of the simulation
+        :>json string timeout: The timeout set for the simulation
+        :status 400: The state transition is invalid
+        :status 401: Operation only allowed by simulation owner
+        :status 404: The simulation with the given ID was not found
+        :status 200: The state of the simulation with the given ID was successfully set
         """
         simulation = _get_simulation_or_abort(sim_id)
 
