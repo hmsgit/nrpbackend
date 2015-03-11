@@ -7,8 +7,10 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.exd_config import generate_bibi, initialize_experiment
 from hbp_nrp_backend.simulation_control import simulations
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 import os
 import logging
+import rospy
 
 logger = logging.getLogger(__name__)
 
@@ -59,16 +61,25 @@ def initialize_simulation(sim_id):
     :param sim_id: The simulation id
     """
     # generate script
-    simulation = simulations[sim_id]
-    experiment = simulation.experiment_id
-    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-    logger.debug("The NRP_MODELS_DIRECTORY is: %s", models_path)
-    if models_path is not None:
-        experiment = os.path.join(models_path, experiment)
-    else:
-        logger.warn("NRP_MODELS_DIRECTORY is empty")
-    target = '__generated_experiment.py'
+    try:
+        simulation = simulations[sim_id]
+        experiment = simulation.experiment_id
+        models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+        logger.debug("The NRP_MODELS_DIRECTORY is: %s", models_path)
+        if models_path is not None:
+            experiment = os.path.join(models_path, experiment)
+        else:
+            logger.warn("NRP_MODELS_DIRECTORY is empty")
+        target = '__generated_experiment.py'
 
-    generate_bibi(experiment, target)
-    simulation.cle = initialize_experiment(experiment, target)
-    logger.info("simulation initialized")
+        generate_bibi(experiment, target)
+        simulation.cle = initialize_experiment(experiment, target)
+        logger.info("simulation initialized")
+    except IOError as e:
+        raise NRPServicesGeneralException(
+            "Error while accessing simulation models (" + e.message + ")",
+            "Models error")
+    except rospy.ROSException as e:
+        raise NRPServicesGeneralException(
+            "Error while communicating with the CLE (" + e.message + ")",
+            "CLE error")
