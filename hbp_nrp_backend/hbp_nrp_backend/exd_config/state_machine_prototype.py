@@ -40,6 +40,7 @@ class StateMachineTimedColorChange(DefaultStateMachine):
     """
     State machine generated for the following event of an ExD configuration:
 
+    >>> Example of an experiment configuration:
     <event>
      <conditions>
       <condition>
@@ -58,6 +59,7 @@ class StateMachineTimedColorChange(DefaultStateMachine):
       </property>
      </actions>
     </event>
+
     """
 
     @staticmethod

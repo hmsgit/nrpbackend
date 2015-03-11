@@ -13,6 +13,7 @@
 
 import sys, os
 import hbp_nrp_backend
+import mock
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -27,7 +28,7 @@ import hbp_nrp_backend
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode',
-              'sphinxcontrib.autohttp.flask']
+              'sphinxcontrib.autohttp.flask', 'sphinx_numfig.numfig']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -242,3 +243,11 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+
+# -- Mocking for importing external modules ------------------------------------
+
+# the following modules are part of CLE and should be mocked in the ExDBackend
+MOCK_MODULES = ['hbp_nrp_cle.cle.ROSCLEClient', 'hbp_nrp_cle.cle.ROSCLESimulationFactoryClient', 'gazebo_msgs.srv']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()

@@ -4,18 +4,18 @@
    contain the root `toctree` directive.
 
 Welcome to Experiment Backend's documentation!
-===========================================
+==============================================
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
+   architecture
    installation
    running
    tools
    deployment
    hbp_nrp_backend
-   REST-API
    glossary
 

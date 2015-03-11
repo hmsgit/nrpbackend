@@ -58,7 +58,15 @@ class SimulationService(Resource):
     @marshal_with(Simulation.resource_fields)
     def post(self):
         """
-        Creates a new simulation. The simulation is not started
+        Creates a new simulation which is neither 'initialized' nor 'started'.
+
+        :<json string experimentID: Path and name of the experiment configuration file
+        :>json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
+        :>json string state: The current state of the simulation (always 'created')
+        :>json integer simulationID: The id of the simulation (needed for further REST calls)
+        :>json string experimentID: Path and name of the experiment configuration file
+        :status 400: Experiment ID is not valid
+        :status 201: Simulation created successfully
         """
         body = request.get_json(force=True)
         sim_id = len(simulations)
@@ -84,6 +92,12 @@ class SimulationService(Resource):
     @marshal_with(Simulation.resource_fields)
     def get(self):
         """
-        Gets the list of simulations
+        Gets the list of simulations on this server.
+
+        :>jsonarr string owner: The simulation owner (Unified Portal user name or 'hbp-default')
+        :>jsonarr string state: The current state of the simulation
+        :>jsonarr integer simulationID: The id of the simulation (needed for further REST calls)
+        :>jsonarr string experimentID: Path and name of the experiment configuration file
+        :status 200: Simulations retrieved successfully
         """
         return simulations, 200
