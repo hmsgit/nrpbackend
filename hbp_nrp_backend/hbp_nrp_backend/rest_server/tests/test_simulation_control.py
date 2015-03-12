@@ -83,6 +83,35 @@ class TestScript(unittest.TestCase):
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
             self.assertEqual(self.cec.put(0)[1], 404)  # Wrong name
 
+    def test_custom_event_control_ros_wait_for_service_failure(self):
+        """
+        This method performs a good request while ROS is unavailable.
+        """
+
+        oldwfs = rospy.wait_for_service
+        rospy.wait_for_service = lambda x, y: (_ for _ in ()).throw(rospy.ROSException)
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {"name": "RightScreenToRed"}
+        with app.test_request_context\
+                        (headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.cec.put(0)[1], 400)
+        rospy.wait_for_service = oldwfs
+
+    def test_custom_event_control_ros_wait_service_proxy_failure(self):
+        """
+        This method performs a good request with a ROS failure in the service proxy.
+        """
+
+        oldsp = rospy.ServiceProxy
+        rospy.ServiceProxy = mock.Mock(return_value=lambda model_name='', link_name='',
+            visual_name='', property_name='', property_value='': (_ for _ in ()).throw(rospy.ServiceException))
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {"name": "RightScreenToRed"}
+        with app.test_request_context\
+                        (headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.cec.put(0)[1], 400)
+        rospy.ServiceProxy = oldsp
+
     def test_custom_event_control_good_request(self):
         """
         This method crafts some successful requests.
@@ -98,24 +127,6 @@ class TestScript(unittest.TestCase):
 
     # The following methods test the class hbp_nrp_backend.rest_server.__SimulationControl
     # .LightControl
-
-    def test_light_control_ros_unavailable(self):
-        """
-        This method performs a request while ROS is unavailable.
-        """
-
-        def ros_excpetioner(dummy1, dummy2):
-            """
-            Dummy function used to raise exeption when ROS is called.
-            """
-            raise rospy.ROSException()
-
-        rospy.wait_for_service = ros_excpetioner
-        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
-        ddict = {"name": "notreallyimportant"}
-        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 400)
-        rospy.wait_for_service = mock.Mock(return_value=mock.Mock())
 
     def test_light_control_wrong_user(self):
         """
@@ -267,6 +278,84 @@ class TestScript(unittest.TestCase):
             if not did_it_fail:
                 raise Exception
 
+    def test_good_request_light_control_ros_wait_for_service_failure(self):
+        """
+        This method performs a good request while ROS is unavailable.
+        """
+
+        oldwfs = rospy.wait_for_service
+        rospy.wait_for_service = lambda x, y: (_ for _ in ()).throw(rospy.ROSException)
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {
+            "name": "notreallyimportant",
+            "diffuse": {
+                "r": "0",
+                "g": "0",
+                "b": "0",
+                "a": "0"
+           },
+            "attenuation_constant": "0",
+            "attenuation_linear": "0",
+            "attenuation_quadratic": "0"
+        }
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.lc.put(0)[1], 400)
+        rospy.wait_for_service = oldwfs
+
+    def test_bad_request_light_control_ros_wait_for_service_failure(self):
+        """
+        This method performs a bad request while ROS is unavailable.
+        """
+
+        oldwfs = rospy.wait_for_service
+        rospy.wait_for_service = lambda x, y: (_ for _ in ()).throw(rospy.ROSException)
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {"name": "notreallyimportant"}
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.lc.put(0)[1], 400)
+        rospy.wait_for_service = oldwfs
+
+    def test_good_request_light_control_ros_service_proxy_failure(self):
+        """
+        This method performs a good request with a ROS failure in the service proxy
+        """
+
+        oldsp = rospy.ServiceProxy
+        rospy.ServiceProxy = mock.Mock(return_value=lambda light_name='', diffuse='',
+                attenuation_constant='', attenuation_linear='', attenuation_quadratic='':
+                (_ for _ in ()).throw(rospy.ServiceException))
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {
+            "name": "notreallyimportant",
+            "diffuse": {
+                "r": "0",
+                "g": "0",
+                "b": "0",
+                "a": "0"
+           },
+            "attenuation_constant": "0",
+            "attenuation_linear": "0",
+            "attenuation_quadratic": "0"
+        }
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.lc.put(0)[1], 400)
+        rospy.ServiceProxy = oldsp
+
+    def test_bad_request_light_control_ros_service_proxy_failure(self):
+        """
+        This method performs a bad request with a ROS failure in the service proxy
+        """
+
+        oldsp = rospy.ServiceProxy
+        rospy.ServiceProxy = mock.Mock(return_value=lambda light_name='', diffuse='',
+                attenuation_constant='', attenuation_linear='', attenuation_quadratic='':
+                (_ for _ in ()).throw(rospy.ServiceException))
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {"name": "notreallyimportant"}
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.lc.put(0)[1], 400)
+        rospy.ServiceProxy = oldsp
+
     def test_light_control_good_request(self):
         """
         This method crafts a successful request.
@@ -284,7 +373,7 @@ class TestScript(unittest.TestCase):
             "attenuation_constant": "0",
             "attenuation_linear": "0",
             "attenuation_quadratic": "0"
-       }
+        }
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
             self.assertEqual(self.lc.put(0)[1], 200)
 
