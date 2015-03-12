@@ -1,126 +1,121 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        targetNamespace="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
+        xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
+           attributeFormDefault="unqualified" elementFormDefault="qualified">
+    <!--Contains a timeline condition -->
+    <xs:complexType name="Condition" abstract="true">
+    </xs:complexType>
 
-<!--Contains a timeline condition -->
-<xs:element name="timeline">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element name="time" type="xs:time"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <xs:complexType name="TimelineCondition">
+        <xs:complexContent>
+            <xs:extension base="Condition">
+                <xs:sequence>
+                    <xs:element name="time" type="xs:time"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
-<!--Contains a hardware condition -->
-<xs:element name="hardware">
-  <xs:complexType>
-    <xs:choice>
-      <xs:element name="key" type="xs:string"/>
-    </xs:choice>
-  </xs:complexType>
-</xs:element>
+    <!--Contains a hardware condition -->
+    <xs:complexType name="HardwareCondition">
+        <xs:complexContent>
+            <xs:extension base="Condition">
+                <xs:sequence>
+                    <xs:element name="key" type="xs:string"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
-<!--Contains a property condition -->
-<xs:element name="property">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element name="identifier" type="xs:string"/>
-      <xs:element name="value" type="xs:anyType"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <!--Contains a property condition -->
+    <xs:complexType name="PropertyEquals">
+        <xs:complexContent>
+            <xs:extension base="Condition">
+                <xs:sequence>
+                    <xs:element name="identifier" type="xs:string"/>
+                    <xs:element name="value" type="xs:anyType"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
-<!--Contains a generic condition -->
-<xs:element name="condition">
-  <xs:complexType>
-    <xs:choice>
-      <xs:element ref="timeline"/>
-      <xs:element ref="hardware"/>
-      <xs:element ref="property"/>
-    </xs:choice>
-  </xs:complexType>
-</xs:element>
+    <!--Contains an or -->
+    <xs:complexType name="Or">
+        <xs:complexContent>
+            <xs:extension base="Condition">
+                <xs:sequence>
+                    <xs:element name="conditions" minOccurs="2" maxOccurs="unbounded"
+                                type="Condition"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
-<!--Contains an or -->
-<xs:element name="or">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element ref="conditions" minOccurs="2" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <!--Contains an and -->
+    <xs:complexType name="And">
+        <xs:complexContent>
+            <xs:extension base="Condition">
+                <xs:sequence>
+                    <xs:element name="conditions" minOccurs="2" maxOccurs="unbounded"
+                                type="Condition"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
-<!--Contains an and -->
-<xs:element name="and">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element ref="conditions" minOccurs="2" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <xs:complexType name="Action" abstract="true">
+    </xs:complexType>
 
-<!--Contains actions -->
-<xs:element name="actions">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element ref="property" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <xs:complexType name="PropertySetAction">
+        <xs:complexContent>
+            <xs:extension base="Action">
+                <xs:sequence>
+                    <xs:element name="identifier" type="xs:string"/>
+                    <xs:element name="value" type="xs:anyType"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 
-<!--Contains conditions -->
-<xs:element name="conditions">
-  <xs:complexType>
-    <xs:choice>
-      <xs:element ref="and"/>
-      <xs:element ref="or"/>
-      <xs:element ref="condition"/>
-    </xs:choice>
-  </xs:complexType>
-</xs:element>
+    <!--Contains a generic event -->
+    <xs:complexType name="Event">
+        <xs:sequence>
+            <xs:element name="condition" type="Condition" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="actions" type="Action" maxOccurs="unbounded" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
 
-<!--Contains a generic event -->
-<xs:element name="event">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element ref="conditions"/>
-      <xs:element ref="actions"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <!--Contains a pose -->
+    <xs:complexType name="Pose">
+        <xs:sequence>
+            <xs:element name="x" type="xs:double"/>
+            <xs:element name="y" type="xs:double"/>
+            <xs:element name="z" type="xs:double"/>
+            <xs:element name="ux" type="xs:double"/>
+            <xs:element name="uy" type="xs:double"/>
+            <xs:element name="uz" type="xs:double"/>
+            <xs:element name="theta" type="xs:double"/>
+        </xs:sequence>
+    </xs:complexType>
 
-<!--Contains a pose -->
-<xs:element name="pose">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element name="x" type="xs:double"/>
-      <xs:element name="y" type="xs:double"/>
-      <xs:element name="z" type="xs:double"/>
-      <xs:element name="ux" type="xs:double"/>
-      <xs:element name="uy" type="xs:double"/>
-      <xs:element name="uz" type="xs:double"/>
-      <xs:element name="theta" type="xs:double"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <!--Contains a environmentModel -->
+    <xs:complexType name="EnvironmentModel">
+        <xs:sequence>
+            <xs:element name="location" type="xs:string"/>
+            <xs:element name="pose" type="Pose"/>
+        </xs:sequence>
+    </xs:complexType>
 
-<!--Contains a environmentModel -->
-<xs:element name="environmentModel">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element name="location" type="xs:string"/>
-      <xs:element ref="pose"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <!--Root element of the ExD file -->
+    <xs:complexType name="ExD">
+        <xs:sequence>
+            <xs:element name="environmentModel" type="EnvironmentModel"/>
+            <xs:element name="bibiConf" type="xs:string"/>
+            <xs:element name="timeout" type="xs:double" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="events" minOccurs="0" maxOccurs="unbounded" type="Event"/>
+        </xs:sequence>
+    </xs:complexType>
 
-<!--Root element of the ExD file -->
-<xs:element name="ExD">
-  <xs:complexType>
-    <xs:sequence>
-      <xs:element ref="environmentModel"/>
-      <xs:element name="bibiConf" type="xs:string"/>
-      <xs:element ref="event" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-</xs:element>
+    <xs:element name="ExD" type="ExD"/>
 </xs:schema>
