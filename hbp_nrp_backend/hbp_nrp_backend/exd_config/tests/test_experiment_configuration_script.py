@@ -5,16 +5,22 @@ Test to run the ExD configuration script
 __author__ = 'Lorenzo Vannucci'
 
 from hbp_nrp_backend.exd_config.experiment_configuration_script \
-    import generate_bibi
+    import generate_bibi, initialize_experiment
+from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
 import unittest
 import os
 import difflib
 
 
-class TestScript(unittest.TestCase):
+class TestExperimentConfigurationScript(unittest.TestCase):
     """
     Test the generation of the ExD config script
     """
+
+    def test_initialize_experiment(self):
+        directory = os.path.split(__file__)[0]
+        experiment = os.path.join(directory, 'ExDXMLExample.xml')
+        self.assertIsInstance(initialize_experiment(experiment, 'generate.xml'), ROSCLEClient)
 
     def test_generate_bibi(self):
         """
