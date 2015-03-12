@@ -8,22 +8,43 @@ __author__ = 'GeorgHinkel'
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
+from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 
 
-class ErrorForwardingApi(Api):
+class NRPServicesGeneralException(Exception):
     """
-    An API class that forwards error routing using usual Flask
+    General exception class that can be used to return meaningful messages
+    to the HBP frontend code.
+
+    :param message: message displayed to the end user.
+    :param error_type: Type of error (like 'CLE Error')
+    """
+    def __init__(self, message, error_type):
+        super(NRPServicesGeneralException, self).__init__(message)
+        # This field is handled by the error handling HBP frontend code.
+        self.error_type = error_type
+
+    def __str__(self):
+        return "" + repr(self.message) + " (" + self.error_type + ")"
+
+
+class NRPServicesExtendedApi(Api):
+    """
+    Extend Flask Restful error handling mechanism so that we
+    can still use original Flask error handlers (defined in
+    __ErrorHandlers.py)
     """
     def error_router(self, original_handler, e):
         """
         Route the error
+
         :param original_handler: Flask handler
         :param e: Error
         """
         return original_handler(e)
 
 app = Flask(__name__)
-api = swagger.docs(ErrorForwardingApi(app), apiVersion='0.1')
+api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
 
 # Import REST APIs
 # pylint: disable=W0401

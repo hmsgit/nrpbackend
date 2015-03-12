@@ -75,3 +75,9 @@ def use_unit_test_transitions():
     sm.reset_simulation = __reset_simulation
     sm.stop_simulation = __stop_simulation
     sm.initialize_simulation = __initialize_simulation
+
+
+def start_will_raise_exception(exception):
+    # Dark magic taken from
+    # http://stackoverflow.com/questions/8294618/define-a-lambda-expression-that-raises-an-exception
+    sm.start_simulation = lambda x: (_ for _ in ()).throw(exception)
