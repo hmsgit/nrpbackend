@@ -10,6 +10,8 @@ DefaultStateMachine and overwrite the function populate()
 
 __author__ = 'PatrikScheidecker'
 
+# This file is still wip, so there is no point in testing it
+
 import smach_ros
 
 from hbp_nrp_backend.exd_config.default_state_machine import DefaultStateMachine
@@ -19,7 +21,7 @@ from gazebo_msgs.srv import SetVisualProperties
 from gazebo_msgs.srv import SetVisualPropertiesRequest
 
 
-def timeline_condition_cb(user_data, time):
+def timeline_condition_cb(user_data, time):  # pragma: no cover
     """
     Callback to check timeline for given time stamp
 
@@ -36,7 +38,7 @@ def timeline_condition_cb(user_data, time):
         return False  # condition met, evaluates state outcome to 'invalid'
 
 
-class StateMachineTimedColorChange(DefaultStateMachine):
+class StateMachineTimedColorChange(DefaultStateMachine):  # pragma: no cover
     """
     State machine generated for the following event of an ExD configuration:
 
@@ -93,7 +95,7 @@ class StateMachineTimedColorChange(DefaultStateMachine):
         return state_list
 
 
-def main():
+def main():  # pragma: no cover
     """
     This is the main method
     """
@@ -101,5 +103,5 @@ def main():
     statemachine.execute()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
