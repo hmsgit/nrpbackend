@@ -14,6 +14,10 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 from std_msgs.msg import Float32, Int32, String
 from os.path import expanduser
 import os
+import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def cle_function(world_file):
@@ -30,7 +34,7 @@ def cle_function(world_file):
                                  True)  # block_ui
 
     from hbp_nrp_cle.cle.SerialClosedLoopEngine import SerialClosedLoopEngine
-    
+
     from hbp_nrp_cle.robotsim.GazeboLoadingHelper import load_gazebo_model_file, empty_gazebo_world, load_gazebo_world_file
     from hbp_nrp_cle.robotsim.RobotInterface import Topic
     from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
@@ -89,7 +93,10 @@ def cle_function(world_file):
     TIMESTEP = 0.01
     MAX_SIM_TIME = 5
 
-    update_progress_function("Reseting Gazebo robotic simulator", True)
+    # set models path variable
+    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+
+    update_progress_function("Resetting Gazebo robotic simulator", True)
     empty_gazebo_world(update_progress_function)
 
     cle_server.notify_current_task("Loading experiment environment",
@@ -112,10 +119,9 @@ def cle_function(world_file):
 
     # Create interfaces to brain
     cle_server.notify_current_task("Loading neural Simulator NEST",
-                                True,  # update_progress
-                                True)  # block_ui
+                                   True,  # update_progress
+                                   True)  # block_ui
     # control adapter
-    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
     brainfilepath = 'None'
     if models_path is not None:
         brainfilepath = os.path.join(models_path, brainfilepath)
@@ -147,6 +153,13 @@ def cle_function(world_file):
     
     # Main infinite loop (until the ROS stop service is called)
     cle_server.main()
+    __shutdown(cle_server, update_progress_function)
+
+
+def __shutdown(cle_server, update_progress_function):
+    from hbp_nrp_cle.robotsim.GazeboLoadingHelper import empty_gazebo_world
+
+
 
     # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
     # Clean up gazebo after ourselves

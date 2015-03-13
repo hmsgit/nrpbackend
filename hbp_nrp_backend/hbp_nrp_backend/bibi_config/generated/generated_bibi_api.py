@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Mon Mar  2 15:51:40 2015 by generateDS.py version 2.14a.
+# Generated Wed Mar 11 14:30:55 2015 by generateDS.py version 2.14a.
 #
 # Command line options:
 #   ('-o', 'generated_bibi_api.py')
@@ -652,11 +652,13 @@ def _cast(typ, value):
 class BIBIConfiguration(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, brainModel=None, bodyModel=None, transferFunction=None, transferFunctionImport=None):
+    def __init__(self, brainModel=None, bodyModel=None, extRobotController=None, transferFunction=None, transferFunctionImport=None):
         self.original_tagname_ = None
         self.brainModel = brainModel
         self.bodyModel = bodyModel
         self.validate_SDF_Filename(self.bodyModel)
+        self.extRobotController = extRobotController
+        self.validate_Script_Filename(self.extRobotController)
         if transferFunction is None:
             self.transferFunction = []
         else:
@@ -675,6 +677,8 @@ class BIBIConfiguration(GeneratedsSuper):
     def set_brainModel(self, brainModel): self.brainModel = brainModel
     def get_bodyModel(self): return self.bodyModel
     def set_bodyModel(self, bodyModel): self.bodyModel = bodyModel
+    def get_extRobotController(self): return self.extRobotController
+    def set_extRobotController(self, extRobotController): self.extRobotController = extRobotController
     def get_transferFunction(self): return self.transferFunction
     def set_transferFunction(self, transferFunction): self.transferFunction = transferFunction
     def add_transferFunction(self, value): self.transferFunction.append(value)
@@ -692,6 +696,13 @@ class BIBIConfiguration(GeneratedsSuper):
                     self.validate_SDF_Filename_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_SDF_Filename_patterns_, ))
     validate_SDF_Filename_patterns_ = [['^[a-zA-Z0-9\\._/]*\\.sdf$']]
+    def validate_Script_Filename(self, value):
+        # Validate type Script_Filename, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_Script_Filename_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_Script_Filename_patterns_, ))
+    validate_Script_Filename_patterns_ = [['^[a-zA-Z0-9\\._/]*\\.sh$']]
     def validate_Python_Filename(self, value):
         # Validate type Python_Filename, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -703,6 +714,7 @@ class BIBIConfiguration(GeneratedsSuper):
         if (
             self.brainModel is not None or
             self.bodyModel is not None or
+            self.extRobotController is not None or
             self.transferFunction or
             self.transferFunctionImport
         ):
@@ -739,6 +751,9 @@ class BIBIConfiguration(GeneratedsSuper):
         if self.bodyModel is not None:
             showIndent(outfile, level, pretty_print)
             outfile.write('<%sbodyModel>%s</%sbodyModel>%s' % (namespace_, self.gds_format_string(quote_xml(self.bodyModel).encode(ExternalEncoding), input_name='bodyModel'), namespace_, eol_))
+        if self.extRobotController is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sextRobotController>%s</%sextRobotController>%s' % (namespace_, self.gds_format_string(quote_xml(self.extRobotController).encode(ExternalEncoding), input_name='extRobotController'), namespace_, eol_))
         for transferFunction_ in self.transferFunction:
             transferFunction_.export(outfile, level, namespace_, name_='transferFunction', pretty_print=pretty_print)
         for transferFunctionImport_ in self.transferFunctionImport:
@@ -762,6 +777,9 @@ class BIBIConfiguration(GeneratedsSuper):
         if self.bodyModel is not None:
             showIndent(outfile, level)
             outfile.write('bodyModel=%s,\n' % quote_python(self.bodyModel).encode(ExternalEncoding))
+        if self.extRobotController is not None:
+            showIndent(outfile, level)
+            outfile.write('extRobotController=%s,\n' % quote_python(self.extRobotController).encode(ExternalEncoding))
         showIndent(outfile, level)
         outfile.write('transferFunction=[\n')
         level += 1
@@ -803,6 +821,11 @@ class BIBIConfiguration(GeneratedsSuper):
             bodyModel_ = self.gds_validate_string(bodyModel_, node, 'bodyModel')
             self.bodyModel = bodyModel_
             self.validate_SDF_Filename(self.bodyModel)    # validate type SDF_Filename
+        elif nodeName_ == 'extRobotController':
+            extRobotController_ = child_.text
+            extRobotController_ = self.gds_validate_string(extRobotController_, node, 'extRobotController')
+            self.extRobotController = extRobotController_
+            self.validate_Script_Filename(self.extRobotController)    # validate type Script_Filename
         elif nodeName_ == 'transferFunction':
             type_name_ = child_.attrib.get(
                 '{http://www.w3.org/2001/XMLSchema-instance}type')
