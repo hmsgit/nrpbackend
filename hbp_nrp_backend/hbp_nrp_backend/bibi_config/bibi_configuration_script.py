@@ -234,12 +234,13 @@ def is_not_none(item):
     return item is not None
 
 
-def generate_cle(bibi_conf, script_file_name):
+def generate_cle(bibi_conf, script_file_name, timeout):
     """
     Generates Code to run the CLE based on the given configuration file
 
     :param bibi_conf: The BIBI configuration
     :param script_file_name: The file name of the script to be generated
+    :param timeout: The timeout found in the ExDConfig
     """
     templatePath = os.path.join(os.path.split(__file__)[0], 'cle_template.pyt')
     templateFile = open(templatePath, 'r')
@@ -252,6 +253,7 @@ def generate_cle(bibi_conf, script_file_name):
     names['dependencies'] = compute_dependencies(config)
     # system functions are somehow not included in globals
     names['len'] = len
+    names['timeout'] = timeout
     outputFile = open(script_file_name, 'w')
     outputFile.write(template.render(names))
     outputFile.close()

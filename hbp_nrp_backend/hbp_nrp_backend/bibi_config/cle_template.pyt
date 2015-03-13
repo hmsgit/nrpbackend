@@ -76,10 +76,9 @@ def cle_function(world_file):
     def {{tf.name}}(t, {{tf.device.name}}):
         return {{get_monitoring_impl(tf)}}
 
-
-    {% else %}{% for topic in tf.topic %}{% if is_not_none(tf.body) %}
-    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
-    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
+    {% else %}{% for topic in tf.topic %}{% if is_not_none(topic.body) %}
+    @nrp.MapRobotPublisher("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% else %}
+    @nrp.MapRobotSubscriber("{{topic.name}}", Topic('{{topic.topic}}', {{topic.type_}})){% endif %}{% endfor %}{% for dev in tf.device %}{% if is_not_none(dev.body) %}
     @nrp.MapSpikeSource("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% else %}
     @nrp.MapSpikeSink("{{dev.name}}", nrp.brain.{{get_neurons(dev)}}, nrp.{{get_device_name(dev.type_)}}){% endif %}{% endfor %}
     @nrp.Robot2Neuron()
@@ -149,7 +148,7 @@ def cle_function(world_file):
     cle.initialize()
 
     # Now that we have everything ready, we could prepare the simulation
-    cle_server.prepare_simulation(cle)
+    cle_server.prepare_simulation(cle, {{timeout}})
     # Loading is completed.
     cle_server.notify_finish_task()
     

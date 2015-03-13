@@ -62,7 +62,6 @@ def cle_function(world_file):
     def left_wheel_neuron_monitor(t, left_wheel_neuron):
         return cle_ros_msgs.msg.SpikeRate(Float32(t), Int32(left_wheel_neuron.rate), String("left_wheel_neuron_monitor"))
 
-
     
     
     @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[1], nrp.leaky_integrator_alpha)
@@ -148,7 +147,7 @@ def cle_function(world_file):
     cle.initialize()
 
     # Now that we have everything ready, we could prepare the simulation
-    cle_server.prepare_simulation(cle)
+    cle_server.prepare_simulation(cle, 300.0)
     # Loading is completed.
     cle_server.notify_finish_task()
     

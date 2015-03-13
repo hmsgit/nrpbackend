@@ -17,7 +17,6 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
     """
     Generates Code to run the Brain interface and Body integrator based on the
     given experiment configuration file.
-
     :param experiment_conf: The Experiment Designer configuration. The code will
                             search in the folder set in NRP_MODELS_DIRECTORY
                             environment variable for this file. relative path from
@@ -33,14 +32,19 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
     bibi_conf = os.path.join(_get_basepath(experiment_conf),
                              experiment.bibiConf)
 
+    # set timeout to 5 minutes, if not specified by default
+    if (experiment.timeout is None):
+        timeout = 300.0
+    else:
+        timeout = experiment.timeout
     bibi_configuration_script.generate_cle(bibi_conf,
-                                           bibi_script_file_name)
+                                           bibi_script_file_name,
+                                           timeout)
 
 
 def initialize_experiment(experiment_conf, generated_cle_script_file):
     """
     Initialize experiment based on generated code by generate_bibi.
-
     :param experiment_conf: The Experiment Designer configuration. The code will
         search in the folder set in NRP_MODELS_DIRECTORY
         environment variable for this file. relative path from there must be included.
