@@ -1,22 +1,31 @@
-hbp_nrp_backend.simulation_control package
-==========================================
+simulation_control - simulation states and transitions
+======================================================
 
-Submodules
-----------
+.. automodule:: hbp_nrp_backend.simulation_control
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-hbp_nrp_backend.simulation_control.transitions module
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:mod:`transitions` Module
+-------------------------
 
 .. automodule:: hbp_nrp_backend.simulation_control.transitions
     :members:
     :undoc-members:
     :show-inheritance:
 
+:mod:`__Simulation` Module
+--------------------------
 
-Module contents
----------------
+.. automodule:: hbp_nrp_backend.simulation_control.__Simulation
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-.. automodule:: hbp_nrp_backend.simulation_control
+:mod:`__StateMachine` Module
+----------------------------
+
+.. automodule:: hbp_nrp_backend.simulation_control.__StateMachine
     :members:
     :undoc-members:
     :show-inheritance:

@@ -1,5 +1,5 @@
 """
-This package contains the implementation of the rest server to control experiments
+This package contains the implementation of the REST server to control experiments
 """
 
 __author__ = 'GeorgHinkel'

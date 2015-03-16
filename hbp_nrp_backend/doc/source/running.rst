@@ -31,21 +31,26 @@ This is a step-by-step description for running the backend for the case that **t
 
       .. code-block:: bash
 
-        python $EXDB/hbp_nrp_backend/hbp_nrp_backend/runserver.py 9000
-   c. Start the Gazebo server. Currently, we load the virtual room together with the server. Be careful that our patched Gazebo plugin is loaded instead of the default one.
+         python $EXDB/hbp_nrp_backend/hbp_nrp_backend/runserver.py 9000
+   c. Start the ROSCLESimulationFactory, a ROS service needed by the backend to start an instance of the CLE
+
+      .. code-block:: bash
+
+         python $CLE/hbp_nrp_cle/hbp_nrp_cle/cle/ROSCLESimulationFactory.py
+   d. Start the Gazebo server. Currently, we load the virtual room together with the server. Be careful that our patched Gazebo plugin is loaded instead of the default one.
 
       .. code-block:: bash
 
             source $CLE/GazeboRosPackage/devel/setup.bash
             rosrun gazebo_ros gzserver ~/.gazebo/models/virtual_room/virtual_room.sdf
 
-   d. Start a Gazebo client if you wish to view the results on your machine (not required when using the frontend)
+   e. Start a Gazebo client if you wish to view the results on your machine (not required when using the frontend)
 
       .. code-block:: bash
 
             rosrun gazebo_ros gzclient
 
-   e. Load an experiment. The experiment ID is the path to your experiment relative to $NRP_MODELS_DIRECTORY or your current folder if the first is not set
+   f. Load an experiment. The experiment ID is the path to your experiment relative to $NRP_MODELS_DIRECTORY or your current folder if the first is not set
 
       .. code-block:: bash
 
