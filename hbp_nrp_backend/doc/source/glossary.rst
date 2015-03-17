@@ -7,6 +7,8 @@ This chapter describes some terminology that is used throughout this documentati
 ====================== ===================================================
 Term                   Explanation
 ====================== ===================================================
+BIBI                   Brain and Body Integrator, see CLE documentation
+CLE                    Closed Loop Engine, see CLE documentation
 ExD                    Experiment (Designer) Backend.
 Gazebo                 Robot Simulator, see http://gazebosim.org/
 gzweb                  Web interface for Gazebo using WebGL. Consisting of gzbridge (server) and gz3d (client), see https://bitbucket.org/osrf/gzweb
