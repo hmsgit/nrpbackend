@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Wed Mar 11 14:30:55 2015 by generateDS.py version 2.14a.
+# Generated Wed Mar 18 13:14:06 2015 by generateDS.py version 2.14a.
 #
 # Command line options:
 #   ('-o', 'generated_bibi_api.py')
@@ -11,7 +11,7 @@
 #   bibi_configuration.xsd
 #
 # Command line:
-#   /usr/local/bin/generateDS.py -o "generated_bibi_api.py" bibi_configuration.xsd
+#   /home/GeorgHinkel/generateDS-2.14a/generateDS.py -o "generated_bibi_api.py" bibi_configuration.xsd
 #
 # Current working directory (os.getcwd()):
 #   BIBI
@@ -1510,7 +1510,7 @@ class DeviceChannel(GeneratedsSuper):
     def validate_DeviceType(self, value):
         # Validate type DeviceType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
-            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson', 'PopulationRate']
+            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson', 'SpikeRecorder', 'PopulationRate']
             enumeration_respectee = False
             for enum in enumerations:
                 if value == enum:
@@ -1673,7 +1673,7 @@ class DeviceGroupChannel(GeneratedsSuper):
     def validate_DeviceType(self, value):
         # Validate type DeviceType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
-            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson', 'PopulationRate']
+            enumerations = ['ACSource', 'DCSource', 'FixedFrequency', 'LeakyIntegratorAlpha', 'LeakyIntegratorExp', 'NCSource', 'Poisson', 'SpikeRecorder', 'PopulationRate']
             enumeration_respectee = False
             for enum in enumerations:
                 if value == enum:

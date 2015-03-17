@@ -29,8 +29,8 @@ class TestScript(unittest.TestCase):
         self.assertEqual(bibi.get_monitoring_type(monitor), "cle_ros_msgs.msg.SpikeRate")
         self.assertEqual(bibi.get_monitoring_topic(monitor), "/monitor/population_rate")
 
-        impl = 'cle_ros_msgs.msg.SpikeRate(Float32(t), Int32(neurons.rate), ' \
-               'String("testMonitor"))'
+        impl = 'cle_ros_msgs.msg.SpikeRate(t, neurons.rate, ' \
+               '"testMonitor")'
         self.assertEqual(bibi.get_monitoring_impl(monitor), impl)
 
     def test_monitoring_spike_detector(self):
@@ -40,8 +40,7 @@ class TestScript(unittest.TestCase):
         self.assertEqual(bibi.get_monitoring_type(monitor), "cle_ros_msgs.msg.SpikeEvent")
         self.assertEqual(bibi.get_monitoring_topic(monitor), "/monitor/spike_recorder")
 
-        impl = 'cle_ros_msgs.msg.SpikeEvent(Float32(t), String("testMonitor")) ' \
-               'if neurons.spiked else None'
+        impl = 'cle_ros_msgs.msg.SpikeEvent(t, neurons.times, "testMonitor")'
         self.assertEqual(bibi.get_monitoring_impl(monitor), impl)
 
 

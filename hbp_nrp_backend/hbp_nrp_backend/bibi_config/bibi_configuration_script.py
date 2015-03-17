@@ -15,8 +15,8 @@ __device_types = {'ACSource': 'ac_source', 'DCSource': 'dc_source',
                   'NCSource': 'nc_source',
                   'Poisson': 'poisson',
                   'PopulationRate': 'population_rate',
-                  'SpikeRecorder': 'spike_recorder'}
-
+                  'SpikeRecorder': 'spike_recorder'
+                  }
 __device_properties = {'ACSource': 'amplitude', 'DCSource': 'amplitude',
                        'FixedFrequency': 'rate',
                        'LeakyIntegratorAlpha': 'voltage',
@@ -24,8 +24,7 @@ __device_properties = {'ACSource': 'amplitude', 'DCSource': 'amplitude',
                        'NCSource': 'mean',
                        'Poisson': 'rate',
                        'PopulationRate': 'rate',
-                       'SpikeRecorder': 'spiked'}
-
+                       'SpikeRecorder': 'times'}
 __operator_symbols = {generated_bibi_api.Subtract: '({0} - {1})',
                       generated_bibi_api.Add: '({0} + {1})',
                       generated_bibi_api.Multiply: '{0} * {1}',
@@ -35,10 +34,8 @@ __operator_symbols = {generated_bibi_api.Subtract: '({0} - {1})',
 
 __monitoring_types = {'PopulationRate': 'cle_ros_msgs.msg.SpikeRate',
                       'SpikeRecorder': 'cle_ros_msgs.msg.SpikeEvent'}
-
-__monitoring_factory = {'PopulationRate': '{0}(Float32(t), Int32({1}), String("{2}"))',
-                        'SpikeRecorder': '{0}(Float32(t), String("{2}")) if {1} else None'}
-
+__monitoring_factory = {'PopulationRate': '{0}({1}, {2}, "{3}")',
+                        'SpikeRecorder': '{0}({1}, {2}, "{3}")'}
 __monitoring_topics = {'PopulationRate': '/monitor/population_rate',
                        'SpikeRecorder': '/monitor/spike_recorder'}
 
@@ -127,8 +124,9 @@ def get_monitoring_impl(monitor):
     """
     dev = monitor.device
     function = __monitoring_factory.get(monitor.device.type_)
-    return function.format(get_monitoring_type(monitor),
-                           dev.name + "." + get_default_property(dev.type_), monitor.name)
+    return function.format(get_monitoring_type(monitor), "t",
+                           dev.name + "." + get_default_property(dev.type_),
+                           monitor.name)
 
 
 def print_operator(expression):

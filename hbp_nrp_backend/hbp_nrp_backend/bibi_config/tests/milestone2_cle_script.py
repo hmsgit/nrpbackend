@@ -64,7 +64,7 @@ def cle_function(world_file):
     @nrp.MapSpikeSink("left_wheel_neuron", nrp.brain.actors[1], nrp.population_rate)
     @nrp.Neuron2Robot(Topic('/monitor/population_rate', cle_ros_msgs.msg.SpikeRate))
     def left_wheel_neuron_monitor(t, left_wheel_neuron):
-        return cle_ros_msgs.msg.SpikeRate(Float32(t), Int32(left_wheel_neuron.rate), String("left_wheel_neuron_monitor"))
+        return cle_ros_msgs.msg.SpikeRate(t, left_wheel_neuron.rate, "left_wheel_neuron_monitor")
 
     
     
