@@ -10,6 +10,7 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import InvalidStateTransitionException
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+from hbp_nrp_backend.rest_server import NRPServicesStateException
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
     UserAuthentication
 
@@ -135,6 +136,6 @@ class SimulationState(Resource):
         try:
             simulation.state = body['state']
         except InvalidStateTransitionException:
-            return None, 400, {'Warning': "You requested an invalid state transition ('"
-                                          + simulation.state + "'->'" + body['state'] + "')"}
+            raise NRPServicesStateException(
+                "Invalid transition (" + simulation.state + "->" + body['state'] + ")")
         return {'state': str(simulation.state)}, 200
