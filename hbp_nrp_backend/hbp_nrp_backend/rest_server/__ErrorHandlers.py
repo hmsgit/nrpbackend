@@ -48,10 +48,10 @@ def internal_error(error):
 
 @app.errorhandler(NRPServicesGeneralException)
 # pylint: disable=E0102
-def internal_error(error):
+def error2json(error):
     """
     Handles NRPServicesGeneralException errors
     :param error: The error object
     """
     return json.dumps({'message': error.message,
-                       'type': error.error_type}), 500
+                       'type': error.error_type}), error.error_code

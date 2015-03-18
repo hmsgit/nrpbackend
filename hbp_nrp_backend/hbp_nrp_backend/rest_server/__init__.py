@@ -19,13 +19,26 @@ class NRPServicesGeneralException(Exception):
     :param message: message displayed to the end user.
     :param error_type: Type of error (like 'CLE Error')
     """
-    def __init__(self, message, error_type):
+    def __init__(self, message, error_type, error_code=500):
         super(NRPServicesGeneralException, self).__init__(message)
         # This field is handled by the error handling HBP frontend code.
         self.error_type = error_type
+        self.error_code = error_code
 
     def __str__(self):
         return "" + repr(self.message) + " (" + self.error_type + ")"
+
+
+class NRPServicesStateException(NRPServicesGeneralException):
+    """
+    State exception class that can be used to return meaningful messages
+    to the HBP frontend code.
+
+    :param message: message displayed to the end user.
+    :param error_type: Type of error (like 'CLE Error')
+    """
+    def __init__(self, message):
+        super(NRPServicesStateException, self).__init__(message, "Transition error", 400)
 
 
 class NRPServicesExtendedApi(Api):
