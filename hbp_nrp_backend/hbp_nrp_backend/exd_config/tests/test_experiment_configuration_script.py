@@ -10,7 +10,10 @@ from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
 import unittest
 import os
 import difflib
+import rospy
+import mock
 
+rospy.ServiceProxy = mock.Mock(return_value=mock.Mock())
 
 class TestExperimentConfigurationScript(unittest.TestCase):
     """
