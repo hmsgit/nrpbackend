@@ -8,6 +8,7 @@ from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
+import datetime
 
 
 @swagger.model
@@ -27,6 +28,7 @@ class Simulation(object):
         self.__sim_id = sim_id
         self.__experiment_id = experiment_id
         self.__owner = owner
+        self.__creation_date = datetime.datetime.now().isoformat()
         self.__cle = None
 
     @property
@@ -50,6 +52,14 @@ class Simulation(object):
         :return: The owner name
         """
         return self.__owner
+
+    @property
+    def creation_date(self):
+        """
+        The creation date of this simulation
+        :return: The creation date
+        """
+        return self.__creation_date
 
     @property
     def state(self):
@@ -98,7 +108,8 @@ class Simulation(object):
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
         'experimentID': fields.String(attribute='experiment_id'),
-        'owner': fields.String(attribute='owner')
+        'owner': fields.String(attribute='owner'),
+        'creationDate': fields.String(attribute='creation_date')
     }
     required = ['state', 'simulationID', 'experimentID']
 

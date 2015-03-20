@@ -66,6 +66,7 @@ class SimulationService(Resource):
         :>json string state: The current state of the simulation (always 'created')
         :>json integer simulationID: The id of the simulation (needed for further REST calls)
         :>json string experimentID: Path and name of the experiment configuration file
+        :>json string creationDate: Date of creation of this simulation
         :status 400: Experiment ID is not valid
         :status 201: Simulation created successfully
         """
@@ -99,6 +100,7 @@ class SimulationService(Resource):
         :>jsonarr string state: The current state of the simulation
         :>jsonarr integer simulationID: The id of the simulation (needed for further REST calls)
         :>jsonarr string experimentID: Path and name of the experiment configuration file
+        :>json string creationDate: Date of creation of this simulation
         :status 200: Simulations retrieved successfully
         """
         return simulations, 200

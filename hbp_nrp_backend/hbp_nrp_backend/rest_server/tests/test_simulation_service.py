@@ -6,23 +6,31 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations
+from mock import patch, Mock, MagicMock
 import unittest
 import json
+import datetime
 
 
 class TestSimulationService(unittest.TestCase):
 
-    def test_simulation_service_post(self):
+    def setUp(self):
+        self.now = datetime.datetime.now()
+    
+    @patch('hbp_nrp_backend.simulation_control.__Simulation.datetime')
+    def test_simulation_service_post(self, mocked_date_time):
         client = app.test_client()
+        mocked_date_time.datetime = MagicMock()
+        mocked_date_time.datetime.now = MagicMock(return_value=self.now)
         n = len(simulations)
 
         response = client.post('/simulation', data='{"experimentID":"MyExample.xml"}')
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/' + str(n))
-        expectedResponseData = {'owner': "default-owner", 'state': "created", 'simulationID': n,
-                                'experimentID': "MyExample.xml"}
-        erd = json.dumps(expectedResponseData)
+        expected_response_data = {'owner': "default-owner", 'state': "created", 'creationDate': self.now.isoformat(),
+                                'simulationID': n, 'experimentID': "MyExample.xml"}
+        erd = json.dumps(expected_response_data)
         self.assertEqual(response.data, erd)
         self.assertEqual(len(simulations), n + 1)
         simulation = simulations[n]

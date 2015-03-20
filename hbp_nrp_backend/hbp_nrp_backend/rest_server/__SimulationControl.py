@@ -68,6 +68,7 @@ class SimulationControl(Resource):
         :>json string state: The current state of the simulation
         :>json integer simulationID: The id of the simulation (needed for further REST calls)
         :>json string experimentID: Path and name of the experiment configuration file
+        :>json string creationDate: Date of creation of this simulation
         :status 404: The simulation with the given ID was not found
         :status 200: The simulation with the given ID is successfully retrieved
         """
