@@ -2,7 +2,7 @@
 Script to run Experiment from ExperimentDesigner Configuration File
 """
 from hbp_nrp_backend.exd_config.generated import generated_experiment_api
-from hbp_nrp_backend.bibi_config import bibi_configuration_script
+from hbp_nrp_cle.bibi_config import bibi_configuration_script
 import os
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
 from hbp_nrp_cle.cle.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
