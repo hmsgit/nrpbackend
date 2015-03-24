@@ -170,10 +170,10 @@ def cle_function(world_file):
     
     # Main infinite loop (until the ROS stop service is called)
     cle_server.main()
-    __shutdown(cle_server, update_progress_function)
+    __shutdown(cle_server, update_progress_function, models_path)
 
 
-def __shutdown(cle_server, update_progress_function):
+def __shutdown(cle_server, update_progress_function, models_path):
     from hbp_nrp_cle.robotsim.GazeboLoadingHelper import empty_gazebo_world
 
 {% if is_not_none(config.extRobotController) %}    # optionally stop all external robot controllers
