@@ -44,6 +44,7 @@ def cle_function(world_file):
     from hbp_nrp_cle.brainsim.PyNNCommunicationAdapter import PyNNCommunicationAdapter
 
     import hbp_nrp_cle.tf_framework as nrp
+    import hbp_nrp_cle.tf_framework.monitoring as monitoring
 
     # Needed in order to cleanup global static variables
     nrp.start_new_tf_manager()
