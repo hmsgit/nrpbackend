@@ -28,7 +28,7 @@ def cle_function(world_file):
     cle_server = ROSCLEServer()
     update_progress_function = lambda subtask, update_progress: cle_server.notify_current_task(subtask, update_progress, True)
 
-    cle_server.notify_start_task("Initializing the Neurorobotic Close Loop Engine",
+    cle_server.notify_start_task("Initializing the Neurorobotic Closed Loop Engine",
                                  "Importing needed packages",
                                  {% if is_not_none(config.extRobotController) %}7{% else %}5{% endif %}, # number of subtasks
                                  True)  # block_ui
