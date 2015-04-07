@@ -34,8 +34,10 @@ __operator_symbols = {generated_bibi_api.Subtract: '({0} - {1})',
 
 __monitoring_types = {'PopulationRate': 'cle_ros_msgs.msg.SpikeRate',
                       'SpikeRecorder': 'cle_ros_msgs.msg.SpikeEvent'}
+# 1 = simulation time, 2 = spikes, 3 = port name, 4 = number of monitored neurons
 __monitoring_factory = {'PopulationRate': '{0}({1}, {2}, "{3}")',
-                        'SpikeRecorder': '{0}({1}, {2}, "{3}")'}
+                        'SpikeRecorder': 'monitoring.create_spike_recorder_message'
+                                         '({1}, {4}, {2}, "{3}")'}
 __monitoring_topics = {'PopulationRate': '/monitor/population_rate',
                        'SpikeRecorder': '/monitor/spike_recorder'}
 
@@ -126,7 +128,7 @@ def get_monitoring_impl(monitor):
     function = __monitoring_factory.get(monitor.device.type_)
     return function.format(get_monitoring_type(monitor), "t",
                            dev.name + "." + get_default_property(dev.type_),
-                           monitor.name)
+                           monitor.name, get_neuron_count(dev.neurons))
 
 
 def print_operator(expression):
@@ -161,6 +163,24 @@ def get_neurons(device):
     return neurons.population + '[' + print_neurons(neurons) + ']'
 
 
+def get_neuron_count(neurons):
+    """
+    Gets the amount of neurons connected
+    :param neurons: The neuron selector
+    :return: The amount of neurons as int
+    """
+    if isinstance(neurons, generated_bibi_api.Index):
+        return 1
+    if isinstance(neurons, generated_bibi_api.Range):
+        if neurons.step is None:
+            return neurons.to - neurons.from_
+        return (neurons.to - neurons.from_) / neurons.step
+    if isinstance(neurons, generated_bibi_api.List):
+        return len(neurons.element)
+    raise Exception("Neuron Count: Don't know how to process neuron selector "
+                    + neurons.extensiontype_)
+
+
 def print_neurons(neurons):
     """
     Prints the given neurons
@@ -183,7 +203,8 @@ def print_neurons(neurons):
         for i in range(1, len(neurons.element)):
             neuron_list = neuron_list + ', ' + str(neurons.element[i])
         return neuron_list + ']'
-    raise Exception("Don't know how to process neuron selector " + neurons.extensiontype_)
+    raise Exception("Neuron Print: Don't know how to process neuron selector "
+                    + neurons.extensiontype_)
 
 
 def compute_dependencies(config):

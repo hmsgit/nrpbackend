@@ -40,8 +40,14 @@ class TestScript(unittest.TestCase):
         self.assertEqual(bibi.get_monitoring_type(monitor), "cle_ros_msgs.msg.SpikeEvent")
         self.assertEqual(bibi.get_monitoring_topic(monitor), "/monitor/spike_recorder")
 
-        impl = 'cle_ros_msgs.msg.SpikeEvent(t, neurons.times, "testMonitor")'
+        impl = 'monitoring.create_spike_recorder_message(t, 3, neurons.times, "testMonitor")'
         self.assertEqual(bibi.get_monitoring_impl(monitor), impl)
+
+    def test_get_neuron_count(self):
+        self.assertEqual(3, bibi.get_neuron_count(api.List("pop", [1, 2, 3])))
+        self.assertEqual(1, bibi.get_neuron_count(api.Index("pop")))
+        self.assertEqual(4, bibi.get_neuron_count(api.Range("pop", from_=3, to=7)))
+        self.assertEqual(2, bibi.get_neuron_count(api.Range("pop", from_=0, to=5, step=2)))
 
 
 if __name__ == '__main__':
