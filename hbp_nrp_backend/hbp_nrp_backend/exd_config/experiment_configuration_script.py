@@ -35,7 +35,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
 
     # set timeout to 5 minutes, if not specified by default
     if (experiment.timeout is None):
-        timeout = 300.0
+        timeout = 600.0
     else:
         timeout = experiment.timeout
     bibi_configuration_script.generate_cle(bibi_conf,

@@ -148,7 +148,7 @@ def cle_function(world_file):
     cle.initialize()
 
     # Now that we have everything ready, we could prepare the simulation
-    cle_server.prepare_simulation(cle, 300.0)
+    cle_server.prepare_simulation(cle, 600.0)
     # Loading is completed.
     cle_server.notify_finish_task()
     
