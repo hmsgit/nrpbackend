@@ -17,7 +17,7 @@ class TestErrorHandlers(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'initialized'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'local', 'initialized'))
         utc.use_unit_test_transitions()
 
     def test_general_500_error(self):
@@ -25,7 +25,8 @@ class TestErrorHandlers(unittest.TestCase):
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 500)
         response_object = json.loads(response.data)
-        self.assertEqual(u"Internal server error: I am a general Exception", response_object['message'])
+        self.assertEqual(u"Internal server error: I am a general Exception",
+                         response_object['message'])
         self.assertEqual(u"General error", response_object['type'])
 
     def test_ros_client_exception(self):
@@ -33,11 +34,15 @@ class TestErrorHandlers(unittest.TestCase):
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 500)
         response_object = json.loads(response.data)
-        self.assertEqual(u"Error while communicating with the CLE ('I am a ROSCLEClientException').", response_object['message'])
+        self.assertEqual(
+            u"Error while communicating with the CLE ('I am a ROSCLEClientException').",
+            response_object['message'])
         self.assertEqual(u"CLE error", response_object['type'])
 
     def test_nrp_services_general_exception(self):
-        utc.start_will_raise_exception(NRPServicesGeneralException("I am a NRPServicesGeneralException message", "I am a NRPServicesGeneralException type"))
+        utc.start_will_raise_exception(
+            NRPServicesGeneralException("I am a NRPServicesGeneralException message",
+                                        "I am a NRPServicesGeneralException type"))
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 500)
         response_object = json.loads(response.data)
@@ -46,7 +51,7 @@ class TestErrorHandlers(unittest.TestCase):
 
     def test_nrp_services_state_exception(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'started'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'local', 'started'))
         # try to start an already started experiment: state invalid started->started
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 400)

@@ -64,6 +64,7 @@ def initialize_simulation(sim_id):
     try:
         simulation = simulations[sim_id]
         experiment = simulation.experiment_id
+        gzserver_host = simulation.gzserver_host
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
         logger.debug("The NRP_MODELS_DIRECTORY is: %s", models_path)
         if models_path is not None:
@@ -73,7 +74,7 @@ def initialize_simulation(sim_id):
         target = '__generated_experiment.py'
 
         generate_bibi(experiment, target)
-        simulation.cle = initialize_experiment(experiment, target)
+        simulation.cle = initialize_experiment(experiment, target, gzserver_host)
         logger.info("simulation initialized")
     except IOError as e:
         raise NRPServicesGeneralException(

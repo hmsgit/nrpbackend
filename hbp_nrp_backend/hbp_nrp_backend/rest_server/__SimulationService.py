@@ -53,6 +53,12 @@ class SimulationService(Resource):
                 "paramType": "body",
                 "dataType": _ExperimentID.__name__,
                 "required": True
+            },
+            {
+                "name": "gzserverHost",
+                "paramType": "body",
+                "required": False,
+                "dataType": str.__name__
             }
         ]
     )
@@ -67,18 +73,27 @@ class SimulationService(Resource):
         :>json integer simulationID: The id of the simulation (needed for further REST calls)
         :>json string experimentID: Path and name of the experiment configuration file
         :>json string creationDate: Date of creation of this simulation
+        :>json string gzserverHost: The host where gzserver will be run: local for using the
+        same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
         :status 400: Experiment ID is not valid
         :status 201: Simulation created successfully
         """
+
         body = request.get_json(force=True)
         sim_id = len(simulations)
+
         if 'experimentID' in body:
+            sim_gzserver_host = body.get('gzserverHost', 'local')
             sim_owner = UserAuthentication.get_x_user_name_header(request)
-            simulations.append(Simulation(sim_id, body['experimentID'], sim_owner))
+            simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
+                                          sim_gzserver_host))
         else:
             return None, 400
         return simulations[sim_id], 201, \
-               {'location': api.url_for(SimulationControl, sim_id=sim_id)}
+               {
+                    'location': api.url_for(SimulationControl, sim_id=sim_id),
+                    'gzserverHost': sim_gzserver_host
+               }
 
     @swagger.operation(
         notes='Gets the list of all simulations on the server,'

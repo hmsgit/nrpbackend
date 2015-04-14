@@ -16,7 +16,7 @@ class Simulation(object):
     """
     The data class for simulations
     """
-    def __init__(self, sim_id, experiment_id, owner, state='created'):
+    def __init__(self, sim_id, experiment_id, owner, sim_gzserver_host, state='created'):
         """
         Creates a new simulation
         :param sim_id: The simulation id
@@ -28,6 +28,7 @@ class Simulation(object):
         self.__sim_id = sim_id
         self.__experiment_id = experiment_id
         self.__owner = owner
+        self.__gzserver_host = sim_gzserver_host
         self.__creation_date = datetime.datetime.now().isoformat()
         self.__cle = None
 
@@ -68,7 +69,7 @@ class Simulation(object):
         If the simulation CLE object is created then we do trust the CLE more than
         ourself and query it !
         """
-        if (self.__cle is not None):
+        if self.__cle is not None:
             try:
                 self.__state = self.__cle.get_simulation_state()
             except ROSCLEClientException:
@@ -104,14 +105,23 @@ class Simulation(object):
         """
         self.__cle = cle
 
+    @property
+    def gzserver_host(self):
+        """
+        Gets the host/cluster where the gzserver is running or will run once the simulation is
+        started.
+        """
+        return self.__gzserver_host
+
     resource_fields = {
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
         'experimentID': fields.String(attribute='experiment_id'),
         'owner': fields.String(attribute='owner'),
-        'creationDate': fields.String(attribute='creation_date')
+        'creationDate': fields.String(attribute='creation_date'),
+        'gzserverHost': fields.String(attribute='gzserver_host')
     }
-    required = ['state', 'simulationID', 'experimentID']
+    required = ['state', 'simulationID', 'experimentID', 'gzserverHost']
 
 
 class InvalidStateTransitionException(Exception):

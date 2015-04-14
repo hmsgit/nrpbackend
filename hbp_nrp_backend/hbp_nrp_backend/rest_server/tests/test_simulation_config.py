@@ -17,15 +17,15 @@ class TestSimulationConfig(unittest.TestCase):
         self.client = app.test_client()
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
-        simulations.append(Simulation(1, 'experiment2', 'default-owner', 'initialized'))
-        simulations.append(Simulation(2, 'experiment3', 'default-owner', 'started'))
-        simulations.append(Simulation(3, 'experiment3', 'default-owner', 'started'))
-        simulations.append(Simulation(4, 'experiment3', 'default-owner', 'started'))
-        simulations.append(Simulation(5, 'experiment4', 'default-owner', 'paused'))
-        simulations.append(Simulation(6, 'experiment4', 'default-owner', 'paused'))
-        simulations.append(Simulation(7, 'experiment4', 'default-owner', 'paused'))
-        simulations.append(Simulation(8, 'experiment5', 'default-owner', 'stopped'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'local', 'created'))
+        simulations.append(Simulation(1, 'experiment2', 'default-owner', 'local', 'initialized'))
+        simulations.append(Simulation(2, 'experiment3', 'default-owner', 'local', 'started'))
+        simulations.append(Simulation(3, 'experiment3', 'default-owner', 'local', 'started'))
+        simulations.append(Simulation(4, 'experiment3', 'default-owner', 'local', 'started'))
+        simulations.append(Simulation(5, 'experiment4', 'default-owner', 'local', 'paused'))
+        simulations.append(Simulation(6, 'experiment4', 'default-owner', 'local', 'paused'))
+        simulations.append(Simulation(7, 'experiment4', 'default-owner', 'local', 'paused'))
+        simulations.append(Simulation(8, 'experiment5', 'default-owner', 'local', 'stopped'))
 
         utc.use_unit_test_transitions()
 
