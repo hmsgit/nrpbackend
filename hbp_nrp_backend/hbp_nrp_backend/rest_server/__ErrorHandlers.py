@@ -9,6 +9,7 @@ __author__ = 'GeorgHinkel'
 from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 import json
+import logging
 # pylint: disable=W0613
 
 
@@ -27,6 +28,7 @@ def internal_error(error):
     Handles internal server errors
     :param error: The error object
     """
+    logging.exception(error)
     message = "Internal server error: " + str(error)
     return json.dumps({'message': message,
                        'type': 'General error'}), 500
@@ -41,6 +43,7 @@ def internal_error(error):
     Handles ROSCLEClientException errors
     :param error: The error object
     """
+    logging.exception(error)
     message = "Error while communicating with the CLE"
     message += " (" + str(error) + ")."
     return json.dumps({'message': message, 'type': 'CLE error'}), 500
@@ -53,5 +56,6 @@ def error2json(error):
     Handles NRPServicesGeneralException errors
     :param error: The error object
     """
+    logging.exception(error)
     return json.dumps({'message': error.message,
                        'type': error.error_type}), error.error_code

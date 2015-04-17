@@ -122,10 +122,6 @@ class TestSimulationConfig(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIs(utc.last_sim_id, None)
 
-        response = self.client.put('/simulation/1/state', data='{"state": "stopped"}')
-        self.assertEqual(response.status_code, 400)
-        self.assertIs(utc.last_sim_id, None)
-
         response = self.client.put('/simulation/1/state', data='{"state": "started"}',
                                    headers={'X-User-Name': 'Test'})
         self.assertEqual(response.status_code, 401)
@@ -136,6 +132,11 @@ class TestSimulationConfig(unittest.TestCase):
         self.assertEqual('{"state": "started"}', response.data)
         self.assertEqual(utc.last_sim_id, 1)
         self.assertEqual(utc.last_transition, "start")
+
+        response = self.client.put('/simulation/1/state', data='{"state": "stopped"}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual('{"state": "stopped"}', response.data)
+        self.assertIs(utc.last_sim_id, 1)
 
     def test_started_transitions(self):
         utc.last_sim_id = None

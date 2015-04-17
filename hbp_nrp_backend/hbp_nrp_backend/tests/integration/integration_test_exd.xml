@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ExD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig">
+    <environmentModel>
+        <location>virtual_room/virtual_room.sdf</location>
+        <pose>
+            <x>0.0</x>
+            <y>0.0</y>
+            <z>0.0</z>
+            <ux>0.0</ux>
+            <uy>0.0</uy>
+            <uz>1.0</uz>
+            <theta>0.0</theta>
+        </pose>
+    </environmentModel>
+    <bibiConf>integration_test_bibi.xml</bibiConf>
+</ExD>

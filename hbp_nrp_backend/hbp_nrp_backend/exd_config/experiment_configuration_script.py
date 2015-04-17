@@ -4,10 +4,13 @@ Script to run Experiment from ExperimentDesigner Configuration File
 from hbp_nrp_backend.exd_config.generated import generated_experiment_api
 from hbp_nrp_cle.bibi_config import bibi_configuration_script
 import os
+import logging
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
 from hbp_nrp_cle.cle.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
 
 __author__ = 'Lorenzo Vannucci, Daniel Peppicelli'
+
+logger = logging.getLogger(__name__)
 
 # pylint: disable=E1103
 # pylint infers the wrong type for config
@@ -26,6 +29,9 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
                                   including .py and the complete path.
     """
 
+    logger.info("Generating BIBI configuration for experiment {0} to {1}"
+                .format(experiment_conf, bibi_script_file_name))
+
     # parse experiment configuration
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
 
@@ -38,6 +44,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
         timeout = 600.0
     else:
         timeout = experiment.timeout
+
     bibi_configuration_script.generate_cle(bibi_conf,
                                            bibi_script_file_name,
                                            timeout)
@@ -59,6 +66,7 @@ def initialize_experiment(experiment_conf, generated_cle_script_file, gzserver_h
     """
 
     # parse experiment configuration to get the environment to spawn.
+    logger.info("Requesting simulation resources")
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
     simulation_factory_client = ROSCLESimulationFactoryClient()
     simulation_factory_client.start_new_simulation(

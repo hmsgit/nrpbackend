@@ -18,6 +18,7 @@
 
     \path (created) edge node [left] {} (initialized)
           (initialized)	edge [bend right] node {} (started)
+                    edge[bend right] node {} (stopped)
           (paused)	edge [bend right] node {} (initialized)
                     edge [bend left] node{} (started)
                     edge [bend left] node{} (stopped)

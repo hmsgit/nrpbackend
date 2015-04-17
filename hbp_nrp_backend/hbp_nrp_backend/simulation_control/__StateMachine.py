@@ -53,7 +53,8 @@ def __initialize_simulation(sim_id):
 
 
 stateMachine = {'created': {'initialized': __initialize_simulation},
-                'initialized': {'started': __start_simulation},
+                'initialized': {'started': __start_simulation,
+                                'stopped': __stop_simulation},
                 'started': {'paused': __pause_simulation,
                             'initialized': __reset_simulation,
                             'stopped': __stop_simulation},

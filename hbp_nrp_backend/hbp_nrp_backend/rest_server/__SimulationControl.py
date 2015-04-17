@@ -172,17 +172,18 @@ class LightControl(Resource):
         if 'name' not in body:
             return "No name given", 400
 
-        in_name = body['name']
+        in_name = LightControl.as_ascii(body['name'])
         in_diffuse = body.get('diffuse')
-        in_attenuation_constant = body.get('attenuation_constant')
-        in_attenuation_linear = body.get('attenuation_linear')
-        in_attenuation_quadratic = body.get('attenuation_quadratic')
+
+        in_attenuation_constant = LightControl.as_float(body.get('attenuation_constant'))
+        in_attenuation_linear = LightControl.as_float(body.get('attenuation_linear'))
+        in_attenuation_quadratic = LightControl.as_float(body.get('attenuation_quadratic'))
 
         diffuse = None
 
         if in_diffuse is not None:
-            diffuse = ColorRGBA(in_diffuse['r'], in_diffuse['g'],
-                                in_diffuse['b'], in_diffuse['a'])
+            diffuse = ColorRGBA(float(in_diffuse['r']), float(in_diffuse['g']),
+                                float(in_diffuse['b']), float(in_diffuse['a']))
 
         if in_diffuse is None or in_attenuation_constant is None \
                 or in_attenuation_linear is None or in_attenuation_quadratic is None:
@@ -228,6 +229,32 @@ class LightControl(Resource):
             return "Service did not process request: " + str(exc), 400
 
         return "Changed light intensity", 200
+
+    @staticmethod
+    def as_float(val):
+        """
+        Converts the given object to a float, provided it is not None
+
+        :param val: The value that should be converted, can be a string, a number or None
+        """
+        if val is None:
+            return None
+        else:
+            return float(val)
+
+    @staticmethod
+    def as_ascii(val):
+        """
+        Converts the given object to an ascii-string
+
+        :param val: The value object that should be converted to an ascii string
+        """
+        if val is None:
+            return None
+        elif type(val) == unicode:
+            return val.encode('ascii', 'ignore')
+        else:
+            return val
 
 
 class CustomEventControl(Resource):
