@@ -23,13 +23,14 @@ class SimulationService(Resource):
     """
 
     @swagger.model
-    class _ExperimentID(object):
+    class _Experiment(object):
         """
         Represents a simulation ID object. Only used for swagger documentation
         """
 
         resource_fields = {
-            'experimentID': fields.String()
+            'experimentID': fields.String(),
+            'gzserverHost': fields.String()
         }
         required = ['experimentID']
 
@@ -43,6 +44,10 @@ class SimulationService(Resource):
                 "message": "Experiment ID is not valid"
             },
             {
+                "code": 401,
+                "message": "gzserverHost is not valid"
+            },
+            {
                 "code": 201,
                 "message": "Simulation created successfully"
             }
@@ -51,14 +56,8 @@ class SimulationService(Resource):
             {
                 "name": "body",
                 "paramType": "body",
-                "dataType": _ExperimentID.__name__,
+                "dataType": _Experiment.__name__,
                 "required": True
-            },
-            {
-                "name": "gzserverHost",
-                "paramType": "body",
-                "required": False,
-                "dataType": str.__name__
             }
         ]
     )
@@ -76,6 +75,7 @@ class SimulationService(Resource):
         :>json string gzserverHost: The host where gzserver will be run: local for using the
         same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
         :status 400: Experiment ID is not valid
+        :status 401: gzserverHost is not valid
         :status 201: Simulation created successfully
         """
 
@@ -84,9 +84,12 @@ class SimulationService(Resource):
 
         if 'experimentID' in body:
             sim_gzserver_host = body.get('gzserverHost', 'local')
-            sim_owner = UserAuthentication.get_x_user_name_header(request)
-            simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
-                                          sim_gzserver_host))
+            if sim_gzserver_host == 'local' or sim_gzserver_host == 'lugano':
+                sim_owner = UserAuthentication.get_x_user_name_header(request)
+                simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
+                                              sim_gzserver_host))
+            else:
+                return None, 401
         else:
             return None, 400
         return simulations[sim_id], 201, \
@@ -115,6 +118,8 @@ class SimulationService(Resource):
         :>jsonarr string state: The current state of the simulation
         :>jsonarr integer simulationID: The id of the simulation (needed for further REST calls)
         :>jsonarr string experimentID: Path and name of the experiment configuration file
+        :>jsonarr string gzserverHost: Denotes where the gzserver will run once the simulation is
+        started, local for localhost, lugano for a remote execution on the Lugano viz cluster.
         :>json string creationDate: Date of creation of this simulation
         :status 200: Simulations retrieved successfully
         """
