@@ -32,6 +32,43 @@ class Simulation(object):
         self.__creation_date = datetime.datetime.now().isoformat()
         self.__cle = None
 
+        # The following two members are part of the fix for [NRRPLT-1899]:
+        # We store the values of the left and right screen color in order to display
+        # the correct color, whenever a simulation is loaded or joined. Gazebo itself
+        # does not memorize the changed colors and hence we have this (ugly) workaround
+        # as long as there is no better solution.
+        self.__right_screen_color = 'Gazebo/Blue'
+        self.__left_screen_color = 'Gazebo/Blue'
+
+    # The next four methods are also part of the hack to fix [NRRPLT-1899].
+    @property
+    def right_screen_color(self):
+        """
+        Gets the right screen color
+        """
+        return self.__right_screen_color
+
+    @right_screen_color.setter
+    def right_screen_color(self, value):
+        """
+        Sets the right screen color
+        """
+        self.__right_screen_color = value
+
+    @property
+    def left_screen_color(self):
+        """
+        Gets the left screen color
+        """
+        return self.__left_screen_color
+
+    @left_screen_color.setter
+    def left_screen_color(self, value):
+        """
+        Sets the left screen color
+        """
+        self.__left_screen_color = value
+
     @property
     def experiment_id(self):
         """
@@ -119,7 +156,9 @@ class Simulation(object):
         'experimentID': fields.String(attribute='experiment_id'),
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute='creation_date'),
-        'gzserverHost': fields.String(attribute='gzserver_host')
+        'gzserverHost': fields.String(attribute='gzserver_host'),
+        'right_screen_color': fields.String(attribute='right_screen_color'),
+        'left_screen_color': fields.String(attribute='left_screen_color')
     }
     required = ['state', 'simulationID', 'experimentID', 'gzserverHost']
 

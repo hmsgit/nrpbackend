@@ -265,7 +265,7 @@ class CustomEventControl(Resource):
         return "Changed color", 200
 
     @swagger.operation(
-        notes='Currently, only RightScreenToRed is implemented',
+        notes='Currently, only the change of screen colors is implemented',
         parameters=[
             {
                 "name": "sim_id",
@@ -323,11 +323,15 @@ class CustomEventControl(Resource):
             return "No name given", 400
         name = body['name']
         if name == 'RightScreenToRed':
+            simulation.right_screen_color = 'Gazebo/Red'
             return self.__set_light('right_vr_screen', 'Gazebo/Red')
         if name == "RightScreenToBlue":
+            simulation.right_screen_color = 'Gazebo/Blue'
             return self.__set_light('right_vr_screen', 'Gazebo/Blue')
         if name == "LeftScreenToRed":
+            simulation.left_screen_color = 'Gazebo/Red'
             return self.__set_light('left_vr_screen', 'Gazebo/Red')
         if name == "LeftScreenToBlue":
+            simulation.left_screen_color = 'Gazebo/Blue'
             return self.__set_light('left_vr_screen', 'Gazebo/Blue')
         return "Interaction not found", 404
