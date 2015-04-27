@@ -37,7 +37,9 @@ class TestSimulationService(unittest.TestCase):
             'creationDate': self.now.isoformat(),
             'simulationID': n,
             'experimentID': "MyExample.xml",
-            'gzserverHost': 'local'
+            'gzserverHost': 'local',
+            'left_screen_color': 'Gazebo/Blue',
+            'right_screen_color': 'Gazebo/Blue'
         }
         erd = json.dumps(expected_response_data)
         self.assertEqual(response.data, erd)
