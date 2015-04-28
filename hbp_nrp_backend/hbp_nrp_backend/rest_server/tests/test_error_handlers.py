@@ -35,7 +35,7 @@ class TestErrorHandlers(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         response_object = json.loads(response.data)
         self.assertEqual(
-            u"Error while communicating with the CLE ('I am a ROSCLEClientException').",
+            u"Error while communicating with the CLE (I am a ROSCLEClientException).",
             response_object['message'])
         self.assertEqual(u"CLE error", response_object['type'])
 
