@@ -30,11 +30,21 @@ logging.root.addHandler(console_handler)
 
 failed = False
 monitor_called = False
+has_seen_red = False
+
+error_message = None
+
+min_spike_rate_right = 10000
+max_spike_rate_right = 0
+min_spike_rate_left = 10000
+max_spike_rate_left = 0
 
 
 def unhandled_exception(type, value, tracebck):
     global failed
     failed = True
+    global error_message
+    error_message = value
     logger.error("Unhandled exception of type {0}: {1}".format(type, value))
     traceback.print_tb(tracebck)
 
@@ -45,25 +55,46 @@ def monitor_callback(spike_rate):
     global monitor_called
     monitor_called = True
     assert isinstance(spike_rate, SpikeRate)
-    if spike_rate.simulationTime < 20:
+    if 2 < spike_rate.simulationTime < 30:
         if spike_rate.monitorName == "right_wheel_neuron_monitor":
-            if not 5 < spike_rate.rate < 30:
-                log_message = "Spike rate should have been between 5 and 30" \
+            if not has_seen_red and spike_rate.rate < 30:
+                log_message = "Spike rate should have been at least 30 as Husky has not found red" \
                               " but was {0} at simulation time {1}"
                 log_message = log_message.format(spike_rate.rate, spike_rate.simulationTime)
                 logger.error(log_message)
                 global failed
                 failed = True
+                global error_message
+                error_message = log_message
+        if spike_rate.rate < min_spike_rate_right:
+            global min_spike_rate_right
+            min_spike_rate_right = spike_rate.rate
+        if spike_rate.rate > max_spike_rate_right:
+            global max_spike_rate_right
+            max_spike_rate_right = spike_rate.rate
+    if spike_rate.monitorName == "left_wheel_neuron_monitor":
+        if spike_rate.rate > 50:
+            logger.info("Population on left action neuron detected.")
+            logger.info("Assuming Husky has detected red color.")
+            global has_seen_red
+            has_seen_red = True
+        if spike_rate.rate < min_spike_rate_left:
+            global min_spike_rate_left
+            min_spike_rate_left = spike_rate.rate
+        if spike_rate.rate > max_spike_rate_left:
+            global max_spike_rate_left
+            max_spike_rate_left = spike_rate.rate
 
 def exception_callback(exc):
     global failed
     failed = True
+    global error_message
+    error_message = repr(exc)
     logger.exception(exc)
     traceback.print_last()
 
 
 def check_response(response, msg = "Request", status_code = 200):
-    global failed
     if response.status_code != status_code:
         logger.error(msg + " failed, " + repr(response))
         exit(1)
@@ -136,7 +167,7 @@ def run_integration_test():
                               headers=auth_header)
         check_response(response, "Start experiment")
 
-        time.sleep(20)
+        time.sleep(30)
 
         # Pause the experiment
         response = client.put('/simulation/0/state', data='{"state": "paused"}',
@@ -163,13 +194,19 @@ def run_integration_test():
         if os.path.isfile(generated_bibi_path):
             os.remove(generated_bibi_path)
 
+    logger.info("Left actor neuron had spike rates between {0} and {1}"
+                .format(min_spike_rate_left, max_spike_rate_left))
+    logger.info("Right actor neuron had spike rates between {0} and {1}"
+                .format(min_spike_rate_right, max_spike_rate_right))
 
-    if failed or not monitor_called:
+    if failed or not monitor_called or not has_seen_red:
+        logger.error("An error occurred. Marking the integration test to fail.")
+        if not has_seen_red:
+            logger.error("Husky failed to detect red color")
         if failed:
-            logger.error("An error occurred. Marking the integration test to fail.")
+            logger.error("Last error message was: " + error_message)
         if not monitor_called:
-            logger.error("The monitoring callback has not been called. "
-                         "Marking integration test as failed.")
+            logger.error("The monitoring callback has not been called. ")
         exit(1)
     else:
         logger.info("Integration test succeeded")

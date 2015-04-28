@@ -11,6 +11,11 @@
       <neurons xsi:type="Index" population="actors" index="2"/>
     </device>
   </transferFunction>
+  <transferFunction xsi:type="Neuron2Monitor" name="left_wheel_neuron_monitor">
+    <device name="left_wheel_neuron" type="PopulationRate">
+      <neurons xsi:type="Index" population="actors" index="1"/>
+    </device>
+  </transferFunction>
   <transferFunction xsi:type="Neuron2Robot" name="linear_twist">
     <device name="left_wheel_neuron" type="LeakyIntegratorAlpha">
       <neurons xsi:type="Index" population="actors" index="1"/>
