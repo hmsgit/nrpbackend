@@ -41,6 +41,11 @@ def reset_simulation(sim_id):
     :param sim_id: The simulation id
     """
     simulation = simulations[sim_id]
+    # The following two lines are part of a fix for [NRRPLT-1899]
+    # To be removed when the following Gazebo issue is solved:
+    # https://bitbucket.org/osrf/gazebo/issue/1573/scene_info-does-not-reflect-older-changes
+    simulation.left_screen_color = 'Gazebo/Blue'  # pragma: no cover
+    simulation.right_screen_color = 'Gazebo/Blue' # pragma: no cover
     simulation.cle.reset()
     logger.info("simulation reset")
 
