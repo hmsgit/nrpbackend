@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # pylint infers the wrong type for config
 
 
-def generate_bibi(experiment_conf, bibi_script_file_name):
+def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host):
     """
     Generates Code to run the Brain interface and Body integrator based on the
     given experiment configuration file.
@@ -27,10 +27,14 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
                             there must be included.
     :param bibi_script_file_name: The file name of the script to be generated, \
                                   including .py and the complete path.
+
+    :param gzserver_host: The host where the gzserver will run, local for local machine
+        lugano for remote Lugano viz cluster.
     """
 
-    logger.info("Generating BIBI configuration for experiment {0} to {1}"
-                .format(experiment_conf, bibi_script_file_name))
+    logger.info(("Generating BIBI configuration for experiment {0} to {1}" +
+                 "(gz services running on {2})")
+                .format(experiment_conf, bibi_script_file_name, gzserver_host))
 
     # parse experiment configuration
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
@@ -47,7 +51,8 @@ def generate_bibi(experiment_conf, bibi_script_file_name):
 
     bibi_configuration_script.generate_cle(bibi_conf,
                                            bibi_script_file_name,
-                                           timeout)
+                                           timeout,
+                                           gzserver_host)
 
 
 def initialize_experiment(experiment_conf, generated_cle_script_file, gzserver_host):
@@ -69,6 +74,7 @@ def initialize_experiment(experiment_conf, generated_cle_script_file, gzserver_h
     logger.info("Requesting simulation resources")
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
     simulation_factory_client = ROSCLESimulationFactoryClient()
+    # TODO: gzserver_host is not needed anymore here
     simulation_factory_client.start_new_simulation(
         experiment.environmentModel.location,
         os.path.join(os.getcwd(), generated_cle_script_file),

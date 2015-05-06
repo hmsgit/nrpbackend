@@ -78,7 +78,8 @@ def initialize_simulation(sim_id):
             logger.warn("NRP_MODELS_DIRECTORY is empty")
         target = '__generated_experiment.py'
 
-        generate_bibi(experiment, target)
+        generate_bibi(experiment, target, gzserver_host)
+        # TODO: gzserver_host is no more needed in initialize_experiment
         simulation.cle = initialize_experiment(experiment, target, gzserver_host)
         logger.info("simulation initialized")
     except IOError as e:

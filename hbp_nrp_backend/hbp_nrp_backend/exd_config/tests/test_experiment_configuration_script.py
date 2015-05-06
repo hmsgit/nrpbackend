@@ -45,7 +45,7 @@ class TestExperimentConfigurationScript(unittest.TestCase):
             os.remove(generated_bibi)
 
         # Generate bibi script file and compare it to an expected file.
-        generate_bibi(experiment, generated_bibi)
+        generate_bibi(experiment, generated_bibi, 'local')
         self.assertTrue(os.path.isfile(generated_bibi))
 
     def test_gzserver_host_parameter(self):
