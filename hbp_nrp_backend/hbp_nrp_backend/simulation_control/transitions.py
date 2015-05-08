@@ -79,8 +79,7 @@ def initialize_simulation(sim_id):
         target = '__generated_experiment.py'
 
         generate_bibi(experiment, target, gzserver_host)
-        # TODO: gzserver_host is no more needed in initialize_experiment
-        simulation.cle = initialize_experiment(experiment, target, gzserver_host)
+        simulation.cle = initialize_experiment(experiment, target)
         logger.info("simulation initialized")
     except IOError as e:
         raise NRPServicesGeneralException(

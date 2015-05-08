@@ -22,6 +22,8 @@ class Simulation(object):
         :param sim_id: The simulation id
         :param experiment_id: The experiment id (Path to ExD configuration)
         :param owner: The name of the user owning the simulation
+        :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
+        'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
         :param state: The initial state (created by default)
         """
         self.__state = state

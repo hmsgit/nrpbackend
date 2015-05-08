@@ -28,8 +28,7 @@ class TestExperimentConfigurationScript(unittest.TestCase):
 
         directory = os.path.split(__file__)[0]
         experiment = os.path.join(directory, 'ExDXMLExample.xml')
-        self.assertIsInstance(initialize_experiment(experiment, 'generate.xml', 'local'),
-                              ROSCLEClient)
+        self.assertIsInstance(initialize_experiment(experiment, 'generate.xml'), ROSCLEClient)
 
     def test_generate_bibi(self):
         """
@@ -47,22 +46,6 @@ class TestExperimentConfigurationScript(unittest.TestCase):
         # Generate bibi script file and compare it to an expected file.
         generate_bibi(experiment, generated_bibi, 'local')
         self.assertTrue(os.path.isfile(generated_bibi))
-
-    def test_gzserver_host_parameter(self):
-        """
-        Tests the gzserver_host parameter passing.
-        """
-
-        ROSCLESimulationFactoryClient.start_new_simulation = mock.Mock()
-        directory = os.path.split(__file__)[0]
-
-        experiment = os.path.join(directory, 'ExDXMLExample.xml')
-        initialize_experiment(experiment, 'generate.xml', 'local')
-        self.assertEqual(ROSCLESimulationFactoryClient.start_new_simulation.call_count, 1)
-        initialize_experiment(experiment, 'generate.xml', 'lugano')
-        self.assertEqual(ROSCLESimulationFactoryClient.start_new_simulation.call_count, 2)
-        initialize_experiment(experiment, 'generate.xml', 'random string')
-        self.assertEqual(ROSCLESimulationFactoryClient.start_new_simulation.call_count, 3)
 
 if __name__ == '__main__':
     unittest.main()

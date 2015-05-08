@@ -55,7 +55,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host):
                                            gzserver_host)
 
 
-def initialize_experiment(experiment_conf, generated_cle_script_file, gzserver_host):
+def initialize_experiment(experiment_conf, generated_cle_script_file):
     """
     Initialize experiment based on generated code by generate_bibi.
 
@@ -65,20 +65,15 @@ def initialize_experiment(experiment_conf, generated_cle_script_file, gzserver_h
 
     :param generated_cle_script_file: The file name of the generated cle script,
         including .py and the complete path.
-
-    :param gzserver_host: The host where the gzserver will run, local for local machine
-        lugano for remote Lugano viz cluster.
     """
 
     # parse experiment configuration to get the environment to spawn.
     logger.info("Requesting simulation resources")
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)
     simulation_factory_client = ROSCLESimulationFactoryClient()
-    # TODO: gzserver_host is not needed anymore here
     simulation_factory_client.start_new_simulation(
         experiment.environmentModel.location,
-        os.path.join(os.getcwd(), generated_cle_script_file),
-        gzserver_host)
+        os.path.join(os.getcwd(), generated_cle_script_file))
     return ROSCLEClient()
 
 

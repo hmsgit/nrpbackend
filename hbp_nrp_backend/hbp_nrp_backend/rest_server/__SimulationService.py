@@ -84,7 +84,7 @@ class SimulationService(Resource):
 
         if 'experimentID' in body:
             sim_gzserver_host = body.get('gzserverHost', 'local')
-            if sim_gzserver_host == 'local' or sim_gzserver_host == 'lugano':
+            if sim_gzserver_host in ['local', 'lugano']:
                 sim_owner = UserAuthentication.get_x_user_name_header(request)
                 simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
                                               sim_gzserver_host))
@@ -92,11 +92,10 @@ class SimulationService(Resource):
                 return None, 401
         else:
             return None, 400
-        return simulations[sim_id], 201, \
-               {
-                    'location': api.url_for(SimulationControl, sim_id=sim_id),
-                    'gzserverHost': sim_gzserver_host
-               }
+        return simulations[sim_id], 201, {
+            'location': api.url_for(SimulationControl, sim_id=sim_id),
+            'gzserverHost': sim_gzserver_host
+        }
 
     @swagger.operation(
         notes='Gets the list of all simulations on the server,'
