@@ -6,7 +6,7 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations
-from mock import patch, Mock, MagicMock
+from mock import patch, MagicMock
 import unittest
 import json
 import datetime
@@ -16,6 +16,10 @@ class TestSimulationService(unittest.TestCase):
 
     def setUp(self):
         self.now = datetime.datetime.now()
+        restart_rosbridge_patcher = patch('hbp_nrp_backend.rest_server.SimulationService.restart_rosbridge')
+        # Ensure that the patcher is cleaned up correctly even in exceptional cases
+        self.addCleanup(restart_rosbridge_patcher.stop)
+        self.__mocked_restart_rosbridge = restart_rosbridge_patcher.start()
 
     @patch('hbp_nrp_backend.simulation_control.__Simulation.datetime')
     def test_simulation_service_post(self, mocked_date_time):

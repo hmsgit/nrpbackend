@@ -13,6 +13,9 @@ from hbp_nrp_backend.rest_server.__UserAuthentication import \
 from flask import request
 from flask_restful import Resource, marshal_with, fields
 from flask_restful_swagger import swagger
+import time
+import socket
+import os
 
 # pylint: disable=R0201
 
@@ -21,6 +24,24 @@ class SimulationService(Resource):
     """
     The module to setup simulations
     """
+
+    # This method is introduced as a temporary bugfix for the "blue bar of death" [NRRPLT-1997]:
+    # Sometimes rosbridge does not work properly after several simulations have been run.
+    # Hence we restart it here, before a new simulation is created.
+    # The restart via supervisorctl does not wait until the port is open. Therefore we do a busy
+    # waiting (which potentially could lead to an infinite loop in the case rosbridge could not
+    # be started properly) and checking every second if the port of rosbridge (9090) is open.
+    def restart_rosbridge(self):
+        """
+        Restarts rosbridge
+        """
+        # Restart rosbridge since this piece of software is quite unstable.
+        os.system("supervisorctl restart rosbridge")
+        # active wait for port to be open
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        while sock.connect_ex(('127.0.0.1', 9090)) != 0:
+            print "waiting for port 9090 to be open..."
+            time.sleep(1)
 
     @swagger.model
     class _Experiment(object):
@@ -86,6 +107,7 @@ class SimulationService(Resource):
             sim_gzserver_host = body.get('gzserverHost', 'local')
             if sim_gzserver_host in ['local', 'lugano']:
                 sim_owner = UserAuthentication.get_x_user_name_header(request)
+                self.restart_rosbridge()
                 simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
                                               sim_gzserver_host))
             else:
