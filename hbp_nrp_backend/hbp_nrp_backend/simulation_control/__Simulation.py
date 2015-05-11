@@ -8,7 +8,6 @@ from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
-import os
 import datetime
 
 
@@ -42,9 +41,6 @@ class Simulation(object):
         # as long as there is no better solution.
         self.__right_screen_color = 'Gazebo/Blue'
         self.__left_screen_color = 'Gazebo/Blue'
-
-        # Restart rosbridge since this piece of software is quite unstable.
-        os.system("supervisorctl restart rosbridge")
 
     # The next four methods are also part of the hack to fix [NRRPLT-1899].
     @property
