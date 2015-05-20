@@ -18,11 +18,11 @@ This assumes work on Ubuntu (>= 13.10), otherwise use `ROS Hydro <http://wiki.ro
 
   .. code-block:: bash
 
-          sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu trusty main" > /etc/apt/sources.list.d/ros-latest.list'
-          wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -O - | sudo apt-key add -
-          sudo apt-get update
-          sudo apt-get install ros-indigo-desktop-full
-	  sudo apt-get install ros-indigo-control-toolbox ros-indigo-controller-manager ros-indigo-transmission-interface ros-indigo-joint-limits-interface 
+      sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu trusty main" > /etc/apt/sources.list.d/ros-latest.list'
+      wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -O - | sudo apt-key add -
+      sudo apt-get update
+      sudo apt-get install ros-indigo-desktop-full
+      sudo apt-get install ros-indigo-control-toolbox ros-indigo-controller-manager ros-indigo-transmission-interface ros-indigo-joint-limits-interface 
 
 
 
