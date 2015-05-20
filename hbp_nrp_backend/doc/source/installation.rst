@@ -22,6 +22,8 @@ This assumes work on Ubuntu (>= 13.10), otherwise use `ROS Hydro <http://wiki.ro
           wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -O - | sudo apt-key add -
           sudo apt-get update
           sudo apt-get install ros-indigo-desktop-full
+	  sudo apt-get install ros-indigo-control-toolbox ros-indigo-controller-manager ros-indigo-transmission-interface ros-indigo-joint-limits-interface 
+
 
 
 * To add the `Gazebo <http://gazebosim.org/tutorials?tut=install_ubuntu&cat=installation>`_. Ubuntu package sources, run the following commands:
@@ -42,7 +44,7 @@ Installation of the NEST simulator
 
    .. code-block:: bash
 
-      wget http://www.nest-simulator.org/download/gplreleases/nest-2.2.2.tar.gz
+      wget http://www.nest-simulator.org/downloads/gplreleases/nest-2.2.2.tar.gz
       tar zxvf nest-2.2.2.tar.gz
       cd nest-2.2.2
 
