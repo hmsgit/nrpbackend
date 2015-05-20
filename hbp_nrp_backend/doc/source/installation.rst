@@ -38,7 +38,7 @@ This assumes work on Ubuntu (>= 13.10), otherwise use `ROS Hydro <http://wiki.ro
 Installation of the NEST simulator
 ----------------------------------
 
-1. Download NEST 2.2.2 `(link) <http://www.nest-simulator.org/download/gplreleases/nest-2.2.2.tar.gz>`_.
+1. Download NEST 2.2.2 `(link) <http://www.nest-simulator.org/downloads/gplreleases/nest-2.2.2.tar.gz>`_.
 
    .. code-block:: bash
 
