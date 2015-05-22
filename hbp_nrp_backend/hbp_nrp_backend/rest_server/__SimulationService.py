@@ -5,7 +5,7 @@ This module contains the REST services to setup the simulation
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_backend.rest_server import api
+from hbp_nrp_backend.rest_server import api, NRPServicesGeneralException
 from hbp_nrp_backend.rest_server.__SimulationControl import \
     SimulationControl
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
@@ -16,8 +16,11 @@ from flask_restful_swagger import swagger
 import time
 import socket
 import os
+import logging
 
 # pylint: disable=R0201
+
+logger = logging.getLogger(__name__)
 
 
 class SimulationService(Resource):
@@ -25,13 +28,17 @@ class SimulationService(Resource):
     The module to setup simulations
     """
 
+    # rosbridge restart timeout in seconds
+    ROSBRIDGE_TIMEOUT_SEC = 20
+
     # This method is introduced as a temporary bugfix for the "blue bar of death" [NRRPLT-1997]:
     # Sometimes rosbridge does not work properly after several simulations have been run.
     # Hence we restart it here, before a new simulation is created.
     # The restart via supervisorctl does not wait until the port is open. Therefore we do a busy
-    # waiting (which potentially could lead to an infinite loop in the case rosbridge could not
-    # be started properly) and checking every second if the port of rosbridge (9090) is open.
-    def restart_rosbridge(self):
+    # waiting and checking every second if the port of rosbridge (9090) is open.
+    # After ROSBRIDGE_TIMEOUT_SEC seconds a RosbridgeRestartTimeoutException is raised.
+    @staticmethod
+    def restart_rosbridge():
         """
         Restarts rosbridge
         """
@@ -39,9 +46,17 @@ class SimulationService(Resource):
         os.system("supervisorctl restart rosbridge")
         # active wait for port to be open
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        sleep_count = 0
         while sock.connect_ex(('127.0.0.1', 9090)) != 0:
-            print "waiting for port 9090 to be open..."
-            time.sleep(1)
+
+            if sleep_count < SimulationService.ROSBRIDGE_TIMEOUT_SEC:
+                logger.debug("waiting for port 9090 to be open: [%d] ", sleep_count)
+                time.sleep(1)
+                sleep_count += 1
+            else:  # timeout!
+                raise RosbridgeRestartTimeoutException(
+                    "rosbridge restart timed out", "rosbridge error")
 
     @swagger.model
     class _Experiment(object):
@@ -67,6 +82,10 @@ class SimulationService(Resource):
             {
                 "code": 401,
                 "message": "gzserverHost is not valid"
+            },
+            {
+                "code": 408,
+                "message": "rosbridge restart timed out"
             },
             {
                 "code": 201,
@@ -97,6 +116,7 @@ class SimulationService(Resource):
         same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
         :status 400: Experiment ID is not valid
         :status 401: gzserverHost is not valid
+        :status 408: rosbridge restart timed out
         :status 201: Simulation created successfully
         """
 
@@ -107,7 +127,12 @@ class SimulationService(Resource):
             sim_gzserver_host = body.get('gzserverHost', 'local')
             if sim_gzserver_host in ['local', 'lugano']:
                 sim_owner = UserAuthentication.get_x_user_name_header(request)
-                self.restart_rosbridge()
+
+                try:
+                    SimulationService.restart_rosbridge()
+                except RosbridgeRestartTimeoutException:
+                    return None, 408, {"Error": "rosbridge restart timed out"}
+
                 simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
                                               sim_gzserver_host))
             else:
@@ -145,3 +170,11 @@ class SimulationService(Resource):
         :status 200: Simulations retrieved successfully
         """
         return simulations, 200
+
+
+class RosbridgeRestartTimeoutException(NRPServicesGeneralException):
+    """
+    Exception raised by restart_rosbridge() when the restart
+    of rosbridge times out
+    """
+    pass
