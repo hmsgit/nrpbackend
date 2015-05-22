@@ -56,6 +56,30 @@ class NRPServicesExtendedApi(Api):
         """
         return original_handler(e)
 
+
+def rest_response(response_type, message, response_code):
+    """
+    Crafts a response for a REST API suitable for being shown in the frontend.
+
+    :param response_type: Type for the response (Error, Warning, Info, Debug, ...)
+    :param message: The message to be sent.
+    :param response_code: HTTP response code.
+    :return: A tuple suitable to be returned by flask (body, response code, headers).
+    """
+    return {'type': response_type, 'message': message, 'code': response_code}, response_code, None
+
+
+def rest_error(message, response_code):
+    """
+    Crafts an error response for a REST API suitable for being shown in the frontend.
+
+    :param message: The message to be sent.
+    :param response_code: HTTP response code.
+    :return: A tuple suitable to be returned by flask (body, response code, headers).
+    """
+    return rest_response('Error', message, response_code)
+
+
 app = Flask(__name__)
 api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
 
