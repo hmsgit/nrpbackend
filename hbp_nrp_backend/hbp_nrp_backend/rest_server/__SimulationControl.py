@@ -1,6 +1,7 @@
 """
 This module contains the REST implementation for the simulation control
 """
+from hbp_nrp_backend.rest_server import rest_error
 
 __author__ = 'GeorgHinkel'
 
@@ -166,11 +167,11 @@ class LightControl(Resource):
         simulation = _get_simulation_or_abort(sim_id)
 
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            return "You need to be the simulation owner to trigger interactions", 401
+            return rest_error("You need to be the simulation owner to trigger interactions", 401)
 
         body = request.get_json(force=True)
         if 'name' not in body:
-            return "No name given", 400
+            return rest_error("No name given", 400)
 
         in_name = LightControl.as_ascii(body['name'])
         in_diffuse = body.get('diffuse')
@@ -191,7 +192,7 @@ class LightControl(Resource):
             try:
                 rospy.wait_for_service('/gazebo/get_light_properties', 1)
             except rospy.ROSException as exc:
-                return "ROS service not available: " + str(exc), 400
+                return rest_error("ROS service not available: " + str(exc), 400)
 
             get_light_properties = rospy.ServiceProxy('/gazebo/get_light_properties',
                                                       GetLightProperties)
@@ -209,12 +210,12 @@ class LightControl(Resource):
                     diffuse = light_properties.diffuse
 
             except rospy.ServiceException as exc:
-                return "Service did not process request:" + str(exc), 400
+                return rest_error("Service did not process request:" + str(exc), 400)
 
         try:
             rospy.wait_for_service('/gazebo/set_light_properties', 1)
         except rospy.ROSException as exc:
-            return "ROS service not available: " + str(exc), 400
+            return rest_error("ROS service not available: " + str(exc), 400)
 
         set_light_properties = rospy.ServiceProxy('/gazebo/set_light_properties',
                                                   SetLightProperties)
@@ -226,7 +227,7 @@ class LightControl(Resource):
                                  attenuation_linear=in_attenuation_linear,
                                  attenuation_quadratic=in_attenuation_quadratic)
         except rospy.ServiceException as exc:
-            return "Service did not process request: " + str(exc), 400
+            return rest_error("Service did not process request: " + str(exc), 400)
 
         return "Changed light intensity", 200
 
@@ -279,7 +280,7 @@ class CustomEventControl(Resource):
         try:
             rospy.wait_for_service('/gazebo/set_visual_properties', 1)
         except rospy.ROSException as exc:
-            return "ROS service not available: " + str(exc), 400
+            return rest_error("ROS service not available: " + str(exc), 400)
         set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
                                                    SetVisualProperties)
         try:
@@ -288,7 +289,7 @@ class CustomEventControl(Resource):
                                   property_name='material:script:name',
                                   property_value=color)
         except rospy.ServiceException as exc:
-            return "Service did not process request: " + str(exc), 400
+            return rest_error("Service did not process request: " + str(exc), 400)
         return "Changed color", 200
 
     @swagger.operation(
@@ -343,7 +344,7 @@ class CustomEventControl(Resource):
         simulation = _get_simulation_or_abort(sim_id)
 
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            return "You need to be the simulation owner to trigger interactions", 401
+            return rest_error("You need to be the simulation owner to trigger interactions", 401)
 
         body = request.get_json(force=True)
         if 'name' not in body:

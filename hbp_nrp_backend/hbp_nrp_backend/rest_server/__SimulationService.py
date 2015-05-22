@@ -5,13 +5,13 @@ This module contains the REST services to setup the simulation
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_backend.rest_server import api, NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import api, NRPServicesGeneralException, rest_error
 from hbp_nrp_backend.rest_server.__SimulationControl import \
     SimulationControl
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
     UserAuthentication
 from flask import request
-from flask_restful import Resource, marshal_with, fields
+from flask_restful import Resource, fields, marshal, marshal_with
 from flask_restful_swagger import swagger
 import time
 import socket
@@ -101,7 +101,6 @@ class SimulationService(Resource):
             }
         ]
     )
-    @marshal_with(Simulation.resource_fields)
     def post(self):
         """
         Creates a new simulation which is neither 'initialized' nor 'started'.
@@ -116,6 +115,7 @@ class SimulationService(Resource):
         same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
         :status 400: Experiment ID is not valid
         :status 401: gzserverHost is not valid
+        :status 402: Another simulation is already running on the server
         :status 408: rosbridge restart timed out
         :status 201: Simulation created successfully
         """
@@ -123,23 +123,24 @@ class SimulationService(Resource):
         body = request.get_json(force=True)
         sim_id = len(simulations)
 
-        if 'experimentID' in body:
-            sim_gzserver_host = body.get('gzserverHost', 'local')
-            if sim_gzserver_host in ['local', 'lugano']:
-                sim_owner = UserAuthentication.get_x_user_name_header(request)
+        if 'experimentID' not in body:
+            return rest_error('Experiment ID not given.', 400)
 
-                try:
-                    SimulationService.restart_rosbridge()
-                except RosbridgeRestartTimeoutException:
-                    return None, 408, {"Error": "rosbridge restart timed out"}
+        if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
+            return rest_error('gazebo server host not given or invalid.', 401)
 
-                simulations.append(Simulation(sim_id, body['experimentID'], sim_owner,
-                                              sim_gzserver_host))
-            else:
-                return None, 401
-        else:
-            return None, 400
-        return simulations[sim_id], 201, {
+        if True in [s.state != 'stopped' for s in simulations]:
+            return rest_error('Another simulation is already running on the server.', 402)
+
+        sim_gzserver_host = body.get('gzserverHost', 'local')
+        sim_owner = UserAuthentication.get_x_user_name_header(request)
+        try:
+            SimulationService.restart_rosbridge()
+        except RosbridgeRestartTimeoutException:
+            return rest_error('ROSbridge restart timed out.', 408)
+        simulations.append(Simulation(sim_id, body['experimentID'], sim_owner, sim_gzserver_host))
+
+        return marshal(simulations[sim_id], Simulation.resource_fields), 201, {
             'location': api.url_for(SimulationControl, sim_id=sim_id),
             'gzserverHost': sim_gzserver_host
         }
