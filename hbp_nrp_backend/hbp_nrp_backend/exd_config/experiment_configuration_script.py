@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # pylint infers the wrong type for config
 
 
-def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host):
+def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id):
     """
     Generates Code to run the Brain interface and Body integrator based on the
     given experiment configuration file.
@@ -52,10 +52,11 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host):
     bibi_configuration_script.generate_cle(bibi_conf,
                                            bibi_script_file_name,
                                            timeout,
-                                           gzserver_host)
+                                           gzserver_host,
+                                           sim_id)
 
 
-def initialize_experiment(experiment_conf, generated_cle_script_file):
+def initialize_experiment(experiment_conf, generated_cle_script_file, sim_id):
     """
     Initialize experiment based on generated code by generate_bibi.
 
@@ -74,7 +75,7 @@ def initialize_experiment(experiment_conf, generated_cle_script_file):
     simulation_factory_client.start_new_simulation(
         experiment.environmentModel.location,
         os.path.join(os.getcwd(), generated_cle_script_file))
-    return ROSCLEClient()
+    return ROSCLEClient(sim_id)
 
 
 def _get_basepath(configuration_file=None):

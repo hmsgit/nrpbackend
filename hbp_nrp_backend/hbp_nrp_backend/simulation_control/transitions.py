@@ -45,7 +45,7 @@ def reset_simulation(sim_id):
     # To be removed when the following Gazebo issue is solved:
     # https://bitbucket.org/osrf/gazebo/issue/1573/scene_info-does-not-reflect-older-changes
     simulation.left_screen_color = 'Gazebo/Blue'  # pragma: no cover
-    simulation.right_screen_color = 'Gazebo/Blue' # pragma: no cover
+    simulation.right_screen_color = 'Gazebo/Blue'  # pragma: no cover
     simulation.cle.reset()
     logger.info("simulation reset")
 
@@ -76,10 +76,10 @@ def initialize_simulation(sim_id):
             experiment = os.path.join(models_path, experiment)
         else:
             logger.warn("NRP_MODELS_DIRECTORY is empty")
-        target = '__generated_experiment.py'
+        target = '__generated_experiment_%d.py' % (sim_id, )
 
-        generate_bibi(experiment, target, gzserver_host)
-        simulation.cle = initialize_experiment(experiment, target)
+        generate_bibi(experiment, target, gzserver_host, sim_id)
+        simulation.cle = initialize_experiment(experiment, target, sim_id)
         logger.info("simulation initialized")
     except IOError as e:
         raise NRPServicesGeneralException(
