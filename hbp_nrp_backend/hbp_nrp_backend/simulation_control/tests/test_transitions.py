@@ -54,7 +54,7 @@ class TestTransition(unittest.TestCase):
         """
 
         oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y: (_ for _ in ()).throw(ROSException)
+        transitions.initialize_experiment = lambda x, y, z: (_ for _ in ()).throw(ROSException)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
         transitions.initialize_experiment = oldie
 
@@ -64,7 +64,7 @@ class TestTransition(unittest.TestCase):
         """
 
         oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y: (_ for _ in ()).throw(IOError)
+        transitions.initialize_experiment = lambda x, y, z: (_ for _ in ()).throw(IOError)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
         transitions.initialize_experiment = oldie
 
