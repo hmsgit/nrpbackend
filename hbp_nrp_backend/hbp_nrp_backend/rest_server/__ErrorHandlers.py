@@ -6,7 +6,8 @@ frontend libraries is returned.
 
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
+    NRPServicesClientErrorException, app
 from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 import json
 import logging
@@ -50,6 +51,7 @@ def internal_error(error):
 
 
 @app.errorhandler(NRPServicesGeneralException)
+@app.errorhandler(NRPServicesClientErrorException)
 # pylint: disable=E0102
 def error2json(error):
     """

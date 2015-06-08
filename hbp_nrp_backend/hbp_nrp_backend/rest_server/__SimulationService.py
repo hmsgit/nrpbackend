@@ -5,7 +5,7 @@ This module contains the REST services to setup the simulation
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_backend.rest_server import api, rest_error
+from hbp_nrp_backend.rest_server import api, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__SimulationControl import \
     SimulationControl
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
@@ -86,13 +86,14 @@ class SimulationService(Resource):
         sim_id = len(simulations)
 
         if 'experimentID' not in body:
-            return rest_error('Experiment ID not given.', 400)
+            raise NRPServicesClientErrorException('Experiment ID not given.', 400)
 
         if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
-            return rest_error('gazebo server host not given or invalid.', 401)
+            raise NRPServicesClientErrorException('Invalid gazebo server host.', 401)
 
         if True in [s.state != 'stopped' for s in simulations]:
-            return rest_error('Another simulation is already running on the server.', 402)
+            raise NRPServicesClientErrorException(
+                'Another simulation is already running on the server.', 402)
 
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_owner = UserAuthentication.get_x_user_name_header(request)

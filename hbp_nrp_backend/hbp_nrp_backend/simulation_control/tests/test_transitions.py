@@ -1,6 +1,7 @@
 """
 Test file for testing hbp_nrp_backend.simulation_control.transitions
 """
+import rospy
 
 __author__ = 'Alessandro Ambrosano'
 
@@ -47,6 +48,21 @@ class TestTransition(unittest.TestCase):
         self.assertEqual(self.__roscleclient_mock.reset.call_count, 1)
         transitions.stop_simulation(0)
         self.assertEqual(self.__roscleclient_mock.stop.call_count, 1)
+
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.generate_bibi')
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment')
+    def test_initialize_simulation_model_path(self, mock_initialize_experiment, mock_generate_bibi):
+        transitions.initialize_simulation(0)
+        mock_initialize_experiment.side_effect = rospy.ROSException()
+        self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
+        mock_initialize_experiment.side_effect = None
+        mock_generate_bibi.side_effect = IOError()
+        self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
+        mock_generate_bibi.side_effect = None
+        os.environ['NRP_MODELS_DIRECTORY'] = '.'
+        transitions.initialize_simulation(0)
+        self.assertEquals(mock_generate_bibi.call_count, 4)
+        self.assertEquals(mock_initialize_experiment.call_count, 3)
 
     def test_initialize_ros_exception(self):
         """

@@ -16,16 +16,16 @@ class TestSimulationService(unittest.TestCase):
 
     def setUp(self):
         self.now = datetime.datetime.now()
+        # Ensure that the patcher is cleaned up correctly even in exceptional cases
+        del simulations[:]
+        self.client = app.test_client()
 
     @patch('hbp_nrp_backend.simulation_control.__Simulation.datetime')
     def test_simulation_service_post(self, mocked_date_time):
-        del simulations[:]
-
-        client = app.test_client()
         mocked_date_time.datetime = MagicMock()
         mocked_date_time.datetime.now = MagicMock(return_value=self.now)
 
-        response = client.post('/simulation', data=json.dumps({
+        response = self.client.post('/simulation', data=json.dumps({
                                                                "experimentID": "MyExample.xml",
                                                                "gzserverHost": "local"
                                                               }))
@@ -50,24 +50,19 @@ class TestSimulationService(unittest.TestCase):
 
 
     def test_simulation_service_wrong_gzserver_host(self):
-        client = app.test_client()
-
         wrong_server = "wrong_server"
-        response = client.post('/simulation', data=json.dumps({
+        response = self.client.post('/simulation', data=json.dumps({
                                                                "experimentID": "MyExample.xml",
                                                                "gzserverHost": wrong_server
                                                               }))
         self.assertEqual(response.status_code, 401)
 
     def test_simulation_service_get(self):
-        del simulations[:]
-        client = app.test_client()
-
         param = json.dumps({'experimentID': 'MyExample.xml', 'gzserverHost': 'local'})
-        response = client.post('/simulation', data=param)
+        response = self.client.post('/simulation', data=param)
         self.assertEqual(response.status_code, 201)
 
-        response = client.get('/simulation')
+        response = self.client.get('/simulation')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(simulations), 1)
@@ -76,53 +71,43 @@ class TestSimulationService(unittest.TestCase):
         self.assertEqual(simulation.gzserver_host, 'local')
 
     def test_simulation_service_no_experiment_id(self):
-        del simulations[:]
-
-        client = app.test_client()
-
         rqdata = {
             "experimentIDx": "MyExample.xml",
             "gzserverHost": "local"
         }
-        response = client.post('/simulation', data=json.dumps(rqdata))
+        response = self.client.post('/simulation', data=json.dumps(rqdata))
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(len(simulations), 0)
 
     def test_simulation_service_wrong_gzserver_host(self):
-        del simulations[:]
-        client = app.test_client()
         rqdata = {
             "experimentID": "MyExample.xml",
             "gzserverHost": "locano"
         }
-        response = client.post('/simulation', data=json.dumps(rqdata))
+        response = self.client.post('/simulation', data=json.dumps(rqdata))
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(len(simulations), 0)
 
     def test_simulation_service_another_sim_running(self):
-        del simulations[:]
-        client = app.test_client()
         rqdata = {
             "experimentID": "MyExample.xml",
             "gzserverHost": "lugano"
         }
         s = MagicMock('hbp_nrp_backend.simulation_control.Simulation')()
         s.state = 'started'
-        client.post('/simulation', data=json.dumps(rqdata))
-        response = client.post('/simulation', data=json.dumps(rqdata))
+        self.client.post('/simulation', data=json.dumps(rqdata))
+        response = self.client.post('/simulation', data=json.dumps(rqdata))
 
         self.assertEqual(response.status_code, 402)
 
     def test_simulation_service_wrong_method(self):
-        del simulations[:]
-        client = app.test_client()
         rqdata = {
             "experimentID": "MyExample.xml",
             "gzserverHost": "local"
         }
-        response = client.put('/simulation', data=json.dumps(rqdata))
+        response = self.client.put('/simulation', data=json.dumps(rqdata))
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(len(simulations), 0)

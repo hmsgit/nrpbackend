@@ -21,6 +21,7 @@ def start_simulation(sim_id):
     :param sim_id: The simulation id
     """
     simulation = simulations[sim_id]
+    logger.info("starting cle...")
     simulation.cle.start()
     logger.info("simulation started")
 

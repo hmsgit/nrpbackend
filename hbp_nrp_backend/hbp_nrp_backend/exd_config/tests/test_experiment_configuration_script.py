@@ -39,13 +39,17 @@ class TestExperimentConfigurationScript(unittest.TestCase):
         experiment = os.path.join(directory, 'ExDXMLExample.xml')
         generated_bibi = os.path.join(directory, 'generated_bibi.py')
 
-        # Remove the generated file if it already exists.
-        if os.path.isfile(generated_bibi):
-            os.remove(generated_bibi)
+        with mock.patch('hbp_nrp_backend.exd_config.experiment_configuration_script'
+                        '.generated_experiment_api') as p:
+            with mock.patch('hbp_nrp_backend.exd_config.experiment_configuration_script'
+                            '.bibi_configuration_script') as pp:
+                p.parse().timeout = None
+                generate_bibi(experiment, generated_bibi, 'local', 0)
+                self.assertEquals(pp.generate_cle.call_args_list[0][0][2], 600.0)
 
-        # Generate bibi script file and compare it to an expected file.
-        generate_bibi(experiment, generated_bibi, 'local', 0)
-        self.assertTrue(os.path.isfile(generated_bibi))
+                p.parse().timeout = 500.0
+                generate_bibi(experiment, generated_bibi, 'local', 0)
+                self.assertEquals(pp.generate_cle.call_args_list[1][0][2], 500.0)
 
 if __name__ == '__main__':
     unittest.main()

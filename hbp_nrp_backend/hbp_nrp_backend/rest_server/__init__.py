@@ -14,7 +14,7 @@ from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 class NRPServicesGeneralException(Exception):
     """
     General exception class that can be used to return meaningful messages
-    to the HBP frontend code.
+    to the ExD frontend.
 
     :param message: message displayed to the end user.
     :param error_type: Type of error (like 'CLE Error')
@@ -27,6 +27,18 @@ class NRPServicesGeneralException(Exception):
 
     def __str__(self):
         return "" + repr(self.message) + " (" + self.error_type + ")"
+
+
+class NRPServicesClientErrorException(NRPServicesGeneralException):
+    """
+    Exception class for client (4xx) errors. It can be used to return meaningful messages
+    to the ExD frontend.
+
+    :param message: message displayed to the end user.
+    :param error_code: The HTTP error code to send to the frontend.
+    """
+    def __init__(self, message, error_code):
+        super(NRPServicesClientErrorException, self).__init__(message, 'Client error', error_code)
 
 
 class NRPServicesStateException(NRPServicesGeneralException):
@@ -55,29 +67,6 @@ class NRPServicesExtendedApi(Api):
         :param e: Error
         """
         return original_handler(e)
-
-
-def rest_response(response_type, message, response_code):
-    """
-    Crafts a response for a REST API suitable for being shown in the frontend.
-
-    :param response_type: Type for the response (Error, Warning, Info, Debug, ...)
-    :param message: The message to be sent.
-    :param response_code: HTTP response code.
-    :return: A tuple suitable to be returned by flask (body, response code, headers).
-    """
-    return {'type': response_type, 'message': message, 'code': response_code}, response_code, None
-
-
-def rest_error(message, response_code):
-    """
-    Crafts an error response for a REST API suitable for being shown in the frontend.
-
-    :param message: The message to be sent.
-    :param response_code: HTTP response code.
-    :return: A tuple suitable to be returned by flask (body, response code, headers).
-    """
-    return rest_response('Error', message, response_code)
 
 
 app = Flask(__name__)

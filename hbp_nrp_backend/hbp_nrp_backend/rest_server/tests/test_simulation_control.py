@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Code for testing all classes in hbp_nrp_backend.rest_server.__SimulationControl
 """
@@ -8,7 +10,7 @@ import unittest
 import mock
 import rospy
 import json
-from hbp_nrp_backend.rest_server import app
+from hbp_nrp_backend.rest_server import app, NRPServicesClientErrorException
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.__SimulationControl import CustomEventControl, LightControl,\
    UserAuthentication
@@ -57,9 +59,12 @@ class TestScript(unittest.TestCase):
         """
 
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
-        ddict = {}
         with app.test_request_context(headers=hdr):
-            self.assertEqual(self.cec.put(0)[1], 401)
+            self.assertRaises(NRPServicesClientErrorException, self.cec.put, 0)
+            try:
+                self.cec.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 401)
 
     def test_custom_event_control_no_name(self):
         """
@@ -92,9 +97,13 @@ class TestScript(unittest.TestCase):
         rospy.wait_for_service = lambda x, y: (_ for _ in ()).throw(rospy.ROSException)
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "RightScreenToRed"}
-        with app.test_request_context\
-                        (headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.cec.put(0)[1], 400)
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertRaises(NRPServicesClientErrorException, self.cec.put, 0)
+            try:
+                self.cec.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
+
         rospy.wait_for_service = oldwfs
 
     def test_custom_event_control_ros_wait_service_proxy_failure(self):
@@ -107,9 +116,13 @@ class TestScript(unittest.TestCase):
             visual_name='', property_name='', property_value='': (_ for _ in ()).throw(rospy.ServiceException))
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "RightScreenToRed"}
-        with app.test_request_context\
-                        (headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.cec.put(0)[1], 400)
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertRaises(NRPServicesClientErrorException, self.cec.put, 0)
+            try:
+                self.cec.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
+
         rospy.ServiceProxy = oldsp
 
     def test_custom_event_control_good_request(self):
@@ -124,10 +137,8 @@ class TestScript(unittest.TestCase):
             with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
                 self.assertEquals(self.cec.put(0)[1], 200)
 
-
     # The following methods test the class hbp_nrp_backend.rest_server.__SimulationControl
     # .LightControl
-
     def test_light_control_wrong_user(self):
         """
         This method crafts a request from an user which is not the owner of the simulation.
@@ -136,7 +147,11 @@ class TestScript(unittest.TestCase):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
         ddict = {}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 401)
+            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            try:
+                self.lc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 401)
 
     def test_light_control_no_params(self):
         """
@@ -146,7 +161,11 @@ class TestScript(unittest.TestCase):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 400)
+            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            try:
+                self.lc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
 
     def test_light_control_only_name(self):
         """
@@ -156,16 +175,8 @@ class TestScript(unittest.TestCase):
 
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "notreallyimportant"}
-        did_it_fail = True
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            try:
-                self.lc.put(0)
-                did_it_fail = False
-            except Exception:
-                pass
-
-            if not did_it_fail:
-                raise Exception
+            self.assertRaises(Exception, self.lc.put, 0)
 
     def test_light_control_no_attenuation_constant(self):
         """
@@ -185,16 +196,8 @@ class TestScript(unittest.TestCase):
             "attenuation_linear": "0",
             "attenuation_quadratic": "0"
         }
-        did_it_fail = True
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            try:
-                self.lc.put(0)
-                did_it_fail = False
-            except Exception:
-                pass
-
-            if not did_it_fail:
-                raise Exception
+            self.assertRaises(Exception, self.lc.put, 0)
 
     def test_light_control_no_attenuation_linear(self):
         """
@@ -216,14 +219,7 @@ class TestScript(unittest.TestCase):
         }
         did_it_fail = True
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            try:
-                self.lc.put(0)
-                did_it_fail = False
-            except Exception:
-                pass
-
-            if not did_it_fail:
-                raise Exception
+            self.assertRaises(Exception, self.lc.put, 0)
 
     def test_light_control_no_attenuation_quadratic(self):
         """
@@ -243,16 +239,8 @@ class TestScript(unittest.TestCase):
             "attenuation_constant": "0",
             "attenuation_linear": "0"
         }
-        did_it_fail = True
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            try:
-                self.lc.put(0)
-                did_it_fail = False
-            except Exception:
-                pass
-
-            if not did_it_fail:
-                raise Exception
+            self.assertRaises(Exception, self.lc.put, 0)
 
     def test_light_control_no_diffuse(self):
         """
@@ -267,16 +255,8 @@ class TestScript(unittest.TestCase):
             "attenuation_linear": "0",
             "attenuation_quadratic": "0"
         }
-        did_it_fail = True
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            try:
-                self.lc.put(0)
-                did_it_fail = False
-            except Exception:
-                pass
-
-            if not did_it_fail:
-                raise Exception
+            self.assertRaises(Exception, self.lc.put, 0)
 
     def test_good_request_light_control_ros_wait_for_service_failure(self):
         """
@@ -293,13 +273,18 @@ class TestScript(unittest.TestCase):
                 "g": "0",
                 "b": "0",
                 "a": "0"
-           },
+            },
             "attenuation_constant": "0",
             "attenuation_linear": "0",
             "attenuation_quadratic": "0"
         }
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 400)
+            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            try:
+                self.lc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
+
         rospy.wait_for_service = oldwfs
 
     def test_bad_request_light_control_ros_wait_for_service_failure(self):
@@ -312,7 +297,12 @@ class TestScript(unittest.TestCase):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "notreallyimportant"}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 400)
+            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            try:
+                self.lc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
+
         rospy.wait_for_service = oldwfs
 
     def test_good_request_light_control_ros_service_proxy_failure(self):
@@ -338,7 +328,12 @@ class TestScript(unittest.TestCase):
             "attenuation_quadratic": "0"
         }
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 400)
+            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            try:
+                self.lc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
+
         rospy.ServiceProxy = oldsp
 
     def test_bad_request_light_control_ros_service_proxy_failure(self):
@@ -353,7 +348,12 @@ class TestScript(unittest.TestCase):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "notreallyimportant"}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.lc.put(0)[1], 400)
+            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            try:
+                self.lc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 400)
+
         rospy.ServiceProxy = oldsp
 
     def test_light_control_good_request(self):
@@ -369,13 +369,18 @@ class TestScript(unittest.TestCase):
                 "g": "0",
                 "b": "0",
                 "a": "0"
-           },
+            },
             "attenuation_constant": "0",
             "attenuation_linear": "0",
             "attenuation_quadratic": "0"
         }
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
             self.assertEqual(self.lc.put(0)[1], 200)
+
+    def test_light_control_as_ascii(self):
+        self.assertEquals(LightControl.as_ascii(None), None)
+        self.assertEquals(LightControl.as_ascii(u"no utf-8 here.àèìòù"), "no utf-8 here.")
+        self.assertEquals(LightControl.as_ascii("abababa"), "abababa")
 
 if __name__ == '__main__':
     unittest.main()
