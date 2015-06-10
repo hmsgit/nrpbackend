@@ -12,6 +12,15 @@ import sys
 DEFAULT_PORT = 5000
 DEFAULT_HOST = '0.0.0.0'
 
+# We initialize the logging in the startup of the whole backend.
+# This way we can access the already set up logger in the other modules.
+# Also the following configuration can later be easily stored in an external
+# configuration file (and then set by the user).
+log_format = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
+# Warning: We do not use __name__  here, since it translates to "__main__"
+# when this file is ran directly (such as python runserver.py)
+root_logger = logging.getLogger('hbp_nrp_backend')
+
 
 def run_server(server, args):  # pragma: no cover
     """
@@ -25,25 +34,13 @@ def run_server(server, args):  # pragma: no cover
     :param args: The parsed arguments
     """
 
-    # We initialize the logging in the startup of the whole backend.
-    # This way we can access the already set up logger in the other modules.
-    # Also the following configuration can later be easily stored in an external
-    # configuration file (and then set by the user).
-    log_format = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
-    # Warning: We do not use __name__  here, since it translates to "__main__"
-    # when this file is ran directly (such as python runserver.py)
-    root_logger = logging.getLogger('hbp_nrp_backend')
-
     try:
         file_handler = logging.FileHandler(args.logfile)
         file_handler.setFormatter(logging.Formatter(log_format))
         root_logger.setLevel(logging.DEBUG)
         root_logger.addHandler(file_handler)
     except (AttributeError, IOError) as _:
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(logging.Formatter(log_format))
-        root_logger.setLevel(logging.DEBUG)
-        root_logger.addHandler(console_handler)
+        __init_console_logging()
         root_logger.warn("Could not write to specified logfile or no logfile specified, " +
                          "logging to stdout now!")
 
@@ -59,8 +56,23 @@ def run_server(server, args):  # pragma: no cover
     root_logger.info("REST backend server terminated.")
 
 
+def __init_console_logging():
+    """
+    Initialize the logging to stdout.
+    """
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(logging.Formatter(log_format))
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(console_handler)
+
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument('--logfile', dest='logfile', help='specify the logfile for the ExDBackend')
     parser.add_argument('--port', dest='port', help='specify the application server\'s port')
     run_server(app, parser.parse_args())
+else:
+    # Started with uWSGI or any other framework. Logging is done through the console.
+    __init_console_logging()
+    root_logger.warn("Application started with uWSGI or any other framework. logging "
+                     "to console by default !")
