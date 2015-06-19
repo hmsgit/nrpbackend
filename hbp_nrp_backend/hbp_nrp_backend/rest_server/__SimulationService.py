@@ -91,7 +91,7 @@ class SimulationService(Resource):
         if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
             raise NRPServicesClientErrorException('Invalid gazebo server host.', 401)
 
-        if True in [s.state != 'stopped' for s in simulations]:
+        if True in [s.state not in ['stopped', 'failed'] for s in simulations]:
             raise NRPServicesClientErrorException(
                 'Another simulation is already running on the server.', 402)
 

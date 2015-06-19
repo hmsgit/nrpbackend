@@ -116,6 +116,7 @@ class Simulation(object):
                 self.__state = "stopped"
         return self.__state
 
+    # pylint: disable=broad-except
     @state.setter
     def state(self, new_state):
         """
@@ -125,8 +126,12 @@ class Simulation(object):
         transitions = stateMachine[self.__state]
         if new_state not in transitions:
             raise InvalidStateTransitionException()
-        transitions[new_state](self.__sim_id)
-        self.__state = new_state
+        try:
+            transitions[new_state](self.__sim_id)
+            self.__state = new_state
+        except Exception as e:
+            self.__state = "failed"
+            raise e
 
     @property
     def cle(self):
