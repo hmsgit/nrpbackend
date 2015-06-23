@@ -53,6 +53,11 @@ sys.excepthook = unhandled_exception
 
 def monitor_callback(spike_rate):
     global monitor_called
+    global has_seen_red
+    global min_spike_rate_right
+    global max_spike_rate_right
+    global min_spike_rate_left
+    global max_spike_rate_left
     monitor_called = True
     assert isinstance(spike_rate, SpikeRate)
     if 2 < spike_rate.simulationTime < 30:
@@ -67,23 +72,19 @@ def monitor_callback(spike_rate):
                 global error_message
                 error_message = log_message
         if spike_rate.rate < min_spike_rate_right:
-            global min_spike_rate_right
             min_spike_rate_right = spike_rate.rate
         if spike_rate.rate > max_spike_rate_right:
-            global max_spike_rate_right
             max_spike_rate_right = spike_rate.rate
     if spike_rate.monitorName == "left_wheel_neuron_monitor":
-        if spike_rate.rate > 50:
+        if spike_rate.rate > 50 and not has_seen_red:
             logger.info("Population on left action neuron detected.")
             logger.info("Assuming Husky has detected red color.")
-            global has_seen_red
             has_seen_red = True
         if spike_rate.rate < min_spike_rate_left:
-            global min_spike_rate_left
             min_spike_rate_left = spike_rate.rate
         if spike_rate.rate > max_spike_rate_left:
-            global max_spike_rate_left
             max_spike_rate_left = spike_rate.rate
+
 
 def exception_callback(exc):
     global failed
@@ -94,7 +95,7 @@ def exception_callback(exc):
     traceback.print_last()
 
 
-def check_response(response, msg = "Request", status_code = 200):
+def check_response(response, msg="Request", status_code=200):
     if response.status_code != status_code:
         logger.error(msg + " failed, " + repr(response))
         exit(1)
