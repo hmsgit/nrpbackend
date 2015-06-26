@@ -6,8 +6,7 @@ __author__ = 'Lorenzo Vannucci'
 
 from hbp_nrp_backend.exd_config.experiment_configuration_script \
     import generate_bibi, initialize_experiment
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
-from hbp_nrp_cle.cle.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
 import unittest
 import os
 import rospy

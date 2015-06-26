@@ -8,7 +8,6 @@ __author__ = 'GeorgHinkel'
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
 
 
 class NRPServicesGeneralException(Exception):

@@ -10,9 +10,6 @@ import sys
 import rospy
 import std_msgs.msg
 from cle_ros_msgs.msg import SpikeRate
-from hbp_nrp_cle.cle.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
-from hbp_nrp_cle.bibi_config.bibi_configuration_script import generate_cle
 from threading import Thread
 import json
 import os

@@ -8,7 +8,7 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesClientErrorException, app
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 import json
 import logging
 # pylint: disable=W0613

@@ -248,6 +248,6 @@ texinfo_documents = [
 # -- Mocking for importing external modules ------------------------------------
 
 # the following modules are part of CLE and should be mocked in the ExDBackend
-MOCK_MODULES = ['hbp_nrp_cle.cle.ROSCLEClient', 'hbp_nrp_cle.cle.ROSCLESimulationFactoryClient', 'gazebo_msgs.srv']
+MOCK_MODULES = ['gazebo_msgs.srv']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()

@@ -9,7 +9,7 @@ import json
 import hbp_nrp_backend.simulation_control.tests.unit_tests as utc
 from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 
 class TestErrorHandlers(unittest.TestCase):

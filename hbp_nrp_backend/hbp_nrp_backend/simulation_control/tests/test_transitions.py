@@ -19,7 +19,7 @@ class TestTransition(unittest.TestCase):
     """
 
     def setUp(self):
-        self.__roscleclient_mock = mock.patch('hbp_nrp_cle.cle.ROSCLEClient.ROSCLEClient').start()
+        self.__roscleclient_mock = mock.patch('hbp_nrp_backend.cle_interface.ROSCLEClient.ROSCLEClient').start()
         self.__roscleclient_mock.start = mock.Mock()
         self.__roscleclient_mock.pause = mock.Mock()
         self.__roscleclient_mock.stop = mock.Mock()

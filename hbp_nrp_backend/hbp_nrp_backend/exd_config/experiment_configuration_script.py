@@ -5,8 +5,9 @@ from hbp_nrp_backend.exd_config.generated import generated_experiment_api
 from hbp_nrp_cle.bibi_config import bibi_configuration_script
 import os
 import logging
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClient
-from hbp_nrp_cle.cle.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
+from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient \
+    import ROSCLESimulationFactoryClient
 
 __author__ = 'Lorenzo Vannucci, Daniel Peppicelli'
 

@@ -5,7 +5,7 @@ This module contains the simulation class
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
-from hbp_nrp_cle.cle.ROSCLEClient import ROSCLEClientException
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
 import datetime
