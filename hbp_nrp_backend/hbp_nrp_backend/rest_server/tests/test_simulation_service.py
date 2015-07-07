@@ -4,7 +4,7 @@ Unit tests for the simulation setup
 
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_backend.rest_server import app, SimulationService
+from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations
 from mock import patch, MagicMock
 import unittest
@@ -13,7 +13,6 @@ import datetime
 
 
 class TestSimulationService(unittest.TestCase):
-
     def setUp(self):
         self.now = datetime.datetime.now()
         # Ensure that the patcher is cleaned up correctly even in exceptional cases
@@ -26,9 +25,9 @@ class TestSimulationService(unittest.TestCase):
         mocked_date_time.datetime.now = MagicMock(return_value=self.now)
 
         response = self.client.post('/simulation', data=json.dumps({
-                                                               "experimentID": "MyExample.xml",
-                                                               "gzserverHost": "local"
-                                                              }))
+            "experimentID": "MyExample.xml",
+            "gzserverHost": "local"
+        }))
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/0')
@@ -48,13 +47,12 @@ class TestSimulationService(unittest.TestCase):
         simulation = simulations[0]
         self.assertEqual(simulation.experiment_id, 'MyExample.xml')
 
-
     def test_simulation_service_wrong_gzserver_host(self):
         wrong_server = "wrong_server"
         response = self.client.post('/simulation', data=json.dumps({
-                                                               "experimentID": "MyExample.xml",
-                                                               "gzserverHost": wrong_server
-                                                              }))
+            "experimentID": "MyExample.xml",
+            "gzserverHost": wrong_server
+        }))
         self.assertEqual(response.status_code, 401)
 
     def test_simulation_service_get(self):
@@ -111,6 +109,7 @@ class TestSimulationService(unittest.TestCase):
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(len(simulations), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
