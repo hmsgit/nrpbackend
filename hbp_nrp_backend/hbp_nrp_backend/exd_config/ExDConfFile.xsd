@@ -110,6 +110,8 @@
     <!--Root element of the ExD file -->
     <xs:complexType name="ExD">
         <xs:sequence>
+            <xs:element name="name" type="xs:string"/>
+            <xs:element name="description" type="xs:string"/>
             <xs:element name="environmentModel" type="EnvironmentModel"/>
             <xs:element name="bibiConf" type="xs:string"/>
             <xs:element name="timeout" type="xs:double" minOccurs="0" maxOccurs="1"/>
