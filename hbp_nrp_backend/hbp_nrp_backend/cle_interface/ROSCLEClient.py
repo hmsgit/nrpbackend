@@ -9,8 +9,9 @@ from std_srvs.srv import Empty
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackage folder at the root of the CLE (this) repository.
 from cle_ros_msgs import srv
-from hbp_nrp_backend.cle_interface import TOPIC_SIM_START_ID, TOPIC_SIM_PAUSE_ID, \
-    TOPIC_SIM_STOP_ID, TOPIC_SIM_RESET_ID, TOPIC_SIM_STATE_ID  # duplicated from CLE.__init__
+from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
+    SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
+    SERVICE_GET_TRANSFER_FUNCTIONS  # duplicated from CLE.__init__
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli"
@@ -42,12 +43,15 @@ class ROSCLEClient(object):
         self.__invalid_reason = ""
 
         # Creates service proxies
-        self.__cle_start = self.__init_ros_service(TOPIC_SIM_START_ID(sim_id), Empty)
-        self.__cle_pause = self.__init_ros_service(TOPIC_SIM_PAUSE_ID(sim_id), Empty)
-        self.__cle_stop = self.__init_ros_service(TOPIC_SIM_STOP_ID(sim_id), Empty)
-        self.__cle_reset = self.__init_ros_service(TOPIC_SIM_RESET_ID(sim_id), Empty)
-        self.__cle_state = self.__init_ros_service(TOPIC_SIM_STATE_ID(sim_id),
+        self.__cle_start = self.__init_ros_service(SERVICE_SIM_START_ID(sim_id), Empty)
+        self.__cle_pause = self.__init_ros_service(SERVICE_SIM_PAUSE_ID(sim_id), Empty)
+        self.__cle_stop = self.__init_ros_service(SERVICE_SIM_STOP_ID(sim_id), Empty)
+        self.__cle_reset = self.__init_ros_service(SERVICE_SIM_RESET_ID(sim_id), Empty)
+        self.__cle_state = self.__init_ros_service(SERVICE_SIM_STATE_ID(sim_id),
                                                    srv.GetSimulationState)
+        self.__cle_get_transfer_functions = \
+            self.__init_ros_service(SERVICE_GET_TRANSFER_FUNCTIONS(sim_id),
+                                    srv.GetTransferFunctions)
 
     def __init_ros_service(self, service_name, service_class):
         """
@@ -148,3 +152,28 @@ class ROSCLEClient(object):
                 self.__invalid_reason
             )
         return state
+
+    def get_simulation_transfer_functions(self):
+        """
+        Get the simulation transfer functions.
+
+        :returns: An array of strings containing the source code of the transfer
+        functions.
+        """
+        result = []
+        if self.__valid:
+            try:
+                result = self.__cle_get_transfer_functions()
+            except rospy.ServiceException as e:
+                logger.error(
+                    "Error while trying to retrieve simulation transfer functions: %s. "
+                    "Returning an empty transfer function array",
+                    str(e)
+                )
+        else:
+            logger.warn(
+                "Trying to retrieve the transfer functions of a simulation from "
+                "an invalid client (invalid due to %s).",
+                self.__invalid_reason
+            )
+        return result

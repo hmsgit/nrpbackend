@@ -15,3 +15,4 @@ CLE/
 .project
 .pydevproject
 .settings/
+__generated_experiment*

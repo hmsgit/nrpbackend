@@ -78,6 +78,7 @@ from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
     CustomEventControl
+from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunctions
 from hbp_nrp_backend.rest_server.__Version import Version
 
 api.add_resource(SimulationService, '/simulation')
@@ -85,4 +86,5 @@ api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
 api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
+api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transferfunctions')
 api.add_resource(Version, '/version')

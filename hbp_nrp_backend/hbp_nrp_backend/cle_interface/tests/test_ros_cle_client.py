@@ -18,7 +18,7 @@ class TestROSCLEClient(unittest.TestCase):
 
     @patch('rospy.ServiceProxy')
     def test_constructor(self, ServiceProxyMock):
-        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         ServiceProxyMock.side_effect = ServiceProxyMocks
         client = ROSCLEClient.ROSCLEClient(0)
         for mocks in ServiceProxyMocks:
@@ -26,7 +26,7 @@ class TestROSCLEClient(unittest.TestCase):
 
     @patch('rospy.ServiceProxy')
     def test_constructor_timeout(self, ServiceProxyMock):
-        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         ServiceProxyMocks[2].wait_for_service.side_effect = rospy.ROSException()
         ServiceProxyMock.side_effect = ServiceProxyMocks
         with self.assertRaises(ROSCLEClient.ROSCLEClientException):
@@ -39,7 +39,7 @@ class TestROSCLEClient(unittest.TestCase):
 
     @patch('rospy.ServiceProxy')
     def test_start_pause_reset(self, ServiceProxyMock):
-        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         ServiceProxyMock.side_effect = ServiceProxyMocks
         client = ROSCLEClient.ROSCLEClient(0)
         client.start()
@@ -63,7 +63,7 @@ class TestROSCLEClient(unittest.TestCase):
 
     @patch('rospy.ServiceProxy')
     def test_stop(self, ServiceProxyMock):
-        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         ServiceProxyMock.side_effect = ServiceProxyMocks
         client = ROSCLEClient.ROSCLEClient(0)
         client.start()
@@ -85,7 +85,7 @@ class TestROSCLEClient(unittest.TestCase):
 
     @patch('rospy.ServiceProxy')
     def test_call_service(self, ServiceProxyMock):
-        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         ServiceProxyMock.side_effect = ServiceProxyMocks
         srv = MagicMock()
         srv.side_effect = rospy.ServiceException()
@@ -94,7 +94,7 @@ class TestROSCLEClient(unittest.TestCase):
 
     @patch('rospy.ServiceProxy')
     def test_get_simulation_state(self, ServiceProxyMock):
-        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         ServiceProxyMock.side_effect = ServiceProxyMocks
         srv = MagicMock()
         srv.side_effect = rospy.ServiceException()
@@ -112,5 +112,26 @@ class TestROSCLEClient(unittest.TestCase):
         client.get_simulation_state()
         self.assertEquals(client._ROSCLEClient__cle_state.call_count, 2)
 
+
+    @patch('rospy.ServiceProxy')
+    def test_get_simulation_transfer_functions(self, ServiceProxyMock):
+        ServiceProxyMocks = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        ServiceProxyMock.side_effect = ServiceProxyMocks
+        srv = MagicMock()
+        srv.side_effect = rospy.ServiceException()
+
+        client = ROSCLEClient.ROSCLEClient(0)
+        client._ROSCLEClient__cle_get_transfer_functions = MagicMock()
+
+        client._ROSCLEClient__valid = False
+        client.get_simulation_transfer_functions()
+
+        client._ROSCLEClient__valid = True
+        client.get_simulation_transfer_functions()
+        self.assertEquals(client._ROSCLEClient__cle_get_transfer_functions.call_count, 1)
+
+        client._ROSCLEClient__cle_get_transfer_functions.side_effect = rospy.ServiceException()
+        client.get_simulation_transfer_functions()
+        self.assertEquals(client._ROSCLEClient__cle_get_transfer_functions.call_count, 2)
 if __name__ == '__main__':
     unittest.main()
