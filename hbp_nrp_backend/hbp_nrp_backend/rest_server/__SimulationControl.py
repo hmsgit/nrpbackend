@@ -70,7 +70,7 @@ class SimulationControl(Resource):
         :>json integer simulationID: The id of the simulation (needed for further REST calls)
         :>json string experimentID: Path and name of the experiment configuration file
         :>json string creationDate: Date of creation of this simulation
-        :>json string gzserverHost: Denotes where the simulation will run once started. Set to
+        :>json string gzserverHost: Denotes where the simulation will run once started. Set to \
         'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
         :status 404: The simulation with the given ID was not found
         :status 200: The simulation with the given ID is successfully retrieved
