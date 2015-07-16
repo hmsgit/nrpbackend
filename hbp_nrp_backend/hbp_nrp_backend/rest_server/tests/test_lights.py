@@ -25,7 +25,7 @@ class TestSimulationService(unittest.TestCase):
 
     def test_put_light(self):
         response = self.client.put('/simulation/0/interaction/light', data='{"name":"foo"}')
-        self.assertEqual('"Changed light intensity"', response.data)
+        self.assertEqual('"Changed light intensity"', response.data.strip())
         self.assertEqual(200, response.status_code)
 
 if __name__ == '__main__':

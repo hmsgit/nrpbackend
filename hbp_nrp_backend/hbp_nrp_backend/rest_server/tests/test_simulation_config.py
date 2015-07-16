@@ -52,23 +52,23 @@ class TestSimulationConfig(unittest.TestCase):
 
     def test_get_state(self):
         response = self.client.get('/simulation/0/state')
-        self.assertEqual('{"state": "created"}', response.data)
+        self.assertEqual('{"state": "created"}', response.data.strip())
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/1/state')
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized"}', response.data.strip())
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/2/state')
-        self.assertEqual('{"state": "started"}', response.data)
+        self.assertEqual('{"state": "started"}', response.data.strip())
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/5/state')
-        self.assertEqual('{"state": "paused"}', response.data)
+        self.assertEqual('{"state": "paused"}', response.data.strip())
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/8/state')
-        self.assertEqual('{"state": "stopped"}', response.data)
+        self.assertEqual('{"state": "stopped"}', response.data.strip())
         self.assertEqual(response.status_code, 200)
 
     def test_created_transitions(self):
@@ -102,7 +102,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/0/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 0)
         self.assertEqual(utc.last_transition, "initialize")
 
@@ -129,13 +129,13 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/1/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "started"}', response.data)
+        self.assertEqual('{"state": "started"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 1)
         self.assertEqual(utc.last_transition, "start")
 
         response = self.client.put('/simulation/1/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "stopped"}', response.data)
+        self.assertEqual('{"state": "stopped"}', response.data.strip())
         self.assertIs(utc.last_sim_id, 1)
 
     def test_started_transitions(self):
@@ -152,7 +152,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/2/state', data='{"state": "paused"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "paused"}', response.data)
+        self.assertEqual('{"state": "paused"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 2)
         self.assertEqual(utc.last_transition, "pause")
 
@@ -166,7 +166,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/3/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "stopped"}', response.data)
+        self.assertEqual('{"state": "stopped"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 3)
         self.assertEqual(utc.last_transition, "stop")
 
@@ -175,7 +175,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/4/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 4)
         self.assertEqual(utc.last_transition, "reset")
 
@@ -198,7 +198,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/5/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "started"}', response.data)
+        self.assertEqual('{"state": "started"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 5)
         self.assertEqual(utc.last_transition, "start")
 
@@ -207,7 +207,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/6/state', data='{"state": "stopped"}')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('{"state": "stopped"}', response.data)
+        self.assertIn('{"state": "stopped"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 6)
         self.assertEqual(utc.last_transition, "stop")
 
@@ -216,7 +216,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         response = self.client.put('/simulation/7/state', data='{"state": "initialized"}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual('{"state": "initialized"}', response.data)
+        self.assertEqual('{"state": "initialized"}', response.data.strip())
         self.assertEqual(utc.last_sim_id, 7)
         self.assertEqual(utc.last_transition, "reset")
 

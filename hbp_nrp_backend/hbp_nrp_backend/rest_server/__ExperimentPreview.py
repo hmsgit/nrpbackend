@@ -6,13 +6,14 @@ for loading (and someday writing) experiment preview images
 
 __author__ = 'Bernd Eckstein'
 
-from flask import Response
-from flask_restful import Resource
+from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
-from hbp_nrp_backend.rest_server.__ExperimentService import get_experiments, get_basepath
+from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_rel, get_basepath, \
+    ErrorMessages
 
+import base64
 import os
 
 # pylint: disable=R0201
@@ -23,10 +24,21 @@ class ExperimentPreview(Resource):
     Get Experiment preview PNG file as octet-stream
     """
 
+    @swagger.model
+    class _Image(object):
+        """
+        Get and Set Experiment Configuration
+        Only used for swagger documentation
+        """
+
+        resource_fields = {
+            'image_as_base64': fields.String()
+        }
+        required = ['image_as_base64']
+
     @swagger.operation(
         notes='Get the preview image of a given experiment',
-        type='png file',
-        produces='application/octet-stream',
+        responseClass=_Image.__name__,
         parameters=[
             {
                 "name": "exp_id",
@@ -38,16 +50,16 @@ class ExperimentPreview(Resource):
         ],
         responseMessages=[
             {
-                "code": 501,
-                "message": "Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty"
+                "code": 500,
+                "message": ErrorMessages.VARIABLE_ERROR
             },
             {
                 "code": 404,
-                "message": "The experiment was not found"
+                "message": ErrorMessages.EXPERIMENT_NOT_FOUND_404
             },
             {
-                "code": 401,
-                "message": "The experiment has no preview image"
+                "code": 404,
+                "message": ErrorMessages.EXPERIMENT_PREVIEW_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -57,32 +69,28 @@ class ExperimentPreview(Resource):
     )
     def get(self, exp_id):
         """
-        Gets preview image of the experiment specified with experiment ID.
+        Get preview image of the experiment specified with experiment ID.
 
         :param exp_id: The experiment ID
-        :return Flask.Response mimetype='application/octet-stream' containing preview image
-        :status 501: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
+        :>json image_as_base64: The PNG image as base64
+        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
         :status 404: The experiment with the given ID was not found
-        :status 401: The experiment has no preview image
-        :status 200: The preview image is returned
+        :status 404: The experiment has no preview image
+        :status 200: Success. The preview image is returned
         """
 
         # Check experiment
-        experiment_dict = get_experiments()
-        if not exp_id in experiment_dict:
-            raise NRPServicesClientErrorException("The experiment with the given ID was not "
-                                                  "found", 404)
+        experiment_file = get_experiment_rel(exp_id)
 
-        # Get Experiment
-        experiment_file = experiment_dict[exp_id]['experimentConfiguration']
         preview_file = os.path.join(get_basepath(), os.path.splitext(
             experiment_file)[0] + ".png")
 
         if not os.path.isfile(preview_file):
-            raise NRPServicesClientErrorException("The experiment has no preview image.", 401)
+            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_PREVIEW_NOT_FOUND_404,
+                                                  404)
 
         with open(preview_file, "rb") as _file:
             data = _file.read()
 
-        resp = Response(data, status=200, mimetype='application/octet-stream')
-        return resp
+        # Base64
+        return dict(image_as_base64=base64.b64encode(data))

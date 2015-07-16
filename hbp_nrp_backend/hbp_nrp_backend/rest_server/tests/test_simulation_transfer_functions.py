@@ -23,7 +23,7 @@ class TestSimulationTransferFunctions(unittest.TestCase):
         response = client.get('/simulation/0/transferfunctions')
         self.assertEqual(mocked_simulation.cle.get_simulation_transfer_functions.call_count, 1)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, json.dumps(transfer_functions))
+        self.assertEqual(response.data.strip(), json.dumps(transfer_functions))
 
 
 if __name__ == '__main__':

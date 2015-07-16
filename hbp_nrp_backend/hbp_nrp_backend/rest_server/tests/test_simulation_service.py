@@ -43,7 +43,7 @@ class TestSimulationService(unittest.TestCase):
             'right_screen_color': 'Gazebo/Blue'
         }
         erd = json.dumps(expected_response_data)
-        self.assertEqual(response.data, erd)
+        self.assertEqual(response.data.strip(), erd)
         self.assertEqual(len(simulations), 1)
         simulation = simulations[0]
         self.assertEqual(simulation.experiment_id, 'MyExample.xml')

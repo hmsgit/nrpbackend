@@ -82,6 +82,7 @@ from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import Simulation
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
+from hbp_nrp_backend.rest_server.__ExperimentBibi import ExperimentBibi
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 
 api.add_resource(SimulationService, '/simulation')
@@ -93,4 +94,5 @@ api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer
 api.add_resource(Version, '/version')
 api.add_resource(Experiment, '/experiment')
 api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
+api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')

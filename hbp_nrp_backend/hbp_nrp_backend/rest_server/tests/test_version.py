@@ -27,7 +27,7 @@ class TestVersion(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         expected_response = {'hbp_nrp_cle': cle_version, 'hbp_nrp_backend': str(hbp_nrp_backend.__version__)}
         erd = json.dumps(expected_response)
-        self.assertEqual(response.data, erd)
+        self.assertEqual(response.data.strip(), erd)
 
 if __name__ == '__main__':
     unittest.main()

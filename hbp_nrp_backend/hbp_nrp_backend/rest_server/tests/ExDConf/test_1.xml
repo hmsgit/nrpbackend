@@ -17,7 +17,7 @@
             <theta>0.0</theta>
         </pose>
     </environmentModel>
-    <bibiConf>BIBI/milestone2.xml</bibiConf>
+    <bibiConf>BIBI/bibi_1.xml</bibiConf>
     <events>
         <condition xsi:type="TimelineCondition">
             <time>00:00:00</time>
