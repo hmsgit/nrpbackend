@@ -74,7 +74,7 @@ class SimulationService(Resource):
         :>json integer simulationID: The id of the simulation (needed for further REST calls)
         :>json string experimentID: Path and name of the experiment configuration file
         :>json string creationDate: Date of creation of this simulation
-        :>json string gzserverHost: The host where gzserver will be run: local for using the
+        :>json string gzserverHost: The host where gzserver will be run: local for using the \
         same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
         :status 400: Experiment ID is not valid
         :status 401: gzserverHost is not valid
@@ -124,7 +124,7 @@ class SimulationService(Resource):
         :>jsonarr string state: The current state of the simulation
         :>jsonarr integer simulationID: The id of the simulation (needed for further REST calls)
         :>jsonarr string experimentID: Path and name of the experiment configuration file
-        :>jsonarr string gzserverHost: Denotes where the gzserver will run once the simulation is
+        :>jsonarr string gzserverHost: Denotes where the gzserver will run once the simulation is \
         started, local for localhost, lugano for a remote execution on the Lugano viz cluster.
         :>json string creationDate: Date of creation of this simulation
         :status 200: Simulations retrieved successfully
