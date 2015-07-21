@@ -30,7 +30,7 @@ echo
 read  -p "Select (2 digits) :" -n 2 SUBSELECTION
 echo
 case "$SUBSELECTION" in
-10) curl -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/simulation -d '{"experimentID": "ExDConf/ExDXMLExample.xml"}' ;;
+10) curl -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/simulation -d '{"experimentConfiguration": "ExDConf/ExDXMLExample.xml"}' ;;
 11) curl -H "Content-Type: application/json" -X GET http://127.0.0.1:5000/simulation/0/state ;;
 12) curl -H "Content-Type: application/json" -X PUT http://127.0.0.1:5000/simulation/0/state -d '{"state": "initialized"}' ;;
 13) curl -H "Content-Type: application/json" -X PUT http://127.0.0.1:5000/simulation/0/state -d '{"state": "started"}' ;;

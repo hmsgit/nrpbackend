@@ -69,7 +69,7 @@ def initialize_simulation(sim_id):
     # generate script
     try:
         simulation = simulations[sim_id]
-        experiment = simulation.experiment_id
+        experiment = simulation.experiment_conf
         gzserver_host = simulation.gzserver_host
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
         logger.debug("The NRP_MODELS_DIRECTORY is: %s", models_path)

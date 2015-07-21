@@ -13,7 +13,7 @@ class TestSimulation(unittest.TestCase):
 
     def test_constructor(self):
         sim_id = 'some_sim_id'
-        experiment_id = 'some_exp_id'
+        experiment_conf = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
-        self.__simulation = Simulation(sim_id, experiment_id, owner, sim_gzserver_host)
+        self.__simulation = Simulation(sim_id, experiment_conf, owner, sim_gzserver_host)

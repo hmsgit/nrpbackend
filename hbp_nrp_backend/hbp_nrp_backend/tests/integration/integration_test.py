@@ -131,7 +131,7 @@ def run_integration_test():
         auth_header = {'X-User-Name': "integration-test"}
 
         # Create experiment
-        response = client.post('/simulation', data='{"experimentID":"integration_test_exd.xml"}',
+        response = client.post('/simulation', data='{"experimentConfiguration":"integration_test_exd.xml"}',
                                headers=auth_header)
         check_response(response, "Create experiment", status_code=201)
 

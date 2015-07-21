@@ -31,23 +31,23 @@ class TestSimulationConfig(unittest.TestCase):
 
     def test_get_simulation(self):
         response = self.client.get('/simulation/0')
-        self.assertTrue('"experimentID": "experiment1"' in response.data)
+        self.assertTrue('"experimentConfiguration": "experiment1"' in response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/1')
-        self.assertTrue('"experimentID": "experiment2"' in response.data)
+        self.assertTrue('"experimentConfiguration": "experiment2"' in response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/2')
-        self.assertTrue('"experimentID": "experiment3"' in response.data)
+        self.assertTrue('"experimentConfiguration": "experiment3"' in response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/5')
-        self.assertTrue('"experimentID": "experiment4"' in response.data)
+        self.assertTrue('"experimentConfiguration": "experiment4"' in response.data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/8')
-        self.assertTrue('"experimentID": "experiment5"' in response.data)
+        self.assertTrue('"experimentConfiguration": "experiment5"' in response.data)
         self.assertEqual(response.status_code, 200)
 
     def test_get_state(self):

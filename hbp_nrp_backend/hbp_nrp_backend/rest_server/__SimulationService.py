@@ -32,10 +32,10 @@ class SimulationService(Resource):
         """
 
         resource_fields = {
-            'experimentID': fields.String(),
+            'experimentConfiguration': fields.String(),
             'gzserverHost': fields.String()
         }
-        required = ['experimentID']
+        required = ['experimentConfiguration']
 
     @swagger.operation(
         notes='This is the entry point for the NRP REST server since'
@@ -44,7 +44,7 @@ class SimulationService(Resource):
         responseMessages=[
             {
                 "code": 400,
-                "message": "Experiment ID is not valid"
+                "message": "Experiment configuration is not valid"
             },
             {
                 "code": 401,
@@ -68,15 +68,15 @@ class SimulationService(Resource):
         """
         Creates a new simulation which is neither 'initialized' nor 'started'.
 
-        :<json string experimentID: Path and name of the experiment configuration file
+        :<json string experimentConfiguration: Path and name of the experiment configuration file
         :>json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
         :>json string state: The current state of the simulation (always 'created')
         :>json integer simulationID: The id of the simulation (needed for further REST calls)
-        :>json string experimentID: Path and name of the experiment configuration file
+        :>json string experimentConfiguration: Path and name of the experiment configuration file
         :>json string creationDate: Date of creation of this simulation
         :>json string gzserverHost: The host where gzserver will be run: local for using the \
         same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
-        :status 400: Experiment ID is not valid
+        :status 400: Experiment configuration is not valid
         :status 401: gzserverHost is not valid
         :status 402: Another simulation is already running on the server
         :status 201: Simulation created successfully
@@ -85,8 +85,8 @@ class SimulationService(Resource):
         body = request.get_json(force=True)
         sim_id = len(simulations)
 
-        if 'experimentID' not in body:
-            raise NRPServicesClientErrorException('Experiment ID not given.', 400)
+        if 'experimentConfiguration' not in body:
+            raise NRPServicesClientErrorException('Experiment configuration not given.', 400)
 
         if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
             raise NRPServicesClientErrorException('Invalid gazebo server host.', 401)
@@ -97,7 +97,8 @@ class SimulationService(Resource):
 
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_owner = UserAuthentication.get_x_user_name_header(request)
-        simulations.append(Simulation(sim_id, body['experimentID'], sim_owner, sim_gzserver_host))
+        simulations.append(Simulation(sim_id, body['experimentConfiguration'], sim_owner,
+                                      sim_gzserver_host))
 
         return marshal(simulations[sim_id], Simulation.resource_fields), 201, {
             'location': api.url_for(SimulationControl, sim_id=sim_id),
@@ -123,7 +124,7 @@ class SimulationService(Resource):
         :>jsonarr string owner: The simulation owner (Unified Portal user name or 'hbp-default')
         :>jsonarr string state: The current state of the simulation
         :>jsonarr integer simulationID: The id of the simulation (needed for further REST calls)
-        :>jsonarr string experimentID: Path and name of the experiment configuration file
+        :>jsonarr string experimentConfiguration: Path and name of the experiment configuration file
         :>jsonarr string gzserverHost: Denotes where the gzserver will run once the simulation is \
         started, local for localhost, lugano for a remote execution on the Lugano viz cluster.
         :>json string creationDate: Date of creation of this simulation

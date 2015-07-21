@@ -50,11 +50,12 @@ This is a step-by-step description for running the backend for the case that **t
 
             rosrun gazebo_ros gzclient
 
-   f. Load an experiment. The experiment ID is the path to your experiment relative to $NRP_MODELS_DIRECTORY or your current folder if the first is not set
+   f. Load an experiment. The experiment configuration is the path to your experiment relative to
+      $NRP_MODELS_DIRECTORY or your current folder if the first is not set
 
       .. code-block:: bash
 
-            curl -X POST 127.0.0.1:5000/simulation -d '{"experimentID":"ExDConf/ExDXMLExample.xml"}'
+            curl -X POST 127.0.0.1:5000/simulation -d '{"experimentConfiguration":"ExDConf/ExDXMLExample.xml"}'
 
 
 Building the documentation

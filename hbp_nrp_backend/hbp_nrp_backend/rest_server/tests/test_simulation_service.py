@@ -4,6 +4,7 @@ Unit tests for the simulation setup
 
 __author__ = 'GeorgHinkel'
 
+
 from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations
 from mock import patch, MagicMock
@@ -24,10 +25,9 @@ class TestSimulationService(unittest.TestCase):
         mocked_date_time.datetime = MagicMock()
         mocked_date_time.datetime.now = MagicMock(return_value=self.now)
 
-        response = self.client.post('/simulation', data=json.dumps({
-            "experimentID": "MyExample.xml",
-            "gzserverHost": "local"
-        }))
+        response = self.client.post('/simulation',
+                                    data=json.dumps({"experimentConfiguration": "MyExample.xml",
+                                                     "gzserverHost": "local"}))
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/0')
@@ -36,7 +36,7 @@ class TestSimulationService(unittest.TestCase):
             'state': "created",
             'creationDate': self.now.isoformat(),
             'simulationID': 0,
-            'experimentID': "MyExample.xml",
+            'experimentConfiguration': "MyExample.xml",
             'gzserverHost': 'local',
             'left_screen_color': 'Gazebo/Blue',
             'right_screen_color': 'Gazebo/Blue'
@@ -45,18 +45,17 @@ class TestSimulationService(unittest.TestCase):
         self.assertEqual(response.data.strip(), erd)
         self.assertEqual(len(simulations), 1)
         simulation = simulations[0]
-        self.assertEqual(simulation.experiment_id, 'MyExample.xml')
+        self.assertEqual(simulation.experiment_conf, 'MyExample.xml')
 
     def test_simulation_service_wrong_gzserver_host(self):
         wrong_server = "wrong_server"
-        response = self.client.post('/simulation', data=json.dumps({
-            "experimentID": "MyExample.xml",
-            "gzserverHost": wrong_server
-        }))
+        response = self.client.post('/simulation',
+                                    data=json.dumps({"experimentConfiguration": "MyExample.xml",
+                                                     "gzserverHost": wrong_server}))
         self.assertEqual(response.status_code, 401)
 
     def test_simulation_service_get(self):
-        param = json.dumps({'experimentID': 'MyExample.xml', 'gzserverHost': 'local'})
+        param = json.dumps({'experimentConfiguration': 'MyExample.xml', 'gzserverHost': 'local'})
         response = self.client.post('/simulation', data=param)
         self.assertEqual(response.status_code, 201)
 
@@ -65,23 +64,24 @@ class TestSimulationService(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(simulations), 1)
         simulation = simulations[0]
-        self.assertEqual(simulation.experiment_id, 'MyExample.xml')
+        self.assertEqual(simulation.experiment_conf, 'MyExample.xml')
         self.assertEqual(simulation.gzserver_host, 'local')
 
-    def test_simulation_service_no_experiment_id(self):
+    def test_simulation_service_no_experiment_conf(self):
         rqdata = {
-            "experimentIDx": "MyExample.xml",
+            "experimentConfiguration_missing": "MyExample.xml",
             "gzserverHost": "local"
         }
         response = self.client.post('/simulation', data=json.dumps(rqdata))
 
+        print response
         self.assertEqual(response.status_code, 400)
         self.assertEqual(len(simulations), 0)
 
     def test_simulation_service_wrong_gzserver_host(self):
         rqdata = {
-            "experimentID": "MyExample.xml",
-            "gzserverHost": "locano"
+            "experimentConfiguration": "MyExample.xml",
+            "gzserverHost": "luxano"   # Wrong server here
         }
         response = self.client.post('/simulation', data=json.dumps(rqdata))
 
@@ -90,7 +90,7 @@ class TestSimulationService(unittest.TestCase):
 
     def test_simulation_service_another_sim_running(self):
         rqdata = {
-            "experimentID": "MyExample.xml",
+            "experimentConfiguration": "MyExample.xml",
             "gzserverHost": "lugano"
         }
         s = MagicMock('hbp_nrp_backend.simulation_control.Simulation')()
@@ -102,7 +102,7 @@ class TestSimulationService(unittest.TestCase):
 
     def test_simulation_service_wrong_method(self):
         rqdata = {
-            "experimentID": "MyExample.xml",
+            "experimentConfiguration": "MyExample.xml",
             "gzserverHost": "local"
         }
         response = self.client.put('/simulation', data=json.dumps(rqdata))
