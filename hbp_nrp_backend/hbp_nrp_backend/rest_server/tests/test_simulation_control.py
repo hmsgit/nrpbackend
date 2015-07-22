@@ -18,7 +18,7 @@ from hbp_nrp_backend.rest_server.__SimulationControl import CustomEventControl, 
 
 class MockServiceProxy(object):
     """
-    This class mocks the rospy ServiceProxy, its just returns it service name when called.
+    This class mocks the rospy ServiceProxy, its just returns its service name when called.
     """
 
     def __init__(self, service_name, service_class):

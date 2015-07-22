@@ -11,7 +11,7 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 import json
 import logging
-# pylint: disable=W0613
+# pylint: disable=unused-argument
 
 
 @app.errorhandler(404)
@@ -38,7 +38,7 @@ def internal_error(error):
 @app.errorhandler(ROSCLEClientException)
 # pylint does not understand the way Flask let
 # users redefine handlers for Exceptions.
-# pylint: disable=E0102
+# pylint: disable=function-redefined
 def internal_error(error):
     """
     Handles ROSCLEClientException errors
@@ -52,7 +52,7 @@ def internal_error(error):
 
 @app.errorhandler(NRPServicesGeneralException)
 @app.errorhandler(NRPServicesClientErrorException)
-# pylint: disable=E0102
+# pylint: disable=function-redefined
 def error2json(error):
     """
     Handles NRPServicesGeneralException errors

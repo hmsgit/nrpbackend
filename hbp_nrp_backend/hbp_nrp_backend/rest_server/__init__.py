@@ -79,6 +79,7 @@ from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
     CustomEventControl
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunctions
+from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
@@ -91,6 +92,7 @@ api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transferfunctions')
+api.add_resource(WorldSDFService, '/simulation/sdf_world')
 api.add_resource(Version, '/version')
 api.add_resource(Experiment, '/experiment')
 api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
