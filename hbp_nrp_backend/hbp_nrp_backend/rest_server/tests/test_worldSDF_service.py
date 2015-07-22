@@ -37,7 +37,7 @@ class TestWorldSDFService(unittest.TestCase):
         # check the response
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.data, expected_response_data)
+        self.assertEqual(response.data.strip(), expected_response_data)
 
     @mock.patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy.wait_for_service')
     def test_worldSDF_service_wait_for_service_fail(self, mckd_wait_for_service):
