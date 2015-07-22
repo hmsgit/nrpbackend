@@ -175,3 +175,10 @@ class InvalidStateTransitionException(Exception):
     Represents that an invalid state transition was attempted
     """
     pass
+
+
+class InvalidTransferFunctionCodeException(Exception):
+    """
+    Represents that invalid source code for transfer function was submitted
+    """
+    pass

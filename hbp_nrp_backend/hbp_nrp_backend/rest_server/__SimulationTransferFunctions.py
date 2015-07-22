@@ -1,6 +1,6 @@
 """
 This module contains the REST implementation
-for retrieving and patching back the transfer
+for retrieving the transfer
 functions used during an experiment.
 """
 
@@ -11,7 +11,7 @@ from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_a
 
 __author__ = 'LucGuyot, DanielPeppicelli'
 
-# pylint: disable=R0201
+# pylint: disable=no-self-use
 # We need to define the methods like "get", "put", "post", ... in
 # the class even though they could be static. This is because of the
 # Swagger framework.

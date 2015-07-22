@@ -17,6 +17,7 @@ class NRPServicesGeneralException(Exception):
 
     :param message: message displayed to the end user.
     :param error_type: Type of error (like 'CLE Error')
+    :param error_code: The HTTP error code to send to the frontend.
     """
     def __init__(self, message, error_type, error_code=500):
         super(NRPServicesGeneralException, self).__init__(message)
@@ -46,10 +47,21 @@ class NRPServicesStateException(NRPServicesGeneralException):
     to the HBP frontend code.
 
     :param message: message displayed to the end user.
-    :param error_type: Type of error (like 'CLE Error')
     """
     def __init__(self, message):
         super(NRPServicesStateException, self).__init__(message, "Transition error", 400)
+
+
+class NRPServicesTransferFunctionException(NRPServicesGeneralException):
+    """
+    Transfer function exception class that can be used to return meaningful messages
+    to the HBP frontend in case source code updates fail.
+
+    :param message: message displayed to the end user.
+    """
+    def __init__(self, message):
+        super(NRPServicesTransferFunctionException, self).\
+            __init__(message, "Transfer function error", 400)
 
 
 class NRPServicesExtendedApi(Api):
@@ -80,6 +92,7 @@ from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, L
     CustomEventControl
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunctions
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
+from hbp_nrp_backend.rest_server.__SimulationTransferFunction import SimulationTransferFunction
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
@@ -92,6 +105,10 @@ api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transferfunctions')
+api.add_resource(
+    SimulationTransferFunction,
+    '/simulation/<int:sim_id>/transferfunctions/<string:transferfunction_name>'
+)
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
 api.add_resource(Version, '/version')
 api.add_resource(Experiment, '/experiment')
