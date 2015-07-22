@@ -11,7 +11,7 @@ from std_srvs.srv import Empty
 from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
-    SERVICE_GET_TRANSFER_FUNCTIONS  # duplicated from CLE.__init__
+    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION  # duplicated from CLE.__init__
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli"
@@ -52,6 +52,10 @@ class ROSCLEClient(object):
         self.__cle_get_transfer_functions = \
             self.__init_ros_service(SERVICE_GET_TRANSFER_FUNCTIONS(sim_id),
                                     srv.GetTransferFunctions)
+
+        self.__cle_set_transfer_function = \
+            self.__init_ros_service(SERVICE_SET_TRANSFER_FUNCTION(sim_id),
+                                    srv.SetTransferFunction)
 
     def __init_ros_service(self, service_name, service_class):
         """
@@ -173,6 +177,29 @@ class ROSCLEClient(object):
         else:
             logger.warn(
                 "Trying to retrieve the transfer functions of a simulation from "
+                "an invalid client (invalid due to %s).",
+                self.__invalid_reason
+            )
+        return result
+
+    def set_simulation_transfer_function(self):
+        """
+        Set the simulation transfer function's source code.
+
+        :returns: True if the update is successful, False otherwise
+        """
+        result = False
+        if self.__valid:
+            try:
+                result = self.__cle_set_transfer_function()
+            except rospy.ServiceException as e:
+                logger.error(
+                    "Error while setting the code of a transfer function from the simulation: %s.",
+                    str(e)
+                )
+        else:
+            logger.warn(
+                "Trying to set the transfer functions of a simulation from "
                 "an invalid client (invalid due to %s).",
                 self.__invalid_reason
             )
