@@ -26,17 +26,17 @@ class TestSimulationTransferFunction(unittest.TestCase):
         sim.cle = MagicMock()
         sim.cle.set_simulation_transfer_function = MagicMock(return_value=True)
         client = app.test_client()
-        response = client.put('/simulation/0/transferfunctions/incredible_tf_12')
+        response = client.put('/simulation/0/transfer-functions/incredible_tf_12')
         self.assertEqual(sim.cle.set_simulation_transfer_function.call_count, 1)
         self.assertEqual(response.status_code, 200)
 
         sim.cle.set_simulation_transfer_function = MagicMock(return_value=False)
-        response = client.put('/simulation/0/transferfunctions/stunning_tf_34')
+        response = client.put('/simulation/0/transfer-functions/stunning_tf_34')
         self.assertRaises(NRPServicesTransferFunctionException)
         self.assertEqual(response.status_code, 400)
 
         sim = simulations[1]
-        response = client.put('/simulation/1/transferfunctions/amazing_tf_35')
+        response = client.put('/simulation/1/transfer-functions/amazing_tf_35')
         self.assertRaises(NRPServicesClientErrorException)
         self.assertEqual(response.status_code, 401)
 

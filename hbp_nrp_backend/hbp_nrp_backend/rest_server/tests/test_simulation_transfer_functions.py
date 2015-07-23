@@ -20,7 +20,7 @@ class TestSimulationTransferFunctions(unittest.TestCase):
         mocked_simulation.cle.get_simulation_transfer_functions = MagicMock(return_value=transfer_functions)
         mocked_get_simulation_or_abort.return_value = mocked_simulation
         client = app.test_client()
-        response = client.get('/simulation/0/transferfunctions')
+        response = client.get('/simulation/0/transfer-functions')
         self.assertEqual(mocked_simulation.cle.get_simulation_transfer_functions.call_count, 1)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.strip(), json.dumps(transfer_functions))

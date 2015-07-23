@@ -167,7 +167,8 @@ class ROSCLEClient(object):
         result = []
         if self.__valid:
             try:
-                result = self.__cle_get_transfer_functions()
+                response = self.__cle_get_transfer_functions()
+                result = response.transfer_functions
             except rospy.ServiceException as e:
                 logger.error(
                     "Error while trying to retrieve simulation transfer functions: %s. "
@@ -182,7 +183,11 @@ class ROSCLEClient(object):
             )
         return result
 
-    def set_simulation_transfer_function(self):
+    def set_simulation_transfer_function(
+            self,
+            transfer_function_name,
+            transfer_function_source
+    ):
         """
         Set the simulation transfer function's source code.
 
@@ -191,7 +196,11 @@ class ROSCLEClient(object):
         result = False
         if self.__valid:
             try:
-                result = self.__cle_set_transfer_function()
+                response = self.__cle_set_transfer_function(
+                    transfer_function_name,
+                    transfer_function_source
+                )
+                result = response.success
             except rospy.ServiceException as e:
                 logger.error(
                     "Error while setting the code of a transfer function from the simulation: %s.",

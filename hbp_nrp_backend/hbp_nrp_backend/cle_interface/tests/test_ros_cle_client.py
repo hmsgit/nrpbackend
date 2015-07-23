@@ -146,14 +146,14 @@ class TestROSCLEClient(unittest.TestCase):
         client._ROSCLEClient__cle_set_transfer_function = MagicMock()
 
         client._ROSCLEClient__valid = False
-        client.set_simulation_transfer_function()
+        client.set_simulation_transfer_function("tf_0", "def tf_0(): \n return 0")
 
         client._ROSCLEClient__valid = True
-        client.set_simulation_transfer_function()
+        client.set_simulation_transfer_function("tf_1", "def tf_1(): \n return 1")
         self.assertEquals(client._ROSCLEClient__cle_set_transfer_function.call_count, 1)
 
         client._ROSCLEClient__cle_set_transfer_function.side_effect = rospy.ServiceException()
-        client.set_simulation_transfer_function()
+        client.set_simulation_transfer_function("tf_2", "def tf_2(): \n return 2")
         self.assertEquals(client._ROSCLEClient__cle_set_transfer_function.call_count, 2)
 
 
