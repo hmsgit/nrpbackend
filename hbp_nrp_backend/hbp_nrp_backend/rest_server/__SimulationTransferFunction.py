@@ -79,7 +79,7 @@ class SimulationTransferFunction(Resource):
     )
     def put(self, sim_id, transferfunction_name):
         """
-        Applies user changes to transfer functions code
+        Applies user changes to transfer function code
 
         :param sim_id: The simulation id
         :param transferfunction_name: The transfer function original name

@@ -56,10 +56,10 @@ class SimulationTransferFunctions(Resource):
     def get(self, sim_id):
         """
         Gets the all transfer functions (robot to neuron and
-        neuron to robot) in an array of string.',
+        neuron to robot) in an array of strings.
 
-        :param sim_id: The simulation ID from which to get the
-        transfer functions
+        :param sim_id: The simulation ID whose
+        transfer functions are retrieved
 
         :status 200: Transfer functions retrieved successfully
         """
