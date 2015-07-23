@@ -104,10 +104,10 @@ api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
 api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
-api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transferfunctions')
+api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
 api.add_resource(
     SimulationTransferFunction,
-    '/simulation/<int:sim_id>/transferfunctions/<string:transferfunction_name>'
+    '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>'
 )
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
 api.add_resource(Version, '/version')

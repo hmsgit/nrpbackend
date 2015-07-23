@@ -77,15 +77,14 @@ class SimulationTransferFunction(Resource):
             }
         ]
     )
-    def put(self, sim_id, transferfunction_name):
+    def put(self, sim_id, transfer_function_name):
         """
         Applies user changes to transfer function code
 
         :param sim_id: The simulation id
-        :param transferfunction_name: The transfer function original name
-        :<json string source: The transfer function source code to patch
+        :param transfer_function_name: The transfer function original name
         :status 400: The source code is invalid
-        :status 401: Right are insufficient to apply changes
+        :status 401: Insufficient permissions to apply changes
         :status 404: The simulation with the given ID was not found
         :status 200: The code was successfully patched
         """
@@ -94,10 +93,13 @@ class SimulationTransferFunction(Resource):
             raise NRPServicesClientErrorException(
                 "You need to be the simulation owner to apply your changes", 401)
 
-        source = request.data
-        response = simulation.cle.set_simulation_transfer_function(transferfunction_name, source)
+        transfer_function_source = request.data
+        response = simulation.cle.set_simulation_transfer_function(
+            transfer_function_name,
+            transfer_function_source
+        )
 
         if (response is False):
             raise NRPServicesTransferFunctionException(
-                "Transfer function patch failed: " + str(source))
+                "Transfer function patch failed: " + str(transfer_function_source))
         return 200
