@@ -2,19 +2,19 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Mon Jul 27 15:48:13 2015 by generateDS.py version 2.16a.
+# Generated Tue Jul 28 18:32:27 2015 by generateDS.py version 2.16a.
 #
 # Command line options:
-#   ('-o', 'generated_experiment_api.py')
+#   ('-o', 'generated/generated_experiment_api.py')
 #
 # Command line arguments:
 #   ExDConfFile.xsd
 #
 # Command line:
-#   ../generateDS.py -o "generated_experiment_api.py" ExDConfFile.xsd
+#   /usr/local/bin/generateDS.py -o "generated/generated_experiment_api.py" ExDConfFile.xsd
 #
 # Current working directory (os.getcwd()):
-#   hbp
+#   exd_config
 #
 
 import sys
@@ -636,7 +636,7 @@ class Condition(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='Condition', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='Condition', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -649,17 +649,17 @@ class Condition(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='Condition')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='Condition', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='Condition', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Condition'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='Condition'):
         if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
         pass
-    def exportChildren(self, outfile, level, namespace_='', name_='Condition', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='Condition', fromsubclass_=False, pretty_print=True):
         pass
     def exportLiteral(self, outfile, level, name_='Condition'):
         level += 1
@@ -715,7 +715,7 @@ class TimelineCondition(Condition):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='TimelineCondition', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='TimelineCondition', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -728,14 +728,14 @@ class TimelineCondition(Condition):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='TimelineCondition')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='TimelineCondition', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='TimelineCondition', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='TimelineCondition'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='TimelineCondition'):
         super(TimelineCondition, self).exportAttributes(outfile, level, already_processed, namespace_, name_='TimelineCondition')
-    def exportChildren(self, outfile, level, namespace_='', name_='TimelineCondition', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='TimelineCondition', fromsubclass_=False, pretty_print=True):
         super(TimelineCondition, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
@@ -798,7 +798,7 @@ class HardwareCondition(Condition):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='HardwareCondition', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='HardwareCondition', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -811,14 +811,14 @@ class HardwareCondition(Condition):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='HardwareCondition')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='HardwareCondition', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='HardwareCondition', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='HardwareCondition'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='HardwareCondition'):
         super(HardwareCondition, self).exportAttributes(outfile, level, already_processed, namespace_, name_='HardwareCondition')
-    def exportChildren(self, outfile, level, namespace_='', name_='HardwareCondition', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='HardwareCondition', fromsubclass_=False, pretty_print=True):
         super(HardwareCondition, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
@@ -885,7 +885,7 @@ class PropertyEquals(Condition):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='PropertyEquals', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='PropertyEquals', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -898,14 +898,14 @@ class PropertyEquals(Condition):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PropertyEquals')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='PropertyEquals', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='PropertyEquals', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='PropertyEquals'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='PropertyEquals'):
         super(PropertyEquals, self).exportAttributes(outfile, level, already_processed, namespace_, name_='PropertyEquals')
-    def exportChildren(self, outfile, level, namespace_='', name_='PropertyEquals', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='PropertyEquals', fromsubclass_=False, pretty_print=True):
         super(PropertyEquals, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
@@ -984,7 +984,7 @@ class Or(Condition):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='Or', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='Or', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -997,14 +997,14 @@ class Or(Condition):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='Or')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='Or', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='Or', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Or'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='Or'):
         super(Or, self).exportAttributes(outfile, level, already_processed, namespace_, name_='Or')
-    def exportChildren(self, outfile, level, namespace_='', name_='Or', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='Or', fromsubclass_=False, pretty_print=True):
         super(Or, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
@@ -1096,7 +1096,7 @@ class And(Condition):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='And', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='And', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1109,14 +1109,14 @@ class And(Condition):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='And')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='And', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='And', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='And'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='And'):
         super(And, self).exportAttributes(outfile, level, already_processed, namespace_, name_='And')
-    def exportChildren(self, outfile, level, namespace_='', name_='And', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='And', fromsubclass_=False, pretty_print=True):
         super(And, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
@@ -1200,7 +1200,7 @@ class Action(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='Action', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='Action', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1213,17 +1213,17 @@ class Action(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='Action')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='Action', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='Action', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Action'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='Action'):
         if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
         pass
-    def exportChildren(self, outfile, level, namespace_='', name_='Action', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='Action', fromsubclass_=False, pretty_print=True):
         pass
     def exportLiteral(self, outfile, level, name_='Action'):
         level += 1
@@ -1279,7 +1279,7 @@ class PropertySetAction(Action):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='PropertySetAction', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='PropertySetAction', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1292,14 +1292,14 @@ class PropertySetAction(Action):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PropertySetAction')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='PropertySetAction', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='PropertySetAction', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='PropertySetAction'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='PropertySetAction'):
         super(PropertySetAction, self).exportAttributes(outfile, level, already_processed, namespace_, name_='PropertySetAction')
-    def exportChildren(self, outfile, level, namespace_='', name_='PropertySetAction', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='PropertySetAction', fromsubclass_=False, pretty_print=True):
         super(PropertySetAction, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         if pretty_print:
             eol_ = '\n'
@@ -1380,7 +1380,7 @@ class Event(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='Event', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='Event', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1393,14 +1393,14 @@ class Event(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='Event')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='Event', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='Event', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Event'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='Event'):
         pass
-    def exportChildren(self, outfile, level, namespace_='', name_='Event', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='Event', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1532,7 +1532,7 @@ class Pose(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='Pose', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='Pose', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1545,14 +1545,14 @@ class Pose(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='Pose')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='Pose', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='Pose', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Pose'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='Pose'):
         pass
-    def exportChildren(self, outfile, level, namespace_='', name_='Pose', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='Pose', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1702,7 +1702,7 @@ class EnvironmentModel(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='EnvironmentModel', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='EnvironmentModel', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1715,14 +1715,14 @@ class EnvironmentModel(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='EnvironmentModel')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='EnvironmentModel', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='EnvironmentModel', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='EnvironmentModel'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='EnvironmentModel'):
         pass
-    def exportChildren(self, outfile, level, namespace_='', name_='EnvironmentModel', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='EnvironmentModel', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1775,7 +1775,7 @@ class EnvironmentModel(GeneratedsSuper):
 class ExD(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, name=None, description=None, maturity=None, environmentModel=None, bibiConf=None, timeout=None, events=None):
+    def __init__(self, name=None, description=None, maturity=None, environmentModel=None, bibiConf=None, timeout=None, experimentControl=None, experimentEvaluation=None, events=None):
         self.original_tagname_ = None
         self.name = name
         self.description = description
@@ -1783,6 +1783,8 @@ class ExD(GeneratedsSuper):
         self.environmentModel = environmentModel
         self.bibiConf = bibiConf
         self.timeout = timeout
+        self.experimentControl = experimentControl
+        self.experimentEvaluation = experimentEvaluation
         if events is None:
             self.events = []
         else:
@@ -1805,6 +1807,10 @@ class ExD(GeneratedsSuper):
     def set_bibiConf(self, bibiConf): self.bibiConf = bibiConf
     def get_timeout(self): return self.timeout
     def set_timeout(self, timeout): self.timeout = timeout
+    def get_experimentControl(self): return self.experimentControl
+    def set_experimentControl(self, experimentControl): self.experimentControl = experimentControl
+    def get_experimentEvaluation(self): return self.experimentEvaluation
+    def set_experimentEvaluation(self, experimentEvaluation): self.experimentEvaluation = experimentEvaluation
     def get_events(self): return self.events
     def set_events(self, events): self.events = events
     def add_events(self, value): self.events.append(value)
@@ -1818,12 +1824,14 @@ class ExD(GeneratedsSuper):
             self.environmentModel is not None or
             self.bibiConf is not None or
             self.timeout is not None or
+            self.experimentControl is not None or
+            self.experimentEvaluation is not None or
             self.events
         ):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='', name_='ExD', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='tns:', name_='ExD', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1836,14 +1844,14 @@ class ExD(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='ExD')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='', name_='ExD', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='ExD', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='ExD'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='ExD'):
         pass
-    def exportChildren(self, outfile, level, namespace_='', name_='ExD', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='ExD', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1865,6 +1873,10 @@ class ExD(GeneratedsSuper):
         if self.timeout is not None:
             showIndent(outfile, level, pretty_print)
             outfile.write('<%stimeout>%s</%stimeout>%s' % (namespace_, self.gds_format_double(self.timeout, input_name='timeout'), namespace_, eol_))
+        if self.experimentControl is not None:
+            self.experimentControl.export(outfile, level, namespace_, name_='experimentControl', pretty_print=pretty_print)
+        if self.experimentEvaluation is not None:
+            self.experimentEvaluation.export(outfile, level, namespace_, name_='experimentEvaluation', pretty_print=pretty_print)
         for events_ in self.events:
             events_.export(outfile, level, namespace_, name_='events', pretty_print=pretty_print)
     def exportLiteral(self, outfile, level, name_='ExD'):
@@ -1897,6 +1909,18 @@ class ExD(GeneratedsSuper):
         if self.timeout is not None:
             showIndent(outfile, level)
             outfile.write('timeout=%e,\n' % self.timeout)
+        if self.experimentControl is not None:
+            showIndent(outfile, level)
+            outfile.write('experimentControl=model_.ExperimentControl(\n')
+            self.experimentControl.exportLiteral(outfile, level, name_='experimentControl')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.experimentEvaluation is not None:
+            showIndent(outfile, level)
+            outfile.write('experimentEvaluation=model_.ExperimentControl(\n')
+            self.experimentEvaluation.exportLiteral(outfile, level, name_='experimentEvaluation')
+            showIndent(outfile, level)
+            outfile.write('),\n')
         showIndent(outfile, level)
         outfile.write('events=[\n')
         level += 1
@@ -1948,6 +1972,16 @@ class ExD(GeneratedsSuper):
                 raise_parse_error(child_, 'requires float or double: %s' % exp)
             fval_ = self.gds_validate_float(fval_, node, 'timeout')
             self.timeout = fval_
+        elif nodeName_ == 'experimentControl':
+            obj_ = ExperimentControl.factory()
+            obj_.build(child_)
+            self.experimentControl = obj_
+            obj_.original_tagname_ = 'experimentControl'
+        elif nodeName_ == 'experimentEvaluation':
+            obj_ = ExperimentControl.factory()
+            obj_.build(child_)
+            self.experimentEvaluation = obj_
+            obj_.original_tagname_ = 'experimentEvaluation'
         elif nodeName_ == 'events':
             obj_ = Event.factory()
             obj_.build(child_)
@@ -1956,9 +1990,372 @@ class ExD(GeneratedsSuper):
 # end class ExD
 
 
+class ExperimentControl(GeneratedsSuper):
+    subclass = None
+    superclass = None
+    def __init__(self, stateMachines=None):
+        self.original_tagname_ = None
+        self.stateMachines = stateMachines
+    def factory(*args_, **kwargs_):
+        if ExperimentControl.subclass:
+            return ExperimentControl.subclass(*args_, **kwargs_)
+        else:
+            return ExperimentControl(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_stateMachines(self): return self.stateMachines
+    def set_stateMachines(self, stateMachines): self.stateMachines = stateMachines
+    def hasContent_(self):
+        if (
+            self.stateMachines is not None
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='tns:', name_='ExperimentControl', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='ExperimentControl')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='ExperimentControl', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='ExperimentControl'):
+        pass
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='ExperimentControl', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.stateMachines is not None:
+            self.stateMachines.export(outfile, level, namespace_, name_='stateMachines', pretty_print=pretty_print)
+    def exportLiteral(self, outfile, level, name_='ExperimentControl'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        if self.stateMachines is not None:
+            showIndent(outfile, level)
+            outfile.write('stateMachines=model_.stateMachinesType(\n')
+            self.stateMachines.exportLiteral(outfile, level, name_='stateMachines')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        pass
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'stateMachines':
+            obj_ = stateMachinesType.factory()
+            obj_.build(child_)
+            self.stateMachines = obj_
+            obj_.original_tagname_ = 'stateMachines'
+# end class ExperimentControl
+
+
+class StateMachine(GeneratedsSuper):
+    subclass = None
+    superclass = None
+    def __init__(self, name=None, extensiontype_=None):
+        self.original_tagname_ = None
+        self.name = name
+        self.extensiontype_ = extensiontype_
+    def factory(*args_, **kwargs_):
+        if StateMachine.subclass:
+            return StateMachine.subclass(*args_, **kwargs_)
+        else:
+            return StateMachine(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
+    def get_extensiontype_(self): return self.extensiontype_
+    def set_extensiontype_(self, extensiontype_): self.extensiontype_ = extensiontype_
+    def hasContent_(self):
+        if (
+            self.name is not None
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='tns:', name_='StateMachine', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='StateMachine')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='StateMachine', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='StateMachine'):
+        if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
+            already_processed.add('xsi:type')
+            outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
+            outfile.write(' xsi:type="%s"' % self.extensiontype_)
+        pass
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='StateMachine', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.name is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%sname>%s</%sname>%s' % (namespace_, self.gds_format_string(quote_xml(self.name).encode(ExternalEncoding), input_name='name'), namespace_, eol_))
+    def exportLiteral(self, outfile, level, name_='StateMachine'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        if self.name is not None:
+            showIndent(outfile, level)
+            outfile.write('name=%s,\n' % quote_python(self.name).encode(ExternalEncoding))
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('xsi:type', node)
+        if value is not None and 'xsi:type' not in already_processed:
+            already_processed.add('xsi:type')
+            self.extensiontype_ = value
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'name':
+            name_ = child_.text
+            name_ = self.gds_validate_string(name_, node, 'name')
+            self.name = name_
+# end class StateMachine
+
+
+class SMACHStateMachine(StateMachine):
+    subclass = None
+    superclass = StateMachine
+    def __init__(self, name=None, modulePath=None):
+        self.original_tagname_ = None
+        super(SMACHStateMachine, self).__init__(name, )
+        self.modulePath = modulePath
+    def factory(*args_, **kwargs_):
+        if SMACHStateMachine.subclass:
+            return SMACHStateMachine.subclass(*args_, **kwargs_)
+        else:
+            return SMACHStateMachine(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_modulePath(self): return self.modulePath
+    def set_modulePath(self, modulePath): self.modulePath = modulePath
+    def hasContent_(self):
+        if (
+            self.modulePath is not None or
+            super(SMACHStateMachine, self).hasContent_()
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='tns:', name_='SMACHStateMachine', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='SMACHStateMachine')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='SMACHStateMachine', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='SMACHStateMachine'):
+        super(SMACHStateMachine, self).exportAttributes(outfile, level, already_processed, namespace_, name_='SMACHStateMachine')
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='SMACHStateMachine', fromsubclass_=False, pretty_print=True):
+        super(SMACHStateMachine, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.modulePath is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%smodulePath>%s</%smodulePath>%s' % (namespace_, self.gds_format_string(quote_xml(self.modulePath).encode(ExternalEncoding), input_name='modulePath'), namespace_, eol_))
+    def exportLiteral(self, outfile, level, name_='SMACHStateMachine'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        super(SMACHStateMachine, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(SMACHStateMachine, self).exportLiteralChildren(outfile, level, name_)
+        if self.modulePath is not None:
+            showIndent(outfile, level)
+            outfile.write('modulePath=%s,\n' % quote_python(self.modulePath).encode(ExternalEncoding))
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        super(SMACHStateMachine, self).buildAttributes(node, attrs, already_processed)
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'modulePath':
+            modulePath_ = child_.text
+            modulePath_ = self.gds_validate_string(modulePath_, node, 'modulePath')
+            self.modulePath = modulePath_
+        super(SMACHStateMachine, self).buildChildren(child_, node, nodeName_, True)
+# end class SMACHStateMachine
+
+
+class stateMachinesType(GeneratedsSuper):
+    subclass = None
+    superclass = None
+    def __init__(self, stateMachine=None):
+        self.original_tagname_ = None
+        if stateMachine is None:
+            self.stateMachine = []
+        else:
+            self.stateMachine = stateMachine
+    def factory(*args_, **kwargs_):
+        if stateMachinesType.subclass:
+            return stateMachinesType.subclass(*args_, **kwargs_)
+        else:
+            return stateMachinesType(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_stateMachine(self): return self.stateMachine
+    def set_stateMachine(self, stateMachine): self.stateMachine = stateMachine
+    def add_stateMachine(self, value): self.stateMachine.append(value)
+    def insert_stateMachine_at(self, index, value): self.stateMachine.insert(index, value)
+    def replace_stateMachine_at(self, index, value): self.stateMachine[index] = value
+    def hasContent_(self):
+        if (
+            self.stateMachine
+        ):
+            return True
+        else:
+            return False
+    def export(self, outfile, level, namespace_='tns:', name_='stateMachinesType', namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"', pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        if self.original_tagname_ is not None:
+            name_ = self.original_tagname_
+        showIndent(outfile, level, pretty_print)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = set()
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='stateMachinesType')
+        if self.hasContent_():
+            outfile.write('>%s' % (eol_, ))
+            self.exportChildren(outfile, level + 1, namespace_='tns:', name_='stateMachinesType', pretty_print=pretty_print)
+            showIndent(outfile, level, pretty_print)
+            outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
+        else:
+            outfile.write('/>%s' % (eol_, ))
+    def exportAttributes(self, outfile, level, already_processed, namespace_='tns:', name_='stateMachinesType'):
+        pass
+    def exportChildren(self, outfile, level, namespace_='tns:', name_='stateMachinesType', fromsubclass_=False, pretty_print=True):
+        if pretty_print:
+            eol_ = '\n'
+        else:
+            eol_ = ''
+        for stateMachine_ in self.stateMachine:
+            stateMachine_.export(outfile, level, namespace_, name_='stateMachine', pretty_print=pretty_print)
+    def exportLiteral(self, outfile, level, name_='stateMachinesType'):
+        level += 1
+        already_processed = set()
+        self.exportLiteralAttributes(outfile, level, already_processed, name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        showIndent(outfile, level)
+        outfile.write('stateMachine=[\n')
+        level += 1
+        for stateMachine_ in self.stateMachine:
+            showIndent(outfile, level)
+            outfile.write('model_.StateMachine(\n')
+            stateMachine_.exportLiteral(outfile, level, name_='StateMachine')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
+    def build(self, node):
+        already_processed = set()
+        self.buildAttributes(node, node.attrib, already_processed)
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+        return self
+    def buildAttributes(self, node, attrs, already_processed):
+        pass
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'stateMachine':
+            type_name_ = child_.attrib.get(
+                '{http://www.w3.org/2001/XMLSchema-instance}type')
+            if type_name_ is None:
+                type_name_ = child_.attrib.get('type')
+            if type_name_ is not None:
+                type_names_ = type_name_.split(':')
+                if len(type_names_) == 1:
+                    type_name_ = type_names_[0]
+                else:
+                    type_name_ = type_names_[1]
+                class_ = globals()[type_name_]
+                obj_ = class_.factory()
+                obj_.build(child_)
+            else:
+                raise NotImplementedError(
+                    'Class not implemented for <stateMachine> element')
+            self.stateMachine.append(obj_)
+            obj_.original_tagname_ = 'stateMachine'
+# end class stateMachinesType
+
+
 GDSClassesMapping = {
+    'stateMachines': stateMachinesType,
+    'experimentControl': ExperimentControl,
+    'stateMachine': StateMachine,
     'pose': Pose,
     'actions': Action,
+    'experimentEvaluation': ExperimentControl,
     'environmentModel': EnvironmentModel,
     'conditions': Condition,
     'events': Event,
@@ -2000,7 +2397,7 @@ def parse(inFileName, silence=False):
         sys.stdout.write('<?xml version="1.0" ?>\n')
         rootObj.export(
             sys.stdout, 0, name_=rootTag,
-            namespacedef_='',
+            namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"',
             pretty_print=True)
     return rootObj
 
@@ -2046,7 +2443,7 @@ def parseString(inString, silence=False):
         sys.stdout.write('<?xml version="1.0" ?>\n')
         rootObj.export(
             sys.stdout, 0, name_=rootTag,
-            namespacedef_='')
+            namespacedef_='xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"')
     return rootObj
 
 
@@ -2091,10 +2488,14 @@ __all__ = [
     "EnvironmentModel",
     "Event",
     "ExD",
+    "ExperimentControl",
     "HardwareCondition",
     "Or",
     "Pose",
     "PropertyEquals",
     "PropertySetAction",
-    "TimelineCondition"
+    "SMACHStateMachine",
+    "StateMachine",
+    "TimelineCondition",
+    "stateMachinesType"
 ]

@@ -2,6 +2,7 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
         targetNamespace="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
         xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
+           xmlns:tns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
            attributeFormDefault="unqualified" elementFormDefault="qualified">
     <!--Contains a timeline condition -->
     <xs:complexType name="Condition" abstract="true">
@@ -116,8 +117,44 @@
             <xs:element name="environmentModel" type="EnvironmentModel"/>
             <xs:element name="bibiConf" type="xs:string"/>
             <xs:element name="timeout" type="xs:double" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="experimentControl" type="ExperimentControl" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="experimentEvaluation" type="ExperimentControl" minOccurs="0" maxOccurs="1"/>
             <xs:element name="events" minOccurs="0" maxOccurs="unbounded" type="Event"/>
         </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ExperimentControl">
+        <xs:sequence>
+            <xs:element name="stateMachines" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="stateMachine" type="StateMachine" minOccurs="1" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+                <xs:unique name="uniqueName">
+                    <xs:selector xpath="tns:stateMachine"/>
+                    <xs:field xpath="tns:name"/>
+                </xs:unique>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <xs:complexType name="StateMachine" abstract="true">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string"/>
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <xs:complexType name="SMACHStateMachine">
+        <xs:complexContent>
+            <xs:extension base="StateMachine">
+                <xs:sequence>
+                    <xs:element name="modulePath" type="xs:string"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
 
     <xs:element name="ExD" type="ExD"/>

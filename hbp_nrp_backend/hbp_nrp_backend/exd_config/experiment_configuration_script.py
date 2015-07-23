@@ -13,6 +13,7 @@ __author__ = 'Lorenzo Vannucci, Daniel Peppicelli'
 
 logger = logging.getLogger(__name__)
 
+
 # pylint: disable=E1103
 # pylint infers the wrong type for config
 
@@ -55,6 +56,46 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id)
                                            timeout,
                                            gzserver_host,
                                            sim_id)
+
+
+def generate_experiment_control(experiment_conf):
+    """
+    Currently just parses the experiment configuration to extract the paths to the experiment
+    controlling state machine scripts.
+
+    :param experiment_conf: The Experiment Designer configuration. The code will
+                            search in the folder set in NRP_MODELS_DIRECTORY
+                            environment variable for this file. relative path from
+                            there must be included.
+    :return: A dictionary mapping the specified unique state machine name to the according file
+    path of the python script
+    """
+    # parse experiment configuration
+    experiment = generated_experiment_api.parse(experiment_conf, silence=True)
+
+    state_machine_paths = {}
+
+    #
+    # BEGIN Actually generate the state machines from config here
+    #
+    if experiment.experimentControl is not None:
+        state_machine_paths.update({sm.name: os.path.join(_get_basepath(experiment_conf),
+                                                          sm.modulePath)
+                                    for sm in
+                                    experiment.experimentControl.stateMachines.stateMachine
+                                    if isinstance(sm, generated_experiment_api.SMACHStateMachine)})
+
+    if experiment.experimentEvaluation is not None:
+        state_machine_paths.update({sm.name: os.path.join(_get_basepath(experiment_conf),
+                                                          sm.modulePath)
+                                    for sm in
+                                    experiment.experimentEvaluation.stateMachines.stateMachine
+                                    if isinstance(sm, generated_experiment_api.SMACHStateMachine)})
+        #
+        # END Actually generate the state machines from config here
+        #
+
+    return state_machine_paths
 
 
 def initialize_experiment(experiment_conf, generated_cle_script_file, sim_id):

@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ExD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig">
+    <name>ExDXMLExample</name>
+    <description>dummy description</description>
+    <environmentModel>
+        <location>virtual_room/virtual_room.sdf</location>
+        <pose>
+            <x>0.0</x>
+            <y>0.0</y>
+            <z>0.0</z>
+            <ux>0.0</ux>
+            <uy>0.0</uy>
+            <uz>1.0</uz>
+            <theta>0.0</theta>
+        </pose>
+    </environmentModel>
+    <bibiConf>milestone2.xml</bibiConf>
+    <experimentControl>
+        <stateMachines>
+            <stateMachine xsi:type="SMACHStateMachine">
+                <name>ControlSM1</name>
+                <modulePath>control_sm1.py</modulePath>
+            </stateMachine>
+            <stateMachine xsi:type="SMACHStateMachine">
+                <name>ControlSM2</name>
+                <modulePath>control_sm2.py</modulePath>
+            </stateMachine>
+        </stateMachines>
+    </experimentControl>
+    <experimentEvaluation>
+        <stateMachines>
+            <stateMachine xsi:type="SMACHStateMachine">
+                <name>EvaluatingSM</name>
+                <modulePath>eval_sm1.py</modulePath>
+            </stateMachine>
+        </stateMachines>
+    </experimentEvaluation>
+
+    <events>
+        <condition xsi:type="TimelineCondition">
+            <time>00:00:00</time>
+        </condition>
+        <actions xsi:type="PropertySetAction">
+            <identifier>&lt;model name=&quot;husky&quot;&gt;&lt;pose
+                /&gt;&lt;/model&gt;</identifier>
+            <value>0 0 .5 0 0 0</value>
+        </actions>
+    </events>
+    <events>
+        <condition xsi:type="And">
+            <conditions xsi:type="HardwareCondition">
+                <key>X</key>
+            </conditions>
+            <conditions xsi:type="PropertyEquals">
+                <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
+                    name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+                <value>Gazebo/Blue</value>
+            </conditions>
+        </condition>
+        <actions xsi:type="PropertySetAction">
+            <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
+                name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+            <value>Gazebo/Red</value>
+        </actions>
+    </events>
+    <events>
+        <condition xsi:type="And">
+            <conditions xsi:type="HardwareCondition">
+                <key>Y</key>
+            </conditions>
+            <conditions xsi:type="PropertyEquals">
+                <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
+                    name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+                <value>Gazebo/Red</value>
+            </conditions>
+        </condition>
+        <actions xsi:type="PropertySetAction">
+            <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
+                name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
+            <value>Gazebo/Blue</value>
+        </actions>
+    </events>
+</ExD>

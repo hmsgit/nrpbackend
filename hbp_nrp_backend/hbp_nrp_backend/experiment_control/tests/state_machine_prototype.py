@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 """
-This file is a state-machine prototype for the husky demo.
-In the future, this will be replaced with an auto-generated
-script from the experiment configuration.
-
-Usage: import default_state_machine, create a subclass of
-DefaultStateMachine and overwrite the function populate()
+This file is a copy of the state-machine prototype used for the husky demo. The original file
+can be found in the package hbp_nrp_backend.exd_config. The purpose of this copy is to serve as
+test object for testing the experiment state machine instance implementation
 """
 
 __author__ = 'PatrikScheidecker'
-
-# This file is still wip, so there is no point in testing it
 
 import smach_ros
 
@@ -46,30 +41,6 @@ def timeline_condition_cb(user_data, time):  # pragma: no cover
 
 
 class StateMachineTimedColorChange(DefaultStateMachine):  # pragma: no cover
-    """
-    State machine generated for the following event of an ExD configuration:
-
-    .. code-block:: xml
-
-        <event>
-         <conditions>
-          <condition>
-           <!-- trigger after 30 seconds of simulation time -->
-           <timeline>
-            <time>00:00:90</time>
-           </timeline>
-          </condition>
-         </conditions>
-         <actions>
-          <!-- set screen color to red -->
-          <property>
-           <identifier>model:right_vr_screen/link:body/visual:screen_glass/material/script/uri
-           </identifier>
-           <value>Gazebo/Red</value>
-          </property>
-         </actions>
-        </event>
-    """
 
     @staticmethod
     def populate():
@@ -102,16 +73,3 @@ class StateMachineTimedColorChange(DefaultStateMachine):  # pragma: no cover
                        'preempted': 'ACTION_PREEMPTED'}
         state_list.append(state_tuple)
         return state_list
-
-
-def main():  # pragma: no cover
-    """
-    This is the main method
-    """
-
-    statemachine = StateMachineTimedColorChange()
-    statemachine.execute()
-
-
-if __name__ == "__main__":  # pragma: no cover
-    main()
