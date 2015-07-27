@@ -44,9 +44,10 @@ class ExperimentData(object):
         "experimentConfiguration": fields.String(),
         "description": fields.String(),
         "timeout": fields.Integer(),
+        "maturity": fields.String()
     }
 
-    required = ['name', 'experimentConfiguration', 'description', 'timeout']
+    required = ['name', 'experimentConfiguration', 'description', 'timeout', 'maturity']
 
 
 @swagger.model
@@ -147,6 +148,7 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     _timeout = experiment.get_timeout()
     _name = experiment.get_name()
     _description = experiment.get_description()
+    _maturity = experiment.get_maturity()
 
     if _timeout is None:
         _timeout = 600
@@ -154,11 +156,15 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
         _name = os.path.splitext(experiment_file)[0]
     if _description is None:
         _description = "No description available for this experiment."
+    # Axel: maturity can be "development" or "production"
+    if _maturity is None or (_maturity != "development" and _maturity != "production"):
+        _maturity = "development"
 
     current_exp = dict(name=_name,
                        description=_description,
                        experimentConfiguration=os.path.join(experiment_dir, experiment_file),
-                       timeout=_timeout)
+                       timeout=_timeout,
+                       maturity=_maturity)
     return current_exp
 
 

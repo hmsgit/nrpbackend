@@ -112,6 +112,7 @@
         <xs:sequence>
             <xs:element name="name" type="xs:string"/>
             <xs:element name="description" type="xs:string"/>
+            <xs:element name="maturity" type="xs:string" minOccurs="0" maxOccurs="1"/>
             <xs:element name="environmentModel" type="EnvironmentModel"/>
             <xs:element name="bibiConf" type="xs:string"/>
             <xs:element name="timeout" type="xs:double" minOccurs="0" maxOccurs="1"/>

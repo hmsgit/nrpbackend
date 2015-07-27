@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Wed Jul  8 16:54:07 2015 by generateDS.py version 2.16a.
+# Generated Mon Jul 27 15:48:13 2015 by generateDS.py version 2.16a.
 #
 # Command line options:
 #   ('-o', 'generated_experiment_api.py')
@@ -11,10 +11,10 @@
 #   ExDConfFile.xsd
 #
 # Command line:
-#   /home/eckstebd/Programme/generateDS-2.16a0/generateDS.py -o "generated_experiment_api.py" ExDConfFile.xsd
+#   ../generateDS.py -o "generated_experiment_api.py" ExDConfFile.xsd
 #
 # Current working directory (os.getcwd()):
-#   exd_config
+#   hbp
 #
 
 import sys
@@ -1775,10 +1775,11 @@ class EnvironmentModel(GeneratedsSuper):
 class ExD(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, name=None, description=None, environmentModel=None, bibiConf=None, timeout=None, events=None):
+    def __init__(self, name=None, description=None, maturity=None, environmentModel=None, bibiConf=None, timeout=None, events=None):
         self.original_tagname_ = None
         self.name = name
         self.description = description
+        self.maturity = maturity
         self.environmentModel = environmentModel
         self.bibiConf = bibiConf
         self.timeout = timeout
@@ -1796,6 +1797,8 @@ class ExD(GeneratedsSuper):
     def set_name(self, name): self.name = name
     def get_description(self): return self.description
     def set_description(self, description): self.description = description
+    def get_maturity(self): return self.maturity
+    def set_maturity(self, maturity): self.maturity = maturity
     def get_environmentModel(self): return self.environmentModel
     def set_environmentModel(self, environmentModel): self.environmentModel = environmentModel
     def get_bibiConf(self): return self.bibiConf
@@ -1811,6 +1814,7 @@ class ExD(GeneratedsSuper):
         if (
             self.name is not None or
             self.description is not None or
+            self.maturity is not None or
             self.environmentModel is not None or
             self.bibiConf is not None or
             self.timeout is not None or
@@ -1850,6 +1854,9 @@ class ExD(GeneratedsSuper):
         if self.description is not None:
             showIndent(outfile, level, pretty_print)
             outfile.write('<%sdescription>%s</%sdescription>%s' % (namespace_, self.gds_format_string(quote_xml(self.description).encode(ExternalEncoding), input_name='description'), namespace_, eol_))
+        if self.maturity is not None:
+            showIndent(outfile, level, pretty_print)
+            outfile.write('<%smaturity>%s</%smaturity>%s' % (namespace_, self.gds_format_string(quote_xml(self.maturity).encode(ExternalEncoding), input_name='maturity'), namespace_, eol_))
         if self.environmentModel is not None:
             self.environmentModel.export(outfile, level, namespace_, name_='environmentModel', pretty_print=pretty_print)
         if self.bibiConf is not None:
@@ -1875,6 +1882,9 @@ class ExD(GeneratedsSuper):
         if self.description is not None:
             showIndent(outfile, level)
             outfile.write('description=%s,\n' % quote_python(self.description).encode(ExternalEncoding))
+        if self.maturity is not None:
+            showIndent(outfile, level)
+            outfile.write('maturity=%s,\n' % quote_python(self.maturity).encode(ExternalEncoding))
         if self.environmentModel is not None:
             showIndent(outfile, level)
             outfile.write('environmentModel=model_.EnvironmentModel(\n')
@@ -1917,6 +1927,10 @@ class ExD(GeneratedsSuper):
             description_ = child_.text
             description_ = self.gds_validate_string(description_, node, 'description')
             self.description = description_
+        elif nodeName_ == 'maturity':
+            maturity_ = child_.text
+            maturity_ = self.gds_validate_string(maturity_, node, 'maturity')
+            self.maturity = maturity_
         elif nodeName_ == 'environmentModel':
             obj_ = EnvironmentModel.factory()
             obj_.build(child_)
