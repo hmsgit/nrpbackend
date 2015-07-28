@@ -6,7 +6,7 @@ functions used during an experiment.
 
 import logging
 from flask_restful_swagger import swagger
-from flask_restful import Resource, fields, marshal_with
+from flask_restful import Resource
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 
 __author__ = 'LucGuyot, DanielPeppicelli'
@@ -27,17 +27,6 @@ class SimulationTransferFunctions(Resource):
     def __init__(self):
         Resource.__init__(self)
 
-    @swagger.model
-    class _TransferFunction(object):
-        """
-        The source code of a transfer function in s simple string.
-        """
-        resource_fields = {
-            'transfer_functions': fields.List(fields.String)
-        }
-
-        required = ['transfer_functions']
-
     @swagger.operation(
         notes='Gets the all transfer functions (robot to neuron and \
                neuron to robot) in an array of string.',
@@ -52,7 +41,6 @@ class SimulationTransferFunctions(Resource):
             }
         ]
     )
-    @marshal_with(_TransferFunction.resource_fields)
     def get(self, sim_id):
         """
         Gets the all transfer functions (robot to neuron and
