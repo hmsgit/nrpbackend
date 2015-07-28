@@ -7,14 +7,29 @@ __author__ = "Bernd Eckstein"
 from flask import Response, Request
 from hbp_nrp_backend.rest_server import app
 from mock import patch, MagicMock, mock_open
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages, get_basepath, save_file
+from hbp_nrp_backend.rest_server.__ExperimentService import\
+    ErrorMessages, get_basepath, save_file, get_username
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 import unittest
 import os
 import json
 
-prefix = os.popen("pwd").read()
-PATH = prefix.strip() + "/hbp_nrp_backend/hbp_nrp_backend/rest_server/tests"
+PATH = os.getcwd()
+if not os.path.exists("ExDConf"):
+    PATH += "/hbp_nrp_backend/hbp_nrp_backend/rest_server/tests"
+
+imp1 = "@nrp.MapSpikeSink('left_wheel_neuron', nrp.brain.actors[1], nrp.population_rate)\n" \
+       "@nrp.Neuron2Robot(Topic('/monitor/population_rate', cle_ros_msgs.msg.SpikeRate))\n" \
+       "def left_wheel_neuron_rate_monitor(t, left_wheel_neuron):\n" \
+       "    return cle_ros_msgs.msg.SpikeRate(t, left_wheel_neuron.rate, " \
+       "'left_wheel_neuron_rate_monitor')\n"
+
+imp2 = "@nrp.MapSpikeSink('all_neurons', nrp.brain.circuit[slice(0, 8, 1)], " \
+       "nrp.spike_recorder)\n" \
+       "@nrp.Neuron2Robot(Topic('/monitor/spike_recorder', cle_ros_msgs.msg.SpikeEvent))\n" \
+       "def all_neurons_spike_monitor(t, all_neurons):\n" \
+       "    return monitoring.create_spike_recorder_message(t, 8, all_neurons.times, " \
+       "'all_neurons_spike_monitor')\n"
 
 
 @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
@@ -135,7 +150,7 @@ class TestExperimentService(unittest.TestCase):
         response = client.put('/experiment/test_1/conf', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
-   # Test ExperimentBibi
+    # Test ExperimentBibi
     def test_experiment_bibi_get_ok(self, mock_bp0):
         mock_bp0.return_value = PATH
 
@@ -209,6 +224,27 @@ class TestExperimentService(unittest.TestCase):
         response = client.put('/experiment/test_1/bibi', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
+    # Test ExperimentTransferfunctions
+    def test_experiment_tf_put_experiment_not_found(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        data = {'base64': 'X'}
+        client = app.test_client()
+        response = client.put('/experiment/__NOT_AVAIABLE__/bibi', data=json.dumps(data))
+        self.assertEqual(response.status_code, 404)
+
+        message = json.loads(response.get_data())['message']
+        self.assertEqual(message, ErrorMessages.EXPERIMENT_NOT_FOUND_404)
+
+    @patch("hbp_nrp_backend.rest_server.__ExperimentBibi.os")
+    def test_experiment_tf_put_ok(self, mock_os, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        data = {'transfer_functions': [imp1, imp2]}  # "Hello World"
+        client = app.test_client()
+        response = client.put('/experiment/test_1/transferfunctions', data=json.dumps(data))
+        self.assertEqual(response.status_code, 200)
+
 
 class TestExperimentService2(unittest.TestCase):
 
@@ -224,9 +260,15 @@ class TestExperimentService2(unittest.TestCase):
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
     def test_save_file(self, mock_basepath):
-        mock_basepath.return_value = "/test1"
+        mock_basepath.return_value = "/allowed/path"
         self.assertRaises(NRPServicesGeneralException, save_file, "SGVsbG8gV29ybGQK",
-                          "/home/eckstebd/xxx.test")
+                          "/somewhere/else/test.xml")
+        # Test break out of allowed path
+        self.assertRaises(NRPServicesGeneralException, save_file, "SGVsbG8gV29ybGQK",
+                          "/allowed/path/../../broken/out.xml")
+        # Test relative path
+        self.assertRaises(NRPServicesGeneralException, save_file, "SGVsbG8gV29ybGQK",
+                          "../../../relative/path/out.xml")
 
 
 if __name__ == '__main__':

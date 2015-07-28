@@ -9,14 +9,21 @@ __author__ = "Bernd Eckstein"
 import os
 import base64
 import logging
+from cStringIO import StringIO
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
 from hbp_nrp_backend.exd_config.generated import generated_experiment_api
+from hbp_nrp_cle.bibi_config.generated import generated_bibi_api
 
-# pylint: disable=R0201
-# pylint: disable=E1103
+from flask import request
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+# pylint: disable=no-self-use
+# because pylint detects experiment.get_bibiConf() as no member:
+# pylint: disable=maybe-no-member
+
 
 LOG = logging.getLogger(__name__)
 
@@ -242,7 +249,7 @@ def get_experiment_conf(exp_id):
 
 def get_bibi_file(exp_id):
     """
-    return Absolute path to experiment bibi file
+    :return Absolute path to experiment bibi file
     """
     experiment_file = get_experiment_conf(exp_id)
     experiment = generated_experiment_api.parse(experiment_file, silence=True)
@@ -250,3 +257,41 @@ def get_bibi_file(exp_id):
     bibi_file = experiment.get_bibiConf()
     bibi_conf = os.path.join(get_basepath(), bibi_file)
     return bibi_conf
+
+
+def get_username():
+    """
+    Get the name of the current user
+
+    :return: string: username
+    """
+    user_name = UserAuthentication.get_x_user_name_header(request)
+    return user_name
+
+
+def substitute_bibi_transferfunctions(bibi_file, tf_list):
+    """
+    Create a new bibi, containing given transfer functions
+
+    :param bibi_file: filename of bibi
+    :param tf_list: list(string) of transfer functions (python)
+    :return: the new bibi as string containing these transfer functions
+    """
+
+    bibi = generated_bibi_api.parse(bibi_file, silence=True)
+    assert isinstance(bibi, generated_bibi_api.BIBIConfiguration)
+
+    # Remove all transfer functions from BIBI
+    bibi.set_transferFunction([])
+    bibi.set_transferFunctionImport([])
+    bibi.set_transferFunctionInline([])
+
+    # Add given TFs
+    for current in tf_list:
+        bibi.add_transferFunctionInline(current)
+
+    _str = StringIO()
+    bibi.export(_str, 0)
+    _str.seek(0)
+
+    return _str.read()
