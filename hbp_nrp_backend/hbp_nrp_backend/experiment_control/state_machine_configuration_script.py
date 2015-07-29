@@ -40,7 +40,7 @@ def start_state_machines(state_machines, fail_if_running=True):
     """
 
     for sm in state_machines.itervalues():
-        if not sm.is_running():
+        if not sm.is_running is True:
             sm.start_execution()
         else:
             if fail_if_running:
