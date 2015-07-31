@@ -5,6 +5,8 @@ This module contains the simulation class
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
+from hbp_nrp_backend.experiment_control.__ExperimentStateMachine import \
+    ExperimentStateMachineInstance
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
@@ -33,6 +35,7 @@ class Simulation(object):
         self.__gzserver_host = sim_gzserver_host
         self.__creation_date = datetime.datetime.now().isoformat()
         self.__cle = None
+        self.__state_machines = dict()
 
         # The following two members are part of the fix for [NRRPLT-1899]:
         # We store the values of the left and right screen color in order to display
@@ -148,6 +151,59 @@ class Simulation(object):
         :param cle: The new CLE
         """
         self.__cle = cle
+
+    @property
+    def state_machines(self):
+        """
+        Get state_machines dictionary
+        :return: The dictionary of state machine instances
+        """
+        return self.__state_machines
+
+    @state_machines.setter
+    def state_machines(self, state_machines):
+        """
+        Set state_machine dictionary
+        :param state_machines: The new state machines dictionary
+        """
+        self.__state_machines = state_machines
+
+    def get_state_machine_code(self, name):
+        """
+        Get state machine code
+
+        :param name: name of the state machine
+        :return: source code of the state machine (string) or False (bool) when \
+        state machine is not found
+        """
+        if name in self.state_machines:
+            sm = self.state_machines[name]
+            if isinstance(sm, ExperimentStateMachineInstance):
+                return sm.sm_source
+        return False
+
+    def set_state_machine_code(self, name, python_code):
+        """
+        Set state machine code.
+
+        Only works, when simulation is in state "initialized"
+        :param name: name of the state machine
+        :param python_code:
+        :return: bool: True on success, False otherwise
+        :return: string: Contains Error Message, when failed
+        :raise: NameError, SyntaxError, AttributeError, ...
+        """
+        if self.state != 'initialized':
+            return False, "Simulation is not in state 'initialized'"
+
+        if name in self.state_machines:
+            sm = self.state_machines[name]
+            if isinstance(sm, ExperimentStateMachineInstance):
+                sm.sm_source = python_code
+                sm.initialize_sm()
+                return True, "Success"
+
+        return False, "State machine '{0}' not found.".format(name)
 
     @property
     def gzserver_host(self):

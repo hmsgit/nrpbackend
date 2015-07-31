@@ -93,6 +93,8 @@ from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, L
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunctions
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__SimulationTransferFunction import SimulationTransferFunction
+from hbp_nrp_backend.rest_server.__SimulationStateMachines import SimulationGetStateMachine, \
+    SimulationPutStateMachine
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
@@ -106,12 +108,15 @@ api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
-api.add_resource(
-    SimulationTransferFunction,
-    '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>'
-)
+api.add_resource(SimulationTransferFunction,
+                 '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
+api.add_resource(SimulationGetStateMachine, '/simulation/<int:sim_id>/state-machines')
+api.add_resource(SimulationPutStateMachine,
+                 '/simulation/<int:sim_id>/state-machines/<string:state_machine_name>')
+
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
 api.add_resource(Version, '/version')
+
 api.add_resource(Experiment, '/experiment')
 api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')

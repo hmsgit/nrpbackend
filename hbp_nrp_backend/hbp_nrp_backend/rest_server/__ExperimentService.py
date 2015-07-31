@@ -41,10 +41,10 @@ class ErrorMessages(object):
 
 
 @swagger.model
-class ExperimentData(object):
+class ExperimentObject(object):
     """
     Swagger documentation object
-    ExperimentData definition
+    Experiment definition
     """
     resource_fields = {
         "name": fields.String(),
@@ -53,29 +53,28 @@ class ExperimentData(object):
         "timeout": fields.Integer(),
         "maturity": fields.String()
     }
-
     required = ['name', 'experimentConfiguration', 'description', 'timeout', 'maturity']
 
 
 @swagger.model
-@swagger.nested(exp_id_1=ExperimentData.__name__,
-                exp_id_2=ExperimentData.__name__,
-                exp_id_n=ExperimentData.__name__)
+@swagger.nested(exp_id_1=ExperimentObject.__name__,
+                exp_id_2=ExperimentObject.__name__,
+                exp_id_n=ExperimentObject.__name__)
 class ExperimentDictionary(object):
     """
     Swagger documentation object
     ExperimentDictionary ... tried to make it look like a dictionary for the swagger doc
     """
     resource_fields = {
-        'exp_id_1': fields.Nested(ExperimentData.resource_fields),
-        'exp_id_2': fields.Nested(ExperimentData.resource_fields),
-        'exp_id_n': fields.Nested(ExperimentData.resource_fields)
+        'exp_id_1': fields.Nested(ExperimentObject.resource_fields),
+        'exp_id_2': fields.Nested(ExperimentObject.resource_fields),
+        'exp_id_n': fields.Nested(ExperimentObject.resource_fields)
     }
 
 
 @swagger.model
 @swagger.nested(data=ExperimentDictionary.__name__)
-class Data(object):
+class ExperimentData(object):
     """
     Swagger documentation object
     Main Data Attribute for parsing convenience on the frontend side.
@@ -94,7 +93,7 @@ class Experiment(Resource):
 
     @swagger.operation(
         notes="Gets dictionary of experiments",
-        responseClass=Data.__name__,
+        responseClass=ExperimentData.__name__,
         responseMessages=[
             {
                 "code": 500,
@@ -193,9 +192,6 @@ def save_file(base64_data, filename_abs):
             _ex.message), 400)
 
     base_path = os.path.abspath(filename_abs)
-
-    print "Allowed: " + allowed_path
-    print "Base: " + base_path
 
     if base_path.startswith(allowed_path):
         pass

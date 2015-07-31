@@ -44,7 +44,7 @@ class SimulationTransferFunction(Resource):
                 "dataType": int.__name__
             },
             {
-                "name": "transferfunction_name",
+                "name": "transfer_function_name",
                 "description": "The original name of the transfer function",
                 "required": True,
                 "paramType": "path",
@@ -99,7 +99,7 @@ class SimulationTransferFunction(Resource):
             transfer_function_source
         )
 
-        if (response is False):
+        if response is False:
             raise NRPServicesTransferFunctionException(
                 "Transfer function patch failed: " + str(transfer_function_source))
         return 200

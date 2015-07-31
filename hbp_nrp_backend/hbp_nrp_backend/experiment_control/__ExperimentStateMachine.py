@@ -71,7 +71,7 @@ class ExperimentStateMachineInstance(object):
         and a compatible state machine could be initialized from it. Setting the source code is only
         possible whenever the state machine is not executing.
 
-        Specifying a new state machine source leads to an unitialization of this state machine
+        Specifying a new state machine source leads to an uninitialization of this state machine
         instance iff the passed source code is valid. It is thereafter required to call
         initialize_sm() upon the newly loaded state machine to initialize it.
 

@@ -86,7 +86,6 @@ class TestExperimentService(unittest.TestCase):
 
         data = json.loads(response.data)
         for current in data['data']:
-            print current
             response2 = client.get('/experiment/'+current+'/conf')
             self.assertEqual(response2.status_code, 200)
 
@@ -160,7 +159,6 @@ class TestExperimentService(unittest.TestCase):
 
         data = json.loads(response.data)
         for current in data['data']:
-            print current
             response2 = client.get('/experiment/'+current+'/bibi')
             self.assertEqual(response2.status_code, 200)
 
