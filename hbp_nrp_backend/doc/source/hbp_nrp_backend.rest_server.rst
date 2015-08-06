@@ -40,7 +40,6 @@ For documentation of high level REST API, see :doc:`REST-API`.
     :undoc-members:
     :show-inheritance:
 
-
 :mod:`__UserAuthentication` Module
 ----------------------------------
 
@@ -50,3 +49,10 @@ For documentation of high level REST API, see :doc:`REST-API`.
     :show-inheritance:
 
 
+:mod:`__WorldSDFService` Module
+----------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__WorldSDFService
+    :members:
+    :undoc-members:
+    :show-inheritance:
