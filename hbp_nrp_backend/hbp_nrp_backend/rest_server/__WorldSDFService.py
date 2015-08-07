@@ -11,6 +11,7 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 import logging
 import rospy
+from lxml import etree as ET
 
 # pylint: disable=no-self-use
 
@@ -53,6 +54,10 @@ class WorldSDFService(Resource):
 
         try:
             sdf_string = dump_sdf_world().sdf_dump
+            tree = ET.fromstring(sdf_string)
+            for m in tree.findall(".//model[@name='robot']"):
+                m.getparent().remove(m)
+            sdf_string = ET.tostring(tree, encoding='utf8', method='xml')
         except rospy.ServiceException as exc:
             raise NRPServicesClientErrorException(
                 "Service did not process request:" + str(exc), 400)
