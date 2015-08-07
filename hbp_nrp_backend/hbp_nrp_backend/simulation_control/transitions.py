@@ -97,21 +97,19 @@ def initialize_simulation(sim_id):
     try:
         simulation = simulations[sim_id]
         experiment = simulation.experiment_conf
+        environment = simulation.environment_conf
         gzserver_host = simulation.gzserver_host
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-        logger.debug("The NRP_MODELS_DIRECTORY is: %s", models_path)
-        if models_path is not None:
-            experiment = os.path.join(models_path, experiment)
-        else:
-            logger.warn("NRP_MODELS_DIRECTORY is empty")
 
         target = '__generated_experiment_%d.py' % (sim_id, )
+
+        experiment = os.path.join(models_path, experiment)
         generate_bibi(experiment, target, gzserver_host, sim_id, models_path)
 
-        state_machine_paths = generate_experiment_control(experiment)
+        state_machine_paths = generate_experiment_control(experiment, models_path)
         simulation.state_machines = initialize_state_machines(state_machine_paths)
 
-        simulation.cle = initialize_experiment(experiment, target, sim_id)
+        simulation.cle = initialize_experiment(experiment, environment, target, sim_id)
 
         logger.info("simulation initialized")
     except IOError as e:

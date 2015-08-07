@@ -16,4 +16,4 @@ class TestSimulation(unittest.TestCase):
         experiment_conf = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
-        self.__simulation = Simulation(sim_id, experiment_conf, owner, sim_gzserver_host)
+        self.__simulation = Simulation(sim_id, experiment_conf, None, owner, sim_gzserver_host)

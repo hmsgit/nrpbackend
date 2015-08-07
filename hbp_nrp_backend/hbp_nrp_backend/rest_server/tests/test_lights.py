@@ -21,7 +21,7 @@ class TestSimulationService(unittest.TestCase):
         self.client = app.test_client()
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
+        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
 
     def test_put_light(self):
         response = self.client.put('/simulation/0/interaction/light', data='{"name":"foo"}')

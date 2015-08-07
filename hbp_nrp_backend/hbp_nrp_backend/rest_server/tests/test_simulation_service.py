@@ -37,6 +37,7 @@ class TestSimulationService(unittest.TestCase):
             'creationDate': self.now.isoformat(),
             'simulationID': 0,
             'experimentConfiguration': "MyExample.xml",
+            'environmentConfiguration': None,
             'gzserverHost': 'local',
             'operationMode': 'view',
             'left_screen_color': 'Gazebo/Blue',

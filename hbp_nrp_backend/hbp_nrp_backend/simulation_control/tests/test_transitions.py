@@ -11,6 +11,7 @@ import os
 from rospy import ROSException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 from hbp_nrp_backend.simulation_control import simulations, Simulation, transitions
+from hbp_nrp_backend.cle_interface import ROSCLEClient
 
 
 class TestTransition(unittest.TestCase):
@@ -34,7 +35,7 @@ class TestTransition(unittest.TestCase):
 
         del simulations[:]
         simulations.append(
-            Simulation(0, 'virtual_room/virtual_room.sdf', 'local', 'default-owner', 'created'))
+            Simulation(0, 'ExDConf/ExDXMLExample.xml', None, 'local', 'default-owner', 'created'))
         simulations[0].state_machines = {'test_sm': self.__sm_mock}
 
     def test_all_transitions(self):
@@ -70,11 +71,11 @@ class TestTransition(unittest.TestCase):
         mock_generate_bibi.side_effect = IOError()
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
         mock_generate_bibi.side_effect = None
-        os.environ['NRP_MODELS_DIRECTORY'] = '.'
 
         transitions.initialize_simulation(0)
         self.assertEquals(mock_generate_bibi.call_count, 4)
         self.assertEquals(mock_initialize_experiment.call_count, 3)
+
 
     def test_initialize_ros_exception(self):
         """
@@ -82,7 +83,7 @@ class TestTransition(unittest.TestCase):
         """
 
         oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y, z: (_ for _ in ()).throw(ROSException)
+        transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(ROSException)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
         transitions.initialize_experiment = oldie
 
@@ -92,9 +93,10 @@ class TestTransition(unittest.TestCase):
         """
 
         oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y, z: (_ for _ in ()).throw(IOError)
+        transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(IOError)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
         transitions.initialize_experiment = oldie
+
 
 if __name__ == '__main__':
     unittest.main()

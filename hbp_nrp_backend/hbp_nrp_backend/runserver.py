@@ -1,6 +1,7 @@
 """
 Runs the REST server
 """
+import os
 
 __author__ = 'GeorgHinkel'
 
@@ -65,6 +66,8 @@ def __init_console_logging():
     console_handler.setFormatter(logging.Formatter(log_format))
     root_logger.setLevel(logging.DEBUG)
     root_logger.addHandler(console_handler)
+
+    assert os.environ.get('NRP_MODELS_DIRECTORY') is not None
 
 if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser()

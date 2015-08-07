@@ -18,13 +18,14 @@ class Simulation(object):
     """
     The data class for simulations
     """
-    def __init__(self, sim_id, experiment_conf, owner, sim_gzserver_host,
+    def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
                  sim_operation_mode='view', state='created'):
         """
         Creates a new simulation
 
         :param sim_id: The simulation id
         :param experiment_conf: The experiment configuration (Path to ExD configuration)
+        :param environment_conf: The environment configuration (Path to environment configuration)
         :param owner: The name of the user owning the simulation
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
         'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
@@ -35,6 +36,7 @@ class Simulation(object):
         self.__state = state
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
+        self.__environment_conf = environment_conf
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__operation_mode = sim_operation_mode
@@ -96,6 +98,13 @@ class Simulation(object):
         :rtype: string
         """
         return self.__experiment_conf
+
+    @property
+    def environment_conf(self):
+        """
+        Gets the environment configuration, i.e. the path to the environment configuration
+        """
+        return self.__environment_conf
 
     @property
     def sim_id(self):
@@ -259,6 +268,7 @@ class Simulation(object):
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
         'experimentConfiguration': fields.String(attribute='experiment_conf'),
+        'environmentConfiguration': fields.String(attribute='environment_conf'),
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),

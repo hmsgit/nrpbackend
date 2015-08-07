@@ -27,7 +27,7 @@ class TestExperimentConfigurationScript(unittest.TestCase):
 
         directory = os.path.split(__file__)[0]
         experiment = os.path.join(directory, 'ExDXMLExample.xml')
-        self.assertIsInstance(initialize_experiment(experiment, 'generate.xml', 0), ROSCLEClient)
+        self.assertIsInstance(initialize_experiment(experiment, os.path.dirname(__file__), 'generate.xml', 0), ROSCLEClient)
 
     def test_generate_bibi(self):
         """
@@ -60,23 +60,20 @@ class TestExperimentConfigurationScript(unittest.TestCase):
             directory = os.path.split(__file__)[0]
             experiment = os.path.join(directory, 'ExDXMLExample.xml')
 
-            paths = generate_experiment_control(experiment)
+            paths = generate_experiment_control(experiment, directory)
             self.assertEquals(len(paths), 0)
 
             directory = os.path.split(__file__)[0]
             experiment = os.path.join(directory, 'ExDXMLExample_with_sm.xml')
 
-            paths = generate_experiment_control(experiment)
+            paths = generate_experiment_control(experiment, directory)
             self.assertEquals(len(paths), 3)
-            expected = {"ControlSM1": "testdir/control_sm1.py",
-                        "ControlSM2": "testdir/control_sm2.py",
-                        "EvaluatingSM": "testdir/eval_sm1.py"}
+            expected = {"ControlSM1": os.path.join(directory, "control_sm1.py"),
+                        "ControlSM2": os.path.join(directory, "control_sm2.py"),
+                        "EvaluatingSM": os.path.join(directory, "eval_sm1.py")}
 
             for name in expected:
                 self.assertEquals(name in paths and expected[name], paths[name])
-
-            environ_get_mock.assert_called_with("NRP_MODELS_DIRECTORY")
-
 
 if __name__ == '__main__':
     unittest.main()

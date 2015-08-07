@@ -33,6 +33,7 @@ class SimulationService(Resource):
 
         resource_fields = {
             'experimentConfiguration': fields.String(),
+            'environmentConfiguration': fields.String(),
             'gzserverHost': fields.String(),
             'operationMode': fields.String()
         }
@@ -78,6 +79,7 @@ class SimulationService(Resource):
         Creates a new simulation which is neither 'initialized' nor 'started'.
 
         :<json string experimentConfiguration: Path and name of the experiment configuration file
+        :<json string environmentConfiguration: Path of the custom SDF environment (optional)
         :<json string operationMode: Denotes whether the simulation should be started in 'edit' \
         or 'view' mode
         :>json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
@@ -115,7 +117,8 @@ class SimulationService(Resource):
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_operation_mode = body.get('operationMode', 'view')
         sim_owner = UserAuthentication.get_x_user_name_header(request)
-        simulations.append(Simulation(sim_id, body['experimentConfiguration'], sim_owner,
+        simulations.append(Simulation(sim_id, body['experimentConfiguration'],
+                                      body.get('environmentConfiguration', None), sim_owner,
                                       sim_gzserver_host, sim_operation_mode))
 
         return marshal(simulations[sim_id], Simulation.resource_fields), 201, {

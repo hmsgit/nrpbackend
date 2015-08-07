@@ -17,15 +17,15 @@ class TestSimulationConfig(unittest.TestCase):
         self.client = app.test_client()
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'local', 'view', 'created'))
-        simulations.append(Simulation(1, 'experiment2', 'default-owner', 'local', 'view', 'initialized'))
-        simulations.append(Simulation(2, 'experiment3', 'default-owner', 'local', 'view', 'started'))
-        simulations.append(Simulation(3, 'experiment3', 'default-owner', 'local', 'view', 'started'))
-        simulations.append(Simulation(4, 'experiment3', 'default-owner', 'local', 'view', 'started'))
-        simulations.append(Simulation(5, 'experiment4', 'default-owner', 'local', 'view', 'paused'))
-        simulations.append(Simulation(6, 'experiment4', 'default-owner', 'local', 'view', 'paused'))
-        simulations.append(Simulation(7, 'experiment4', 'default-owner', 'local', 'view', 'paused'))
-        simulations.append(Simulation(8, 'experiment5', 'default-owner', 'local', 'view', 'stopped'))
+        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', 'created'))
+        simulations.append(Simulation(1, 'experiment2', None, 'default-owner', 'local', 'view', 'initialized'))
+        simulations.append(Simulation(2, 'experiment3', None, 'default-owner', 'local', 'view', 'started'))
+        simulations.append(Simulation(3, 'experiment3', None, 'default-owner', 'local', 'view', 'started'))
+        simulations.append(Simulation(4, 'experiment3', None, 'default-owner', 'local', 'view', 'started'))
+        simulations.append(Simulation(5, 'experiment4', None, 'default-owner', 'local', 'view', 'paused'))
+        simulations.append(Simulation(6, 'experiment4', None, 'default-owner', 'local', 'view', 'paused'))
+        simulations.append(Simulation(7, 'experiment4', None, 'default-owner', 'local', 'view', 'paused'))
+        simulations.append(Simulation(8, 'experiment5', None, 'default-owner', 'local', 'view', 'stopped'))
 
         utc.use_unit_test_transitions()
 
