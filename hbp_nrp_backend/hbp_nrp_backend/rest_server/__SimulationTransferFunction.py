@@ -103,3 +103,63 @@ class SimulationTransferFunction(Resource):
             raise NRPServicesTransferFunctionException(
                 "Transfer function patch failed: " + str(transfer_function_source))
         return 200
+
+    @swagger.operation(
+        notes='Delete a transfer function.',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "sim_id",
+                "required": True,
+                "description": "The ID of the simulation whose transfer function will be deleted",
+                "paramType": "path",
+                "dataType": int.__name__
+            },
+            {
+                "name": "transferfunction_name",
+                "description": "The name of the transfer function to delete",
+                "required": True,
+                "paramType": "path",
+                "dataType": str.__name__
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 404,
+                "message": "The simulation was not found"
+            },
+            {
+                "code": 401,
+                "message": "Operation only allowed by simulation owner"
+            },
+            {
+                "code": 200,
+                "message": "Success. The delete operation was successfully called. This "
+                           "does not imply that the transfer function was correctly "
+                           "deleted though."
+            }
+        ]
+    )
+    def delete(self, sim_id, transfer_function_name):
+        """
+        Delete a transfer function
+
+        :param sim_id: The simulation id
+        :param transfer_function_name: The name of the transfer function to delete
+        :status 401: Insufficient permissions to apply changes
+        :status 404: The simulation with the given ID was not found
+        :status 200: The delete operation was successfully called
+        """
+        simulation = _get_simulation_or_abort(sim_id)
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            raise NRPServicesClientErrorException(
+                "You need to be the simulation owner to apply your changes", 401)
+
+        response = simulation.cle.delete_simulation_transfer_function(
+            transfer_function_name
+        )
+
+        if (response is False):
+            raise NRPServicesTransferFunctionException(
+                "Transfer function delete failed: " + str(transfer_function_name))
+        return 200
