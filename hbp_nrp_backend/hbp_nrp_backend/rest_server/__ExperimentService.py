@@ -34,7 +34,8 @@ class ErrorMessages(object):
     """
     EXPERIMENT_NOT_FOUND_404 = "The experiment with the given ID was not found"
     EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
-    EXPERIMENT_FILE_NOT_FOUND_404 = "The experiment file was not found"
+    EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
+    EXPERIMENT_CONF_FILE_NOT_FOUND_404 = "The experiment configuration file was not found"
     VARIABLE_ERROR = "Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty"
     ERROR_SAVING_FILE_500 = "Error saving file"
     ERROR_IN_BASE64_400 = "Error in base64: {0}"
@@ -174,24 +175,25 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     return current_exp
 
 
-def save_file(base64_data, filename_abs):
+def save_file(base64_data, filename_abs, data=None):
     """
     Save a file, encoded as base64_data to specified filename_abs
     :param base64_data:  base64 encoded data
     :param filename_abs: the absolute filename
-    :return true, when file is saved, false otherwise
+    :param data: use instead of base64_data, when you wand to write a string as-is to the disk
+    :return filename (string), when file is saved
     :exception NRPServicesClientErrorException, errorNo: 401: Error in base64
     """
 
-    allowed_path = get_basepath()
-
-    try:
-        data = base64.decodestring(base64_data)
-    except Exception as _ex:
-        raise NRPServicesClientErrorException(ErrorMessages.ERROR_IN_BASE64_400.format(
-            _ex.message), 400)
+    if data is None:
+        try:
+            data = base64.decodestring(base64_data)
+        except Exception as _ex:
+            raise NRPServicesClientErrorException(ErrorMessages.ERROR_IN_BASE64_400.format(
+                _ex.message), 400)
 
     base_path = os.path.abspath(filename_abs)
+    allowed_path = get_basepath()
 
     if base_path.startswith(allowed_path):
         pass
@@ -205,6 +207,7 @@ def save_file(base64_data, filename_abs):
     filename = "{0}_new".format(filename_abs)
     with open(filename, 'wb') as _file:
         _file.write(data)
+        return filename
 
 
 def get_basepath():
@@ -253,6 +256,54 @@ def get_bibi_file(exp_id):
     bibi_file = experiment.get_bibiConf()
     bibi_conf = os.path.join(get_basepath(), bibi_file)
     return bibi_conf
+
+
+def get_control_state_machine_files(exp_id):
+    """
+    Get the control state machine file names
+
+    :param exp_id: id of the experiment
+    :return Dict with name, Absolute path to state machine files
+    """
+    return _get_state_machine_files(exp_id, 'control')
+
+
+def get_evaluation_state_machine_files(exp_id):
+    """
+    Get the evaluation state machine file names
+
+    :param exp_id: id of the experiment
+    :return Dict with name, Absolute path to state machine files
+    """
+    return _get_state_machine_files(exp_id, 'evaluation')
+
+
+def _get_state_machine_files(exp_id, which):
+    """
+    Get the state machine file names
+
+    :param exp_id: id of the experiment
+    :param string which: 'control' or 'evaluation'
+    :return: Dict with name, Absolute path to state machine files
+    """
+    ret = dict()
+    experiment_file = get_experiment_conf(exp_id)
+    experiment = generated_experiment_api.parse(experiment_file, silence=True)
+    assert isinstance(experiment, generated_experiment_api.ExD)
+
+    if which is 'control':
+        files = experiment.get_experimentControl()
+    elif which is 'evaluation':
+        files = experiment.get_experimentEvaluation()
+
+    if files:
+        sm_node = files.get_stateMachines()
+        assert(isinstance(sm_node, generated_experiment_api.stateMachinesType))
+        for sm in sm_node.get_stateMachine():
+            assert(isinstance(sm, generated_experiment_api.SMACHStateMachine))
+            ret[sm.get_name()] = os.path.join(get_basepath(), sm.get_modulePath())
+
+    return ret
 
 
 def get_username():

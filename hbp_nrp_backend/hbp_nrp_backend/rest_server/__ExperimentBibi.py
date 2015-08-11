@@ -63,7 +63,7 @@ class ExperimentBibi(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.EXPERIMENT_FILE_NOT_FOUND_404
+                "message": ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -87,7 +87,8 @@ class ExperimentBibi(Resource):
         filename = get_bibi_file(exp_id)
 
         if not os.path.isfile(filename):
-            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_FILE_NOT_FOUND_404, 404)
+            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404,
+                                                  404)
 
         with open(filename, "rb") as _file:
             data = base64.b64encode(_file.read())
