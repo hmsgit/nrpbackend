@@ -28,8 +28,7 @@ class SimulationTransferFunctions(Resource):
         Resource.__init__(self)
 
     @swagger.operation(
-        notes='Gets the all transfer functions (robot to neuron and \
-               neuron to robot) in an array of string.',
+        notes='Gets all transfer functions',
         responseClass=list.__name__,
         # We do not have any error status code. If something goes wrong
         # for one or several transfer functions, the associated string in
@@ -43,12 +42,10 @@ class SimulationTransferFunctions(Resource):
     )
     def get(self, sim_id):
         """
-        Gets the all transfer functions (robot to neuron and
-        neuron to robot) in an array of strings.
+        Gets all transfer functions
+        (robot to neuron and neuron to robot) in an array of strings.
 
-        :param sim_id: The simulation ID whose
-        transfer functions are retrieved
-
+        :param sim_id: The simulation ID whose transfer functions are retrieved
         :status 200: Transfer functions retrieved successfully
         """
 
