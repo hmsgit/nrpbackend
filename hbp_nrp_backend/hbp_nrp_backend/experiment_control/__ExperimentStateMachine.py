@@ -100,7 +100,7 @@ class ExperimentStateMachineInstance(object):
         not loaded into sys.modules.
 
         :return: The python module, iff the a proper state machine source code has been set. None,
-        otherwise.
+                 otherwise.
         """
 
         return self.__sm_module

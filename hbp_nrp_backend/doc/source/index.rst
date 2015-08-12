@@ -16,6 +16,7 @@ Contents:
    running
    tools
    deployment
+   tutorials/index
    hbp_nrp_backend
    glossary
 

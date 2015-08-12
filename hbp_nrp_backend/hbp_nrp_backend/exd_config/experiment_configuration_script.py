@@ -68,7 +68,7 @@ def generate_experiment_control(experiment_conf):
                             environment variable for this file. relative path from
                             there must be included.
     :return: A dictionary mapping the specified unique state machine name to the according file
-    path of the python script
+             path of the python script
     """
     # parse experiment configuration
     experiment = generated_experiment_api.parse(experiment_conf, silence=True)

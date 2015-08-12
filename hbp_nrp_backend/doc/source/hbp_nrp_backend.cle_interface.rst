@@ -9,7 +9,7 @@ cle_interface - interface to the CLE
 :mod:`ROSCLEClient` Module
 --------------------------
 
-.. automodule:: hbp_nrp_cle.cle.ROSCLEClient
+.. automodule:: hbp_nrp_backend.cle_interface.ROSCLEClient
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,7 +17,15 @@ cle_interface - interface to the CLE
 :mod:`ROSCLESimulationFactoryClient` Module
 -------------------------------------------
 
-.. automodule:: hbp_nrp_cle.cle.ROSCLESimulationFactoryClient
+.. automodule:: hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`ROSCLEState` Module
+-------------------------
+
+.. automodule:: hbp_nrp_backend.cle_interface.ROSCLEState
     :members:
     :undoc-members:
     :show-inheritance:

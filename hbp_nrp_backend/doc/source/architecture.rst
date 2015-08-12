@@ -9,4 +9,3 @@ Architecture
    communication_flow
    simulation_states
    REST-API
-   ex_configuration
