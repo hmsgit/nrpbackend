@@ -18,7 +18,8 @@ class Simulation(object):
     """
     The data class for simulations
     """
-    def __init__(self, sim_id, experiment_conf, owner, sim_gzserver_host, state='created'):
+    def __init__(self, sim_id, experiment_conf, owner, sim_gzserver_host,
+                 sim_operation_mode='view', state='created'):
         """
         Creates a new simulation
         :param sim_id: The simulation id
@@ -26,6 +27,8 @@ class Simulation(object):
         :param owner: The name of the user owning the simulation
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
         'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
+        :param sim_operation_mode: Denotes whether the simulation should be started in 'edit' or \
+        'view' mode
         :param state: The initial state (created by default)
         """
         self.__state = state
@@ -33,6 +36,7 @@ class Simulation(object):
         self.__experiment_conf = experiment_conf
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
+        self.__operation_mode = sim_operation_mode
         self.__creation_date = datetime.datetime.now().isoformat()
         self.__cle = None
         self.__state_machines = dict()
@@ -103,6 +107,14 @@ class Simulation(object):
         :return: The creation date
         """
         return self.__creation_date
+
+    @property
+    def operation_mode(self):
+        """
+        The operation mode of this simulation
+        :return: The operation mode ('view' or 'edit')
+        """
+        return self.__operation_mode
 
     @property
     def state(self):
@@ -220,10 +232,11 @@ class Simulation(object):
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute='creation_date'),
         'gzserverHost': fields.String(attribute='gzserver_host'),
+        'operationMode': fields.String(attribute='operation_mode'),
         'right_screen_color': fields.String(attribute='right_screen_color'),
         'left_screen_color': fields.String(attribute='left_screen_color')
     }
-    required = ['state', 'simulationID', 'experimentConfiguration', 'gzserverHost']
+    required = ['state', 'simulationID', 'experimentConfiguration', 'gzserverHost', 'operationMode']
 
 
 class InvalidStateTransitionException(Exception):

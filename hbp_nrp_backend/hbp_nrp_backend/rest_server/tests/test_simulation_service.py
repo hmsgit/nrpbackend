@@ -38,6 +38,7 @@ class TestSimulationService(unittest.TestCase):
             'simulationID': 0,
             'experimentConfiguration': "MyExample.xml",
             'gzserverHost': 'local',
+            'operationMode': 'view',
             'left_screen_color': 'Gazebo/Blue',
             'right_screen_color': 'Gazebo/Blue'
         }
@@ -53,6 +54,14 @@ class TestSimulationService(unittest.TestCase):
                                     data=json.dumps({"experimentConfiguration": "MyExample.xml",
                                                      "gzserverHost": wrong_server}))
         self.assertEqual(response.status_code, 401)
+
+    def test_simulation_service_wrong_operation_mode(self):
+        wrong_operation_mode = "wrong_operation_mode"
+        response = self.client.post('/simulation',
+                                    data=json.dumps({"experimentConfiguration": "MyExample.xml",
+                                                     "gzserverHost": "local",
+                                                     "operationMode": wrong_operation_mode}))
+        self.assertEqual(response.status_code, 403)
 
     def test_simulation_service_get(self):
         param = json.dumps({'experimentConfiguration': 'MyExample.xml', 'gzserverHost': 'local'})
