@@ -13,7 +13,7 @@ def initialize_state_machines(sm_paths=None, sm_instances=None):
     Initializes a set of state machines to control the experiment execution.
 
     :param sm_paths: A dictionary specifying the state machine id (sm_id) and the path to the smach
-    python script
+                     python script
     :return: An dictionary of initialized ExperimentStateMachine instances suitable for execution
     """
     if sm_instances is None:

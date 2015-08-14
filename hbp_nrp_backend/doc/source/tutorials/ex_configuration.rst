@@ -1,6 +1,5 @@
-=========================
-Experiment Configurations
-=========================
+Tutorial: Writing an Experiment Configuration
+=============================================
 
 File format
 ^^^^^^^^^^^

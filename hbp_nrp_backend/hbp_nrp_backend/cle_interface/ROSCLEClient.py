@@ -167,7 +167,7 @@ class ROSCLEClient(object):
         Get the simulation transfer functions.
 
         :returns: An array of strings containing the source code of the transfer
-        functions.
+                  functions.
         """
         result = []
         if self.__valid:

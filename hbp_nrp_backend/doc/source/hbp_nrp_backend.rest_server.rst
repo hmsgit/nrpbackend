@@ -8,6 +8,46 @@ For documentation of high level REST API, see :doc:`REST-API`.
     :undoc-members:
     :show-inheritance:
 
+:mod:`__ExperimentBibi` Module
+------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__ExperimentBibi
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`__ExperimentConf` Module
+------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__ExperimentConf
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`__ExperimentPreview` Module
+---------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__ExperimentPreview
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`__ExperimentService` Module
+---------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__ExperimentService
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`__ExperimentTransferfunctions` Module
+-------------------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__ExperimentTransferfunctions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`__SimulationControl` Module
 ---------------------------------
 
@@ -28,6 +68,22 @@ For documentation of high level REST API, see :doc:`REST-API`.
 -------------------------------
 
 .. automodule:: hbp_nrp_backend.rest_server.__SimulationState
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`__SimulationStateMachines` Module
+---------------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__SimulationStateMachines
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`__SimulationTransferFunction` Module
+------------------------------------------
+
+.. automodule:: hbp_nrp_backend.rest_server.__SimulationTransferFunction
     :members:
     :undoc-members:
     :show-inheritance:

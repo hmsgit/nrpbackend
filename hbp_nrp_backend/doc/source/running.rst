@@ -37,12 +37,12 @@ This is a step-by-step description for running the backend for the case that **t
       .. code-block:: bash
 
          python $CLE/hbp_nrp_cle/hbp_nrp_cle/cle/ROSCLESimulationFactory.py
-   d. Start the Gazebo server. Currently, we load the virtual room together with the server. Be careful that our patched Gazebo plugin is loaded instead of the default one.
+   d. Start the Gazebo server. Be careful that our patched Gazebo plugin is loaded instead of the default one.
 
       .. code-block:: bash
 
-            source $CLE/GazeboRosPackage/devel/setup.bash
-            rosrun gazebo_ros gzserver ~/.gazebo/models/virtual_room/virtual_room.sdf
+            source $GZ_ROS_PKGS/devel/setup.bash
+            rosrun gazebo_ros gzserver
 
    e. Start a Gazebo client if you wish to view the results on your machine (not required when using the frontend)
 
@@ -67,9 +67,9 @@ The documentation and Python API (the pages you are currently reading) is create
 
 .. code-block:: bash
 
-    cd $EXDB/apidoc
+    cd $EXDB/doc
     make html
-    firefox _build/html/index.html
+    firefox build/html/index.html
 
 
 Swagger API
@@ -82,8 +82,8 @@ The documentation is available once the server is running (see :ref:`running`) u
 Running the unit test for the CLE in a local machine
 ----------------------------------------------------
 
-After downloading the CLE repository as shown in the wiki page Installing ExDBackend, would be useful run the unit test in a local machine.
-In order to run the unit test locally you need to perform few steps:
+After downloading the CLE repository as shown in the wiki page :ref:`acquisition`, it would be useful run the unit test in a local machine.
+In order to run the unit test locally you need to perform a few steps:
 
 * Download the CLE repository according to Installing ExDBackend
 * Copy numpy h5py and cv2.so in CLE/platform_venv/lib/python2.7/site-packages (In ubuntu, if you installed them, they are located in  /usr/lib/python2.7/dist-packages)
@@ -91,6 +91,7 @@ In order to run the unit test locally you need to perform few steps:
 * Run once the script CLE/run_tests.sh (It will say that numpy directory already exists)
 * Remove the numpy directory from CLE/platform_venv/lib/python2.7/site-packages
 * Run again CLE/run_tests.sh
+* If the script fails with errors pointing to unresolvable libraries (e.g. lxml, scipy) copy the respective directories from the local python installation to the virtual environment similar as in the second step.
 
 From now on you can execute the unit testing running the script CLE/run_tests.sh
 
