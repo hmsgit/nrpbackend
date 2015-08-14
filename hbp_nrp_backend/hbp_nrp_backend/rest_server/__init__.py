@@ -101,6 +101,8 @@ from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
 from hbp_nrp_backend.rest_server.__ExperimentBibi import ExperimentBibi
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
+from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
+ ExperimentPutStateMachine
 
 api.add_resource(SimulationService, '/simulation')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
@@ -122,3 +124,6 @@ api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')
 api.add_resource(ExperimentTransferfunctions, '/experiment/<string:exp_id>/transferfunctions')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
+api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-machines')
+api.add_resource(ExperimentPutStateMachine,
+                 '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')

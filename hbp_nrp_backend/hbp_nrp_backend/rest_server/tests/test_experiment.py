@@ -7,9 +7,11 @@ __author__ = "Bernd Eckstein"
 from flask import Response, Request
 from hbp_nrp_backend.rest_server import app
 from mock import patch, MagicMock, mock_open
-from hbp_nrp_backend.rest_server.__ExperimentService import\
-    ErrorMessages, get_basepath, save_file, get_username
+from hbp_nrp_backend.rest_server.__ExperimentService import \
+    ErrorMessages, get_basepath, save_file, get_username, \
+    get_control_state_machine_files, get_evaluation_state_machine_files
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+
 import unittest
 import os
 import json
@@ -99,7 +101,7 @@ class TestExperimentService(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
-        self.assertEqual(message, ErrorMessages.EXPERIMENT_FILE_NOT_FOUND_404)
+        self.assertEqual(message, ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404)
 
     def test_experiment_conf_get_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
@@ -172,7 +174,7 @@ class TestExperimentService(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
-        self.assertEqual(message, ErrorMessages.EXPERIMENT_FILE_NOT_FOUND_404)
+        self.assertEqual(message, ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404)
 
     def test_experiment_bibi_get_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
@@ -242,6 +244,24 @@ class TestExperimentService(unittest.TestCase):
         client = app.test_client()
         response = client.put('/experiment/test_1/transferfunctions', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
+
+    def test_get_control_state_machine_files(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        files = get_control_state_machine_files("test_sm")
+        self.assertEqual(len(files), 1)
+
+        files = get_control_state_machine_files("test_1")
+        self.assertEqual(len(files), 0)
+
+    def test_get_evaluation_state_machine_files(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        files = get_evaluation_state_machine_files("test_sm")
+        self.assertEqual(len(files), 1)
+
+        files = get_evaluation_state_machine_files("test_1")
+        self.assertEqual(len(files), 0)
 
 
 class TestExperimentService2(unittest.TestCase):

@@ -18,7 +18,7 @@ import os
 import base64
 
 # pylint: disable=R0201
-# becaus it seems to be buggy:
+# because it seems to be buggy:
 # pylint: disable=W0105
 
 
@@ -63,7 +63,7 @@ class ExperimentConf(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.EXPERIMENT_FILE_NOT_FOUND_404
+                "message": ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -80,14 +80,15 @@ class ExperimentConf(Resource):
         :>json string base64: Contents of the file encoded as base64
         :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
         :status 404: The experiment with the given ID was not found
-        :status 404: The experiment file was not found
+        :status 404: The experiment configuration file was not found
         :status 200: Success. The data of the file is returned
         """
 
         filename = get_experiment_conf(exp_id)
 
         if not os.path.isfile(filename):
-            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_FILE_NOT_FOUND_404, 404)
+            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+                                                  404)
 
         with open(filename, "rb") as _file:
             data = base64.b64encode(_file.read())
