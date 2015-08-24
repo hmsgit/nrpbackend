@@ -37,9 +37,10 @@ class Simulation(object):
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__operation_mode = sim_operation_mode
-        self.__creation_date = datetime.datetime.now().isoformat()
+        self.__creation_datetime = datetime.datetime.now()
         self.__cle = None
         self.__state_machines = dict()
+        self.__errors = 0 # We use that for monitoring
 
         # The following two members are part of the fix for [NRRPLT-1899]:
         # We store the values of the left and right screen color in order to display
@@ -48,6 +49,13 @@ class Simulation(object):
         # as long as there is no better solution.
         self.__right_screen_color = 'Gazebo/Blue'
         self.__left_screen_color = 'Gazebo/Blue'
+
+    @property
+    def errors(self):
+        """
+        :return: the number of errors for the current simulation
+        """
+        return self.__errors
 
     # The next four methods are also part of the hack to fix [NRRPLT-1899].
     @property
@@ -101,12 +109,20 @@ class Simulation(object):
         return self.__owner
 
     @property
+    def creation_datetime(self):
+        """
+        The creation datetime of this simulation
+        :return: The creation datetime
+        """
+        return self.__creation_datetime
+
+    @property
     def creation_date(self):
         """
         The creation date of this simulation
         :return: The creation date
         """
-        return self.__creation_date
+        return self.__creation_datetime.isoformat()
 
     @property
     def operation_mode(self):
@@ -129,6 +145,7 @@ class Simulation(object):
             except ROSCLEClientException:
                 # If anything goes wrong, we assume that we are in the "stopped" state
                 self.__state = "stopped"
+                self.__errors += 1
         return self.__state
 
     # pylint: disable=broad-except
@@ -146,6 +163,7 @@ class Simulation(object):
             self.__state = new_state
         except Exception as e:
             self.__state = "failed"
+            self.__errors += 1
             raise e
 
     @property
@@ -230,7 +248,7 @@ class Simulation(object):
         'simulationID': fields.Integer(attribute='sim_id'),
         'experimentConfiguration': fields.String(attribute='experiment_conf'),
         'owner': fields.String(attribute='owner'),
-        'creationDate': fields.String(attribute='creation_date'),
+        'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),
         'operationMode': fields.String(attribute='operation_mode'),
         'right_screen_color': fields.String(attribute='right_screen_color'),

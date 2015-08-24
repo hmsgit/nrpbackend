@@ -103,7 +103,10 @@ from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
  ExperimentPutStateMachine
+from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 
+api.add_resource(Last24HoursErrorCheck, '/health/errors-last-24h')
+api.add_resource(TotalErrorCheck, '/health/errors')
 api.add_resource(SimulationService, '/simulation')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
 api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
