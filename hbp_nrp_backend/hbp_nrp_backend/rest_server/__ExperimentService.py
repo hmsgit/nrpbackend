@@ -9,13 +9,12 @@ __author__ = "Bernd Eckstein"
 import os
 import base64
 import logging
-from cStringIO import StringIO
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
 from hbp_nrp_backend.exd_config.generated import generated_experiment_api
-from hbp_nrp_cle.bibi_config.generated import generated_bibi_api
+from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
 
 from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
@@ -325,20 +324,17 @@ def substitute_bibi_transferfunctions(bibi_file, tf_list):
     :return: the new bibi as string containing these transfer functions
     """
 
-    bibi = generated_bibi_api.parse(bibi_file, silence=True)
-    assert isinstance(bibi, generated_bibi_api.BIBIConfiguration)
+    with open(bibi_file) as bibi_xml:
+        bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
+    assert isinstance(bibi, bibi_api_gen.BIBIConfiguration)
 
     # Remove all transfer functions from BIBI
-    bibi.set_transferFunction([])
-    bibi.set_transferFunctionImport([])
-    bibi.set_transferFunctionInline([])
+    del bibi.transferFunction[:]
+    del bibi.transferFunctionImport[:]
+    del bibi.transferFunctionInline[:]
 
     # Add given TFs
     for current in tf_list:
-        bibi.add_transferFunctionInline(current)
+        bibi.transferFunctionInline.append(current)
 
-    _str = StringIO()
-    bibi.export(_str, 0)
-    _str.seek(0)
-
-    return _str.read()
+    return str(bibi.toxml("utf-8"))
