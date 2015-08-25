@@ -22,6 +22,7 @@ class Simulation(object):
                  sim_operation_mode='view', state='created'):
         """
         Creates a new simulation
+
         :param sim_id: The simulation id
         :param experiment_conf: The experiment configuration (Path to ExD configuration)
         :param owner: The name of the user owning the simulation
@@ -90,6 +91,9 @@ class Simulation(object):
     def experiment_conf(self):
         """
         Gets the experiment configuration, i.e. the path to the ExD configuration
+
+        :return: Experiment configuration
+        :rtype: string
         """
         return self.__experiment_conf
 
@@ -104,6 +108,7 @@ class Simulation(object):
     def owner(self):
         """
         The owner of this simulation
+
         :return: The owner name
         """
         return self.__owner
@@ -120,6 +125,7 @@ class Simulation(object):
     def creation_date(self):
         """
         The creation date of this simulation
+
         :return: The creation date
         """
         return self.__creation_datetime.isoformat()
@@ -128,6 +134,7 @@ class Simulation(object):
     def operation_mode(self):
         """
         The operation mode of this simulation
+
         :return: The operation mode ('view' or 'edit')
         """
         return self.__operation_mode
@@ -186,6 +193,7 @@ class Simulation(object):
     def state_machines(self):
         """
         Get state_machines dictionary
+
         :return: The dictionary of state machine instances
         """
         return self.__state_machines
@@ -194,6 +202,7 @@ class Simulation(object):
     def state_machines(self, state_machines):
         """
         Set state_machine dictionary
+
         :param state_machines: The new state machines dictionary
         """
         self.__state_machines = state_machines
@@ -215,13 +224,16 @@ class Simulation(object):
     def set_state_machine_code(self, name, python_code):
         """
         Set state machine code.
-
         Only works, when simulation is in state "initialized"
-        :param name: name of the state machine
-        :param python_code:
-        :return: bool: True on success, False otherwise
-        :return: string: Contains Error Message, when failed
-        :raise: NameError, SyntaxError, AttributeError, ...
+
+        :param   name:        name of the state machine
+        :type    name:        string
+        :param   python_code: source code of the state machine
+        :type    python_code: string
+        :return: (bool) --    True on success, False otherwise
+        :return: (string) --  Contains Error Message, when failed
+        :rtype:  bool, string
+        :raise:  NameError, SyntaxError, AttributeError, ...
         """
         if self.state != 'initialized':
             return False, "Simulation is not in state 'initialized'"
