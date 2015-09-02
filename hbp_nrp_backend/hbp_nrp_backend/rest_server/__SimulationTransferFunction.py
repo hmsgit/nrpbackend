@@ -94,14 +94,17 @@ class SimulationTransferFunction(Resource):
                 "You need to be the simulation owner to apply your changes", 401)
 
         transfer_function_source = request.data
-        response = simulation.cle.set_simulation_transfer_function(
+        error_message = simulation.cle.set_simulation_transfer_function(
             transfer_function_name,
             transfer_function_source
         )
-
-        if response is False:
+        if (error_message):
             raise NRPServicesTransferFunctionException(
-                "Transfer function patch failed: " + str(transfer_function_source))
+                "Transfer function patch failed: "
+                + str(error_message) + "\n"
+                + "Updated source:\n"
+                + str(transfer_function_source)
+            )
         return 200
 
     @swagger.operation(

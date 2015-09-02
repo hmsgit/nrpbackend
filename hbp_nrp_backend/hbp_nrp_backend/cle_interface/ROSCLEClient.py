@@ -229,16 +229,17 @@ class ROSCLEClient(object):
 
         :param transfer_function_name: Name of the transfer function to modifiy or create
         :param transfer_function_source: Source code of the transfer function
-        :returns: True if the call to ROS is successful, False otherwise
+        :returns: "" if the call to ROS is successful,
+                     a string containing an error message otherwise
         """
-        result = False
+        result = ""
         if self.__valid:
             try:
                 response = self.__cle_set_transfer_function(
                     transfer_function_name,
                     transfer_function_source
                 )
-                result = response.success
+                result = response.error_message
             except rospy.ServiceException as e:
                 logger.error(
                     "Error while setting the code of transfer function (%s, %s)"
