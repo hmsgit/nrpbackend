@@ -13,10 +13,11 @@ import logging
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
-from hbp_nrp_backend.exd_config.generated import generated_experiment_api
+from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
 from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
 
 from flask import request
+from pyxb import ValidationError
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
 # pylint: disable=no-self-use
@@ -134,8 +135,16 @@ def get_experiments():
         if current.lower().endswith('.xml'):
             # Parse Experiment
             experiment_conf = os.path.join(get_basepath(), experiment_dir, current)
-            ex = generated_experiment_api.parse(experiment_conf, silence=True)
-            if isinstance(ex, generated_experiment_api.ExD):
+            ex = None
+            with open(experiment_conf) as exd_file:
+                try:
+                    ex = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+                except ValidationError, ve:
+                    LOG.warn("Could not parse experiment configuration %s due to validation "
+                             "error: %s", experiment_conf, str(ve))
+                    continue
+
+            if isinstance(ex, exp_conf_api_gen.ExD_):
                 current_exp = _make_experiment(current, ex, experiment_dir)
                 experiment_dict[os.path.splitext(current)[0]] = current_exp
 
@@ -151,10 +160,10 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     :return dictionary with the experiment data
     """
 
-    _timeout = experiment.get_timeout()
-    _name = experiment.get_name()
-    _description = experiment.get_description()
-    _maturity = experiment.get_maturity()
+    _timeout = experiment.timeout
+    _name = experiment.name
+    _description = experiment.description
+    _maturity = experiment.maturity
 
     if _timeout is None:
         _timeout = 600
@@ -250,9 +259,12 @@ def get_bibi_file(exp_id):
     :return Absolute path to experiment bibi file
     """
     experiment_file = get_experiment_conf(exp_id)
-    experiment = generated_experiment_api.parse(experiment_file, silence=True)
-    assert isinstance(experiment, generated_experiment_api.ExD)
-    bibi_file = experiment.get_bibiConf()
+
+    # parse experiment configuration
+    with open(experiment_file) as exd_file:
+        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+    assert isinstance(experiment, exp_conf_api_gen.ExD_)
+    bibi_file = experiment.bibiConf.src
     bibi_conf = os.path.join(get_basepath(), bibi_file)
     return bibi_conf
 
@@ -287,20 +299,21 @@ def _get_state_machine_files(exp_id, which):
     """
     ret = dict()
     experiment_file = get_experiment_conf(exp_id)
-    experiment = generated_experiment_api.parse(experiment_file, silence=True)
-    assert isinstance(experiment, generated_experiment_api.ExD)
+    # parse experiment configuration
+    with open(experiment_file) as exd_file:
+        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+
+    assert isinstance(experiment, exp_conf_api_gen.ExD_)
 
     if which is 'control':
-        files = experiment.get_experimentControl()
+        files = experiment.experimentControl
     elif which is 'evaluation':
-        files = experiment.get_experimentEvaluation()
+        files = experiment.experimentEvaluation
 
     if files:
-        sm_node = files.get_stateMachines()
-        assert(isinstance(sm_node, generated_experiment_api.stateMachinesType))
-        for sm in sm_node.get_stateMachine():
-            assert(isinstance(sm, generated_experiment_api.SMACHStateMachine))
-            ret[sm.get_name()] = os.path.join(get_basepath(), sm.get_modulePath())
+        for sm in files.stateMachine:
+            if isinstance(sm, exp_conf_api_gen.SMACHStateMachine):
+                ret[sm.id] = os.path.join(get_basepath(), sm.src)
 
     return ret
 

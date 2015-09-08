@@ -250,7 +250,7 @@ class ExperimentStateMachineInstance(object):
         :param sm_module_source: The source code of the python module to instantiate
         :return: The module, if the module provides the required method. None, otherwise
         """
-        sm_module = ModuleType(sm_id)
+        sm_module = ModuleType(str(sm_id))
         # pylint: disable=exec-used
         exec (sm_module_source, sm_module.__dict__)
         # pylint: enable=exec-used

@@ -3,17 +3,11 @@
      xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig">
     <name>ExDXMLExample</name>
     <description>dummy description</description>
-    <environmentModel>
-        <location>virtual_room/virtual_room.sdf</location>
-        <pose>
-            <x>0.0</x>
-            <y>0.0</y>
-            <z>0.0</z>
-            <ux>0.0</ux>
-            <uy>0.0</uy>
-            <uz>1.0</uz>
-            <theta>0.0</theta>
-        </pose>
+
+    <timeout>600</timeout>
+    <maturity>production</maturity>
+    <environmentModel src="virtual_room/virtual_room.sdf">
+        <pose x="0.0" y="0.0" z="0.0" ux="0.0" uy="0.0" uz="1.0" theta="0.0"/>
     </environmentModel>
-    <bibiConf>milestone2.xml</bibiConf>
+    <bibiConf src="BIBI/milestone2.xml"/>
 </ExD>

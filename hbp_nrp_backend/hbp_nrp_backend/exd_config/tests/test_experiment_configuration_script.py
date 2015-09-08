@@ -39,14 +39,14 @@ class TestExperimentConfigurationScript(unittest.TestCase):
         generated_bibi = os.path.join(directory, 'generated_bibi.py')
 
         with mock.patch('hbp_nrp_backend.exd_config.experiment_configuration_script'
-                        '.generated_experiment_api') as p:
+                        '.exp_conf_api_gen') as p:
             with mock.patch('hbp_nrp_backend.exd_config.experiment_configuration_script'
                             '.bibi_configuration_script') as pp:
-                p.parse().timeout = None
+                p.CreateFromDocument().timeout = None
                 generate_bibi(experiment, generated_bibi, 'local', 0)
                 self.assertEquals(pp.generate_cle.call_args_list[0][0][2], 600.0)
 
-                p.parse().timeout = 500.0
+                p.CreateFromDocument().timeout = 500.0
                 generate_bibi(experiment, generated_bibi, 'local', 0)
                 self.assertEquals(pp.generate_cle.call_args_list[1][0][2], 500.0)
 

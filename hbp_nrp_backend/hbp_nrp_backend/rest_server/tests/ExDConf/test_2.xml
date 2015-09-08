@@ -2,61 +2,11 @@
 <ExD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
      xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig ExDConfFile.xsd">
-    <environmentModel>
-        <location>virtual_room/virtual_room.sdf</location>
-        <pose>
-            <x>0.0</x>
-            <y>0.0</y>
-            <z>0.0</z>
-            <ux>0.0</ux>
-            <uy>0.0</uy>
-            <uz>1.0</uz>
-            <theta>0.0</theta>
-        </pose>
+    <name>Husky Braitenberg experiment</name>
+    <description>This experiment loads the Husky robot from Clearpath Robotics and the virtual room environment. If the user starts the experiment, the Braitenberg vehicle network is executed and the robot will turn around itself in place, until the camera detects a red color. Then, the robot will move towards the colored object. In this experiment, the user can interact and change the color of both screens by clicking on them with the right mouse button.</description>
+    <timeout>666</timeout>
+    <environmentModel src="virtual_room/virtual_room.sdf">
+        <pose x="0.0" y="0.0" z="0.0" ux="0.0" uy="0.0" uz="1.0" theta="0.0"/>
     </environmentModel>
-    <bibiConf>BIBI/neuronalRedDetection.xml</bibiConf>
-    <events>
-        <condition xsi:type="TimelineCondition">
-            <time>00:00:00</time>
-        </condition>
-        <actions xsi:type="PropertySetAction">
-            <identifier>&lt;model name=&quot;husky&quot;&gt;&lt;pose
-                /&gt;&lt;/model&gt;</identifier>
-            <value>0 0 .5 0 0 0</value>
-        </actions>
-    </events>
-    <events>
-        <condition xsi:type="And">
-            <conditions xsi:type="HardwareCondition">
-                <key>X</key>
-            </conditions>
-            <conditions xsi:type="PropertyEquals">
-                <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
-                    name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
-                <value>Gazebo/Blue</value>
-            </conditions>
-        </condition>
-        <actions xsi:type="PropertySetAction">
-            <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
-                name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
-            <value>Gazebo/Red</value>
-        </actions>
-    </events>
-    <events>
-        <condition xsi:type="And">
-            <conditions xsi:type="HardwareCondition">
-                <key>Y</key>
-            </conditions>
-            <conditions xsi:type="PropertyEquals">
-                <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
-                    name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
-                <value>Gazebo/Red</value>
-            </conditions>
-        </condition>
-        <actions xsi:type="PropertySetAction">
-            <identifier>&lt;model name=&quot;right_vr_screen&quot;&gt;&lt;link name=&quot;body&quot;&gt;&lt;visual
-                name=&quot;screen_glass&quot;&gt;&lt;material /&gt;&lt;script /&gt;&lt;name /&gt;&lt;/visual&gt;&lt;/link&gt;&lt;/model&gt;</identifier>
-            <value>Gazebo/Blue</value>
-        </actions>
-    </events>
+    <bibiConf src="BIBI/neuronalRedDetection.xml"/>
 </ExD>

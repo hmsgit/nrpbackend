@@ -1,7 +1,7 @@
 """
 Script to run Experiment from ExperimentDesigner Configuration File
 """
-from hbp_nrp_backend.exd_config.generated import generated_experiment_api
+from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
 from hbp_nrp_cle.bibi_config import bibi_configuration_script
 import os
 import logging
@@ -38,12 +38,14 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id)
                  "(gz services running on {2})")
                 .format(experiment_conf, bibi_script_file_name, gzserver_host))
 
-    # parse experiment configuration
-    experiment = generated_experiment_api.parse(experiment_conf, silence=True)
+    with open(experiment_conf) as exd_file:
+
+        # parse experiment configuration
+        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
 
     # retrieve the bibi configuration file name.
     bibi_conf = os.path.join(_get_basepath(experiment_conf),
-                             experiment.bibiConf)
+                             experiment.bibiConf.src)
 
     # set timeout to 10 minutes, if not specified by default
     if experiment.timeout is None:
@@ -71,7 +73,8 @@ def generate_experiment_control(experiment_conf):
              path of the python script
     """
     # parse experiment configuration
-    experiment = generated_experiment_api.parse(experiment_conf, silence=True)
+    with open(experiment_conf) as exd_file:
+        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
 
     state_machine_paths = {}
 
@@ -79,18 +82,14 @@ def generate_experiment_control(experiment_conf):
     # BEGIN Actually generate the state machines from config here
     #
     if experiment.experimentControl is not None:
-        state_machine_paths.update({sm.name: os.path.join(_get_basepath(experiment_conf),
-                                                          sm.modulePath)
-                                    for sm in
-                                    experiment.experimentControl.stateMachines.stateMachine
-                                    if isinstance(sm, generated_experiment_api.SMACHStateMachine)})
+        state_machine_paths.update({sm.id: os.path.join(_get_basepath(experiment_conf), sm.src)
+                                    for sm in experiment.experimentControl.stateMachine
+                                    if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
     if experiment.experimentEvaluation is not None:
-        state_machine_paths.update({sm.name: os.path.join(_get_basepath(experiment_conf),
-                                                          sm.modulePath)
-                                    for sm in
-                                    experiment.experimentEvaluation.stateMachines.stateMachine
-                                    if isinstance(sm, generated_experiment_api.SMACHStateMachine)})
+        state_machine_paths.update({sm.id: os.path.join(_get_basepath(experiment_conf), sm.src)
+                                    for sm in experiment.experimentEvaluation.stateMachine
+                                    if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
         #
         # END Actually generate the state machines from config here
         #
@@ -112,10 +111,11 @@ def initialize_experiment(experiment_conf, generated_cle_script_file, sim_id):
 
     # parse experiment configuration to get the environment to spawn.
     logger.info("Requesting simulation resources")
-    experiment = generated_experiment_api.parse(experiment_conf, silence=True)
+    with open(experiment_conf) as exd_file:
+        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
     simulation_factory_client = ROSCLESimulationFactoryClient()
     simulation_factory_client.start_new_simulation(
-        experiment.environmentModel.location,
+        str(experiment.environmentModel.src),
         os.path.join(os.getcwd(), generated_cle_script_file))
     return ROSCLEClient(sim_id)
 
