@@ -5,7 +5,6 @@ health of the servers (by a nagios compatible system).
 
 import logging
 import string
-import json
 from flask_restful_swagger import swagger
 from datetime import datetime, timedelta
 from hbp_nrp_backend.simulation_control import simulations
@@ -53,9 +52,9 @@ class Last24HoursErrorCheck(Resource):
         filtered_simulations = filter(has_simulation_been_run_in_the_last_24h, simulations)
         number_of_errors = sum(simulation.errors for simulation in filtered_simulations)
         number_of_simulations = len(filtered_simulations)
-        status = json.dumps({'state': _get_level(number_of_errors, number_of_simulations),
-                             'errors': number_of_errors,
-                             'simulations': number_of_simulations})
+        status = {'state': _get_level(number_of_errors, number_of_simulations),
+                  'errors': number_of_errors,
+                  'simulations': number_of_simulations}
         return status, 200
 
 
@@ -81,7 +80,7 @@ class TotalErrorCheck(Resource):
         """
         number_of_errors = sum(simulation.errors for simulation in simulations)
         number_of_simulation = len(simulations)
-        status = json.dumps({'state': _get_level(number_of_errors, number_of_simulation),
-                             'errors': number_of_errors,
-                             'simulations': number_of_simulation})
+        status = {'state': _get_level(number_of_errors, number_of_simulation),
+                  'errors': number_of_errors,
+                  'simulations': number_of_simulation}
         return status, 200
