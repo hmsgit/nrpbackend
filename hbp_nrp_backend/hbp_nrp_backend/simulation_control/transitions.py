@@ -106,7 +106,7 @@ def initialize_simulation(sim_id):
             logger.warn("NRP_MODELS_DIRECTORY is empty")
 
         target = '__generated_experiment_%d.py' % (sim_id, )
-        generate_bibi(experiment, target, gzserver_host, sim_id)
+        generate_bibi(experiment, target, gzserver_host, sim_id, models_path)
 
         state_machine_paths = generate_experiment_control(experiment)
         simulation.state_machines = initialize_state_machines(state_machine_paths)

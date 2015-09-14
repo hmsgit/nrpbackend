@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # pylint infers the wrong type for config
 
 
-def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id):
+def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id, models_path):
     """
     Generates Code to run the Brain interface and Body integrator based on the
     given experiment configuration file.
@@ -57,7 +57,8 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id)
                                            bibi_script_file_name,
                                            timeout,
                                            gzserver_host,
-                                           sim_id)
+                                           sim_id,
+                                           models_path)
 
 
 def generate_experiment_control(experiment_conf):

@@ -343,11 +343,11 @@ def substitute_bibi_transferfunctions(bibi_file, tf_list):
 
     # Remove all transfer functions from BIBI
     del bibi.transferFunction[:]
-    del bibi.transferFunctionImport[:]
-    del bibi.transferFunctionInline[:]
 
     # Add given TFs
     for current in tf_list:
-        bibi.transferFunctionInline.append(current)
+        ptf = bibi_api_gen.PythonTransferFunction()
+        ptf.append(current)
+        bibi.transferFunction.append(ptf)
 
     return str(bibi.toxml("utf-8"))
