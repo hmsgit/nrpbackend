@@ -5,7 +5,8 @@ describing the world in which a simulation is carried out.
 
 __author__ = 'UgoAlbanese'
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
+    NRPServicesUnavailableROSService
 from gazebo_msgs.srv import ExportWorldSDF
 from flask_restful import Resource
 from flask_restful_swagger import swagger
@@ -48,7 +49,7 @@ class WorldSDFService(Resource):
         try:
             rospy.wait_for_service('/gazebo/export_world_sdf', 1)
         except rospy.ROSException as exc:
-            raise NRPServicesClientErrorException("ROS service not available: " + str(exc), 400)
+            raise NRPServicesUnavailableROSService(str(exc))
 
         dump_sdf_world = rospy.ServiceProxy('/gazebo/export_world_sdf', ExportWorldSDF)
 
@@ -60,6 +61,6 @@ class WorldSDFService(Resource):
             sdf_string = ET.tostring(tree, encoding='utf8', method='xml')
         except rospy.ServiceException as exc:
             raise NRPServicesClientErrorException(
-                "Service did not process request:" + str(exc), 400)
+                "Service did not process request:" + str(exc))
 
         return {"sdf": sdf_string}, 200
