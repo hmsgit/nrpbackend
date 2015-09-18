@@ -225,12 +225,24 @@ class TestExperimentService(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     # Test ExperimentTransferfunctions
-    def test_experiment_tf_put_experiment_not_found(self, mock_bp0):
+    @patch("hbp_nrp_backend.rest_server.__ExperimentBibi.os")
+    def test_experiment_tf_get_ok(self, mock_os, mock_bp0):
         mock_bp0.return_value = PATH
 
-        data = {'base64': 'X'}
         client = app.test_client()
-        response = client.put('/experiment/__NOT_AVAIABLE__/bibi', data=json.dumps(data))
+        response = client.get('/experiment/test_1/transfer-functions')
+        self.assertEqual(response.status_code, 200)
+
+        tf_dict = json.loads(response.get_data())['data']
+        self.assertEqual(len(tf_dict), 4)
+        for tf in tf_dict:
+            self.assertIn("@nrp.", tf_dict[tf])
+
+    def test_experiment_tf_get_experiment_not_found(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        client = app.test_client()
+        response = client.get('/experiment/__NOT_AVAIABLE__/transfer-functions')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -242,9 +254,22 @@ class TestExperimentService(unittest.TestCase):
 
         data = {'transfer_functions': [imp1, imp2]}  # "Hello World"
         client = app.test_client()
-        response = client.put('/experiment/test_1/transferfunctions', data=json.dumps(data))
+        response = client.put('/experiment/test_1/transfer-functions', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
+    def test_experiment_tf_put_experiment_not_found(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        data = {'transfer_functions': [imp1, imp2]}  # "Hello World"
+        client = app.test_client()
+        response = client.put('/experiment/__NOT_AVAIABLE__/transfer-functions',
+                              data=json.dumps(data))
+        self.assertEqual(response.status_code, 404)
+
+        message = json.loads(response.get_data())['message']
+        self.assertEqual(message, ErrorMessages.EXPERIMENT_NOT_FOUND_404)
+
+    # Test State Machine
     def test_get_control_state_machine_files(self, mock_bp0):
         mock_bp0.return_value = PATH
 

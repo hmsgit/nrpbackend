@@ -6,23 +6,90 @@ for loading and saving experiment transfer functions
 
 __author__ = 'Bernd Eckstein'
 
-from flask import request
-from flask_restful import Resource, fields
-from flask_restful_swagger import swagger
-
-
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages, get_bibi_file, \
-    substitute_bibi_transferfunctions
-
 import os
 
+from flask_restful import Resource, request, fields
+from flask_restful_swagger import swagger
+
+from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages, get_bibi_file, \
+    get_transfer_functions, substitute_bibi_transferfunctions
+
+
 # pylint: disable=no-self-use
+
+
+@swagger.model
+class TransferFunctionDictionary(object):
+    """
+    Swagger documentation object
+    TransferFunctionDict ... tried to make it look like a dictionary for the swagger doc
+    """
+    resource_fields = {
+        'tf_id_1': str.__name__,
+        'tf_id_2': str.__name__,
+        'tf_id_n': str.__name__
+    }
+
+
+@swagger.model
+@swagger.nested(data=TransferFunctionDictionary.__name__)
+class TransferFunctionData(object):
+    """
+    Swagger documentation object
+    Main Data Attribute for parsing convenience on the front-end side.
+    """
+    resource_fields = {
+        'data': fields.Nested(TransferFunctionDictionary.resource_fields)
+    }
+    required = ['data']
 
 
 class ExperimentTransferfunctions(Resource):
     """
     The resource to load and save experiment transferfunction files
     """
+
+    @swagger.operation(
+        notes='Get all transfer functions of an experiment from the server.',
+        responseClass=TransferFunctionData.__name__,
+        parameters=[
+            {
+                "name": "exp_id",
+                "description": "The ID of the experiment",
+                "required": True,
+                "paramType": "path",
+                "dataType": basestring.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 500,
+                "message": ErrorMessages.VARIABLE_ERROR
+            },
+            {
+                "code": 404,
+                "message": ErrorMessages.EXPERIMENT_NOT_FOUND_404
+            },
+            {
+                "code": 200,
+                "data": "Dictionary with {'tf_id_1': 'tf_id_1_source', ...}"
+            }
+        ]
+    )
+    def get(self, exp_id):
+        """
+        Get all transfer functions of an experiment from the server.
+
+        :param path exp_id: The experiment ID
+        :>json body with {data: {'tf_id_1': 'tf_id_1_source', ...}}
+        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
+        :status 404: The experiment with the given ID was not found
+        :status 200: Success. The transfer functions where returned.
+        """
+
+        filename = get_bibi_file(exp_id)
+        tf = get_transfer_functions(filename)
+        return {'data': tf}, 200
 
     @swagger.model
     class _TransferFunction(object):

@@ -16,6 +16,7 @@ from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesGeneralException
 from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
 from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
+from hbp_nrp_cle.bibi_config.bibi_configuration_script import get_all_tfs
 
 from flask import request
 from pyxb import ValidationError
@@ -356,3 +357,16 @@ def substitute_bibi_transferfunctions(bibi_file, tf_list):
         bibi.transferFunction.append(ptf)
 
     return str(bibi.toxml("utf-8"))
+
+
+def get_transfer_functions(bibi_file):
+    """
+    Generates cle from bibi_file and returns the transfer functions as array of strings
+
+    :param bibi_file: bibi filename
+    :type bibi_file: basestring
+    :return: array of strings containing transfer functions
+    """
+
+    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+    return get_all_tfs(bibi_file, models_path)

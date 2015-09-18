@@ -118,7 +118,7 @@ class SimulationTransferFunction(Resource):
                 "dataType": int.__name__
             },
             {
-                "name": "transferfunction_name",
+                "name": "transfer_function_name",
                 "description": "The name of the transfer function to delete",
                 "required": True,
                 "paramType": "path",
@@ -160,7 +160,7 @@ class SimulationTransferFunction(Resource):
             transfer_function_name
         )
 
-        if (response is False):
+        if response is False:
             raise NRPServicesTransferFunctionException(
                 "Transfer function delete failed: " + str(transfer_function_name))
         return 200

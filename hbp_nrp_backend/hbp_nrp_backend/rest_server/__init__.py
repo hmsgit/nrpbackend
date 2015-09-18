@@ -166,7 +166,7 @@ api.add_resource(Version, '/version')
 api.add_resource(Experiment, '/experiment')
 api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')
-api.add_resource(ExperimentTransferfunctions, '/experiment/<string:exp_id>/transferfunctions')
+api.add_resource(ExperimentTransferfunctions, '/experiment/<string:exp_id>/transfer-functions')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
 api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-machines')
 api.add_resource(ExperimentPutStateMachine,
