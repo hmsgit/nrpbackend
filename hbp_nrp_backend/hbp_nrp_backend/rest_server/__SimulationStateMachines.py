@@ -11,13 +11,31 @@ from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
+    NRPServicesStateMachineException, NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control.__Simulation import Simulation
 
 # pylint: disable=no-self-use
 
 logger = logging.getLogger(__name__)
+
+
+def reset_simulation_or_raise(simulation):
+    """
+    Reset the simulation and raise an exception in case of failure.
+    This is needed before an update of a state machine code
+    :param simulation: The simulation to be reset
+    """
+    state = simulation.state
+    if state == 'paused' or state == 'started':
+        state = simulation.state = 'initialized'
+
+    if state != 'initialized':
+        raise NRPServicesGeneralException(
+            "Simulation in state {0}. Can't update the state machine".format(state),
+            "Server error"
+        )
 
 
 @swagger.model
@@ -46,7 +64,7 @@ class StateMachineData(object):
     required = ['data']
 
 
-class SimulationGetStateMachine(Resource):
+class SimulationStateMachines(Resource):
     """
     REST service for getting the code of all state machines
     """
@@ -99,7 +117,7 @@ class SimulationGetStateMachine(Resource):
         return dict(data=state_machines), 200
 
 
-class SimulationPutStateMachine(Resource):
+class SimulationStateMachine(Resource):
     """
     REST service for patching control state machine source code.
     """
@@ -172,48 +190,123 @@ class SimulationPutStateMachine(Resource):
         :param path state_machine_name: The state machine name
         :param body source_code: The source code of the state machine
 
-        :status 400: The passed source code does not describe a valid SMACH statemachine
+        :status 400: The source code doesn't describe a valid SMACH state machine
         :status 400: The source code is invalid: [ERROR-MESSAGE]
         :status 401: Operation only allowed by simulation owner
         :status 404: The simulation with the given ID was not found
-        :status 404: State machine not found.
+        :status 404: The state machine with the given name was not found
         :status 500: Simulation in state [STATE]. Can't update state machine.
         :status 200: Success. The code was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
         assert simulation, Simulation
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            raise NRPServicesClientErrorException(
-                "You need to be the simulation owner to apply your changes", 401)
+            raise NRPServicesWrongUserException()
 
         state_machine_source = request.data
-
-        # Set state to initialized when paused or started. (This is needed to set a state machine)
-        if simulation.state == 'paused' or simulation.state == 'started':
-            simulation.state = 'initialized'
-
-        if simulation.state != 'initialized':
-            raise NRPServicesGeneralException(
-                "Simulation in state {0}. Can't update the state machine".format(simulation.state),
-                "Server error")
-
+        reset_simulation_or_raise(simulation)
+        response_message = None
         try:
-            ok, message = simulation.set_state_machine_code(state_machine_name,
-                                                            state_machine_source)
+            ok, response_message = simulation.set_state_machine_code(
+                state_machine_name,
+                state_machine_source
+            )
             if ok:
                 return "Success. The code was successfully patched.", 200
-            else:
-                return "{0}".format(message), 404
-        except AttributeError as e:
-            raise NRPServicesClientErrorException(e.message, 400)
+        except (AttributeError, NameError) as e:
+            raise NRPServicesStateMachineException(e.message, 400)
+
         except SyntaxError as e:
             args_txt = ""
             for text in e.args:
                 args_txt += " {0}".format(text)
-            raise NRPServicesClientErrorException(
+            raise NRPServicesStateMachineException(
                 "The source code is invalid: "
-                "SyntaxError in line {0}{1}.".format(e.lineno, args_txt), 400)
+                "SyntaxError in line {0}{1}.".format(e.lineno, args_txt),
+                400
+            )
+
         except Exception as e:
-            raise NRPServicesClientErrorException(
-                "The source code is invalid. "
-                "{0}: {1}".format(e.__class__.__name__, e.message), 400)
+            raise NRPServicesGeneralException(
+                "Update of state machine code failed. "
+                "{0}: {1}".format(
+                    e.__class__.__name__,
+                    e.message
+                ), "State machine error"
+            )
+
+        raise NRPServicesStateMachineException(
+            response_message,
+            404
+        )
+
+    @swagger.operation(
+        notes='Delete a state machine.',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "sim_id",
+                "required": True,
+                "description": "The ID of the simulation whose state machine will be deleted",
+                "paramType": "path",
+                "dataType": int.__name__
+            },
+            {
+                "name": "state_machine_name",
+                "description": "The name of the state machine to delete",
+                "required": True,
+                "paramType": "path",
+                "dataType": str.__name__
+            },
+        ],
+        responseMessages=[
+            {
+                "code": 404,
+                "message": "The simulation was not found"
+            },
+            {
+                "code": 401,
+                "message": "Operation only allowed by simulation owner"
+            },
+            {
+                "code": 200,
+                "message": "Success. The delete operation was successfully called. This "
+                           "does not imply that the state machine function was correctly "
+                           "deleted though."
+            }
+        ]
+    )
+    def delete(self, sim_id, state_machine_name):
+        """
+        Delete a state machine
+
+        :param sim_id: The simulation id
+        :param state_machine_name: The name of the transfer function to delete
+        :status 401: Insufficient permissions to apply changes
+        :status 404: The simulation with the given ID was not found
+        :status 404: The state machine with the given name was not found
+        :status 500: Server error with specific message.
+        :status 200: The delete operation was successfully called
+        """
+        simulation = _get_simulation_or_abort(sim_id)
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            raise NRPServicesWrongUserException()
+
+        failure_message = "State machine destruction failed: "
+        response_message = None
+        try:
+            ok, response_message = simulation.delete_state_machine(state_machine_name)
+            if ok:
+                return "Success. The state machine was successfully deleted.", 200
+        except Exception as e:
+            raise NRPServicesGeneralException(
+                failure_message +
+                " {0}: {1}".format(e.__class__.__name__, e.message),
+                "State machine error",
+            )
+
+        raise NRPServicesStateMachineException(
+            failure_message + "\n" +
+            response_message,
+            404
+        )

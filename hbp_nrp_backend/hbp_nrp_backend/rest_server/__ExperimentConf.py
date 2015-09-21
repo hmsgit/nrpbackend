@@ -88,7 +88,7 @@ class ExperimentConf(Resource):
 
         if not os.path.isfile(filename):
             raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
-                                                  404)
+                                                  error_code=404)
 
         with open(filename, "rb") as _file:
             data = base64.b64encode(_file.read())

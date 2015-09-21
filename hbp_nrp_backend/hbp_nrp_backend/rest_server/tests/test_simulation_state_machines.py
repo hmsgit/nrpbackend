@@ -12,6 +12,9 @@ from hbp_nrp_backend.rest_server.__SimulationControl import UserAuthentication
 from hbp_nrp_backend.experiment_control import ExperimentStateMachineInstance
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
+    NRPServicesStateMachineException, NRPServicesWrongUserException
+
 from mock import patch, Mock
 import unittest
 import os
@@ -50,8 +53,8 @@ class TestSimulationStateMachines(unittest.TestCase):
 
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state')
         self.mock_state = self.patch_state.start()
-        sim = _get_simulation_or_abort(0)
-        sim.state = "initialized"
+        simulation = _get_simulation_or_abort(0)
+        simulation.state = "initialized"
 
     def tearDown(self):
         del simulations[:]
@@ -59,13 +62,13 @@ class TestSimulationStateMachines(unittest.TestCase):
 
     def test_simulation_state_machines_get_ok(self):
         response = self.client.get('/simulation/0/state-machines')
-        assert(isinstance(response, Response))
+        self.assertIsInstance(response, Response)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.strip(), '{"data": {}}')
 
     def test_simulation_state_machines_put_not_found(self):
         response = self.client.put('/simulation/0/state-machines/not_found')
-        assert(isinstance(response, Response))
+        self.assertIsInstance(response, Response)
         self.assertEqual(response.status_code, 404)
 
     def test_simulation_state_machines_get_ok2(self):
@@ -74,7 +77,7 @@ class TestSimulationStateMachines(unittest.TestCase):
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.get('/simulation/0/state-machines')
-        assert(isinstance(response, Response))
+        self.assertIsInstance(response, Response)
         self.assertMultiLineEqual(json.loads(response.data)["data"]["Control1"], SM)
         self.assertEqual(response.status_code, 200)
 
@@ -84,29 +87,32 @@ class TestSimulationStateMachines(unittest.TestCase):
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.put('/simulation/0/state-machines/Control1', data="ERROR")
-        assert(isinstance(response, Response))
+        self.assertIsInstance(response, Response)
         self.assertEqual(response.status_code, 400)
 
     def test_simulation_state_machines_put_OK(self):
-        sim = _get_simulation_or_abort(0)
-        sim.state = "paused"
-
         simulation = _get_simulation_or_abort(0)
         simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.put('/simulation/0/state-machines/Control1', data=SM)
-        assert(isinstance(response, Response))
+        self.assertIsInstance(response, Response)
+        self.assertEqual(response.status_code, 200)
+
+        simulation.state = "paused"
+        response = self.client.put('/simulation/0/state-machines/Control1', data=SM)
+        self.assertIsInstance(response, Response)
         self.assertEqual(response.status_code, 200)
 
     def test_simulation_state_machines_put_wrong_user(self):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
         response = self.client.put('/simulation/0/state-machines/Control1', headers=hdr, data=SM)
+        self.assertRaises(NRPServicesWrongUserException)
         self.assertEqual(response.status_code, 401)
 
     def test_simulation_state_machines_put_wrong_state(self):
-        sim = _get_simulation_or_abort(0)
-        sim.state = "bad_state"
+        simulation = _get_simulation_or_abort(0)
+        simulation.state = "bad_state"
 
         response = self.client.put('/simulation/0/state-machines/Control1', data=SM)
         self.assertEqual(response.status_code, 500)
@@ -125,8 +131,30 @@ class TestSimulationStateMachines(unittest.TestCase):
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.put('/simulation/0/state-machines/Control1', data="X = 1 + .")
-        print "\n\n" + response.data + "\n\n"
         self.assertEqual(response.status_code, 400)
+
+    def test_simulation_state_machines_delete_OK(self):
+        simulation = _get_simulation_or_abort(0)
+        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
+        simulation.set_state_machine_code("Control1", SM)
+
+        response = self.client.delete('/simulation/0/state-machines/Control1')
+        self.assertEqual(response.status_code, 200)
+
+    def test_simulation_state_machines_delete_not_found(self):
+        simulation = _get_simulation_or_abort(0)
+        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
+        simulation.set_state_machine_code("Control1", SM)
+
+        response = self.client.delete('/simulation/0/state-machines/Control2')
+        self.assertRaises(NRPServicesStateMachineException)
+        self.assertEqual(response.status_code, 404)
+
+    def test_simulation_state_machines_delete_wrong_user(self):
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
+        response = self.client.delete('/simulation/0/state-machines/Control1', headers=hdr)
+        self.assertRaises(NRPServicesWrongUserException)
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == '__main__':

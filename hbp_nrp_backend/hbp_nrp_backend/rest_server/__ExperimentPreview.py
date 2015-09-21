@@ -87,7 +87,7 @@ class ExperimentPreview(Resource):
 
         if not os.path.isfile(preview_file):
             raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_PREVIEW_NOT_FOUND_404,
-                                                  404)
+                                                  error_code=404)
 
         with open(preview_file, "rb") as _file:
             data = _file.read()

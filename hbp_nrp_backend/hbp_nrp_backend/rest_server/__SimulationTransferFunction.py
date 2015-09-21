@@ -9,8 +9,8 @@ from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesTransferFunctionException
+from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException, \
+    NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
     UserAuthentication
 
@@ -90,8 +90,7 @@ class SimulationTransferFunction(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            raise NRPServicesClientErrorException(
-                "You need to be the simulation owner to apply your changes", 401)
+            raise NRPServicesWrongUserException()
 
         transfer_function_source = request.data
         error_message = simulation.cle.set_simulation_transfer_function(
@@ -155,8 +154,7 @@ class SimulationTransferFunction(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            raise NRPServicesClientErrorException(
-                "You need to be the simulation owner to apply your changes", 401)
+            raise NRPServicesWrongUserException()
 
         response = simulation.cle.delete_simulation_transfer_function(
             transfer_function_name

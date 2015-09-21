@@ -1,7 +1,8 @@
 """
 This module contains the REST implementation for the simulation control
 """
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
+    NRPServicesWrongUserException, NRPServicesUnavailableROSService
 
 __author__ = 'GeorgHinkel'
 
@@ -170,11 +171,11 @@ class LightControl(Resource):
 
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
             raise NRPServicesClientErrorException(
-                "You need to be the simulation owner to trigger interactions", 401)
+                "You need to be the simulation owner to trigger interactions", error_code=401)
 
         body = request.get_json(force=True)
         if 'name' not in body:
-            raise NRPServicesClientErrorException("No name given", 400)
+            raise NRPServicesClientErrorException("No name given")
 
         in_name = LightControl.as_ascii(body['name'])
         in_diffuse = body.get('diffuse')
@@ -195,7 +196,7 @@ class LightControl(Resource):
             try:
                 rospy.wait_for_service('/gazebo/get_light_properties', 1)
             except rospy.ROSException as exc:
-                raise NRPServicesClientErrorException("ROS service not available: " + str(exc), 400)
+                raise NRPServicesUnavailableROSService(str(exc))
 
             get_light_properties = rospy.ServiceProxy('/gazebo/get_light_properties',
                                                       GetLightProperties)
@@ -214,12 +215,12 @@ class LightControl(Resource):
 
             except rospy.ServiceException as exc:
                 raise NRPServicesClientErrorException(
-                    "Service did not process request:" + str(exc), 400)
+                    "Service did not process request:" + str(exc))
 
         try:
             rospy.wait_for_service('/gazebo/set_light_properties', 1)
         except rospy.ROSException as exc:
-            raise NRPServicesClientErrorException("ROS service not available: " + str(exc), 400)
+            raise NRPServicesUnavailableROSService(str(exc))
 
         set_light_properties = rospy.ServiceProxy('/gazebo/set_light_properties',
                                                   SetLightProperties)
@@ -232,7 +233,7 @@ class LightControl(Resource):
                                  attenuation_quadratic=in_attenuation_quadratic)
         except rospy.ServiceException as exc:
             raise NRPServicesClientErrorException(
-                "Service did not process request: " + str(exc), 400)
+                "Service did not process request: " + str(exc))
 
         return "Changed light intensity", 200
 
@@ -285,8 +286,7 @@ class CustomEventControl(Resource):
         try:
             rospy.wait_for_service('/gazebo/set_visual_properties', 1)
         except rospy.ROSException as exc:
-            raise NRPServicesClientErrorException(
-                "ROS service not available: " + str(exc), 400)
+            raise NRPServicesUnavailableROSService(str(exc))
         set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
                                                    SetVisualProperties)
         try:
@@ -296,7 +296,7 @@ class CustomEventControl(Resource):
                                   property_value=color)
         except rospy.ServiceException as exc:
             raise NRPServicesClientErrorException(
-                "Service did not process request: " + str(exc), 400)
+                "Service did not process request: " + str(exc))
         return "Changed color", 200
 
     @swagger.operation(
@@ -351,8 +351,7 @@ class CustomEventControl(Resource):
         simulation = _get_simulation_or_abort(sim_id)
 
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            raise NRPServicesClientErrorException(
-                "You need to be the simulation owner to trigger interactions", 401)
+            raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
         if 'name' not in body:

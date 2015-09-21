@@ -102,17 +102,17 @@ class SimulationService(Resource):
         sim_id = len(simulations)
 
         if 'experimentConfiguration' not in body:
-            raise NRPServicesClientErrorException('Experiment configuration not given.', 400)
+            raise NRPServicesClientErrorException('Experiment configuration not given.')
 
         if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
-            raise NRPServicesClientErrorException('Invalid gazebo server host.', 401)
+            raise NRPServicesClientErrorException('Invalid gazebo server host.', error_code=401)
 
         if ('operationMode' in body) and (body.get('operationMode') not in ['view', 'edit']):
-            raise NRPServicesClientErrorException('Invalid operation mode.', 403)
+            raise NRPServicesClientErrorException('Invalid operation mode.', error_code=403)
 
         if True in [s.state not in ['stopped', 'failed'] for s in simulations]:
             raise NRPServicesClientErrorException(
-                'Another simulation is already running on the server.', 402)
+                'Another simulation is already running on the server.', error_code=409)
 
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_operation_mode = body.get('operationMode', 'view')

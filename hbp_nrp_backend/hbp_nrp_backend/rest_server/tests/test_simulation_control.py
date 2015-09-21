@@ -10,7 +10,8 @@ import unittest
 import mock
 import rospy
 import json
-from hbp_nrp_backend.rest_server import app, NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import app, NRPServicesClientErrorException,\
+    NRPServicesUnavailableROSService
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.__SimulationControl import CustomEventControl, LightControl,\
    UserAuthentication
@@ -98,11 +99,11 @@ class TestScript(unittest.TestCase):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "RightScreenToRed"}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertRaises(NRPServicesClientErrorException, self.cec.put, 0)
+            self.assertRaises(NRPServicesUnavailableROSService, self.cec.put, 0)
             try:
                 self.cec.put(0)
-            except NRPServicesClientErrorException as e:
-                self.assertEquals(e.error_code, 400)
+            except NRPServicesUnavailableROSService as e:
+                self.assertEquals(e.error_code, 500)
 
         rospy.wait_for_service = oldwfs
 
@@ -279,11 +280,11 @@ class TestScript(unittest.TestCase):
             "attenuation_quadratic": "0"
         }
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            self.assertRaises(NRPServicesUnavailableROSService, self.lc.put, 0)
             try:
                 self.lc.put(0)
-            except NRPServicesClientErrorException as e:
-                self.assertEquals(e.error_code, 400)
+            except NRPServicesUnavailableROSService as e:
+                self.assertEquals(e.error_code, 500)
 
         rospy.wait_for_service = oldwfs
 
@@ -297,11 +298,11 @@ class TestScript(unittest.TestCase):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {"name": "notreallyimportant"}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertRaises(NRPServicesClientErrorException, self.lc.put, 0)
+            self.assertRaises(NRPServicesUnavailableROSService, self.lc.put, 0)
             try:
                 self.lc.put(0)
-            except NRPServicesClientErrorException as e:
-                self.assertEquals(e.error_code, 400)
+            except NRPServicesUnavailableROSService as e:
+                self.assertEquals(e.error_code, 500)
 
         rospy.wait_for_service = oldwfs
 

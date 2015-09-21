@@ -108,7 +108,7 @@ class TestSimulationService(unittest.TestCase):
         self.client.post('/simulation', data=json.dumps(rqdata))
         response = self.client.post('/simulation', data=json.dumps(rqdata))
 
-        self.assertEqual(response.status_code, 402)
+        self.assertEqual(response.status_code, 409)
 
     def test_simulation_service_wrong_method(self):
         rqdata = {
