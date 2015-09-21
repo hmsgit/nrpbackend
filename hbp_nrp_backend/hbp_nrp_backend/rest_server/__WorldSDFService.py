@@ -5,7 +5,8 @@ describing the world in which a simulation is carried out.
 
 __author__ = 'UgoAlbanese'
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
+    NRPServicesUnavailableROSService, NRPServicesGeneralException
 from gazebo_msgs.srv import ExportWorldSDF
 from flask import request
 from flask_restful import Resource
@@ -50,7 +51,7 @@ class WorldSDFService(Resource):
         try:
             rospy.wait_for_service('/gazebo/export_world_sdf', 1)
         except rospy.ROSException as exc:
-            raise NRPServicesClientErrorException("ROS service not available: " + str(exc), 400)
+            raise NRPServicesUnavailableROSService(str(exc))
 
         dump_sdf_world = rospy.ServiceProxy('/gazebo/export_world_sdf', ExportWorldSDF)
 
@@ -62,7 +63,7 @@ class WorldSDFService(Resource):
             sdf_string = ET.tostring(tree, encoding='utf8', method='xml')
         except rospy.ServiceException as exc:
             raise NRPServicesClientErrorException(
-                "Service did not process request:" + str(exc), 400)
+                "Service did not process request:" + str(exc))
 
         return {"sdf": sdf_string}, 200
 
@@ -102,12 +103,12 @@ class WorldSDFService(Resource):
             ET.fromstring(sdf_string)
         except ET.XMLSyntaxError as e:
             raise NRPServicesClientErrorException(
-                "Invalid XML format in 'sdf' argument: " + str(e), 400)
+                "Invalid XML format in 'sdf' argument: " + str(e))
 
         try:
             with tempfile.NamedTemporaryFile(prefix='customenv_', dir='/tmp', delete=False) as f:
                 f.write(sdf_string)
                 return {'path': f.name}, 200
         except Exception as e:
-            raise NRPServicesClientErrorException(
-                "Couldn't create the temporary file: " + str(e), 500)
+            raise NRPServicesGeneralException(
+                "Couldn't create the temporary file: " + str(e))

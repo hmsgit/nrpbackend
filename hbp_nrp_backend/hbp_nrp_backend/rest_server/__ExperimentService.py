@@ -12,7 +12,8 @@ import logging
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
+    NRPServicesGeneralException
 from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
 from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
 
@@ -197,8 +198,9 @@ def save_file(base64_data, filename_abs, data=None):
         try:
             data = base64.decodestring(base64_data)
         except Exception as _ex:
-            raise NRPServicesClientErrorException(ErrorMessages.ERROR_IN_BASE64_400.format(
-                _ex.message), 400)
+            raise NRPServicesClientErrorException(
+                ErrorMessages.ERROR_IN_BASE64_400.format(_ex.message)
+            )
 
     base_path = os.path.abspath(filename_abs)
     allowed_path = get_basepath()
@@ -237,7 +239,10 @@ def get_experiment_rel(exp_id):
 
     experiment_dict = get_experiments()
     if exp_id not in experiment_dict:
-        raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_NOT_FOUND_404, 404)
+        raise NRPServicesClientErrorException(
+            ErrorMessages.EXPERIMENT_NOT_FOUND_404,
+            error_code=404
+        )
 
     # Get Experiments relative filename
     experiment_file = experiment_dict[exp_id]['experimentConfiguration']

@@ -114,8 +114,10 @@ class ExperimentGetStateMachines(Resource):
             for sm in file_names[i]:
                 filename = file_names[i][sm]
                 if not os.path.isfile(filename):
-                    raise NRPServicesClientErrorException("State machine file not found: " +
-                                                          filename, 404)
+                    raise NRPServicesClientErrorException(
+                        "State machine file not found: " + filename,
+                        error_code=404
+                    )
                 with open(filename, "r") as _file:
                     data = _file.read()
                     ret[i][sm] = data
@@ -189,7 +191,7 @@ class ExperimentPutStateMachine(Resource):
 
         if state_machine_name not in ctrl_file_names and state_machine_name not in eval_file_names:
             raise NRPServicesClientErrorException("State machine not found: "
-                                                  "{0}".format(state_machine_name), 404)
+                                                  "{0}".format(state_machine_name), error_code=404)
 
         if state_machine_name in ctrl_file_names:
             filename = ctrl_file_names[state_machine_name]

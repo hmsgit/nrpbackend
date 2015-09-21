@@ -43,7 +43,7 @@ class Simulation(object):
         self.__creation_datetime = datetime.datetime.now()
         self.__cle = None
         self.__state_machines = dict()
-        self.__errors = 0 # We use that for monitoring
+        self.__errors = 0  # We use that for monitoring
 
         # The following two members are part of the fix for [NRRPLT-1899]:
         # We store the values of the left and right screen color in order to display
@@ -225,9 +225,8 @@ class Simulation(object):
         state machine is not found
         """
         if name in self.state_machines:
-            sm = self.state_machines[name]
-            if isinstance(sm, ExperimentStateMachineInstance):
-                return sm.sm_source
+            return self.state_machines[name].sm_source
+
         return False
 
     def set_state_machine_code(self, name, python_code):
@@ -239,20 +238,41 @@ class Simulation(object):
         :type    name:        string
         :param   python_code: source code of the state machine
         :type    python_code: string
-        :return: (bool) --    True on success, False otherwise
-        :return: (string) --  Contains Error Message, when failed
-        :rtype:  bool, string
         :raise:  NameError, SyntaxError, AttributeError, ...
         """
-        if self.state != 'initialized':
-            return False, "Simulation is not in state 'initialized'"
+        assert self.state == 'initialized'
 
+        sm = None
         if name in self.state_machines:
             sm = self.state_machines[name]
-            if isinstance(sm, ExperimentStateMachineInstance):
-                sm.sm_source = python_code
-                sm.initialize_sm()
-                return True, "Success"
+            sm.sm_source = python_code
+        else:
+            sm = ExperimentStateMachineInstance(name, python_code)
+            self.state_machines[name] = sm
+
+        sm.initialize_sm()
+
+    def delete_state_machine(self, name):
+        """
+        Delete state machine.
+
+        :param   name:        name of the state machine
+        :type    name:        string
+        :return: (pair) --    A pair made of a
+                              (bool) boolean, which is True on success, False otherwise, and a
+                              (string) string indicating either a successful delete operation
+                              or that the state machine was not found
+        :rtype:  bool, string
+        :raise:  NameError
+        """
+
+        sm = self.state_machines.pop(name, None)
+        if sm is not None:
+            assert isinstance(sm, ExperimentStateMachineInstance)
+            if sm.is_running:
+                sm.request_termination()
+                sm.wait_termination()
+            return True, "Success"
 
         return False, "State machine '{0}' not found.".format(name)
 

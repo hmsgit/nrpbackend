@@ -10,7 +10,8 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import InvalidStateTransitionException
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server import NRPServicesStateException, NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesStateException, \
+    NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
     UserAuthentication
 
@@ -130,8 +131,7 @@ class SimulationState(Resource):
         simulation = _get_simulation_or_abort(sim_id)
 
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            raise NRPServicesClientErrorException(
-                "You need to be the simulation owner to change the state", 401)
+            raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
         try:
