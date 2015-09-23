@@ -5,8 +5,9 @@ functions used during an experiment.
 """
 
 import logging
+import re
 from flask_restful_swagger import swagger
-from flask_restful import Resource
+from flask_restful import Resource, fields
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 
 __author__ = 'LucGuyot, DanielPeppicelli'
@@ -19,6 +20,44 @@ __author__ = 'LucGuyot, DanielPeppicelli'
 logger = logging.getLogger(__name__)
 
 
+def get_tf_name(source):
+    """
+    Get the transfer function def name from its python source code.
+
+    :param source: The source code of the transfer function
+    :return: transfer function name
+    """
+    matches = re.findall(r"def\s+(\w+)\s*\(", source)
+    assert len(matches) == 1
+    return matches[0]
+
+
+@swagger.model
+class TransferFunctionDictionary(object):
+    """
+    Swagger documentation object
+    TransferFunctionDict ... tried to make it look like a dictionary for the swagger doc
+    """
+    resource_fields = {
+        'tf_id_1': str.__name__,
+        'tf_id_2': str.__name__,
+        'tf_id_n': str.__name__
+    }
+
+
+@swagger.model
+@swagger.nested(data=TransferFunctionDictionary.__name__)
+class TransferFunctionData(object):
+    """
+    Swagger documentation object
+    Main Data Attribute for parsing convenience on the front-end side.
+    """
+    resource_fields = {
+        'data': fields.Nested(TransferFunctionDictionary.resource_fields)
+    }
+    required = ['data']
+
+
 class SimulationTransferFunctions(Resource):
     """
     Expose the source code of the CLE transfer functions as a REST service.
@@ -29,11 +68,12 @@ class SimulationTransferFunctions(Resource):
 
     @swagger.operation(
         notes='Gets all transfer functions',
-        responseClass=list.__name__,
-        # We do not have any error status code. If something goes wrong
-        # for one or several transfer functions, the associated string in
-        # the returned array will be empty.
+        responseClass=TransferFunctionData.__name__,
         responseMessages=[
+            {
+                "code": 404,
+                "message": "The simulation was not found"
+            },
             {
                 "code": 200,
                 "message": "Transfer functions retrieved successfully"
@@ -43,12 +83,20 @@ class SimulationTransferFunctions(Resource):
     def get(self, sim_id):
         """
         Gets all transfer functions
-        (robot to neuron and neuron to robot) in an array of strings.
+        (robot to neuron and neuron to robot) in a dictionary with string values.
 
         :param sim_id: The simulation ID whose transfer functions are retrieved
+        :>json dict data: Dictionary containing all transfer functions ('name': 'source')
+        :status 404: The simulation with the given ID was not found
         :status 200: Transfer functions retrieved successfully
         """
 
         simulation = _get_simulation_or_abort(sim_id)
 
-        return simulation.cle.get_simulation_transfer_functions(), 200
+        transfer_functions = dict()
+        transfer_functions_list = simulation.cle.get_simulation_transfer_functions()
+        for tf in transfer_functions_list:
+            name = get_tf_name(tf)
+            transfer_functions[name] = tf
+
+        return dict(data=transfer_functions), 200
