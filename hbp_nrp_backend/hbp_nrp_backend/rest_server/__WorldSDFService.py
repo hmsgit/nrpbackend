@@ -6,7 +6,7 @@ describing the world in which a simulation is carried out.
 __author__ = 'UgoAlbanese'
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesUnavailableROSService
+    NRPServicesUnavailableROSService, NRPServicesGeneralException
 from gazebo_msgs.srv import ExportWorldSDF
 from flask import request
 from flask_restful import Resource
@@ -103,12 +103,12 @@ class WorldSDFService(Resource):
             ET.fromstring(sdf_string)
         except ET.XMLSyntaxError as e:
             raise NRPServicesClientErrorException(
-                "Invalid XML format in 'sdf' argument: " + str(e), 400)
+                "Invalid XML format in 'sdf' argument: " + str(e))
 
         try:
             with tempfile.NamedTemporaryFile(prefix='customenv_', dir='/tmp', delete=False) as f:
                 f.write(sdf_string)
                 return {'path': f.name}, 200
         except Exception as e:
-            raise NRPServicesClientErrorException(
-                "Couldn't create the temporary file: " + str(e), 500)
+            raise NRPServicesGeneralException(
+                "Couldn't create the temporary file: " + str(e))
