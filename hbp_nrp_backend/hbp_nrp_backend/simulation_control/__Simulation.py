@@ -225,9 +225,8 @@ class Simulation(object):
         state machine is not found
         """
         if name in self.state_machines:
-            sm = self.state_machines[name]
-            if isinstance(sm, ExperimentStateMachineInstance):
-                return sm.sm_source
+            return self.state_machines[name].sm_source
+
         return False
 
     def set_state_machine_code(self, name, python_code):
@@ -239,22 +238,19 @@ class Simulation(object):
         :type    name:        string
         :param   python_code: source code of the state machine
         :type    python_code: string
-        :return: (bool) --    True on success, False otherwise
-        :return: (string) --  Contains Error Message, when failed
-        :rtype:  bool, string
         :raise:  NameError, SyntaxError, AttributeError, ...
         """
-        if self.state != 'initialized':
-            return False, "Simulation is not in state 'initialized'"
+        assert self.state == 'initialized'
 
+        sm = None
         if name in self.state_machines:
             sm = self.state_machines[name]
-            if isinstance(sm, ExperimentStateMachineInstance):
-                sm.sm_source = python_code
-                sm.initialize_sm()
-                return True, "Success"
+            sm.sm_source = python_code
+        else:
+            sm = ExperimentStateMachineInstance(name, python_code)
+            self.state_machines[name] = sm
 
-        return False, "State machine '{0}' not found.".format(name)
+        sm.initialize_sm()
 
     def delete_state_machine(self, name):
         """

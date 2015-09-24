@@ -205,14 +205,12 @@ class SimulationStateMachine(Resource):
 
         state_machine_source = request.data
         reset_simulation_or_raise(simulation)
-        response_message = None
         try:
-            ok, response_message = simulation.set_state_machine_code(
+            simulation.set_state_machine_code(
                 state_machine_name,
                 state_machine_source
             )
-            if ok:
-                return "Success. The code was successfully patched.", 200
+            return "Success. The code was successfully patched.", 200
         except (AttributeError, NameError) as e:
             raise NRPServicesStateMachineException(e.message, 400)
 
@@ -234,11 +232,6 @@ class SimulationStateMachine(Resource):
                     e.message
                 ), "State machine error"
             )
-
-        raise NRPServicesStateMachineException(
-            response_message,
-            404
-        )
 
     @swagger.operation(
         notes='Delete a state machine.',

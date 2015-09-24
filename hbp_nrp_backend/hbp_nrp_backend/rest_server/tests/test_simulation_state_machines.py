@@ -66,10 +66,6 @@ class TestSimulationStateMachines(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.strip(), '{"data": {}}')
 
-    def test_simulation_state_machines_put_not_found(self):
-        response = self.client.put('/simulation/0/state-machines/not_found')
-        self.assertIsInstance(response, Response)
-        self.assertEqual(response.status_code, 404)
 
     def test_simulation_state_machines_get_ok2(self):
         simulation = _get_simulation_or_abort(0)
