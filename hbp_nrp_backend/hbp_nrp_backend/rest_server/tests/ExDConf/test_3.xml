@@ -8,5 +8,5 @@
     <environmentModel src="virtual_room/virtual_room.sdf">
         <pose x="0.0" y="0.0" z="0.0" ux="0.0" uy="0.0" uz="1.0" theta="0.0"/>
     </environmentModel>
-    <bibiConf src="BIBI/bibi_2.xml"/>
+    <bibiConf src="BIBI/bibi_3.xml"/>
 </ExD>

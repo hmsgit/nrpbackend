@@ -38,6 +38,7 @@ class ErrorMessages(object):
     EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
     EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
     EXPERIMENT_CONF_FILE_NOT_FOUND_404 = "The experiment configuration file was not found"
+    EXPERIMENT_BRAIN_FILE_NOT_FOUND_500 = "The experiment brain file was not found"
     VARIABLE_ERROR = "Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty"
     ERROR_SAVING_FILE_500 = "Error saving file"
     ERROR_IN_BASE64_400 = "Error in base64: {0}"
@@ -245,13 +246,16 @@ def get_experiment_rel(exp_id):
             error_code=404
         )
 
-    # Get Experiments relative filename
+    # Gets Experiments relative filename
     experiment_file = experiment_dict[exp_id]['experimentConfiguration']
     return experiment_file
 
 
 def get_experiment_conf(exp_id):
     """
+    Gets the filename of the conf file
+
+    :param exp_id: id of the experiment
     :return Absolute path to experiment xml file
     """
 
@@ -262,6 +266,9 @@ def get_experiment_conf(exp_id):
 
 def get_bibi_file(exp_id):
     """
+    Gets the filename of the bibi file
+
+    :param exp_id: id of the experiment
     :return Absolute path to experiment bibi file
     """
     experiment_file = get_experiment_conf(exp_id)
@@ -275,9 +282,26 @@ def get_bibi_file(exp_id):
     return bibi_conf
 
 
+def get_brain_file(exp_id):
+    """
+    Gets the brain filename
+
+    :param exp_id: id of the experiment
+    :return: Absolute path to experiment brain file
+    """
+    bibi_file_name = get_bibi_file(exp_id)
+    with open(bibi_file_name) as bibi_file:
+        bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
+        assert isinstance(bibi, bibi_api_gen.BIBIConfiguration)
+        brain_file_name = bibi.brainModel.file
+        return os.path.join(get_basepath(), brain_file_name)
+
+    return None
+
+
 def get_control_state_machine_files(exp_id):
     """
-    Get the control state machine file names
+    Gets the control state machine file names
 
     :param exp_id: id of the experiment
     :return Dict with name, Absolute path to state machine files
@@ -287,7 +311,7 @@ def get_control_state_machine_files(exp_id):
 
 def get_evaluation_state_machine_files(exp_id):
     """
-    Get the evaluation state machine file names
+    Gets the evaluation state machine file names
 
     :param exp_id: id of the experiment
     :return Dict with name, Absolute path to state machine files
@@ -297,7 +321,7 @@ def get_evaluation_state_machine_files(exp_id):
 
 def _get_state_machine_files(exp_id, which):
     """
-    Get the state machine file names
+    Gets the state machine file names
 
     :param exp_id: id of the experiment
     :param string which: 'control' or 'evaluation'
@@ -326,7 +350,7 @@ def _get_state_machine_files(exp_id, which):
 
 def get_username():
     """
-    Get the name of the current user
+    Gets the name of the current user
 
     :return: string: username
     """

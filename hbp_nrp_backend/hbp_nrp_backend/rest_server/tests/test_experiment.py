@@ -14,6 +14,7 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 
 import unittest
 import os
+import sys
 import json
 
 PATH = os.getcwd()
@@ -32,6 +33,11 @@ imp2 = "@nrp.MapSpikeSink('all_neurons', nrp.brain.circuit[slice(0, 8, 1)], " \
        "def all_neurons_spike_monitor(t, all_neurons):\n" \
        "    return monitoring.create_spike_recorder_message(t, 8, all_neurons.times, " \
        "'all_neurons_spike_monitor')\n"
+
+
+class DevNull(object):
+    def write(self, data):
+        pass
 
 
 @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
@@ -152,18 +158,6 @@ class TestExperimentService(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     # Test ExperimentBibi
-    def test_experiment_bibi_get_ok(self, mock_bp0):
-        mock_bp0.return_value = PATH
-
-        client = app.test_client()
-        response = client.get('/experiment')
-        self.assertEqual(response.status_code, 200)
-
-        data = json.loads(response.data)
-        for current in data['data']:
-            response2 = client.get('/experiment/'+current+'/bibi')
-            self.assertEqual(response2.status_code, 200)
-
     @patch("hbp_nrp_backend.rest_server.__ExperimentBibi.os")
     def test_experiment_bibi_get_experiment_file_not_found(self, mock_os, mock_bp0):
         mock_bp0.return_value = PATH
@@ -287,6 +281,70 @@ class TestExperimentService(unittest.TestCase):
 
         files = get_evaluation_state_machine_files("test_1")
         self.assertEqual(len(files), 0)
+
+    # Test Brain Call
+    @patch("hbp_nrp_backend.rest_server.__ExperimentBibi.os")
+    def test_experiment_brain_get_brain_file_not_found(self, mock_os, mock_bp0):
+        mock_bp0.return_value = PATH
+        mock_os.path.isfile.return_value = False
+
+        client = app.test_client()
+        response = client.get('/experiment/test_3/brain')
+        self.assertEqual(response.status_code, 500)
+
+        message = json.loads(response.get_data())['message']
+        self.assertEqual(message, ErrorMessages.EXPERIMENT_BRAIN_FILE_NOT_FOUND_500)
+
+    def test_experiment_brain_get_experiment_not_found(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        client = app.test_client()
+        response = client.get('/experiment/__NOT_AVAIABLE__/brain')
+        self.assertEqual(response.status_code, 404)
+
+        message = json.loads(response.get_data())['message']
+        self.assertEqual(message, ErrorMessages.EXPERIMENT_NOT_FOUND_404)
+
+    def test_experiment_brain_get_bibi_not_found(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        client = app.test_client()
+        response = client.get('/experiment/test_4/brain')
+
+        self.assertEqual(response.status_code, 500)
+
+    def test_experiment_brain_get_ok_h5(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        client = app.test_client()
+        response = client.get('/experiment/test_1/brain')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.get_data())
+        self.assertEqual("h5", data['brain_type'])
+        self.assertEqual("base64", data['data_type'])
+        self.assertIn("iUhERg0KGgoAAAAAAAgIAAQAEAAAAAAAAAAAAAAAAAD//////////9g6AAAAAAAA",
+                      data['data'], "The data does not contain the expected substring.")
+
+    def test_experiment_brain_get_ok_py(self, mock_bp0):
+        mock_bp0.return_value = PATH
+
+        client = app.test_client()
+        response = client.get('/experiment/test_2/brain')
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.get_data())
+        self.assertEqual("py", data['brain_type'])
+        self.assertEqual("text", data['data_type'])
+        self.assertIn("This file contains the setup of the neuronal network running the Husky",
+                      data['data'], "The data does not contain the expected substring.")
+
+    def setUp(self):
+        self.old_stderr = sys.stderr
+        sys.stderr = DevNull()
+
+    def tearDown(self):
+        sys.stderr = self.old_stderr
 
 
 class TestExperimentService2(unittest.TestCase):
