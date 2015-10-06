@@ -116,8 +116,6 @@ def run_integration_test():
 
         time.sleep(5)
 
-        os.environ['NRP_MODELS_DIRECTORY'] = current_dir
-
         rospy.init_node('integration_test_monitor')
 
         logging.root.addHandler(console_handler)
@@ -131,7 +129,7 @@ def run_integration_test():
         auth_header = {'X-User-Name': "integration-test"}
 
         # Create experiment
-        response = client.post('/simulation', data='{"experimentConfiguration":"integration_test_exd.xml"}',
+        response = client.post('/simulation', data='{"experimentConfiguration":"integration_test/integration_test_exd.xml"}',
                                headers=auth_header)
         check_response(response, "Create experiment", status_code=201)
 

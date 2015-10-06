@@ -1,6 +1,7 @@
 ContinuousIntegration/
 platform_venv/
 **~
+**_new
 .idea/
 .coverage
 ci_dep.txt
