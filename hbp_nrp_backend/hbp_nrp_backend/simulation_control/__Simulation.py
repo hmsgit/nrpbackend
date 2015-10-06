@@ -177,10 +177,10 @@ class Simulation(object):
         try:
             transitions[new_state](self.__sim_id)
             self.__state = new_state
-        except Exception as e:
+        except Exception:
             self.__state = "failed"
             self.__errors += 1
-            raise e
+            raise
 
     @property
     def cle(self):
