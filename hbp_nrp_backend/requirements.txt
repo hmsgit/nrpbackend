@@ -4,5 +4,5 @@ hbp-flask-restful-swagger==0.15.2.dev0
 PyYAML==3.11
 rospkg==1.0.28
 catkin_pkg==0.2.2
-hbp-nrp-cle==0.3.4
+hbp-nrp-cle==0.3.5.dev0
 pyxb==1.2.4
