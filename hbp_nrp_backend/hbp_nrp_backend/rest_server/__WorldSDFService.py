@@ -49,7 +49,7 @@ class WorldSDFService(Resource):
         """
 
         try:
-            rospy.wait_for_service('/gazebo/export_world_sdf', 1)
+            rospy.wait_for_service('/gazebo/export_world_sdf', 3)
         except rospy.ROSException as exc:
             raise NRPServicesUnavailableROSService(str(exc))
 

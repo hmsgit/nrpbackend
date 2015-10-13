@@ -194,7 +194,7 @@ class LightControl(Resource):
                 or in_attenuation_linear is None or in_attenuation_quadratic is None:
 
             try:
-                rospy.wait_for_service('/gazebo/get_light_properties', 1)
+                rospy.wait_for_service('/gazebo/get_light_properties', 3)
             except rospy.ROSException as exc:
                 raise NRPServicesUnavailableROSService(str(exc))
 
@@ -218,7 +218,7 @@ class LightControl(Resource):
                     "Service did not process request:" + str(exc))
 
         try:
-            rospy.wait_for_service('/gazebo/set_light_properties', 1)
+            rospy.wait_for_service('/gazebo/set_light_properties', 3)
         except rospy.ROSException as exc:
             raise NRPServicesUnavailableROSService(str(exc))
 
@@ -284,7 +284,7 @@ class CustomEventControl(Resource):
         :return: The response
         """
         try:
-            rospy.wait_for_service('/gazebo/set_visual_properties', 1)
+            rospy.wait_for_service('/gazebo/set_visual_properties', 3)
         except rospy.ROSException as exc:
             raise NRPServicesUnavailableROSService(str(exc))
         set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
