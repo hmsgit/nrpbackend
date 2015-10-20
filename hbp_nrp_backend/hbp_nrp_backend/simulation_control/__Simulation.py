@@ -153,9 +153,10 @@ class Simulation(object):
         """
         Gets the state of the simulation.
         If the simulation CLE object is created then we do trust the CLE more than
-        ourself and query it !
+        ourself and query it ! If the state is final (such as failed or stopped),
+        then we don't bother with the CLE object.
         """
-        if self.__cle is not None:
+        if self.__cle is not None and self.__state not in ["stopped", "failed"]:
             try:
                 self.__state = self.__cle.get_simulation_state()
             except ROSCLEClientException:
