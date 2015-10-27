@@ -55,9 +55,11 @@ class ExperimentObject(object):
         "experimentConfiguration": fields.String(),
         "description": fields.String(),
         "timeout": fields.Integer(),
-        "maturity": fields.String()
+        "maturity": fields.String(),
+        "cameraPose": fields.List(fields.Float)
     }
-    required = ['name', 'experimentConfiguration', 'description', 'timeout', 'maturity']
+    required = ['name', 'experimentConfiguration', 'description',
+                'timeout', 'maturity', 'cameraPose']
 
 
 @swagger.model
@@ -167,6 +169,8 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     _name = experiment.name
     _description = experiment.description
     _maturity = experiment.maturity
+    _cameraPoseObj = experiment.cameraPose
+    _cameraPose = None
 
     if _timeout is None:
         _timeout = 600
@@ -177,12 +181,17 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     # Axel: maturity can be "development" or "production"
     if _maturity is None or (_maturity != "development" and _maturity != "production"):
         _maturity = "development"
+    if _cameraPoseObj:
+        _cameraPose = [_cameraPoseObj.cameraPosition.x, _cameraPoseObj.cameraPosition.y,
+                       _cameraPoseObj.cameraPosition.z, _cameraPoseObj.cameraLookAt.x,
+                       _cameraPoseObj.cameraLookAt.y, _cameraPoseObj.cameraLookAt.z]
 
     current_exp = dict(name=_name,
                        description=_description,
                        experimentConfiguration=os.path.join(experiment_dir, experiment_file),
                        timeout=_timeout,
-                       maturity=_maturity)
+                       maturity=_maturity,
+                       cameraPose=_cameraPose)
     return current_exp
 
 
