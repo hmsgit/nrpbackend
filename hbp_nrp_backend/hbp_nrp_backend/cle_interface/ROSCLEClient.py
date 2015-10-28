@@ -98,7 +98,7 @@ class ROSCLEClient(object):
         if self.__valid:
             try:
                 service()
-            except rospy.ServiceException:
+            except (rospy.ServiceException, rospy.exceptions.ROSInterruptException):
                 self.__valid = False
                 self.__invalid_reason = "a previous communication error"
                 # pylint: disable=nonstandard-exception
