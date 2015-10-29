@@ -239,7 +239,13 @@ class ExperimentStateMachineInstance(object):
         """
 
         if sm is not None:
-            sm.execute()
+            # pylint: disable=broad-except
+            try:
+                sm.execute()
+            except Exception, e:
+                logger.error("Error while running state machine: " + str(e))
+        else:
+            logger.error("Could not run state machine as no state machine was provided")
 
     @staticmethod
     def __try_compile_module(sm_id, sm_module_source):
