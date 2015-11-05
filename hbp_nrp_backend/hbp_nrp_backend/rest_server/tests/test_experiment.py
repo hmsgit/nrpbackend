@@ -4,18 +4,18 @@ Unit tests for the service that retrieves experiments
 
 __author__ = "Bernd Eckstein"
 
-from flask import Response, Request
-from hbp_nrp_backend.rest_server import app
-from mock import patch, MagicMock, mock_open
-from hbp_nrp_backend.rest_server.__ExperimentService import \
-    ErrorMessages, get_basepath, save_file, get_username, \
-    get_control_state_machine_files, get_evaluation_state_machine_files
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException
-
 import unittest
 import os
 import sys
 import json
+from flask import Response, Request
+from mock import patch
+from hbp_nrp_backend.rest_server.tests import RestTest
+from hbp_nrp_backend.rest_server.__ExperimentService import \
+    ErrorMessages, get_basepath, save_file, \
+    get_control_state_machine_files, get_evaluation_state_machine_files
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+
 
 PATH = os.getcwd()
 if not os.path.exists("ExDConf"):
@@ -41,14 +41,20 @@ class DevNull(object):
 
 
 @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
-class TestExperimentService(unittest.TestCase):
+class TestExperimentService(RestTest):
+
+    def setUp(self):
+        self.old_stderr = sys.stderr
+        sys.stderr = DevNull()
+
+    def tearDown(self):
+        sys.stderr = self.old_stderr
 
     # TEST ExperimentService
     def test_experiment_get_ok(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment')
+        response = self.client.get('/experiment')
         assert(isinstance(response, Response))
         self.assertEqual(response.status_code, 200)
 
@@ -56,8 +62,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_preview_get_exp_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/__NOT_EXISTING__/preview')
+        response = self.client.get('/experiment/__NOT_EXISTING__/preview')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -68,8 +73,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
         mock_bp1.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_2/preview')
+        response = self.client.get('/experiment/test_2/preview')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -80,21 +84,19 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
         mock_bp1.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/preview')
+        response = self.client.get('/experiment/test_1/preview')
         self.assertEqual(response.status_code, 200)
 
     # Test ExperimentConf
     def test_experiment_conf_get_ok(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment')
+        response = self.client.get('/experiment')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.data)
         for current in data['data']:
-            response2 = client.get('/experiment/'+current+'/conf')
+            response2 = self.client.get('/experiment/'+current+'/conf')
             self.assertEqual(response2.status_code, 200)
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentConf.os")
@@ -102,8 +104,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
         mock_os.path.isfile.return_value = False
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/conf')
+        response = self.client.get('/experiment/test_1/conf')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -112,8 +113,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_conf_get_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/__NOT_AVAIABLE__/conf')
+        response = self.client.get('/experiment/__NOT_AVAIABLE__/conf')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -122,16 +122,14 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_conf_get_ok(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/conf')
+        response = self.client.get('/experiment/test_1/conf')
         self.assertEqual(response.status_code, 200)
 
     def test_experiment_conf_put_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
         data = {'base64': 'X'}
-        client = app.test_client()
-        response = client.put('/experiment/__NOT_AVAIABLE__/conf', data=json.dumps(data))
+        response = self.client.put('/experiment/__NOT_AVAIABLE__/conf', data=json.dumps(data))
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -141,8 +139,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
 
         data = {'base64': 'X'}
-        client = app.test_client()
-        response = client.put('/experiment/test_1/conf', data=json.dumps(data))
+        response = self.client.put('/experiment/test_1/conf', data=json.dumps(data))
 
         self.assertEqual(response.status_code, 400)
         message = json.loads(response.get_data())['message']
@@ -153,8 +150,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
 
         data = {'base64': 'SGVsbG8gV29ybGQK'}  # "Hello World"
-        client = app.test_client()
-        response = client.put('/experiment/test_1/conf', data=json.dumps(data))
+        response = self.client.put('/experiment/test_1/conf', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
     # Test ExperimentBibi
@@ -163,8 +159,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
         mock_os.path.isfile.return_value = False
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/bibi')
+        response = self.client.get('/experiment/test_1/bibi')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -173,8 +168,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_bibi_get_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/__NOT_AVAIABLE__/conf')
+        response = self.client.get('/experiment/__NOT_AVAIABLE__/conf')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -183,16 +177,14 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_bibi_get_ok(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/bibi')
+        response = self.client.get('/experiment/test_1/bibi')
         self.assertEqual(response.status_code, 200)
 
     def test_experiment_bibi_put_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
         data = {'base64': 'X'}
-        client = app.test_client()
-        response = client.put('/experiment/__NOT_AVAIABLE__/bibi', data=json.dumps(data))
+        response = self.client.put('/experiment/__NOT_AVAIABLE__/bibi', data=json.dumps(data))
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -202,8 +194,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
 
         data = {'base64': 'X'}
-        client = app.test_client()
-        response = client.put('/experiment/test_1/bibi', data=json.dumps(data))
+        response = self.client.put('/experiment/test_1/bibi', data=json.dumps(data))
 
         self.assertEqual(response.status_code, 400)
         message = json.loads(response.get_data())['message']
@@ -214,8 +205,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
 
         data = {'base64': 'SGVsbG8gV29ybGQK'}  # "Hello World"
-        client = app.test_client()
-        response = client.put('/experiment/test_1/bibi', data=json.dumps(data))
+        response = self.client.put('/experiment/test_1/bibi', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
     # Test ExperimentTransferfunctions
@@ -223,8 +213,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_tf_get_ok(self, mock_os, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/transfer-functions')
+        response = self.client.get('/experiment/test_1/transfer-functions')
         self.assertEqual(response.status_code, 200)
 
         tf_dict = json.loads(response.get_data())['data']
@@ -235,8 +224,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_tf_get_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/__NOT_AVAIABLE__/transfer-functions')
+        response = self.client.get('/experiment/__NOT_AVAIABLE__/transfer-functions')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -247,16 +235,14 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
 
         data = {'transfer_functions': [imp1, imp2]}  # "Hello World"
-        client = app.test_client()
-        response = client.put('/experiment/test_1/transfer-functions', data=json.dumps(data))
+        response = self.client.put('/experiment/test_1/transfer-functions', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
     def test_experiment_tf_put_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
         data = {'transfer_functions': [imp1, imp2]}  # "Hello World"
-        client = app.test_client()
-        response = client.put('/experiment/__NOT_AVAIABLE__/transfer-functions',
+        response = self.client.put('/experiment/__NOT_AVAIABLE__/transfer-functions',
                               data=json.dumps(data))
         self.assertEqual(response.status_code, 404)
 
@@ -288,8 +274,7 @@ class TestExperimentService(unittest.TestCase):
         mock_bp0.return_value = PATH
         mock_os.path.isfile.return_value = False
 
-        client = app.test_client()
-        response = client.get('/experiment/test_3/brain')
+        response = self.client.get('/experiment/test_3/brain')
         self.assertEqual(response.status_code, 500)
 
         message = json.loads(response.get_data())['message']
@@ -298,8 +283,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_brain_get_experiment_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/__NOT_AVAIABLE__/brain')
+        response = self.client.get('/experiment/__NOT_AVAIABLE__/brain')
         self.assertEqual(response.status_code, 404)
 
         message = json.loads(response.get_data())['message']
@@ -308,16 +292,14 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_brain_get_bibi_not_found(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_4/brain')
+        response = self.client.get('/experiment/test_4/brain')
 
         self.assertEqual(response.status_code, 500)
 
     def test_experiment_brain_get_ok_h5(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_1/brain')
+        response = self.client.get('/experiment/test_1/brain')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.get_data())
@@ -329,8 +311,7 @@ class TestExperimentService(unittest.TestCase):
     def test_experiment_brain_get_ok_py(self, mock_bp0):
         mock_bp0.return_value = PATH
 
-        client = app.test_client()
-        response = client.get('/experiment/test_2/brain')
+        response = self.client.get('/experiment/test_2/brain')
         self.assertEqual(response.status_code, 200)
 
         data = json.loads(response.get_data())
@@ -338,13 +319,6 @@ class TestExperimentService(unittest.TestCase):
         self.assertEqual("text", data['data_type'])
         self.assertIn("This file contains the setup of the neuronal network running the Husky",
                       data['data'], "The data does not contain the expected substring.")
-
-    def setUp(self):
-        self.old_stderr = sys.stderr
-        sys.stderr = DevNull()
-
-    def tearDown(self):
-        sys.stderr = self.old_stderr
 
 
 class TestExperimentService2(unittest.TestCase):

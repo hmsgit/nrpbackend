@@ -4,22 +4,19 @@ Unit tests for the service that patches transfer function sources
 
 __author__ = 'DanielPeppicelli, LucGuyot'
 
-import hbp_nrp_backend
-from datetime import datetime, timedelta
-from hbp_nrp_backend.rest_server import app
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesTransferFunctionException
-from hbp_nrp_backend.simulation_control import simulations, Simulation
 import unittest
-import json
+from hbp_nrp_backend.rest_server.tests import RestTest
+from datetime import datetime, timedelta
+from hbp_nrp_backend.simulation_control import simulations, Simulation
 
-class TestHealth(unittest.TestCase):
+
+class TestHealth(RestTest):
 
     def setUp(self):
         del simulations[:]
         simulations.append(Simulation(0, 'experiment_0', 'default-owner', 'local', 'created'))
         simulations.append(Simulation(1, 'experiment_1', 'untrusted-owner', 'local', 'created'))
         simulations.append(Simulation(2, 'experiment_2', 'untrusted-owner', 'local', 'created'))
-        self.client = app.test_client()
 
     def testErrors(self):
         response = self.client.get('/health/errors')
@@ -46,3 +43,7 @@ class TestHealth(unittest.TestCase):
         response = self.client.get('/health/errors-last-24h')
         self.assertEqual(response.status_code, 200)
         self.assertIn("WARNING", response.data)
+
+
+if __name__ == '__main__':
+    unittest.main()

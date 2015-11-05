@@ -5,16 +5,14 @@ Unit tests for the simulation control
 __author__ = 'GeorgHinkel'
 
 import unittest
-
 import hbp_nrp_backend.simulation_control.tests.unit_tests as utc
-from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
+from hbp_nrp_backend.rest_server.tests import RestTest
 
 
-class TestSimulationConfig(unittest.TestCase):
+class TestSimulationConfig(RestTest):
     def setUp(self):
-        self.client = app.test_client()
 
         del simulations[:]
         simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', 'created'))
@@ -264,3 +262,7 @@ class TestSimulationConfig(unittest.TestCase):
 
         simulations[0].cle = Mock2()
         self.assertEqual(simulations[0].state, 'stopped')
+
+
+if __name__ == '__main__':
+    unittest.main()

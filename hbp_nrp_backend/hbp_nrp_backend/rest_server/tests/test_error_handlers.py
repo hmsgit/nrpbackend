@@ -4,17 +4,18 @@ Unit tests for the error handlers
 
 __author__ = 'GeorgHinkel'
 
-import unittest
 import json
+import unittest
 import hbp_nrp_backend.simulation_control.tests.unit_tests as utc
-from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
+from hbp_nrp_backend.rest_server.tests import RestTest
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException, app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 
-class TestErrorHandlers(unittest.TestCase):
+class TestErrorHandlers(RestTest):
+
     def setUp(self):
-        self.client = app.test_client()
         del simulations[:]
         simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', 'initialized'))
         utc.use_unit_test_transitions()
@@ -57,3 +58,7 @@ class TestErrorHandlers(unittest.TestCase):
         response_object = json.loads(response.data)
         self.assertEqual(u"Invalid transition (started->started)", response_object['message'])
         self.assertEqual(u"Transition error", response_object['type'])
+
+
+if __name__ == '__main__':
+    unittest.main()

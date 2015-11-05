@@ -7,7 +7,6 @@ __author__ = 'Oliver Denninger'
 import unittest
 from flask import Flask
 import flask
-
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
 
@@ -37,3 +36,6 @@ class TestUserAuthentication(unittest.TestCase):
             self.assertFalse(UserAuthentication.matches_x_user_name_header(flask.request, 'Test'))
             self.assertTrue(
                 UserAuthentication.matches_x_user_name_header(flask.request, 'default-owner'))
+
+if __name__ == '__main__':
+    unittest.main()

@@ -10,11 +10,12 @@ import unittest
 import mock
 import rospy
 import json
-from hbp_nrp_backend.rest_server import app, NRPServicesClientErrorException,\
-    NRPServicesUnavailableROSService
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException,\
+    NRPServicesUnavailableROSService, app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.__SimulationControl import CustomEventControl, LightControl,\
    UserAuthentication
+from hbp_nrp_backend.rest_server.tests import RestTest
 
 
 class MockServiceProxy(object):
@@ -36,7 +37,7 @@ class MockServiceProxy(object):
         return None
 
 
-class TestScript(unittest.TestCase):
+class TestScript(RestTest):
     """
     Class for testing hbp_nrp_backend.rest_server.__SimulationControl.
     """

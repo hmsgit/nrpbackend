@@ -5,9 +5,11 @@ This package contains the implementation of the REST server to control experimen
 __author__ = 'GeorgHinkel'
 
 
+import os
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
+from flask_sqlalchemy import SQLAlchemy
 
 
 class NRPServicesGeneralException(Exception):
@@ -123,6 +125,10 @@ class NRPServicesExtendedApi(Api):
 
 app = Flask(__name__)
 api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
+db = SQLAlchemy(app)
+
+# Import models
+from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
 
 # Import REST APIs
 # pylint: disable=W0401
@@ -173,3 +179,11 @@ api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-
 api.add_resource(ExperimentPutStateMachine,
                  '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')
 api.add_resource(ExperimentBrainFile, '/experiment/<string:exp_id>/brain')
+
+
+def init():
+    """
+    General initialization. We do not want this to be done every time (especially when testing).
+    This is why it has been put in a separate function.
+    """
+    app.config.from_object(os.environ['APP_SETTINGS'])

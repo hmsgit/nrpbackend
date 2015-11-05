@@ -7,19 +7,18 @@ __author__ = 'GeorgHinkel'
 import unittest
 import mock
 import rospy
+from hbp_nrp_backend.rest_server.tests import RestTest
 
 ros_service_object = mock.Mock()
 rospy.wait_for_service = mock.Mock(return_value=ros_service_object)
 rospy.ServiceProxy = mock.Mock(return_value=ros_service_object)
 
-from hbp_nrp_backend.rest_server import app
+from hbp_nrp_backend.rest_server import init
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 
 
-class TestSimulationService(unittest.TestCase):
+class TestSimulationService(RestTest):
     def setUp(self):
-        self.client = app.test_client()
-
         del simulations[:]
         simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
 

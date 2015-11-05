@@ -4,15 +4,14 @@ Unit tests for the service that patches transfer function sources
 
 __author__ = 'DanielPeppicelli, LucGuyot'
 
-import hbp_nrp_backend
-from hbp_nrp_backend.rest_server import app
+import unittest
+from mock import MagicMock
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesTransferFunctionException
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from mock import patch, MagicMock
-import unittest
-import json
+from hbp_nrp_backend.rest_server.tests import RestTest
 
-class TestSimulationTransferFunction(unittest.TestCase):
+
+class TestSimulationTransferFunction(RestTest):
 
     def setUp(self):
         del simulations[:]
@@ -21,7 +20,6 @@ class TestSimulationTransferFunction(unittest.TestCase):
         self.sim = simulations[0]
         self.sim.cle = MagicMock()
         self.sim.cle.set_simulation_transfer_function = MagicMock(return_value="")
-        self.client = app.test_client()
 
     def test_simulation_transfer_function_put(self):
         response = self.client.put('/simulation/0/transfer-functions/incredible_tf_12')

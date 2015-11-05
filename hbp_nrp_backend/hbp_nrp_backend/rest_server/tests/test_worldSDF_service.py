@@ -5,10 +5,10 @@ __author__ = 'UgoAlbanese'
 
 
 import rospy
-from hbp_nrp_backend.rest_server import app
 import mock
 import unittest
 import json
+from hbp_nrp_backend.rest_server.tests import RestTest
 
 
 class MockServiceResponse:
@@ -18,9 +18,7 @@ class MockServiceResponse:
     sdf_dump = '<sdf>Dummy</sdf>'
 
 
-class TestWorldSDFService(unittest.TestCase):
-    def setUp(self):
-        self.client = app.test_client()
+class TestWorldSDFService(RestTest):
 
     @mock.patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
     def test_worldSDF_service_get(self, mckd_rospy):

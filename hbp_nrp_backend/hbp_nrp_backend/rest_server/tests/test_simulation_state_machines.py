@@ -4,21 +4,19 @@ Unit tests for the service that pushes and gets state machines
 
 __author__ = "Bernd Eckstein"
 
+import unittest
+import os
+import json
+from mock import patch, Mock
 from flask import Response, Request
-
-from hbp_nrp_backend.rest_server import app
+from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__SimulationControl import UserAuthentication
 from hbp_nrp_backend.experiment_control import ExperimentStateMachineInstance
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesStateMachineException, NRPServicesWrongUserException
 
-from mock import patch, Mock
-import unittest
-import os
-import json
 
 SM = """\
 import mock
@@ -39,9 +37,8 @@ if not os.path.exists("ExDConf"):
     PATH += "/hbp_nrp_backend/hbp_nrp_backend/rest_server/tests"
 
 
-class TestSimulationStateMachines(unittest.TestCase):
+class TestSimulationStateMachines(RestTest):
 
-    client = app.test_client()
     os.environ['NRP_MODELS_DIRECTORY'] = PATH
 
     def setUp(self):

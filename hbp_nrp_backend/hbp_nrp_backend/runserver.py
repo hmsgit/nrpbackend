@@ -6,7 +6,7 @@ import os
 __author__ = 'GeorgHinkel'
 
 import argparse
-from hbp_nrp_backend.rest_server import app
+from hbp_nrp_backend.rest_server import init, app
 import logging
 import sys
 
@@ -73,6 +73,7 @@ if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument('--logfile', dest='logfile', help='specify the logfile for the ExDBackend')
     parser.add_argument('--port', dest='port', help='specify the application server\'s port')
+    init()
     run_server(app, parser.parse_args())
 else:
     # Started with uWSGI or any other framework. Logging is done through the console.

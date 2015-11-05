@@ -5,20 +5,18 @@ Unit tests for the simulation setup
 __author__ = 'GeorgHinkel'
 
 
-from hbp_nrp_backend.rest_server import app
-from hbp_nrp_backend.simulation_control import simulations
-from mock import patch, MagicMock
 import unittest
 import json
 import datetime
+from mock import patch, MagicMock
+from hbp_nrp_backend.simulation_control import simulations
+from hbp_nrp_backend.rest_server.tests import RestTest
 
-
-class TestSimulationService(unittest.TestCase):
+class TestSimulationService(RestTest):
     def setUp(self):
         self.now = datetime.datetime.now()
         # Ensure that the patcher is cleaned up correctly even in exceptional cases
         del simulations[:]
-        self.client = app.test_client()
 
     @patch('hbp_nrp_backend.simulation_control.__Simulation.datetime')
     def test_simulation_service_post(self, mocked_date_time):
