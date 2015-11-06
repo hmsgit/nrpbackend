@@ -15,7 +15,7 @@ __author__ = 'HBP NRP software team'
 class TestROSCLEClient(unittest.TestCase):
 
     LOGGER_NAME = ROSCLEClient.__name__
-    NUMBER_OF_SERVICE_PROXIES = 8
+    NUMBER_OF_SERVICE_PROXIES = 10
 
     def setUp(self):
         patcher = patch('rospy.ServiceProxy')
@@ -146,6 +146,31 @@ class TestROSCLEClient(unittest.TestCase):
         client._ROSCLEClient__cle_delete_transfer_function.side_effect = rospy.ServiceException()
         client.delete_simulation_transfer_function("tf_2")
         self.assertEquals(client._ROSCLEClient__cle_delete_transfer_function.call_count, 2)
+
+    def test_get_brain(self):
+        client = ROSCLEClient.ROSCLEClient(0)
+        client._ROSCLEClient__cle_get_brain = MagicMock()
+
+        client._ROSCLEClient__valid = False
+        client.get_simulation_brain()
+        self.assertEquals(client._ROSCLEClient__cle_get_brain.call_count, 0)
+
+        client._ROSCLEClient__valid = True
+        client.get_simulation_brain()
+        self.assertEquals(client._ROSCLEClient__cle_get_brain.call_count, 1)
+
+    def test_set_brain(self):
+        client = ROSCLEClient.ROSCLEClient(0)
+        client._ROSCLEClient__cle_set_brain = MagicMock()
+
+        client._ROSCLEClient__valid = False
+        client.set_simulation_brain('data', 'py', 'text')
+        self.assertEquals(client._ROSCLEClient__cle_set_brain.call_count, 0)
+
+        client._ROSCLEClient__valid = True
+        client.set_simulation_brain('data', 'py', 'text')
+        self.assertEquals(client._ROSCLEClient__cle_set_brain.call_count, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

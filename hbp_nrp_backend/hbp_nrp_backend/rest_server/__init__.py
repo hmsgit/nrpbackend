@@ -140,6 +140,7 @@ from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__SimulationTransferFunction import SimulationTransferFunction
 from hbp_nrp_backend.rest_server.__SimulationStateMachines import SimulationStateMachines, \
     SimulationStateMachine
+from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFile
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
@@ -147,7 +148,7 @@ from hbp_nrp_backend.rest_server.__ExperimentBibi import ExperimentBibi
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
- ExperimentPutStateMachine
+    ExperimentPutStateMachine
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 
@@ -165,6 +166,7 @@ api.add_resource(SimulationTransferFunction,
 api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machines')
 api.add_resource(SimulationStateMachine,
                  '/simulation/<int:sim_id>/state-machines/<string:state_machine_name>')
+api.add_resource(SimulationBrainFile, '/simulation/<int:sim_id>/brain')
 
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
 api.add_resource(Version, '/version')

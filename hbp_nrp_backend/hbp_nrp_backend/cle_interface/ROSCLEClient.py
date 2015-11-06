@@ -12,7 +12,8 @@ from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION  # duplicated from CLE.__init__
+    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN \
+    # duplicated from CLE.__init__
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli"
@@ -61,6 +62,9 @@ class ROSCLEClient(object):
         self.__cle_delete_transfer_function = \
             self.__init_ros_service(SERVICE_DELETE_TRANSFER_FUNCTION(sim_id),
                                     srv.DeleteTransferFunction)
+
+        self.__cle_get_brain = self.__init_ros_service(SERVICE_GET_BRAIN(sim_id), srv.GetBrain)
+        self.__cle_set_brain = self.__init_ros_service(SERVICE_SET_BRAIN(sim_id), srv.SetBrain)
 
     def __init_ros_service(self, service_name, service_class):
         """
@@ -162,6 +166,41 @@ class ROSCLEClient(object):
             )
         return state
 
+    def get_simulation_brain(self):
+        """
+        Get the brain of the running simulation
+
+        :return: dict with brain_data, brain_type, data_type
+        """
+        if self.__valid:
+            try:
+                response = self.__cle_get_brain()
+                return response
+            except rospy.ServiceException as e:
+                logger.error("Error while trying to retrieve brain: %s.", str(e))
+        else:
+            logger.warn("Error while trying to retrieve brain: %s.", self.__invalid_reason)
+
+    def set_simulation_brain(self, data, brain_type, data_type):
+        """
+        Set the brain of the running simulation (will pause the simulation)
+
+        :param data: brain data, data type defined in data_type
+        :param brain_type: currently "py" or "h5"
+        :param data_type: data type ("text" or "base64")
+        :return: response of the cle
+        """
+
+        if self.__valid:
+            try:
+                response = self.__cle_set_brain(data, brain_type, data_type)
+                return response
+
+            except rospy.ServiceException as e:
+                logger.error("Error while trying to set brain: %s.", str(e))
+        else:
+            logger.warn("Error while trying to set brain: %s.", self.__invalid_reason)
+
     def get_simulation_transfer_functions(self):
         """
         Get the simulation transfer functions.
@@ -227,7 +266,7 @@ class ROSCLEClient(object):
         """
         Set the simulation transfer function's source code.
 
-        :param transfer_function_name: Name of the transfer function to modifiy or create
+        :param transfer_function_name: Name of the transfer function to modify or create
         :param transfer_function_source: Source code of the transfer function
         :returns: "" if the call to ROS is successful,
                      a string containing an error message otherwise
