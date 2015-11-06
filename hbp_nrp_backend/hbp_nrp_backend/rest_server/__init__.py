@@ -150,6 +150,7 @@ from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
  ExperimentPutStateMachine
+from hbp_nrp_backend.rest_server.__CollabHandler import CollabHandler
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 
@@ -161,6 +162,7 @@ api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
+api.add_resource(CollabHandler, '/collab/configuration')
 api.add_resource(SimulationTransferFunction,
                  '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
 api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machines')
