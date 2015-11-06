@@ -5,7 +5,8 @@ This object contains all the neurorobotics associated fields.
 from hbp_nrp_backend.rest_server import db
 
 
-# pylint does not recognise member created by SQLAlchemy
+# pylint does not recognise members created by SQLAlchemy,
+# see http://stackoverflow.com/questions/4061720/
 # pylint: disable=no-member
 class CollabContext(db.Model):
     """

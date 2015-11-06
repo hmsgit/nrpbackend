@@ -1,5 +1,5 @@
 """
-Configuration file for REST services
+Configuration file for databases
 """
 
 
@@ -26,5 +26,5 @@ class ConfigStaging(Config):
     Staging (and dev) database config
     """
     SQLALCHEMY_DATABASE_URI = (
-        'postgresql://neurorobotics_collab:NOT_THE_REAL_PASSWORD'
+        'postgresql://neurorobotics_collab:WRITE_THE_USER_PASSWORD_HERE'
         '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab')

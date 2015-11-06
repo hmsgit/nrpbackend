@@ -6,7 +6,7 @@ import os
 __author__ = 'GeorgHinkel'
 
 import argparse
-from hbp_nrp_backend.rest_server import init, app
+from hbp_nrp_backend.rest_server import init, app, db
 import logging
 import sys
 
@@ -51,8 +51,11 @@ def run_server(server, args):  # pragma: no cover
     except (TypeError, ValueError) as _:
         root_logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
 
+    # Populate the data base object
+    db.create_all()
+
     root_logger.info("Starting the REST backend server now ...")
-    # server.debug=True
+    #server.debug = True
     server.run(port=port, host=DEFAULT_HOST)
     root_logger.info("REST backend server terminated.")
 

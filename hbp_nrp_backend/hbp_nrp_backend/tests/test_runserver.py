@@ -29,8 +29,9 @@ class TestScript(unittest.TestCase):
         # remove all handlers after each test!
         logging.getLogger('hbp_nrp_backend').handlers = []
 
+    @patch('hbp_nrp_backend.runserver.db')
     @log_capture(level=logging.WARNING)
-    def test_run_server_no_arguments(self, logcapture):
+    def test_run_server_no_arguments(self, mock_db, logcapture):
         runserver.run_server(self._app, self._args)
         logcapture.check(
                         ('hbp_nrp_backend', 'WARNING',
@@ -40,6 +41,7 @@ class TestScript(unittest.TestCase):
         )
         self.assertTrue(self._app.run.called)
         self._app.run.assert_called_with(port=runserver.DEFAULT_PORT, host=runserver.DEFAULT_HOST)
+        self.assertEqual(mock_db.create_all.call_count, 1)
 
     def test_run_server_create_logfile(self):
         # create a logfile in the current working directory
