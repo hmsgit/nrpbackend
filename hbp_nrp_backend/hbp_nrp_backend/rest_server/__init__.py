@@ -107,6 +107,18 @@ class NRPServicesUnavailableROSService(NRPServicesGeneralException):
         )
 
 
+class NRPServicesDatabaseException(NRPServicesGeneralException):
+    """
+    Database exception class that can be used to return meaningful messages
+    to the HBP frontend code. It is considered as a server error with status
+    500 (internal error).
+
+    :param message: message displayed to the end user.
+    """
+    def __init__(self, message):
+        super(NRPServicesDatabaseException, self).__init__(message, "Database error")
+
+
 class NRPServicesExtendedApi(Api):
     """
     Extend Flask Restful error handling mechanism so that we

@@ -5,15 +5,38 @@ that deals with the collaboratory platform
 
 __author__ = 'jkaiser'
 
+import logging
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import db
+from sqlalchemy import exc
 # Import data base models
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
+    NRPServicesDatabaseException
+
+logger = logging.getLogger(__name__)
 
 # pylint: disable=no-self-use
+
+
+def get_or_raise(context_id):
+    """
+    Get the experiment ID from the database or raise
+    an NRPServicesDatabaseException if the get query raised an exception.
+
+    :param context_id: The Collab context UUID of Navigation Item's client
+    :return: the experiment ID associated to the given context UUID
+    """
+    collab_context = None
+    try:
+        # pylint: disable=no-member
+        collab_context = CollabContext.query.get(context_id)
+    except exc.SQLAlchemyError:
+        raise NRPServicesDatabaseException("The neurorobotics_collab database is not available")
+
+    return collab_context
 
 
 class CollabHandler(Resource):
@@ -71,11 +94,13 @@ class CollabHandler(Resource):
         :status 200: The experiment ID was successfully retrieved
         """
         # pylint does not recognise members created by SQLAlchemy
-        # pylint: disable=no-member
-        collab_context = CollabContext.query.get_or_404(context_id)
+        collab_context = get_or_raise(context_id)
+        experiment_id = ""
+        if collab_context is not None:
+            experiment_id = str(collab_context.experiment_id)
         return {
             'contextID': context_id,
-            'experimentID': str(collab_context.experiment_id)
+            'experimentID': experiment_id
         }, 200
 
     @swagger.operation(
@@ -123,9 +148,16 @@ class CollabHandler(Resource):
         body = request.get_json(force=True)
         if 'experimentID' not in body:
             raise NRPServicesClientErrorException("No experimentID given")
-        experiment_id = body['experimentID']
         # pylint: disable=no-member
-        db.session.add(CollabContext(context_id, experiment_id))
+        collab_context = get_or_raise(context_id)
+        experiment_id = body['experimentID']
+        logger.info('collab_context')
+        logger.info(collab_context)
+        if collab_context is not None:
+            collab_context.experiment_id = experiment_id
+        else:
+            db.session.add(CollabContext(context_id, experiment_id))
+
         db.session.commit()
 
         return {'experimentID': experiment_id,
