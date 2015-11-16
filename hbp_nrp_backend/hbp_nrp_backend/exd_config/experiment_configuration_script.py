@@ -58,7 +58,7 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id,
                                            gzserver_host,
                                            sim_id,
                                            models_path,
-                                           experiment.environmentModel.pose)
+                                           experiment.environmentModel.robotPose)
 
 
 def generate_experiment_control(experiment_conf, conf_path):

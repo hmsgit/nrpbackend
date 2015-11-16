@@ -1,7 +1,7 @@
-# ./exp_conf_api_gen.py
+# ./test.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:e455c55bde4037492ee2ed5fe3b59ed8c44bb0d3
-# Generated 2015-10-27 14:26:27.935131 by PyXB version 1.2.4 using Python 2.7.6.final.0
+# Generated 2015-11-13 15:30:14.823414 by PyXB version 1.2.4 using Python 2.7.6.final.0
 # Namespace http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig
 
 from __future__ import unicode_literals
@@ -15,7 +15,7 @@ import sys
 import pyxb.utils.six as _six
 
 # Unique identifier for bindings created at the same time
-_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:53d8da0a-7cae-11e5-9510-a02bb84cfadc')
+_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:0de3128c-8a13-11e5-9ece-a02bb84cfadc')
 
 # Version of PyXB used to generate the bindings
 _PyXBVersion = '1.2.4'
@@ -90,20 +90,20 @@ MaturityType.production = MaturityType._CF_enumeration.addEnumeration(unicode_va
 MaturityType._InitializeFacetMap(MaturityType._CF_enumeration)
 Namespace.addCategoryObject('typeBinding', 'MaturityType', MaturityType)
 
-# Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}Pose with content type EMPTY
-class Pose (pyxb.binding.basis.complexTypeDefinition):
-    """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}Pose with content type EMPTY"""
+# Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}RobotPose with content type EMPTY
+class RobotPose (pyxb.binding.basis.complexTypeDefinition):
+    """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}RobotPose with content type EMPTY"""
     _TypeDefinition = None
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Pose')
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'RobotPose')
     _XSDLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 35, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute x uses Python identifier x
-    __x = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'x'), 'x', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_x', pyxb.binding.datatypes.double)
+    __x = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'x'), 'x', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_x', pyxb.binding.datatypes.double)
     __x._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 27, 8)
     __x._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 27, 8)
     
@@ -111,7 +111,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Attribute y uses Python identifier y
-    __y = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'y'), 'y', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_y', pyxb.binding.datatypes.double)
+    __y = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'y'), 'y', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_y', pyxb.binding.datatypes.double)
     __y._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 28, 8)
     __y._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 28, 8)
     
@@ -119,7 +119,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Attribute z uses Python identifier z
-    __z = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'z'), 'z', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_z', pyxb.binding.datatypes.double)
+    __z = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'z'), 'z', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_z', pyxb.binding.datatypes.double)
     __z._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 29, 8)
     __z._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 29, 8)
     
@@ -127,7 +127,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Attribute ux uses Python identifier ux
-    __ux = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'ux'), 'ux', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_ux', pyxb.binding.datatypes.double)
+    __ux = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'ux'), 'ux', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_ux', pyxb.binding.datatypes.double)
     __ux._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 30, 8)
     __ux._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 30, 8)
     
@@ -135,7 +135,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Attribute uy uses Python identifier uy
-    __uy = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'uy'), 'uy', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_uy', pyxb.binding.datatypes.double)
+    __uy = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'uy'), 'uy', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_uy', pyxb.binding.datatypes.double)
     __uy._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 31, 8)
     __uy._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 31, 8)
     
@@ -143,7 +143,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Attribute uz uses Python identifier uz
-    __uz = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'uz'), 'uz', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_uz', pyxb.binding.datatypes.double)
+    __uz = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'uz'), 'uz', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_uz', pyxb.binding.datatypes.double)
     __uz._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 32, 8)
     __uz._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 32, 8)
     
@@ -151,7 +151,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Attribute theta uses Python identifier theta
-    __theta = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'theta'), 'theta', '__httpschemas_humanbrainproject_euSP102014ExDConfig_Pose_theta', pyxb.binding.datatypes.double)
+    __theta = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'theta'), 'theta', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RobotPose_theta', pyxb.binding.datatypes.double)
     __theta._DeclarationLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 33, 8)
     __theta._UseLocation = pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 33, 8)
     
@@ -169,7 +169,7 @@ class Pose (pyxb.binding.basis.complexTypeDefinition):
         __uz.name() : __uz,
         __theta.name() : __theta
     })
-Namespace.addCategoryObject('typeBinding', 'Pose', Pose)
+Namespace.addCategoryObject('typeBinding', 'RobotPose', RobotPose)
 
 
 # Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}Position with content type EMPTY
@@ -265,11 +265,11 @@ class EnvironmentModel (pyxb.binding.basis.complexTypeDefinition):
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
-    # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}pose uses Python identifier pose
-    __pose = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'pose'), 'pose', '__httpschemas_humanbrainproject_euSP102014ExDConfig_EnvironmentModel_httpschemas_humanbrainproject_euSP102014ExDConfigpose', False, pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 63, 12), )
+    # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}robotPose uses Python identifier robotPose
+    __robotPose = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'robotPose'), 'robotPose', '__httpschemas_humanbrainproject_euSP102014ExDConfig_EnvironmentModel_httpschemas_humanbrainproject_euSP102014ExDConfigrobotPose', False, pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 63, 12), )
 
     
-    pose = property(__pose.value, __pose.set, None, None)
+    robotPose = property(__robotPose.value, __robotPose.set, None, None)
 
     
     # Attribute src uses Python identifier src
@@ -280,7 +280,7 @@ class EnvironmentModel (pyxb.binding.basis.complexTypeDefinition):
     src = property(__src.value, __src.set, None, None)
 
     _ElementMap.update({
-        __pose.name() : __pose
+        __robotPose.name() : __robotPose
     })
     _AttributeMap.update({
         __src.name() : __src
@@ -566,7 +566,7 @@ CameraPose._Automaton = _BuildAutomaton()
 
 
 
-EnvironmentModel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'pose'), Pose, scope=EnvironmentModel, location=pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 63, 12)))
+EnvironmentModel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'robotPose'), RobotPose, scope=EnvironmentModel, location=pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 63, 12)))
 
 def _BuildAutomaton_ ():
     # Remove this helper function from the namespace after it is invoked
@@ -577,7 +577,7 @@ def _BuildAutomaton_ ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(EnvironmentModel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'pose')), pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 63, 12))
+    symbol = pyxb.binding.content.ElementUse(EnvironmentModel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'robotPose')), pyxb.utils.utility.Location('/home/alina/Desktop/HBP/NRP/Src/Models/ExDConf/ExDConfFile.xsd', 63, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
