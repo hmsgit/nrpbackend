@@ -18,7 +18,9 @@ class ConfigTest(Config):
     """
     Config for unit testing
     """
-    SQLALCHEMY_DATABASE_URI = 'postgresql://fake_db'
+    SQLALCHEMY_DATABASE_URI = (
+        'postgresql://neurorobotics_collab_test:WRITE_THE_TEST_USER_PASSWORD_HERE'
+        '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab_test')
 
 
 class ConfigStaging(Config):

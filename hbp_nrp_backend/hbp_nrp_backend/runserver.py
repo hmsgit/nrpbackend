@@ -83,3 +83,4 @@ else:
     __init_console_logging()
     root_logger.warn("Application started with uWSGI or any other framework. logging "
                      "to console by default !")
+    init()
