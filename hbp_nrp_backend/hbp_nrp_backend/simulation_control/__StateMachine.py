@@ -10,56 +10,75 @@ pause_simulation = pt.pause_simulation
 reset_simulation = pt.reset_simulation
 stop_simulation = pt.stop_simulation
 initialize_simulation = pt.initialize_simulation
+clean = pt.clean
 
 
-def __start_simulation(sim_id):
+def __start_simulation(simulation):
     """
     Wraps the call to the variable function
-    :param sim_id: The simulation id
+
+    :param simulation: The simulation id
     """
-    start_simulation(sim_id)
+    start_simulation(simulation)
 
 
-def __pause_simulation(sim_id):
-    """
-    Wraps the call to the variable function
-    :param sim_id: The simulation id
-    """
-    pause_simulation(sim_id)
-
-
-def __reset_simulation(sim_id):
+def __pause_simulation(simulation):
     """
     Wraps the call to the variable function
-    :param sim_id: The simulation id
+
+    :param simulation: The simulation id
     """
-    reset_simulation(sim_id)
+    pause_simulation(simulation)
 
 
-def __stop_simulation(sim_id):
-    """
-    Wraps the call to the variable function
-    :param sim_id: The simulation id
-    """
-    stop_simulation(sim_id)
-
-
-def __initialize_simulation(sim_id):
+def __reset_simulation(simulation):
     """
     Wraps the call to the variable function
-    :param sim_id: The simulation id
+
+    :param simulation: The simulation id
     """
-    initialize_simulation(sim_id)
+    reset_simulation(simulation)
 
 
-stateMachine = {'created': {'initialized': __initialize_simulation},
+def __stop_simulation(simulation):
+    """
+    Wraps the call to the variable function
+
+    :param simulation: The simulation
+    """
+    stop_simulation(simulation)
+
+
+def __initialize_simulation(simulation):
+    """
+    Wraps the call to the variable function
+
+    :param simulation: The simulation
+    """
+    initialize_simulation(simulation)
+
+
+def __clean(simulation):
+    """
+    Wraps the call to the variable function
+
+    :param simulation: The simulation
+    """
+    clean(simulation)
+
+
+stateMachine = {'created': {'initialized': __initialize_simulation,
+                            'failed': __clean},
                 'initialized': {'started': __start_simulation,
-                                'stopped': __stop_simulation},
+                                'stopped': __stop_simulation,
+                                'failed': __clean},
                 'started': {'paused': __pause_simulation,
                             'initialized': __reset_simulation,
-                            'stopped': __stop_simulation},
+                            'stopped': __stop_simulation,
+                            'failed': __clean},
                 'paused': {'started': __start_simulation,
                            'initialized': __reset_simulation,
-                           'stopped': __stop_simulation},
+                           'stopped': __stop_simulation,
+                           'failed': __clean},
                 'stopped': {},
-                'failed': {'stopped': __stop_simulation}}
+                'failed': {}}

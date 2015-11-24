@@ -20,6 +20,9 @@ class TestErrorHandlers(RestTest):
         simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', state='initialized'))
         utc.use_unit_test_transitions()
 
+    def tearDown(self):
+        utc.use_production_transitions()
+
     def test_general_500_error(self):
         utc.start_will_raise_exception(Exception("I am a general Exception"))
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')

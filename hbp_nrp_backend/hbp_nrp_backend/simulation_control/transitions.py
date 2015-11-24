@@ -3,15 +3,11 @@ This file loads the production transitions
 """
 
 
-__author__ = 'GeorgHinkel'
+__author__ = 'Georg Hinkel'
 
 from hbp_nrp_backend.exd_config \
     import generate_bibi, initialize_experiment, generate_experiment_control
-from hbp_nrp_backend.simulation_control import simulations
-from hbp_nrp_backend.experiment_control.state_machine_configuration_script \
-    import initialize_state_machines, wait_sm_termination, start_state_machines, \
-    request_sm_termination
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+from hbp_nrp_backend import NRPServicesGeneralException
 from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
@@ -24,15 +20,16 @@ import tempfile
 logger = logging.getLogger(__name__)
 
 
-def start_simulation(sim_id):
+def start_simulation(simulation):
     """
-    Starts the simulation with the given id
-    :param sim_id: The simulation id
-    """
-    simulation = simulations[sim_id]
+    Starts the given simulation
 
-    logger.info("starting State Machines...")
-    start_state_machines(simulation.state_machines, fail_if_running=simulation.state != 'paused')
+    :param simulation: The simulation
+    """
+
+    if simulation.state != 'paused':
+        logger.info("starting State Machines...")
+        simulation.state_machine_manager.start_all()
 
     logger.info("starting CLE...")
     simulation.cle.start()
@@ -40,29 +37,26 @@ def start_simulation(sim_id):
     logger.info("simulation started")
 
 
-def pause_simulation(sim_id):
+def pause_simulation(simulation):
     """
-    Pauses the simulation with the given id
-    :param sim_id: The simulation id
+    Pauses the simulation
+
+    :param simulation: The simulation
     """
-    simulation = simulations[sim_id]
     simulation.cle.pause()
     logger.info("simulation paused")
 
 
-def reset_simulation(sim_id):
+def reset_simulation(simulation):
     """
-    Reset the simulation with the given simulation id
-    :param sim_id: The simulation id
+    Reset the given simulation
+
+    :param simulation: The simulation
     """
-    simulation = simulations[sim_id]
+    simulation.state_machine_manager.terminate_all()
 
-    request_sm_termination(simulation.state_machines)
-    wait_sm_termination(simulation.state_machines)
-
-    result = [(k, sm.result) for (k, sm) in simulation.state_machines.items()]
-    logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (k, str(sm))
-                                                        for (k, sm) in result))
+    logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (sm.sm_id, str(sm.result))
+                                                        for sm in simulation.state_machines))
 
     # The following two lines are part of a fix for [NRRPLT-1899]
     # To be removed when the following Gazebo issue is solved:
@@ -71,32 +65,31 @@ def reset_simulation(sim_id):
     simulation.right_screen_color = 'Gazebo/Blue'  # pragma: no cover
     simulation.cle.reset()
 
-    initialize_state_machines(sm_instances=simulation.state_machines)
+    simulation.state_machine_manager.start_all()
     logger.info("simulation reset")
 
 
-def stop_simulation(sim_id):
+def stop_simulation(simulation):
     """
-    Stops the simulation with the given id
-    :param sim_id: The simulation id
+    Stops the given simulation
+
+    :param simulation: The simulation
     """
-    simulation = simulations[sim_id]
     simulation.cle.stop()
 
-    request_sm_termination(simulation.state_machines)
-    wait_sm_termination(simulation.state_machines)
+    logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (sm.sm_id, str(sm.result))
+                                                        for sm in simulation.state_machines))
 
-    result = [(k, sm.result) for (k, sm) in simulation.state_machines.items()]
-    logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (k, str(sm))
-                                                        for (k, sm) in result))
+    simulation.state_machine_manager.terminate_all()
 
     logger.info("simulation stopped")
 
 
-def initialize_simulation(sim_id):
+def initialize_simulation(simulation):
     """
-    Releases the simulation with the given id
-    :param sim_id: The simulation id
+    Releases the given simulation
+
+    :param simulation: The simulation
     """
     # generate script
     try:
@@ -104,7 +97,6 @@ def initialize_simulation(sim_id):
         # way we __init__ the rest_server module.
         from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
             import NeuroroboticsCollabClient
-        simulation = simulations[sim_id]
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
         using_collab_storage = simulation.context_id is not None
         if (using_collab_storage):
@@ -118,13 +110,14 @@ def initialize_simulation(sim_id):
             environment = simulation.environment_conf
 
         gzserver_host = simulation.gzserver_host
-        target = '__generated_experiment_%d.py' % (sim_id, )
-        generate_bibi(experiment, target, gzserver_host, sim_id, models_path)
+        target = '__generated_experiment_%d.py' % (simulation.sim_id, )
+        generate_bibi(experiment, target, gzserver_host, simulation.sim_id, models_path)
 
         state_machine_paths = generate_experiment_control(experiment, models_path)
-        simulation.state_machines = initialize_state_machines(state_machine_paths)
+        simulation.state_machine_manager.add_all(state_machine_paths)
+        simulation.state_machine_manager.initialize_all()
 
-        simulation.cle = initialize_experiment(experiment, environment, target, sim_id)
+        simulation.cle = initialize_experiment(experiment, environment, target, simulation.sim_id)
 
         logger.info("simulation initialized")
         if (using_collab_storage):
@@ -144,3 +137,14 @@ def initialize_simulation(sim_id):
         raise NRPServicesGeneralException(
             "Error while communicating with the CLE (" + e.message + ")",
             "CLE error")
+
+
+def clean(simulation):
+    """
+    Cleans a simulation after the simulation has failed
+
+    :param simulation: The simulation
+    :param previous_state: The last clean state
+    """
+    # Make sure we have no zombie processes
+    simulation.state_machine_manager.terminate_all()

@@ -2,16 +2,20 @@
 This module contains the simulation class
 """
 
-__author__ = 'GeorgHinkel'
+__author__ = 'Georg Hinkel'
 
 from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
-from hbp_nrp_backend.experiment_control.__ExperimentStateMachine import \
-    ExperimentStateMachineInstance
+from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
+from hbp_nrp_excontrol.StateMachineInstance import StateMachineInstance
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
+from tempfile import NamedTemporaryFile
 from flask_restful import fields
 from flask_restful_swagger import swagger
 from pytz import timezone
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @swagger.model
@@ -46,7 +50,7 @@ class Simulation(object):
         self.__operation_mode = sim_operation_mode
         self.__creation_datetime = datetime.datetime.now(tz=timezone('Europe/Zurich'))
         self.__cle = None
-        self.__state_machines = dict()
+        self.__state_machines_manager = StateMachineManager()
         self.__errors = 0  # We use that for monitoring
 
         # The following two members are part of the fix for [NRRPLT-1899]:
@@ -193,11 +197,14 @@ class Simulation(object):
         if new_state not in transitions:
             raise InvalidStateTransitionException()
         try:
-            transitions[new_state](self.__sim_id)
+            transitions[new_state](self)
             self.__state = new_state
         except Exception:
             self.__state = "failed"
+            if 'failed' in transitions:
+                transitions['failed'](self)
             self.__errors += 1
+
             raise
 
     @property
@@ -217,22 +224,29 @@ class Simulation(object):
         self.__cle = cle
 
     @property
+    def state_machine_manager(self):
+        """
+        Gets the associated component managing the state machines of the simulation
+        """
+        return self.__state_machines_manager
+
+    @property
     def state_machines(self):
         """
-        Get state_machines dictionary
+        Get state_machines contained in this simulation
 
-        :return: The dictionary of state machine instances
+        :return: The list of state machine instances
         """
-        return self.__state_machines
+        return self.__state_machines_manager.state_machines
 
-    @state_machines.setter
-    def state_machines(self, state_machines):
+    def get_state_machine(self, name):
         """
-        Set state_machine dictionary
+        Gets the state machine with the given name or none
 
-        :param state_machines: The new state machines dictionary
+        :param name: The state machine name
+        :return: The state machine with the given name
         """
-        self.__state_machines = state_machines
+        return self.__state_machines_manager.get_state_machine(name)
 
     def get_state_machine_code(self, name):
         """
@@ -242,10 +256,12 @@ class Simulation(object):
         :return: source code of the state machine (string) or False (bool) when \
         state machine is not found
         """
-        if name in self.state_machines:
-            return self.state_machines[name].sm_source
+        sm = self.get_state_machine(name)
+        if sm is not None and sm.sm_path is not None:
+            with open(sm.sm_path, "r") as sm_file:
+                return sm_file.read()
 
-        return False
+        return None
 
     def set_state_machine_code(self, name, python_code):
         """
@@ -260,13 +276,17 @@ class Simulation(object):
         """
         assert self.state == 'initialized'
 
-        sm = None
-        if name in self.state_machines:
-            sm = self.state_machines[name]
-            sm.sm_source = python_code
-        else:
-            sm = ExperimentStateMachineInstance(name, python_code)
-            self.state_machines[name] = sm
+        with NamedTemporaryFile(prefix='sm_', suffix='.py', delete=False) as tmp:
+            with tmp.file as sm_file:
+                file_path = tmp.name
+                sm_file.write(python_code)
+        logger.info("Creating new file for state machine {0}: {1}".format(name, file_path))
+
+        sm = self.get_state_machine(name)
+        if sm is None:
+            sm = StateMachineInstance(name)
+            self.state_machines.append(sm)
+        sm.sm_path = file_path
 
         sm.initialize_sm()
 
@@ -284,9 +304,9 @@ class Simulation(object):
         :raise:  NameError
         """
 
-        sm = self.state_machines.pop(name, None)
+        sm = self.get_state_machine(name)
         if sm is not None:
-            assert isinstance(sm, ExperimentStateMachineInstance)
+            self.state_machines.remove(sm)
             if sm.is_running:
                 sm.request_termination()
                 sm.wait_termination()

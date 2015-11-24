@@ -12,9 +12,7 @@ from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 
 
-PATH = os.getcwd()
-if not os.path.exists("ExDConf"):
-    PATH += "/hbp_nrp_backend/hbp_nrp_backend/rest_server/tests"
+PATH = os.path.split(__file__)[0]
 
 
 @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")

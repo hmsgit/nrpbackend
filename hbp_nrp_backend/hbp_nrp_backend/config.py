@@ -66,3 +66,9 @@ class LocalConfig(Config):
     Make sure that sqlite3 as well as pysqlite libraries are available on the dev system.
     """
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+    COLLAB_CLIENT_CONFIG = {
+        'collab_server': 'https://services.humanbrainproject.eu/collab/v0',
+        'oidc_server': 'https://services.humanbrainproject.eu/oidc/',
+        'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
+    }
