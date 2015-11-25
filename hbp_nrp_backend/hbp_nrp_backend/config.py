@@ -29,7 +29,14 @@ class TestConfig(Config):
     """
     SQLALCHEMY_DATABASE_URI = (
         'postgresql://neurorobotics_collab_test:WRITE_THE_TEST_USER_PASSWORD_HERE'
-        '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab_test')
+        '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab_test'
+    )
+
+    COLLAB_CLIENT_CONFIG = {
+        'collab_server': 'https://services.humanbrainproject.eu/collab/v0',
+        'oidc_server': 'https://services.humanbrainproject.eu/oidc/',
+        'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
+    }
 
 
 class DeploymentConfig(Config):
@@ -39,6 +46,12 @@ class DeploymentConfig(Config):
     SQLALCHEMY_DATABASE_URI = (
         'postgresql://neurorobotics_collab:WRITE_THE_USER_PASSWORD_HERE'
         '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab')
+
+    COLLAB_CLIENT_CONFIG = {
+        'collab_server': 'https://services.humanbrainproject.eu/collab/v0',
+        'oidc_server': 'https://services.humanbrainproject.eu/oidc/',
+        'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
+    }
 
 
 class LocalConfig(Config):

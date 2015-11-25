@@ -19,6 +19,25 @@ class UserAuthentication(object):
     """
 
     HTTP_HEADER_USER_NAME = "X-User-Name"
+    HEADER_TOKEN = "Authorization"
+
+    @staticmethod
+    def __get_header(request, header_name, default_value):
+        """
+        Gets the value of the headername header from the given HTTP request
+        :param request: The request
+        :param header_name: The name of the header
+        :param default_value: If nothing is found, this will be returned
+        :return: The value of the headername header or if not found default_value
+        """
+        request_parser = reqparse.RequestParser()
+        request_parser.add_argument(header_name,
+                                    type=str, location='headers')
+        header_value = request_parser.parse_args(request)[header_name]
+        if header_value is None:
+            header_value = default_value
+
+        return header_value
 
     @staticmethod
     def get_x_user_name_header(request):
@@ -27,14 +46,24 @@ class UserAuthentication(object):
         :param request: The request
         :return: The value of the 'X-User-Name' header or if not found 'default-owner'
         """
-        request_parser = reqparse.RequestParser()
-        request_parser.add_argument(UserAuthentication.HTTP_HEADER_USER_NAME,
-                                    type=str, location='headers')
-        user = request_parser.parse_args(request)[UserAuthentication.HTTP_HEADER_USER_NAME]
-        if user is None:
-            user = "default-owner"
+        return UserAuthentication.__get_header(request,
+                                               UserAuthentication.HTTP_HEADER_USER_NAME,
+                                               "default-owner")
 
-        return user
+    @staticmethod
+    def get_header_token(request):
+        """
+        Gets the value of the 'Authorization' header from the given HTTP request
+        :param request: The request
+        :return: The value of the 'Authorization' header or if not found 'no-token'
+        """
+        token_field = UserAuthentication.__get_header(request,
+                                                      UserAuthentication.HEADER_TOKEN,
+                                                      "no_token")
+        if (token_field != "no_token"):
+            return token_field.split()[1]
+        else:
+            return token_field
 
     @staticmethod
     def matches_x_user_name_header(request, user):

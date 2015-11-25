@@ -26,6 +26,17 @@ class TestUserAuthentication(unittest.TestCase):
             owner = UserAuthentication.get_x_user_name_header(flask.request)
         self.assertEqual(owner, 'default-owner')
 
+    def test_get_header_token(self):
+        # ensure 'Authorization' header is used if available
+        with self.__app.test_request_context('/test', headers={'Authorization': 'Bearer aaa-bbb'}):
+            token = UserAuthentication.get_header_token(flask.request)
+        self.assertEqual(token, 'aaa-bbb')
+
+        # ensure 'no_token' is used if 'Authorization' header is not available
+        with self.__app.test_request_context('/test'):
+            token = UserAuthentication.get_header_token(flask.request)
+        self.assertEqual(token, 'no_token')
+
     def test_matches_x_user_name_header(self):
         with self.__app.test_request_context('/test', headers={'X-User-Name': 'Test'}):
             self.assertTrue(UserAuthentication.matches_x_user_name_header(flask.request, 'Test'))
