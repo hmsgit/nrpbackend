@@ -4,7 +4,7 @@ hbp-flask-restful-swagger==0.15.2.dev0
 PyYAML==3.11
 rospkg==1.0.28
 catkin_pkg==0.2.2
-hbp-nrp-cle==0.4.1.dev1
+hbp-nrp-cle==0.4.2
 pyxb==1.2.4
 Flask-SQLAlchemy==2.1
 Flask-Script==2.0.5
