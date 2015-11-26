@@ -1,7 +1,10 @@
 ContinuousIntegration/
 platform_venv/
 **~
+**.pyc
 **_new
+**.req_make
+**.egg-info/
 .idea/
 .coverage
 ci_dep.txt
