@@ -199,4 +199,10 @@ def init():
     General initialization. We do not want this to be done every time (especially when testing).
     This is why it has been put in a separate function.
     """
+
+    # The APP_SETTING environment variable allows you to easily switch configurations.
+    # Standard configurations are listed in config.py.
+    # It defaults to config.DeploymentConfig
+    # (see nrp-services/nrp-services-env.sh from server-scripts repo).
+    # Some other valid config objects: config.TestConfig, config.LocalConfig.
     app.config.from_object(os.environ['APP_SETTINGS'])

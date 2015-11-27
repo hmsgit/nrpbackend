@@ -1,5 +1,13 @@
 """
-Configuration file for databases
+Configuration file sample for the application.
+It is overwritten by puppet on dev and staging servers
+(see config.py.erb template managed py puppet).
+It is used by Jenkins (TestConfig) who sets the password appropriately.
+This file handles in particular databases related to Collab contexts ans storage management.
+Use the APP_SETTINGS environment variable to switch between configurations, e.g.,:
+export APP_SETTINGS=config.LocalConfig
+The default value of APP_SETTINGS is config.DeploymentConfig
+(managed by puppet via nrp-services-env.sh from server-script)
 """
 
 
@@ -14,16 +22,17 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = 'postgresql://bbpdbsrv03.epfl.ch:5432/neurorobotics_collab'
 
 
-class ConfigTest(Config):
+class TestConfig(Config):
     """
     Config for unit testing
+    Used by Jenkins (see neurorobotics.defaults.yaml from jjb-neurorobotics)
     """
     SQLALCHEMY_DATABASE_URI = (
         'postgresql://neurorobotics_collab_test:WRITE_THE_TEST_USER_PASSWORD_HERE'
         '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab_test')
 
 
-class ConfigStaging(Config):
+class DeploymentConfig(Config):
     """
     Staging (and dev) database config
     """
@@ -32,7 +41,8 @@ class ConfigStaging(Config):
         '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab')
 
 
-class ConfigLocal(Config):
+class LocalConfig(Config):
+
     """
     Database config that allows running the platform locally without having to connect to the
     EPFL postgresql server
