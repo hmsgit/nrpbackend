@@ -27,7 +27,8 @@ class TestExperimentConfigurationScript(unittest.TestCase):
 
         directory = os.path.split(__file__)[0]
         experiment = os.path.join(directory, 'ExDXMLExample.xml')
-        self.assertIsInstance(initialize_experiment(experiment, os.path.dirname(__file__), 'generate.xml', 0), ROSCLEClient)
+        self.assertIsInstance(initialize_experiment(experiment, os.path.dirname(__file__),
+                                                    0, 'local'), ROSCLEClient)
 
     def test_generate_bibi(self):
         """
@@ -74,6 +75,7 @@ class TestExperimentConfigurationScript(unittest.TestCase):
 
             for name in expected:
                 self.assertEquals(name in paths and expected[name], paths[name])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,8 +1,9 @@
 """
 Script to run Experiment from ExperimentDesigner Configuration File
 """
-from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
-from hbp_nrp_cle.bibi_config import bibi_configuration_script
+from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_cleserver.bibi_config import bibi_configuration_script
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import deprecated
 import os
 import logging
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 # pylint: disable=E1103
 # pylint infers the wrong type for config
 
-
+@deprecated
 def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id, models_path):
     """
     Generates Code to run the Brain interface and Body integrator based on the
@@ -101,16 +102,20 @@ def generate_experiment_control(experiment_conf, conf_path):
     return state_machine_paths
 
 
-def initialize_experiment(experiment_conf, environment_path, generated_cle_script_file, sim_id):
+# pylint: disable=unused-argument
+def initialize_experiment(experiment_conf, environment_path, sim_id,
+                          gzserver_host):
     """
     Initialize experiment based on generated code by generate_bibi.
 
-    :param experiment_conf: The Experiment Designer configuration. The code will
-        search in the folder set in NRP_MODELS_DIRECTORY
+    @param experiment_conf: The Experiment Designer configuration. The code will \
+        search in the folder set in NRP_MODELS_DIRECTORY \
         environment variable for this file. relative path from there must be included.
-    :param environment_path: Absolute path to a custom environment SDF file (optional).
-    :param generated_cle_script_file: The file name of the generated cle script,
+    @param environment_path: Absolute path to a custom environment SDF file (optional).
+    @param generated_cle_script_file: The file name of the generated cle script,
         including .py and the complete path.
+    @param gzserver_host: (string) 'local' or 'lugano'
+    @param sim_id: simulation id
     """
 
     # parse experiment configuration to get the environment to spawn.
@@ -129,5 +134,10 @@ def initialize_experiment(experiment_conf, environment_path, generated_cle_scrip
     simulation_factory_client = ROSCLESimulationFactoryClient()
     simulation_factory_client.create_new_simulation(
         str(experiment.environmentModel.src),
-        os.path.join(os.getcwd(), generated_cle_script_file))
+        experiment_conf,
+        gzserver_host,
+        sim_id)
+
+    # uSED
+
     return ROSCLEClient(sim_id)

@@ -10,10 +10,8 @@ import shutil
 from bbp_client.oidc.client import BBPOIDCClient
 from bbp_client.collab_service.client import Client as CollabClient
 from bbp_client.document_service.client import Client as DocumentClient
-from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
-from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
-from hbp_nrp_backend.rest_server.__CollabContext \
-    import get_or_raise as get_or_raise_collab_context
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
+from hbp_nrp_backend.rest_server.__CollabContext import get_or_raise as get_or_raise_collab_context
 from hbp_nrp_backend import hbp_nrp_backend_config
 
 __author__ = "Daniel Peppicelli"

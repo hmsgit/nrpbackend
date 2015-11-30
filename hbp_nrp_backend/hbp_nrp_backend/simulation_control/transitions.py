@@ -6,7 +6,7 @@ This file loads the production transitions
 __author__ = 'Georg Hinkel'
 
 from hbp_nrp_backend.exd_config \
-    import generate_bibi, initialize_experiment, generate_experiment_control
+    import initialize_experiment, generate_experiment_control
 from hbp_nrp_backend import NRPServicesGeneralException
 from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
@@ -98,8 +98,9 @@ def initialize_simulation(simulation):
         from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
             import NeuroroboticsCollabClient
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+
         using_collab_storage = simulation.context_id is not None
-        if (using_collab_storage):
+        if using_collab_storage:
             client = NeuroroboticsCollabClient(
                 UserAuthentication.get_header_token(request), simulation.context_id)
             experiment_path = client.clone_experiment_template_from_collab_context()
@@ -110,17 +111,17 @@ def initialize_simulation(simulation):
             environment = simulation.environment_conf
 
         gzserver_host = simulation.gzserver_host
-        target = '__generated_experiment_%d.py' % (simulation.sim_id, )
-        generate_bibi(experiment, target, gzserver_host, simulation.sim_id, models_path)
-
         state_machine_paths = generate_experiment_control(experiment, models_path)
         simulation.state_machine_manager.add_all(state_machine_paths)
         simulation.state_machine_manager.initialize_all()
 
-        simulation.cle = initialize_experiment(experiment, environment, target, simulation.sim_id)
+        simulation.cle = initialize_experiment(experiment,
+                                               environment,
+                                               simulation.sim_id,
+                                               gzserver_host)
 
         logger.info("simulation initialized")
-        if (using_collab_storage):
+        if using_collab_storage:
             path_to_cloned_configuration_folder = os.path.split(experiment)[0]
             if tempfile.gettempdir() in path_to_cloned_configuration_folder:
                 logger.debug(

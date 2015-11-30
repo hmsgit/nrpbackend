@@ -80,7 +80,8 @@ class TestTransition(unittest.TestCase):
         self.mock_collabClient_instance.clone_experiment_template_from_collab_context.return_value = \
             {'experiment_conf': 'some_exp', 'environment_conf': 'some_env'}
         transitions.initialize_simulation(self.sim2)
-        mock_initialize_experiment.assert_called_with("some_exp", "some_env", "__generated_experiment_1.py", 1)
+        mock_initialize_experiment.assert_called_with("some_exp", "some_env", 1, \
+                                                                 'local'),
         self.sim2.cle = self.__roscleclient_mock
         self.assertEqual(self.__sm_man.initialize_all.call_count, 1)
         transitions.start_simulation(self.sim2)
@@ -94,20 +95,19 @@ class TestTransition(unittest.TestCase):
         transitions.stop_simulation(self.sim2)
         self.assertEqual(self.__sm_man.terminate_all.call_count, 2)
 
-    @mock.patch('hbp_nrp_backend.simulation_control.transitions.generate_bibi')
     @mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment')
-    def test_initialize_simulation_model_path(self, mock_initialize_experiment, mock_generate_bibi):
+    def test_initialize_simulation_model_path(self, mock_initialize_experiment):
         transitions.initialize_simulation(self.sim)
         mock_initialize_experiment.side_effect = rospy.ROSException()
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, self.sim)
         mock_initialize_experiment.side_effect = None
-        mock_generate_bibi.side_effect = IOError()
+
+        mock_initialize_experiment.side_effect = IOError()
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, self.sim)
-        mock_generate_bibi.side_effect = None
+        mock_initialize_experiment.side_effect = None
 
         transitions.initialize_simulation(self.sim)
-        self.assertEquals(mock_generate_bibi.call_count, 4)
-        self.assertEquals(mock_initialize_experiment.call_count, 3)
+        self.assertEquals(mock_initialize_experiment.call_count, 4)
 
 
     def test_initialize_ros_exception(self):
@@ -116,8 +116,10 @@ class TestTransition(unittest.TestCase):
         """
 
         oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(ROSException)
+        transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(
+                ROSException)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, self.sim)
+
         transitions.initialize_experiment = oldie
 
     def test_initialize_io_error(self):
@@ -128,6 +130,7 @@ class TestTransition(unittest.TestCase):
         oldie = transitions.initialize_experiment
         transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(IOError)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, self.sim)
+
         transitions.initialize_experiment = oldie
 
 if __name__ == '__main__':

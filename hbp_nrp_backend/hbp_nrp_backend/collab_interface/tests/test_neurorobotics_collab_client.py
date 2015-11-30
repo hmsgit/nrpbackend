@@ -9,8 +9,7 @@ import os
 from mock import patch, MagicMock
 from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
     import NeuroroboticsCollabClient, _FlattenedExperimentDirectory
-from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
-from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
 from hbp_nrp_backend.rest_server import app
 
@@ -207,3 +206,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                     self.assertEqual(tf.src, os.path.basename(tf.src))
                     path = os.path.join(temporary_folder, tf.src)
                     self.assertEqual(os.path.exists(path), True)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -132,7 +132,7 @@ def db_create_and_check(database, timeout=1):
     db_proc = multiprocessing.Process(target=database.create_all)
     db_proc.start()
     db_proc.join(timeout)
-    if(db_proc.is_alive()):
+    if db_proc.is_alive():
         db_proc.terminate()
         raise NRPServicesDatabaseTimeoutException()
 

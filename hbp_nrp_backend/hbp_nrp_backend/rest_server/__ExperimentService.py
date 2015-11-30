@@ -14,9 +14,9 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesGeneralException
-from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
-from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
-from hbp_nrp_cle.bibi_config.bibi_configuration_script import get_all_tfs
+from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_tfs
 
 from flask import request
 from pyxb import ValidationError

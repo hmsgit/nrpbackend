@@ -119,3 +119,7 @@ class TestSimulation(unittest.TestCase):
         success, error_message = self.__simulation.delete_state_machine('SM1')
         self.assertFalse(success)
         self.assertTrue(error_message)
+
+
+if __name__ == '__main__':
+    unittest.main()
