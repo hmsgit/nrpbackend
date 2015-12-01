@@ -8,11 +8,12 @@ import unittest
 import mock
 from hbp_nrp_backend.rest_server import init, app
 
+
 class RestTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.mock_environment = mock.patch.dict('os.environ', {'APP_SETTINGS': 'test'})
+        self.mock_environment = mock.patch.dict('os.environ', {'APP_SETTINGS': 'config.TestConfig'})
         self.mock_environment.start()
 
         init()

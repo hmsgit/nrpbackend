@@ -25,6 +25,7 @@ config = {
     'version': hbp_nrp_backend.__version__,
     'install_requires': reqs,
     'packages': ['hbp_nrp_backend', 'hbp_nrp_backend.rest_server',
+                 'hbp_nrp_backend.collab_interface',
                  'hbp_nrp_backend.experiment_control',
                  'hbp_nrp_backend.simulation_control',
                  'hbp_nrp_backend.exd_config',

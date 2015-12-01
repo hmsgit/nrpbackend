@@ -15,6 +15,9 @@ from sqlalchemy import exc
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesDatabaseException
+from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import NeuroroboticsCollabClient
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_conf
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +98,7 @@ class CollabHandler(Resource):
         """
         # pylint does not recognise members created by SQLAlchemy
         collab_context = get_or_raise(context_id)
+
         experiment_id = ""
         if collab_context is not None:
             experiment_id = str(collab_context.experiment_id)
@@ -151,12 +155,18 @@ class CollabHandler(Resource):
         # pylint: disable=no-member
         collab_context = get_or_raise(context_id)
         experiment_id = body['experimentID']
-        logger.info('collab_context')
-        logger.info(collab_context)
+
         if collab_context is not None:
             collab_context.experiment_id = experiment_id
         else:
             db.session.add(CollabContext(context_id, experiment_id))
+
+        client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request),
+                                           context_id)
+        exd_configuration = get_experiment_conf(experiment_id)
+        client.clone_experiment_template_to_collab(
+            client.generate_unique_folder_name(client.get_context_app_name()),
+                                                   exd_configuration)
 
         db.session.commit()
 

@@ -21,6 +21,10 @@ class TestScript(unittest.TestCase):
         self._app = MockApp()
         self._app.run = MagicMock()
 
+        db_patcher = patch('hbp_nrp_backend.runserver.db')
+        self.addCleanup(db_patcher.stop)
+        self._mock_db = db_patcher.start()
+
         self._args = Namespace()
         self._args.logfile = None
         self._args.port = None
@@ -29,9 +33,8 @@ class TestScript(unittest.TestCase):
         # remove all handlers after each test!
         logging.getLogger('hbp_nrp_backend').handlers = []
 
-    @patch('hbp_nrp_backend.runserver.db')
     @log_capture(level=logging.WARNING)
-    def test_run_server_no_arguments(self, mock_db, logcapture):
+    def test_run_server_no_arguments(self, logcapture):
         runserver.run_server(self._app, self._args)
         logcapture.check(
                         ('hbp_nrp_backend', 'WARNING',
@@ -41,7 +44,9 @@ class TestScript(unittest.TestCase):
         )
         self.assertTrue(self._app.run.called)
         self._app.run.assert_called_with(port=runserver.DEFAULT_PORT, host=runserver.DEFAULT_HOST)
-        self.assertEqual(mock_db.create_all.call_count, 1)
+
+        # enables connection to Collab context database
+        self.assertEqual(self._mock_db.create_all.call_count, 1)
 
     def test_run_server_create_logfile(self):
         # create a logfile in the current working directory
@@ -52,6 +57,9 @@ class TestScript(unittest.TestCase):
         # check if the file exists
         self.assertTrue(os.path.isfile(self._args.logfile))
         os.remove(self._args.logfile)
+
+        # enables connection to Collab context database
+        self.assertEqual(self._mock_db.create_all.call_count, 1)
 
 if __name__ == '__main__':
     unittest.main()
