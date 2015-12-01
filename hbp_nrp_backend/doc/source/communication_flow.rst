@@ -18,7 +18,7 @@ The frontend basically calls the REST API of the backend via HTTP using JSON for
 Backend
 -------
 
-The REST Server uses the classes :class:`hbp_nrp_backend.cle_interface.RSOCLESimulationFactoryClient` and :class:`hbp_nrp_backend.cle_interface.ROSCLEClient` to start and control the CLE. Both classes communicate with their counter part in the CLE by calling ROS services (*/ros_cle_simulation/start_new_simulation*) to launch the CLE and (*/ros/cle_simulation/{start,stop,pause,reset,stop}*) to control the CLE.
+The REST Server uses the classes :class:`hbp_nrp_backend.cle_interface.RSOCLESimulationFactoryClient` and :class:`hbp_nrp_backend.cle_interface.ROSCLEClient` to start and control the CLE. Both classes communicate with their counter part in the CLE by calling ROS services (*/ros_cle_simulation/create_new_simulation*) to launch the CLE and (*/ros/cle_simulation/{start,stop,pause,reset,stop}*) to control the CLE.
 In addition the backend is able to call ROS services of Gazebo (*/gazebo/{light,visual}*) to perform events and interactions with the environment of the simulation.
 
 Closed Loop Engine

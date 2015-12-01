@@ -7,7 +7,7 @@ import rospy
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the root folder of the GazeboRosPackage repository.
 from cle_ros_msgs import srv
-from hbp_nrp_backend.cle_interface import SERVICE_START_NEW_SIMULATION
+from hbp_nrp_backend.cle_interface import SERVICE_CREATE_NEW_SIMULATION
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
@@ -25,16 +25,16 @@ class ROSCLESimulationFactoryClient(object):
         will be raised.
         """
 
-        self.__start_new_simulation_service = rospy.ServiceProxy(
-            SERVICE_START_NEW_SIMULATION, srv.StartNewSimulation
+        self.__create_new_simulation_service = rospy.ServiceProxy(
+            SERVICE_CREATE_NEW_SIMULATION, srv.CreateNewSimulation
         )
-        self.__start_new_simulation_service.wait_for_service(timeout=10)
+        self.__create_new_simulation_service.wait_for_service(timeout=10)
 
-    def start_new_simulation(self, environment_file, generated_cle_script_file):
+    def create_new_simulation(self, environment_file, generated_cle_script_file):
         """
         Start the simulation.
         """
-        response = self.__start_new_simulation_service(environment_file, generated_cle_script_file)
+        response = self.__create_new_simulation_service(environment_file, generated_cle_script_file)
         success, status_message = response.success, response.status_message
         if not success:
             raise SimulationStartingFailureException(status_message)
@@ -42,6 +42,6 @@ class ROSCLESimulationFactoryClient(object):
 
 class SimulationStartingFailureException(Exception):
     """
-    Exception raised when the start_new_simulation fails.
+    Exception raised when the create_new_simulation fails.
     """
     pass
