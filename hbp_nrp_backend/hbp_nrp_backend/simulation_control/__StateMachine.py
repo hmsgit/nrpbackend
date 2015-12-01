@@ -61,4 +61,5 @@ stateMachine = {'created': {'initialized': __initialize_simulation},
                 'paused': {'started': __start_simulation,
                            'initialized': __reset_simulation,
                            'stopped': __stop_simulation},
-                'stopped': {}}
+                'stopped': {},
+                'failed': {'stopped': __stop_simulation}}

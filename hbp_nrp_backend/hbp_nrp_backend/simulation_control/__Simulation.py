@@ -172,7 +172,10 @@ class Simulation(object):
         Sets the state of the simulation to the given value
         :param new_state: The new state
         """
-        transitions = stateMachine[self.__state]
+        try:
+            transitions = stateMachine[self.__state]
+        except KeyError:
+            raise InvalidStateTransitionException()
         if new_state not in transitions:
             raise InvalidStateTransitionException()
         try:
