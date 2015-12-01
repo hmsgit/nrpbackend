@@ -6,10 +6,12 @@ import logging
 import os
 import tempfile
 import shutil
+
 from bbp_client.oidc.client import BBPOIDCClient
 from bbp_client.collab_service.client import Client as CollabClient
 from bbp_client.document_service.client import Client as DocumentClient
 from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
+from hbp_nrp_backend.rest_server.__CollabContext import get_or_raise as get_or_raise_collab_context
 from hbp_nrp_backend import hbp_nrp_backend_config
 
 __author__ = "Daniel Peppicelli"
@@ -21,6 +23,10 @@ class NeuroroboticsCollabClient(object):
     Helper class to perform neurorobotics operations on the platform (Collab, OIDC or
     Document services)
     """
+
+    EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.xml"
+    EXPERIMENT_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics+xml"
+    SDF_WORLD_MIMETYPE = "application/hbp-neurorobotics.sdf.world+xml"
 
     def __init__(self, token, context_id):
         """
@@ -72,19 +78,102 @@ class NeuroroboticsCollabClient(object):
         Takes an experiment template and clones it into the storage space of the current Collab
         :param folder_name: The name of the folder to create in the storage space
         :param exd_configuration: The experiment configuration file of the template to clone
+        :return: The UUID of the created folder
         """
-        logger.debug("Sync models from " + exd_configuration + " to collab folder " + folder_name)
+        logger.debug(
+            "Sync experiment configuration file " +
+            exd_configuration +
+            " to collab folder " + folder_name
+        )
         self.__document_client.chdir(self.__document_client.get_path_by_id(self.__project['_uuid']))
-        self.__document_client.mkdir(folder_name)
+        created_folder_uuid = self.__document_client.mkdir(folder_name)
 
         logger.debug("Creating a temporary directory where flattened files will go")
         with _FlattenedExperimentDirectory(exd_configuration) \
                 as temp_flattened_exp_configuration_folder:
             logger.debug("Uploading the flattened experiment to the collab")
             for filename in os.listdir(temp_flattened_exp_configuration_folder):
+                mimetype = None
+                if filename == self.EXPERIMENT_CONFIGURATION_FILE_NAME:
+                    mimetype = self.EXPERIMENT_CONFIGURATION_MIMETYPE
+                elif (os.path.splitext(filename)[1] == '.sdf'):
+                    mimetype = self.SDF_WORLD_MIMETYPE
                 self.__document_client.upload_file(
                     os.path.join(temp_flattened_exp_configuration_folder, filename),
-                    folder_name + '/' + filename)
+                    folder_name + '/' + filename,
+                    mimetype)
+        return created_folder_uuid
+
+    def clone_experiment_template_from_collab(self, collab_folder_uuid):
+        """
+        Takes a collab folder and clones all the file in a temporary folder. The caller has
+        then the responsability of managing the returned folder.
+        :param collab_folder_uuid: The UUID of the document service folder where the experiment is
+            saved
+        :param exd_configuration: The experiment configuration file
+        :return: A dictionary containing the various path of the cloned elements.
+        """
+        temp_directory = tempfile.mkdtemp()
+        experiment_path = {}
+        logger.debug(
+            "Sync experiment configuration files (.xml and .sdf) from collab folder " +
+            collab_folder_uuid +
+            " to local folder " + temp_directory
+        )
+        collab_folder_path = self.__document_client.get_path_by_id(collab_folder_uuid)
+        for filename in self.__document_client.listdir(collab_folder_path):
+            filepath = collab_folder_path + '/' + filename
+            attr = self.__document_client.get_standard_attr(filepath)
+            if (attr['_entityType'] == 'file'):
+                localpath = os.path.join(temp_directory, filename)
+                self.__document_client.download_file(
+                    filepath, localpath)
+                if '_contentType' in attr:
+                    if attr['_contentType'] == self.EXPERIMENT_CONFIGURATION_MIMETYPE:
+                        experiment_path['experiment_conf'] = localpath
+                    elif attr['_contentType'] == self.SDF_WORLD_MIMETYPE:
+                        experiment_path['environment_conf'] = localpath
+        return experiment_path
+
+    def clone_experiment_template_from_collab_context(self):
+        """
+        Takes a collab folder and clones all the file in a temporary folder. The caller has
+        then the responsability of managing the returned folder.
+        :return: A dictionary containing the various path of the cloned elements.
+        """
+        collab_context = get_or_raise_collab_context(self.__context_id)
+        return self.clone_experiment_template_from_collab(
+            collab_context.experiment_folder_uuid)
+
+    def get_first_file_path_with_mimetype(self, mimetype, default_filename):
+        """
+        Return the full path (on the collab) of the first file found with a
+        given mimetype. If nothing is found, a path with a given
+        "default_filename" will be returned.
+        :param mimetype: The mimetype to find
+        :param default_filename: A default filename to return along with the
+        collab path when nothing is found.
+        """
+        collab_context = get_or_raise_collab_context(self.__context_id)
+        collab_folder_path = \
+            self.__document_client.get_path_by_id(collab_context.experiment_folder_uuid)
+        for filename in self.__document_client.listdir(collab_folder_path):
+            filepath = collab_folder_path + '/' + filename
+            attr = self.__document_client.get_standard_attr(filepath)
+            if '_contentType' in attr and attr['_contentType'] == mimetype:
+                return filepath
+
+        default_filepath = collab_folder_path + '/' + default_filename
+        return default_filepath
+
+    def save_string_to_file_in_collab(self, string, mimetype, default_filename):
+        """
+        Save a given file in the collab.
+        """
+        filepath = self.get_first_file_path_with_mimetype(mimetype, default_filename)
+        if self.__document_client.exists(filepath):
+            self.__document_client.remove(filepath)
+        self.__document_client.upload_string(string, filepath, mimetype)
 
 
 class _FlattenedExperimentDirectory(object):
@@ -126,8 +215,9 @@ class _FlattenedExperimentDirectory(object):
 
         # Update the experiment configuration file with the new path(s) and saves it
         experiment.environmentModel.src = os.path.basename(sdf_file)
-        flattened_exd_configuration = os.path.join(self.__temp_directory,
-                                                   os.path.basename(self.__exd_configuration))
+        flattened_exd_configuration = \
+            os.path.join(self.__temp_directory,
+                         NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME)
         with open(flattened_exd_configuration, "w") as flattened_exd_configuration_file:
             flattened_exd_configuration_file.write(experiment.toDOM().toprettyxml())
 

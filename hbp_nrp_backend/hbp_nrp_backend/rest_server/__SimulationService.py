@@ -116,10 +116,11 @@ class SimulationService(Resource):
 
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_operation_mode = body.get('operationMode', 'view')
+        sim_context_id = body.get('contextID', None)
         sim_owner = UserAuthentication.get_x_user_name_header(request)
         simulations.append(Simulation(sim_id, body['experimentConfiguration'],
                                       body.get('environmentConfiguration', None), sim_owner,
-                                      sim_gzserver_host, sim_operation_mode))
+                                      sim_gzserver_host, sim_context_id, sim_operation_mode))
 
         return marshal(simulations[sim_id], Simulation.resource_fields), 201, {
             'location': api.url_for(SimulationControl, sim_id=sim_id),
