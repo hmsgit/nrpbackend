@@ -127,7 +127,7 @@ def initialize_experiment(experiment_conf, environment_path, generated_cle_scrip
         )
 
     simulation_factory_client = ROSCLESimulationFactoryClient()
-    simulation_factory_client.start_new_simulation(
+    simulation_factory_client.create_new_simulation(
         str(experiment.environmentModel.src),
         os.path.join(os.getcwd(), generated_cle_script_file))
     return ROSCLEClient(sim_id)
