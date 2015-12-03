@@ -164,6 +164,7 @@ from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetS
     ExperimentPutStateMachine
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
+from hbp_nrp_backend import hbp_nrp_backend_config
 
 api.add_resource(CollabHandler, '/collab/configuration/<string:context_id>')
 api.add_resource(Last24HoursErrorCheck, '/health/errors-last-24h')
@@ -201,9 +202,7 @@ def init():
     This is why it has been put in a separate function.
     """
 
-    # The APP_SETTING environment variable allows you to easily switch configurations.
-    # Standard configurations are listed in config.py.
-    # It defaults to config.DeploymentConfig
-    # (see nrp-services/nrp-services-env.sh from server-scripts repo).
-    # Some other valid config objects: config.TestConfig, config.LocalConfig.
-    app.config.from_object(os.environ['APP_SETTINGS'])
+    # Candidate values for hbp_nrp_backend_config.__name__
+    # are to be found in hbp_nrp_backend/config.py
+    # (e.g. TestConfig, DeploymentConfig, LocalConfig)
+    app.config.from_object('config.' + hbp_nrp_backend_config.__name__)
