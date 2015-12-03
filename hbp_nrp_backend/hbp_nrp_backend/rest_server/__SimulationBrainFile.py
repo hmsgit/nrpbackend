@@ -16,9 +16,9 @@ from hbp_nrp_backend.rest_server import NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
     UserAuthentication
 
-# pylint: disable=R0201
+# pylint: disable=no-self-use
 # because it seems to be buggy:
-# pylint: disable=W0105
+# pylint: disable=pointless-string-statement
 
 
 class SimulationBrainFile(Resource):

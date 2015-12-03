@@ -7,19 +7,41 @@ import logging
 import rospy
 from std_srvs.srv import Empty
 # This package comes from the catkin package ROSCLEServicesDefinitions
-# in the GazeboRosPackage folder at the root of the CLE (this) repository.
+# in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN \
+    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN
     # duplicated from CLE.__init__
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli"
 logger = logging.getLogger(__name__)
 
-# pylint: disable=W0710
+
+def fallback_retval(val):
+    """
+    This function is intended to be used as a decorator for the methods calling CLE services.
+    It intercepts a ROSCLEClientException during the execution of a ROSServiceWrapper and returns
+    the desired value instead.
+    :param val: the fallback return value for the decorated method
+    """
+    def decorator(func):
+        """
+        The decorator function returned once the wanted fallback return value is set
+        :param func: the function to decorate.
+        """
+        def f(*args, **kwargs):
+            """
+            The function actually executed instead of the decorated one.
+            """
+            try:
+                return func(*args, **kwargs)
+            except ROSCLEClientException:
+                return val
+        return f
+    return decorator
 
 
 class ROSCLEClientException(Exception):
@@ -29,157 +51,160 @@ class ROSCLEClientException(Exception):
     pass
 
 
+class ROSCLEServiceWrapper(object):
+    """
+    Wraps the behaviour of a standard ROS service, throwing a detailed ROSCLEClientException
+    in case of invalid client or ROS exceptions.
+    """
+    ROS_SERVICE_TIMEOUT = 180
+
+    def __init__(self, service_name, service_class, ros_cle_client, invalidate_on_failure=False):
+        """
+        :param service_name: the name of the ROS service.
+        :param service_class: the class of the ROS service parameter.
+        :param ros_cle_client: the ROSCLEClient instance creating the wrapper.
+        :param invalidate_on_failure (default=False): a boolean value deciding whether the
+            ROSCLEClient should be invalidated in case of failure (True) or not (False).
+        """
+        self.__handler = None
+        self.__ros_cle_client = ros_cle_client
+        self.__invalidate_on_failure = invalidate_on_failure
+        try:
+            logger.info("Connecting to ROS service " + service_name)
+            self.__handler = rospy.ServiceProxy(service_name, service_class)
+            self.__handler.wait_for_service(timeout=self.ROS_SERVICE_TIMEOUT)
+        except rospy.ROSException:
+            # According to the documentation, only a timeout will raise a generic
+            # 'ROSException'.
+            # http://docs.ros.org/api/rospy/html/rospy-module.html#wait_for_service
+            message = "Timeout while connecting to the CLE (waiting on %s)." % \
+                      (service_name, )
+            logger.error(message)
+            raise ROSCLEClientException(message)
+
+    def __call__(self, *args, **kwargs):
+        if self.__ros_cle_client.valid:
+            try:
+                return self.__handler(*args, **kwargs)
+            except (rospy.ServiceException, rospy.exceptions.ROSInterruptException) as e:
+                if self.invalidate_on_failure:
+                    self.__ros_cle_client.valid = False
+                    self.__ros_cle_client.invalid_reason = "a previous communication error"
+                message = "Error executing service \"%s\", unable to communicate with the CLE.\n" \
+                      "Error: %s" % (self.__handler.resolved_name, str(e), )
+                logger.error(message)
+                raise ROSCLEClientException(message)
+        else:
+            message = "Action \"%s\" can't be peformed on an invalid client (reason: %s)." % \
+                  (self.__handler.resolved_name, self.__ros_cle_client.invalid_reason)
+            logger.error(message)
+            raise ROSCLEClientException(message)
+
+    @property
+    def handler(self):
+        """
+        Property getter for the __handler attribute
+        """
+
+        return self.__handler
+
+    @property
+    def ros_cle_client(self):
+        """
+        Property getter for the __ros_cle_client attribute
+        """
+
+        return self.__ros_cle_client
+
+    @property
+    def invalidate_on_failure(self):
+        """
+        Property getter for the __invalidate_on_failure attribute
+        """
+
+        return self.__invalidate_on_failure
+
+
 class ROSCLEClient(object):
     """
     Client around the ROS controlled Closed Loop Engine.
     """
-    ROS_SERVICE_TIMEOUT = 180
 
     def __init__(self, sim_id):
         """
         Create the wrapper client
         :param sim_id: The simulation id
         """
-
-        self.__valid = True
-        self.__invalid_reason = ""
+        self.valid = True
+        self.invalid_reason = ""
 
         # Creates service proxies
-        self.__cle_start = self.__init_ros_service(SERVICE_SIM_START_ID(sim_id), Empty)
-        self.__cle_pause = self.__init_ros_service(SERVICE_SIM_PAUSE_ID(sim_id), Empty)
-        self.__cle_stop = self.__init_ros_service(SERVICE_SIM_STOP_ID(sim_id), Empty)
-        self.__cle_reset = self.__init_ros_service(SERVICE_SIM_RESET_ID(sim_id), Empty)
-        self.__cle_state = self.__init_ros_service(SERVICE_SIM_STATE_ID(sim_id),
-                                                   srv.GetSimulationState)
-        self.__cle_get_transfer_functions = \
-            self.__init_ros_service(SERVICE_GET_TRANSFER_FUNCTIONS(sim_id),
-                                    srv.GetTransferFunctions)
+        self.__cle_start = ROSCLEServiceWrapper(SERVICE_SIM_START_ID(sim_id), Empty, self,
+                                                invalidate_on_failure=True)
+        self.__cle_pause = ROSCLEServiceWrapper(SERVICE_SIM_PAUSE_ID(sim_id), Empty, self,
+                                                invalidate_on_failure=True)
+        self.__cle_stop = ROSCLEServiceWrapper(SERVICE_SIM_STOP_ID(sim_id), Empty, self)
+        self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), Empty, self,
+                                                invalidate_on_failure=True)
+        self.__cle_state = ROSCLEServiceWrapper(
+            SERVICE_SIM_STATE_ID(sim_id), srv.GetSimulationState, self)
+        self.__cle_get_transfer_functions = ROSCLEServiceWrapper(
+            SERVICE_GET_TRANSFER_FUNCTIONS(sim_id), srv.GetTransferFunctions, self)
 
-        self.__cle_set_transfer_function = \
-            self.__init_ros_service(SERVICE_SET_TRANSFER_FUNCTION(sim_id),
-                                    srv.SetTransferFunction)
+        self.__cle_set_transfer_function = ROSCLEServiceWrapper(
+            SERVICE_SET_TRANSFER_FUNCTION(sim_id), srv.SetTransferFunction, self)
 
-        self.__cle_delete_transfer_function = \
-            self.__init_ros_service(SERVICE_DELETE_TRANSFER_FUNCTION(sim_id),
-                                    srv.DeleteTransferFunction)
+        self.__cle_delete_transfer_function = ROSCLEServiceWrapper(
+            SERVICE_DELETE_TRANSFER_FUNCTION(sim_id), srv.DeleteTransferFunction, self)
 
-        self.__cle_get_brain = self.__init_ros_service(SERVICE_GET_BRAIN(sim_id), srv.GetBrain)
-        self.__cle_set_brain = self.__init_ros_service(SERVICE_SET_BRAIN(sim_id), srv.SetBrain)
-
-    def __init_ros_service(self, service_name, service_class):
-        """
-        Initialize a ROS service proxy
-
-        @param: service_name: The name of the service
-        @param: service_class: The class (.srv) of the service. This class
-                               is generated from the ROS catkin package .srv files.
-        """
-        handler = None
-        if self.__valid:
-            try:
-                logger.info("Connecting to ROS service " + service_name)
-                handler = rospy.ServiceProxy(service_name, service_class)
-                handler.wait_for_service(timeout=self.ROS_SERVICE_TIMEOUT)
-            except rospy.ROSException:
-                # According to the documentation, only a timeout will raise a generic
-                # 'ROSException'.
-                # http://docs.ros.org/api/rospy/html/rospy-module.html#wait_for_service
-                message = "Timeout while connecting to the CLE (waiting on %s)." % \
-                          (service_name, )
-                logger.error(message)
-                # Difficult to understand why pylint considers ROSCLEClientException as a
-                # non standard exception. If you have an idea, please correct it!
-                # pylint: disable=nonstandard-exception
-                raise ROSCLEClientException(message)
-        return handler
-
-    def __call_service(self, service):
-        """
-        Generic call handler for all the ROS service proxies that are based on the Empty class.
-        The call handler will mask exceptions from ROS and will discard the client if there is
-        something wrong going on.
-        """
-        if self.__valid:
-            try:
-                service()
-            except (rospy.ServiceException, rospy.exceptions.ROSInterruptException):
-                self.__valid = False
-                self.__invalid_reason = "a previous communication error"
-                # pylint: disable=nonstandard-exception
-                raise ROSCLEClientException(
-                    "Impossible to communicate with the CLE, discarding the client."
-                )
-        else:
-            # pylint: disable=nonstandard-exception
-            raise ROSCLEClientException(
-                "Client has been discarded due to %s." % (self.__invalid_reason, )
-            )
+        self.__cle_get_brain = ROSCLEServiceWrapper(SERVICE_GET_BRAIN(sim_id), srv.GetBrain, self)
+        self.__cle_set_brain = ROSCLEServiceWrapper(SERVICE_SET_BRAIN(sim_id), srv.SetBrain, self)
 
     def start(self):
         """
         Start the simulation.
         """
-        self.__call_service(self.__cle_start)
+        self.__cle_start()
 
     def pause(self):
         """
         Pause the simulation.
         """
-        self.__call_service(self.__cle_pause)
+        self.__cle_pause()
 
     def stop(self):
         """
         Stop the simulation.
         """
-        self.__call_service(self.__cle_stop)
-        # Once the stop handler has been called, we do not expect it to answer anymore
-        self.__valid = False
-        self.__invalid_reason = "a previous stop request (triggering automatic disconnection)"
+        self.__cle_stop()
+        self.valid = False
+        self.invalid_reason = "a previous stop request (triggering automatic disconnection)"
 
-    def reset(self):
+    def reset(self, reset_type=None):
+        # TODO: This will be removed during the actual implementation of the reset
+        # pylint: disable=unused-argument
         """
         Reset the simulation.
         """
-        self.__call_service(self.__cle_reset)
+        self.__cle_reset()
 
+    # By default, we assume an experiment is in the stop state
+    # (whether it is really stop or if something bad did happen.)
+    @fallback_retval(ROSCLEState.STOPPED)
     def get_simulation_state(self):
         """
         Get the simulation state.
         """
-        # By default, we assume an experiment is in the stop state
-        # (whether it is really stop or if something bad did happen.)
-        state = ROSCLEState.STOPPED
-        if self.__valid:
-            try:
-                state = str(self.__cle_state().state)
-            except rospy.ServiceException as e:
-                logger.error(
-                    "Error while trying to retrieve simulation state: %s. "
-                    "Returning stopped as state.",
-                    str(e)
-                )
-        else:
-            logger.warn(
-                "Trying to retrieve the state of a simulation from an invalid client "
-                "(invalid due to %s).",
-                self.__invalid_reason
-            )
-        return state
+        return str(self.__cle_state().state)
 
+    @fallback_retval({})
     def get_simulation_brain(self):
         """
         Get the brain of the running simulation
 
         :return: dict with brain_data, brain_type, data_type
         """
-        if self.__valid:
-            try:
-                response = self.__cle_get_brain()
-                return response
-            except rospy.ServiceException as e:
-                logger.error("Error while trying to retrieve brain: %s.", str(e))
-        else:
-            logger.warn("Error while trying to retrieve brain: %s.", self.__invalid_reason)
+        return self.__cle_get_brain()
 
     def set_simulation_brain(self, data, brain_type, data_type):
         """
@@ -190,17 +215,9 @@ class ROSCLEClient(object):
         :param data_type: data type ("text" or "base64")
         :return: response of the cle
         """
+        return self.__cle_set_brain(data, brain_type, data_type)
 
-        if self.__valid:
-            try:
-                response = self.__cle_set_brain(data, brain_type, data_type)
-                return response
-
-            except rospy.ServiceException as e:
-                logger.error("Error while trying to set brain: %s.", str(e))
-        else:
-            logger.warn("Error while trying to set brain: %s.", self.__invalid_reason)
-
+    @fallback_retval([])
     def get_simulation_transfer_functions(self):
         """
         Get the simulation transfer functions.
@@ -208,61 +225,19 @@ class ROSCLEClient(object):
         :returns: An array of strings containing the source code of the transfer
                   functions.
         """
-        result = []
-        if self.__valid:
-            try:
-                response = self.__cle_get_transfer_functions()
-                result = response.transfer_functions
-            except rospy.ServiceException as e:
-                logger.error(
-                    "Error while trying to retrieve simulation transfer functions: %s. "
-                    "Returning an empty transfer function array",
-                    str(e)
-                )
-        else:
-            logger.warn(
-                "Trying to retrieve the transfer functions of a simulation from "
-                "an invalid client (invalid due to %s).",
-                self.__invalid_reason
-            )
-        return result
+        return self.__cle_get_transfer_functions().transfer_functions
 
-    def delete_simulation_transfer_function(
-            self,
-            transfer_function_name):
+    @fallback_retval(False)
+    def delete_simulation_transfer_function(self, transfer_function_name):
         """
         Delete the given transfer function
 
         :param transfer_function_name: Name of the transfer function to delete
         :return: True if the call to ROS is successful, False otherwise
         """
-        result = False
-        if self.__valid:
-            try:
-                response = self.__cle_delete_transfer_function(
-                    transfer_function_name
-                )
-                result = response.success
-            except rospy.ServiceException as e:
-                logger.error(
-                    "Error while deleting transfer function %s: %s.",
-                    transfer_function_name,
-                    str(e)
-                )
-        else:
-            logger.warn(
-                "Trying to delete transfer functions %s of a simulation from "
-                "an invalid client (invalid due to %s).",
-                transfer_function_name,
-                self.__invalid_reason
-            )
-        return result
+        return self.__cle_delete_transfer_function(transfer_function_name).success
 
-    def set_simulation_transfer_function(
-            self,
-            transfer_function_name,
-            transfer_function_source
-    ):
+    def set_simulation_transfer_function(self, transfer_function_name, transfer_function_source):
         """
         Set the simulation transfer function's source code.
 
@@ -271,27 +246,5 @@ class ROSCLEClient(object):
         :returns: "" if the call to ROS is successful,
                      a string containing an error message otherwise
         """
-        result = ""
-        if self.__valid:
-            try:
-                response = self.__cle_set_transfer_function(
-                    transfer_function_name,
-                    transfer_function_source
-                )
-                result = response.error_message
-            except rospy.ServiceException as e:
-                logger.error(
-                    "Error while setting the code of transfer function (%s, %s)"
-                    "from the simulation: %s.",
-                    transfer_function_name,
-                    transfer_function_source,
-                    str(e)
-                )
-        else:
-            logger.warn(
-                "Trying to set transfer functions %s of a simulation from "
-                "an invalid client (invalid due to %s).",
-                transfer_function_name,
-                self.__invalid_reason
-            )
-        return result
+        return self.__cle_set_transfer_function(transfer_function_name, transfer_function_source) \
+                   .error_message
