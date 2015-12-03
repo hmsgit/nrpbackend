@@ -7,6 +7,7 @@ __author__ = 'GeorgHinkel'
 
 import argparse
 from hbp_nrp_backend.rest_server import init, app, db
+from hbp_nrp_backend.rest_server import db_create_and_check, NRPServicesDatabaseTimeoutException
 import logging
 import sys
 
@@ -52,7 +53,11 @@ def run_server(server, args):  # pragma: no cover
         root_logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
 
     # Populate the data base object
-    db.create_all()
+    try:
+        db_create_and_check(db) # 1 s timeout
+    except NRPServicesDatabaseTimeoutException as e:
+        root_logger.warn("Database connection timeout ( " + str(e) +
+                         " ). You are probably in the local mode. ")
 
     root_logger.info("Starting the REST backend server now ...")
     #server.debug = True

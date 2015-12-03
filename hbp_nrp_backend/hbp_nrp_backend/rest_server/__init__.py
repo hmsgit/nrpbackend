@@ -4,13 +4,13 @@ This package contains the implementation of the REST server to control experimen
 
 __author__ = 'GeorgHinkel'
 
-
 import os
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
 from flask_sqlalchemy import SQLAlchemy
 import hbp_nrp_backend as backend
+import multiprocessing
 
 
 class NRPServicesGeneralException(Exception):
@@ -120,6 +120,15 @@ class NRPServicesDatabaseException(NRPServicesGeneralException):
         super(NRPServicesDatabaseException, self).__init__(message, "Database error")
 
 
+class NRPServicesDatabaseTimeoutException(NRPServicesDatabaseException):
+    """
+    Database exception class that can be used in the case when the database
+    is not reachable (connection timeout)
+    """
+    def __init__(self):
+        super(NRPServicesDatabaseTimeoutException, self).__init__("Database connection timeout")
+
+
 class NRPServicesExtendedApi(Api):
     """
     Extend Flask Restful error handling mechanism so that we
@@ -193,6 +202,25 @@ api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-
 api.add_resource(ExperimentPutStateMachine,
                  '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')
 api.add_resource(ExperimentBrainFile, '/experiment/<string:exp_id>/brain')
+
+
+def db_create_and_check(database, timeout=1):
+    """
+    Populates the database based on the configuration provided by the
+    SQLAlchemy object and checks, if the database url can be reached
+    within the defined timeout.
+    :param database: SQLAlchemy database object to be addressed
+    :param timeout: timeout for the connection (in s)
+    :raises NRPServicesDatabaseTimeoutException: if the database
+    connection attempt exceeds the timeout
+    """
+
+    db_proc = multiprocessing.Process(target=database.create_all)
+    db_proc.start()
+    db_proc.join(timeout)
+    if(db_proc.is_alive()):
+        db_proc.terminate()
+        raise NRPServicesDatabaseTimeoutException()
 
 
 def init():
