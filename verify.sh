@@ -34,7 +34,7 @@ while getopts ":rh" optname
     esac
   done
 
-export IGNORE_LINT="platform_venv|hbp_nrp_backend/hbp_nrp_backend/exd_config/generated|generated|build|CLE|hbp-flask-restful-swagger-master|GazeboRosPackage|hbp_nrp_backend/hbp_nrp_backend/rest_server/migrations"
+export IGNORE_LINT="platform_venv|hbp_nrp_backend/hbp_nrp_backend/exd_config/generated|hbp_nrp_commons/hbp_nrp_commons/generated|generated|build|CLE|hbp-flask-restful-swagger-master|GazeboRosPackage|hbp_nrp_backend/hbp_nrp_backend/rest_server/migrations"
 rm hbp_nrp_backend/hbp_nrp_backend/bibi_config/tests/generated_cle_script.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment_bibi.py
