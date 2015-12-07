@@ -9,6 +9,7 @@ from flask_restful_swagger import swagger
 from datetime import datetime, timedelta
 from hbp_nrp_backend.simulation_control import simulations
 from flask_restful import Resource
+from pytz import timezone
 
 # pylint: disable=R0201
 
@@ -31,6 +32,7 @@ class Last24HoursErrorCheck(Resource):
     """
     Resource to monitor the number of errors that did happen in the last 24 hours.
     """
+
     @swagger.operation(
         notes='Get an Inciga2 status (OK, WARNING or ERROR) regarding the number of'
               ' errors that did happen in the last 24 hours',
@@ -47,8 +49,8 @@ class Last24HoursErrorCheck(Resource):
         Get a nagios status regarding the number of errors that happened in the last
         24 hours.
         """
-        has_simulation_been_run_in_the_last_24h = \
-            lambda simulation: (datetime.utcnow() - simulation.creation_datetime) < timedelta(1)
+        has_simulation_been_run_in_the_last_24h = lambda simulation: (datetime.now(
+                tz=timezone('Europe/Zurich')) - simulation.creation_datetime) < timedelta(1)
         filtered_simulations = filter(has_simulation_been_run_in_the_last_24h, simulations)
         number_of_errors = sum(simulation.errors for simulation in filtered_simulations)
         number_of_simulations = len(filtered_simulations)
@@ -62,6 +64,7 @@ class TotalErrorCheck(Resource):
     """
     Resource to monitor the number of errors that did happen since the server started.
     """
+
     @swagger.operation(
         notes='Get an Inciga2 status (OK, WARNING or ERROR) regarding the number of'
               ' errors that did happen since the server has been started',

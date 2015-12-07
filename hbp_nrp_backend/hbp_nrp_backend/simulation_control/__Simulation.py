@@ -10,6 +10,7 @@ from hbp_nrp_backend.experiment_control.__ExperimentStateMachine import \
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from flask_restful import fields
 from flask_restful_swagger import swagger
+from pytz import timezone
 import datetime
 
 
@@ -40,7 +41,7 @@ class Simulation(object):
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__operation_mode = sim_operation_mode
-        self.__creation_datetime = datetime.datetime.now()
+        self.__creation_datetime = datetime.datetime.now(tz=timezone('Europe/Zurich'))
         self.__cle = None
         self.__state_machines = dict()
         self.__errors = 0  # We use that for monitoring
