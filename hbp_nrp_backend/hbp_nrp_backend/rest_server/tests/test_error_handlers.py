@@ -17,7 +17,7 @@ class TestErrorHandlers(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', 'initialized'))
+        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', state='initialized'))
         utc.use_unit_test_transitions()
 
     def test_general_500_error(self):
@@ -51,7 +51,7 @@ class TestErrorHandlers(RestTest):
 
     def test_nrp_services_state_exception(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', 'started'))
+        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', state='started'))
         # try to start an already started experiment: state invalid started->started
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 400)

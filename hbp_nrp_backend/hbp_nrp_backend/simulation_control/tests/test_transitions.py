@@ -7,11 +7,10 @@ __author__ = 'Alessandro Ambrosano'
 
 import unittest
 import mock
-import os
 from rospy import ROSException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 from hbp_nrp_backend.simulation_control import simulations, Simulation, transitions
-from hbp_nrp_backend.cle_interface import ROSCLEClient
+from hbp_nrp_backend.rest_server.__SimulationControl import UserAuthentication
 
 
 class TestTransition(unittest.TestCase):
@@ -33,16 +32,23 @@ class TestTransition(unittest.TestCase):
         transitions.generate_experiment_control = mock.Mock(return_value={'test_sm': 'test_sm.py'})
         transitions.initialize_state_machines = mock.Mock(return_value={'test_sm': self.__sm_mock})
 
+        patch_CollabClient = mock.patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
+        self.addCleanup(patch_CollabClient.stop)
+        self.mock_CollabClient = patch_CollabClient.start()
+        self.mock_collabClient_instance = self.mock_CollabClient.return_value
+
         del simulations[:]
         simulations.append(
-            Simulation(0, 'ExDConf/ExDXMLExample.xml', None, 'local', 'default-owner', 'created'))
+            Simulation(0, 'ExDConf/ExDXMLExample.xml', None, 'local', 'default-owner', state='created'))
         simulations[0].state_machines = {'test_sm': self.__sm_mock}
+        simulations.append(
+            Simulation(1, 'ExDConf/ExDXMLExample.xml', None, 'local', 'default-owner', state='created', context_id='some_uuid'))
+        simulations[1].state_machines = {'test_sm': self.__sm_mock}
 
     def test_all_transitions(self):
         """
         This method tests all transitions (initialize, start, pause, stop, reset).
         """
-
         transitions.initialize_simulation(0)
         self.assertEqual(simulations[0].cle, "set_cle")
         simulations[0].cle = self.__roscleclient_mock
@@ -58,6 +64,29 @@ class TestTransition(unittest.TestCase):
         self.assertEqual(transitions.initialize_state_machines.call_count, 2)
         self.assertEqual(self.__roscleclient_mock.reset.call_count, 1)
         transitions.stop_simulation(0)
+        self.assertEqual(self.__sm_mock.request_termination.call_count, 2)
+        self.assertEqual(self.__sm_mock.wait_termination.call_count, 2)
+
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment')
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.UserAuthentication')
+    def test_simulation_with_context_id_transitions(self, mock_UserAuthentication, mock_initialize_experiment):
+        self.mock_collabClient_instance.clone_experiment_template_from_collab_context.return_value = \
+            {'experiment_conf': 'some_exp', 'environment_conf': 'some_env'}
+        transitions.initialize_simulation(1)
+        mock_initialize_experiment.assert_called_with("some_exp", "some_env", "__generated_experiment_1.py", 1)
+        simulations[1].cle = self.__roscleclient_mock
+        self.assertEqual(transitions.initialize_state_machines.call_count, 1)
+        transitions.start_simulation(1)
+        self.assertEqual(self.__roscleclient_mock.start.call_count, 1)
+        self.__sm_mock.start_execution.assert_called_once_with()
+        transitions.pause_simulation(1)
+        self.assertEqual(self.__roscleclient_mock.pause.call_count, 1)
+        transitions.reset_simulation(1)
+        self.__sm_mock.request_termination.assert_called_once_with()
+        self.assertEqual(self.__sm_mock.wait_termination.call_count, 1)
+        self.assertEqual(transitions.initialize_state_machines.call_count, 2)
+        self.assertEqual(self.__roscleclient_mock.reset.call_count, 1)
+        transitions.stop_simulation(1)
         self.assertEqual(self.__sm_mock.request_termination.call_count, 2)
         self.assertEqual(self.__sm_mock.wait_termination.call_count, 2)
 

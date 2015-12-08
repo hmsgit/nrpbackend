@@ -19,8 +19,9 @@ class Simulation(object):
     """
     The data class for simulations
     """
+    # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 sim_operation_mode='view', state='created'):
+                 context_id=None, sim_operation_mode='view', state='created'):
         """
         Creates a new simulation
 
@@ -30,6 +31,7 @@ class Simulation(object):
         :param owner: The name of the user owning the simulation
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
         'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
+        :param context_id: The context ID if the experiment is declared in the collab portal
         :param sim_operation_mode: Denotes whether the simulation should be started in 'edit' or \
         'view' mode
         :param state: The initial state (created by default)
@@ -40,6 +42,7 @@ class Simulation(object):
         self.__environment_conf = environment_conf
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
+        self.__context_id = context_id
         self.__operation_mode = sim_operation_mode
         self.__creation_datetime = datetime.datetime.now(tz=timezone('Europe/Zurich'))
         self.__cle = None
@@ -148,6 +151,16 @@ class Simulation(object):
         :return: The operation mode ('view' or 'edit')
         """
         return self.__operation_mode
+
+    @property
+    def context_id(self):
+        """
+        The context ID of the navigation item of the collab portal used
+        to create the experiment
+
+        :return: The associated navigation item context_id
+        """
+        return self.__context_id
 
     @property
     def state(self):
@@ -298,6 +311,7 @@ class Simulation(object):
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),
         'operationMode': fields.String(attribute='operation_mode'),
+        'contextID': fields.String(attribute='context_id'),
         'right_screen_color': fields.String(attribute='right_screen_color'),
         'left_screen_color': fields.String(attribute='left_screen_color')
     }

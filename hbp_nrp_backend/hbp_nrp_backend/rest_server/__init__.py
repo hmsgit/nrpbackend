@@ -163,6 +163,7 @@ from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
     ExperimentPutStateMachine
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
+from hbp_nrp_backend.rest_server.__ExperimentWorldSDF import ExperimentWorldSDF
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 from hbp_nrp_backend import hbp_nrp_backend_config
 
@@ -194,6 +195,7 @@ api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-
 api.add_resource(ExperimentPutStateMachine,
                  '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')
 api.add_resource(ExperimentBrainFile, '/experiment/<string:exp_id>/brain')
+api.add_resource(ExperimentWorldSDF, '/experiment/<string:context_id>/sdf_world')
 
 
 def init():

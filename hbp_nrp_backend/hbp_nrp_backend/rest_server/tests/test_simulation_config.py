@@ -15,15 +15,15 @@ class TestSimulationConfig(RestTest):
     def setUp(self):
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', 'created'))
-        simulations.append(Simulation(1, 'experiment2', None, 'default-owner', 'local', 'view', 'initialized'))
-        simulations.append(Simulation(2, 'experiment3', None, 'default-owner', 'local', 'view', 'started'))
-        simulations.append(Simulation(3, 'experiment3', None, 'default-owner', 'local', 'view', 'started'))
-        simulations.append(Simulation(4, 'experiment3', None, 'default-owner', 'local', 'view', 'started'))
-        simulations.append(Simulation(5, 'experiment4', None, 'default-owner', 'local', 'view', 'paused'))
-        simulations.append(Simulation(6, 'experiment4', None, 'default-owner', 'local', 'view', 'paused'))
-        simulations.append(Simulation(7, 'experiment4', None, 'default-owner', 'local', 'view', 'paused'))
-        simulations.append(Simulation(8, 'experiment5', None, 'default-owner', 'local', 'view', 'stopped'))
+        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', state='created'))
+        simulations.append(Simulation(1, 'experiment2', None, 'default-owner', 'local', 'view', state='initialized'))
+        simulations.append(Simulation(2, 'experiment3', None, 'default-owner', 'local', 'view', state='started'))
+        simulations.append(Simulation(3, 'experiment3', None, 'default-owner', 'local', 'view', state='started'))
+        simulations.append(Simulation(4, 'experiment3', None, 'default-owner', 'local', 'view', state='started'))
+        simulations.append(Simulation(5, 'experiment4', None, 'default-owner', 'local', 'view', state='paused'))
+        simulations.append(Simulation(6, 'experiment4', None, 'default-owner', 'local', 'view', state='paused'))
+        simulations.append(Simulation(7, 'experiment4', None, 'default-owner', 'local', 'view', state='paused'))
+        simulations.append(Simulation(8, 'experiment5', None, 'default-owner', 'local', 'view', state='stopped'))
 
         utc.use_unit_test_transitions()
 

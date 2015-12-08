@@ -12,6 +12,7 @@ from mock import patch, MagicMock
 from hbp_nrp_backend.simulation_control import simulations
 from hbp_nrp_backend.rest_server.tests import RestTest
 
+
 class TestSimulationService(RestTest):
     def setUp(self):
         self.now = datetime.datetime.now()
@@ -38,6 +39,7 @@ class TestSimulationService(RestTest):
             'environmentConfiguration': None,
             'gzserverHost': 'local',
             'operationMode': 'view',
+            "contextID": None,
             'left_screen_color': 'Gazebo/Blue',
             'right_screen_color': 'Gazebo/Blue'
         }
@@ -63,7 +65,12 @@ class TestSimulationService(RestTest):
         self.assertEqual(response.status_code, 403)
 
     def test_simulation_service_get(self):
-        param = json.dumps({'experimentConfiguration': 'MyExample.xml', 'gzserverHost': 'local'})
+        ctx_id = '0a008f825ed94400110cba4700725e4dff2f55d1'
+        param = json.dumps({
+            'experimentConfiguration': 'MyExample.xml',
+            'gzserverHost': 'local',
+            'contextID': ctx_id
+        })
         response = self.client.post('/simulation', data=param)
         self.assertEqual(response.status_code, 201)
 
@@ -74,6 +81,7 @@ class TestSimulationService(RestTest):
         simulation = simulations[0]
         self.assertEqual(simulation.experiment_conf, 'MyExample.xml')
         self.assertEqual(simulation.gzserver_host, 'local')
+        self.assertEqual(simulation.context_id, ctx_id)
 
     def test_simulation_service_no_experiment_conf(self):
         rqdata = {

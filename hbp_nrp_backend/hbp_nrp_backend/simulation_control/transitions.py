@@ -12,6 +12,9 @@ from hbp_nrp_backend.experiment_control.state_machine_configuration_script \
     import initialize_state_machines, wait_sm_termination, start_state_machines, \
     request_sm_termination
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+from flask import request
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
 import os
 import logging
 import rospy
@@ -95,15 +98,25 @@ def initialize_simulation(sim_id):
     """
     # generate script
     try:
+        # Done here in order to avoid circular dependencies introduced by the
+        # way we __init__ the rest_server module.
+        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
+            import NeuroroboticsCollabClient
         simulation = simulations[sim_id]
-        experiment = simulation.experiment_conf
-        environment = simulation.environment_conf
-        gzserver_host = simulation.gzserver_host
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
 
-        target = '__generated_experiment_%d.py' % (sim_id, )
+        if (simulation.context_id is not None):
+            client = NeuroroboticsCollabClient(
+                UserAuthentication.get_header_token(request), simulation.context_id)
+            experiment_path = client.clone_experiment_template_from_collab_context()
+            experiment = experiment_path['experiment_conf']
+            environment = experiment_path['environment_conf']
+        else:
+            experiment = os.path.join(models_path, simulation.experiment_conf)
+            environment = simulation.environment_conf
 
-        experiment = os.path.join(models_path, experiment)
+        gzserver_host = simulation.gzserver_host
+        target = '__generated_experiment_%d.py' % (sim_id, )
         generate_bibi(experiment, target, gzserver_host, sim_id, models_path)
 
         state_machine_paths = generate_experiment_control(experiment, models_path)
