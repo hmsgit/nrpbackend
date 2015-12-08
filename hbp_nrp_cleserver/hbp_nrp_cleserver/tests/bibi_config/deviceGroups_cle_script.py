@@ -44,8 +44,8 @@ def cle_function_init(world_file):
     from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
     from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
 
-    from hbp_nrp_cle.brainsim.PyNNControlAdapter import PyNNControlAdapter
-    from hbp_nrp_cle.brainsim.PyNNCommunicationAdapter import PyNNCommunicationAdapter
+    from hbp_nrp_cle.brainsim.pynn.PyNNControlAdapter import PyNNControlAdapter
+    from hbp_nrp_cle.brainsim.pynn.PyNNCommunicationAdapter import PyNNCommunicationAdapter
     import pyNN.nest as sim
 
     import hbp_nrp_cle.tf_framework as nrp
