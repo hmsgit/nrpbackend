@@ -20,11 +20,12 @@ class TestScript(unittest.TestCase):
             pass
         self._app = MockApp()
         self._app.run = MagicMock()
-
         db_patcher = patch('hbp_nrp_backend.runserver.db')
+        db_create_and_check_patcher = patch('hbp_nrp_backend.runserver.db_create_and_check')
         self.addCleanup(db_patcher.stop)
+        self.addCleanup(db_create_and_check_patcher.stop)
         self._mock_db = db_patcher.start()
-
+        self.mock_db_create_and_check = db_create_and_check_patcher.start()
         self._args = Namespace()
         self._args.logfile = None
         self._args.port = None
@@ -46,7 +47,8 @@ class TestScript(unittest.TestCase):
         self._app.run.assert_called_with(port=runserver.DEFAULT_PORT, host=runserver.DEFAULT_HOST)
 
         # enables connection to Collab context database
-        self.assertEqual(self._mock_db.create_all.call_count, 1)
+        self.mock_db_create_and_check.assert_called_with(self._mock_db)
+        self.assertEqual(self.mock_db_create_and_check.call_count, 1)
 
     def test_run_server_create_logfile(self):
         # create a logfile in the current working directory
@@ -59,7 +61,8 @@ class TestScript(unittest.TestCase):
         os.remove(self._args.logfile)
 
         # enables connection to Collab context database
-        self.assertEqual(self._mock_db.create_all.call_count, 1)
+        self.mock_db_create_and_check.assert_called_with(self._mock_db)
+        self.assertEqual(self.mock_db_create_and_check.call_count, 1)
 
 if __name__ == '__main__':
     unittest.main()
