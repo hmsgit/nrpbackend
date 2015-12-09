@@ -16,8 +16,10 @@ from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
 import os
+import shutil
 import logging
 import rospy
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -104,8 +106,8 @@ def initialize_simulation(sim_id):
             import NeuroroboticsCollabClient
         simulation = simulations[sim_id]
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-
-        if (simulation.context_id is not None):
+        using_collab_storage = simulation.context_id is not None
+        if (using_collab_storage):
             client = NeuroroboticsCollabClient(
                 UserAuthentication.get_header_token(request), simulation.context_id)
             experiment_path = client.clone_experiment_template_from_collab_context()
@@ -125,6 +127,15 @@ def initialize_simulation(sim_id):
         simulation.cle = initialize_experiment(experiment, environment, target, sim_id)
 
         logger.info("simulation initialized")
+        if (using_collab_storage):
+            path_to_cloned_configuration_folder = os.path.split(experiment)[0]
+            if tempfile.gettempdir() in path_to_cloned_configuration_folder:
+                logger.debug(
+                    "removing the temporary configuration folder %s",
+                    path_to_cloned_configuration_folder
+                )
+                shutil.rmtree(path_to_cloned_configuration_folder)
+
     except IOError as e:
         raise NRPServicesGeneralException(
             "Error while accessing simulation models (" + e.message + ")",

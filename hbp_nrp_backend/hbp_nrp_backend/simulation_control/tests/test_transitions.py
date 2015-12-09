@@ -67,13 +67,24 @@ class TestTransition(unittest.TestCase):
         self.assertEqual(self.__sm_mock.request_termination.call_count, 2)
         self.assertEqual(self.__sm_mock.wait_termination.call_count, 2)
 
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.shutil.rmtree')
     @mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment')
     @mock.patch('hbp_nrp_backend.simulation_control.transitions.UserAuthentication')
-    def test_simulation_with_context_id_transitions(self, mock_UserAuthentication, mock_initialize_experiment):
+    def test_simulation_with_context_id_transitions(
+        self,
+        mock_UserAuthentication,
+        mock_initialize_experiment,
+        mock_shutil_rmtree
+    ):
+        tmp_folder_path = '/tmp/tmp_folder'
+        exp_path = tmp_folder_path + '/some_exp'
+        env_path = tmp_folder_path + '/some_env'
         self.mock_collabClient_instance.clone_experiment_template_from_collab_context.return_value = \
-            {'experiment_conf': 'some_exp', 'environment_conf': 'some_env'}
+            {'experiment_conf': exp_path , 'environment_conf': env_path}
         transitions.initialize_simulation(1)
-        mock_initialize_experiment.assert_called_with("some_exp", "some_env", "__generated_experiment_1.py", 1)
+        mock_initialize_experiment.assert_called_with(exp_path, env_path, "__generated_experiment_1.py", 1)
+        mock_shutil_rmtree.assert_called_with(tmp_folder_path)
+        self.assertEqual(mock_shutil_rmtree.call_count, 1)
         simulations[1].cle = self.__roscleclient_mock
         self.assertEqual(transitions.initialize_state_machines.call_count, 1)
         transitions.start_simulation(1)
@@ -125,7 +136,6 @@ class TestTransition(unittest.TestCase):
         transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(IOError)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, 0)
         transitions.initialize_experiment = oldie
-
 
 if __name__ == '__main__':
     unittest.main()
