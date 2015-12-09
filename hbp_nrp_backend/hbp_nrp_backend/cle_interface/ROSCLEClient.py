@@ -180,9 +180,7 @@ class ROSCLEClient(object):
         self.valid = False
         self.invalid_reason = "a previous stop request (triggering automatic disconnection)"
 
-    def reset(self, reset_type=None):
-        # TODO: This will be removed during the actual implementation of the reset
-        # pylint: disable=unused-argument
+    def reset(self):
         """
         Reset the simulation.
         """

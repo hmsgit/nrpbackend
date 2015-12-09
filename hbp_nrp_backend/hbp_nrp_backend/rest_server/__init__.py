@@ -78,6 +78,7 @@ from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErr
 from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFile
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
     CustomEventControl
+from hbp_nrp_backend.rest_server.__SimulationReset import SimulationReset
 from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
 from hbp_nrp_backend.rest_server.__SimulationTransferFunction import SimulationTransferFunction
@@ -103,6 +104,7 @@ api.add_resource(Last24HoursErrorCheck, '/health/errors-last-24h')
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationBrainFile, '/simulation/<int:sim_id>/brain')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
+api.add_resource(SimulationReset, '/simulation/<int:sim_id>/reset')
 api.add_resource(SimulationService, '/simulation')
 api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(SimulationStateMachine,
