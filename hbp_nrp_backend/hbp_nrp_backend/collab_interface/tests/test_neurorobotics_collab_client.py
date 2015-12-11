@@ -7,10 +7,13 @@ import unittest
 import shutil
 import os
 from mock import patch, MagicMock
-from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import NeuroroboticsCollabClient
+from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
+    import NeuroroboticsCollabClient, _FlattenedExperimentDirectory
 from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
+from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
 from hbp_nrp_backend.rest_server import app
+
 
 class TestNeuroroboticsCollabClient(unittest.TestCase):
 
@@ -33,7 +36,9 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.addCleanup(get_or_raise_collab_context_patcher.stop)
         self.mock_get_or_raise_collab_context = get_or_raise_collab_context_patcher.start()
 
-        self.models_directory = os.path.join(os.path.dirname(inspect.getfile(self.__class__)), 'mock_model_folder')
+        self.models_directory = os.path.join(
+            os.path.dirname(inspect.getfile(self.__class__)), 'mock_model_folder'
+        )
         self.temporary_directory_to_clean = []
 
     def tearDown(self):
@@ -45,7 +50,10 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
     def test_get_context_app_name(self):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
         self.mock_collab_client_instance.get_current_tree.return_value = {
-            'children': [{'context': 'aaa', 'name': 'aaa_name'}, {'context': 'bbb', 'name': 'bbb_name'}]
+            'children': [
+                {'context': 'aaa', 'name': 'aaa_name'},
+                {'context': 'bbb', 'name': 'bbb_name'}
+            ]
         }
         self.assertEqual(neurorobotic_collab_client.get_context_app_name(), 'aaa_name')
 
@@ -58,21 +66,33 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
     @patch('shutil.rmtree')
     def test_clone_experiment_template_to_collab(self, rmtree_mock):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        neurorobotic_collab_client.clone_experiment_template_to_collab('folder_a', os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml'))
+        neurorobotic_collab_client.clone_experiment_template_to_collab(
+            'folder_a',
+            os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml')
+        )
         self.mock_document_client_instance.mkdir.assert_called_with('folder_a')
         argslist = [x[0] for x in self.mock_document_client_instance.upload_file.call_args_list]
         self.assertTrue(any('folder_a/experiment_configuration.xml' in args for args in argslist))
         self.assertTrue(any('folder_a/virtual_room.sdf' in args for args in argslist))
-        # Check the link has been flattened
+        self.assertTrue(any('folder_a/bibi_configuration.xml' in args for args in argslist))
+        self.assertTrue(any('folder_a/braitenberg_husky_non_linear_twist.py' in args for args in argslist))
+        self.assertTrue(any('folder_a/braitenberg_husky_linear_twist.py' in args for args in argslist))
+        # Check the external links has been flattened
         for (arg1, arg2, arg3) in argslist:
             self.assertTrue(os.path.exists(arg1))
             if (arg1 == 'folder_a/virtual_room.sdf'):
                 self.assertEqual(arg3,'application/hbp-neurorobotics.sdf.world+xml')
+            if (arg2 == 'folder_a/bibi_configuration.xml'):
+                self.assertEqual(arg3,'application/hbp-neurorobotics.bibi+xml')
             if (arg2 == 'folder_a/experiment_configuration.xml'):
                 self.assertEqual(arg3,'application/hbp-neurorobotics+xml')
                 with open(arg1) as exd_file:
                     experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
                     self.assertEqual(experiment.environmentModel.src, 'virtual_room.sdf')
+                    self.assertEqual(
+                        experiment.bibiConf.src,
+                        neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME
+                    )
 
         kall = rmtree_mock.call_args
         args, kwargs = kall
@@ -88,7 +108,11 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         environment_conf = "model.sdf"
         self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
         self.mock_document_client_instance.listdir.return_value = [experiment_conf,environment_conf]
-        self.mock_document_client_instance.get_standard_attr.side_effect = [{'_entityType':'file','_contentType':'application/hbp-neurorobotics+xml'},{'_entityType':'file','_contentType':'application/hbp-neurorobotics.sdf.world+xml'}]
+        self.mock_document_client_instance.get_standard_attr.side_effect =\
+          [
+              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
+              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'}
+          ]
         result = neurorobotic_collab_client.clone_experiment_template_from_collab('some_uuid',)
         self.assertEqual(self.mock_document_client_instance.download_file.call_count, 2)
         self.assertEqual(result, {'experiment_conf': os.path.join(tmp_dir, experiment_conf), 'environment_conf': os.path.join(tmp_dir, environment_conf)})
@@ -104,7 +128,11 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.mock_get_or_raise_collab_context.return_value = CollabContext('context_id', os.path.splitext(experiment_conf)[0], 'folder_uuid')
         self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
         self.mock_document_client_instance.listdir.return_value = [experiment_conf, environment_conf]
-        self.mock_document_client_instance.get_standard_attr.side_effect = [{'_entityType':'file','_contentType':'application/hbp-neurorobotics+xml'},{'_entityType':'file','_contentType':'application/hbp-neurorobotics.sdf.world+xml'}]
+        self.mock_document_client_instance.get_standard_attr.side_effect =\
+            [
+                {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
+                {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'}
+            ]
         result = neurorobotic_collab_client.clone_experiment_template_from_collab_context()
         self.assertEqual(self.mock_document_client_instance.download_file.call_count, 2)
         self.assertEqual(result, {'experiment_conf': os.path.join(tmp_dir, experiment_conf), 'environment_conf': os.path.join(tmp_dir, environment_conf)})
@@ -119,10 +147,10 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
         self.mock_document_client_instance.listdir.return_value = [experiment_conf, environment_conf]
         self.mock_document_client_instance.get_standard_attr.side_effect = [
-            {'_entityType':'file','_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file','_contentType':'application/hbp-neurorobotics.sdf.world+xml'},
-            {'_entityType':'file','_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file','_contentType':'application/hbp-neurorobotics.sdf.world+xml'}]
+            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
+            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'},
+            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
+            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'}]
         result = neurorobotic_collab_client.get_first_file_path_with_mimetype("fake_mimetype", "default_file.txt")
         self.assertEqual(result, os.path.join(experiment_folder,default_filename))
         result = neurorobotic_collab_client.get_first_file_path_with_mimetype("application/hbp-neurorobotics.sdf.world+xml", "default_file.txt")
@@ -145,3 +173,37 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.assertEqual(arg1, string_to_upload)
         self.assertEqual(arg2, filepath)
         self.assertEqual(arg3, mimetype)
+
+    def test_get_mimetype(self):
+        ncc = neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
+        self.assertIsNotNone(ncc.get_mimetype(ncc.EXPERIMENT_CONFIGURATION_FILE_NAME))
+        self.assertIsNotNone(ncc.get_mimetype(ncc.BIBI_CONFIGURATION_FILE_NAME))
+        self.assertEqual(ncc.get_mimetype('my_world.sdf'), ncc.SDF_WORLD_MIMETYPE)
+
+    def test_flatten_bibi_configuration(self):
+        exp_configuration = os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml')
+        expected_list = [
+            NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME,
+            'braitenberg_husky_linear_twist.py',
+            'braitenberg_husky_non_linear_twist.py',
+            'virtual_room.sdf',
+            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+        ]
+
+        with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
+            bibi_configuration_file = os.path.join(self.models_directory, 'BIBI/milestone2_python_tf.xml')
+            l = os.listdir(temporary_folder)
+            for expected_file in expected_list:
+                self.assertIn(expected_file, l)
+            flattened_bibi_configuration_file = os.path.join(
+                temporary_folder,
+                NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+            )
+            with open(flattened_bibi_configuration_file) as b:
+                bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
+
+            for tf in bibi_configuration_dom.transferFunction:
+                if hasattr(tf, "src") and tf.src:
+                    self.assertEqual(tf.src, os.path.basename(tf.src))
+                    path = os.path.join(temporary_folder, tf.src)
+                    self.assertEqual(os.path.exists(path), True)

@@ -11,7 +11,9 @@ from bbp_client.oidc.client import BBPOIDCClient
 from bbp_client.collab_service.client import Client as CollabClient
 from bbp_client.document_service.client import Client as DocumentClient
 from hbp_nrp_backend.exd_config.generated import exp_conf_api_gen
-from hbp_nrp_backend.rest_server.__CollabContext import get_or_raise as get_or_raise_collab_context
+from hbp_nrp_cle.bibi_config.generated import bibi_api_gen
+from hbp_nrp_backend.rest_server.__CollabContext \
+    import get_or_raise as get_or_raise_collab_context
 from hbp_nrp_backend import hbp_nrp_backend_config
 
 __author__ = "Daniel Peppicelli"
@@ -27,6 +29,12 @@ class NeuroroboticsCollabClient(object):
     EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.xml"
     EXPERIMENT_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics+xml"
     SDF_WORLD_MIMETYPE = "application/hbp-neurorobotics.sdf.world+xml"
+    # BIBI stands for Brain Interface and Body Integration.
+    # It encompasses brain model and transfer functions
+    # while it holds a reference to the body model.
+    BIBI_CONFIGURATION_FILE_NAME = "bibi_configuration.xml"
+    BIBI_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics.bibi+xml"
+    TRANSFER_FUNCTIONS_FILE_NAME = "transfer_functions.py"
 
     def __init__(self, token, context_id):
         """
@@ -46,6 +54,21 @@ class NeuroroboticsCollabClient(object):
         self.__document_client = DocumentClient(cfg['document_server'], oidc)
         self.__project = self.__document_client.get_project_by_collab_id(
             self.__collab_client.collab_id)
+
+    def get_mimetype(self, file_name):
+        """
+        Returns the mimetype of the given file
+        :param file_name: file name
+        :return: the mimetype of the given file
+        """
+        mimetype = None
+        if file_name == self.EXPERIMENT_CONFIGURATION_FILE_NAME:
+            mimetype = self.EXPERIMENT_CONFIGURATION_MIMETYPE
+        elif file_name == self.BIBI_CONFIGURATION_FILE_NAME:
+            mimetype = self.BIBI_CONFIGURATION_MIMETYPE
+        elif (os.path.splitext(file_name)[1] == '.sdf'):
+            mimetype = self.SDF_WORLD_MIMETYPE
+        return mimetype
 
     def get_context_app_name(self):
         """
@@ -73,44 +96,39 @@ class NeuroroboticsCollabClient(object):
             suffix += 1
         return base_name
 
-    def clone_experiment_template_to_collab(self, folder_name, exd_configuration):
+    def clone_experiment_template_to_collab(self, folder_name, exp_configuration):
         """
         Takes an experiment template and clones it into the storage space of the current Collab
         :param folder_name: The name of the folder to create in the storage space
-        :param exd_configuration: The experiment configuration file of the template to clone
+        :param exp_configuration: The experiment configuration file of the template to clone
         :return: The UUID of the created folder
         """
         logger.debug(
             "Sync experiment configuration file " +
-            exd_configuration +
+            exp_configuration +
             " to collab folder " + folder_name
         )
         self.__document_client.chdir(self.__document_client.get_path_by_id(self.__project['_uuid']))
         created_folder_uuid = self.__document_client.mkdir(folder_name)
 
         logger.debug("Creating a temporary directory where flattened files will go")
-        with _FlattenedExperimentDirectory(exd_configuration) \
-                as temp_flattened_exp_configuration_folder:
+        with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
             logger.debug("Uploading the flattened experiment to the collab")
-            for filename in os.listdir(temp_flattened_exp_configuration_folder):
-                mimetype = None
-                if filename == self.EXPERIMENT_CONFIGURATION_FILE_NAME:
-                    mimetype = self.EXPERIMENT_CONFIGURATION_MIMETYPE
-                elif (os.path.splitext(filename)[1] == '.sdf'):
-                    mimetype = self.SDF_WORLD_MIMETYPE
+            for filename in os.listdir(temporary_folder):
+                mimetype = self.get_mimetype(filename)
                 self.__document_client.upload_file(
-                    os.path.join(temp_flattened_exp_configuration_folder, filename),
+                    os.path.join(temporary_folder, filename),
                     folder_name + '/' + filename,
-                    mimetype)
+                    mimetype
+                )
         return created_folder_uuid
 
     def clone_experiment_template_from_collab(self, collab_folder_uuid):
         """
-        Takes a collab folder and clones all the file in a temporary folder. The caller has
-        then the responsability of managing the returned folder.
+        Takes a collab folder and clones all the files in a temporary folder. The caller has
+        then the responsability of managing this folder.
         :param collab_folder_uuid: The UUID of the document service folder where the experiment is
             saved
-        :param exd_configuration: The experiment configuration file
         :return: A dictionary containing the various path of the cloned elements.
         """
         temp_directory = tempfile.mkdtemp()
@@ -184,13 +202,17 @@ class _FlattenedExperimentDirectory(object):
     files are updated.
     """
 
-    def __init__(self, exd_configuration):
+    def __init__(self, exp_configuration):
         """
-        Constructor. Does nothing more that saving the exd_configuration parameter.
-        :param exd_configuration: The experiment configuration file of the template to clone.
+        Constructor. Does nothing more that saving the exp_configuration parameter.
+        :param exp_configuration: The experiment configuration file of the template to clone.
         """
-        self.__exd_configuration = exd_configuration
+        self.__exp_configuration = exp_configuration
         self.__temp_directory = None
+        # exp_configuration may look like:
+        # $NRP_MODELS/ExDConf/ExDBraitenbergHuskySBC.xml
+        # We extract: $NRP_MODELS
+        self.__models_folder = os.path.dirname(os.path.dirname(exp_configuration))
 
     def __enter__(self):
         """
@@ -203,25 +225,59 @@ class _FlattenedExperimentDirectory(object):
                      " to flatten experiment template")
 
         # Get the experiment configuration file as a DOM object
-        with open(self.__exd_configuration) as exd_file:
-            experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+        with open(self.__exp_configuration) as e:
+            experiment_dom = exp_conf_api_gen.CreateFromDocument(e.read())
 
-        # Get the SDF file path and copy it to the flattened experiment directory
-        sdf_file = os.path.join(os.path.split(
-            os.path.dirname(self.__exd_configuration))[0],
-            experiment.environmentModel.src
-        )
+        # Get the SDF file path and copy it into the flattened experiment directory
+        sdf_file = os.path.join(self.__models_folder, experiment_dom.environmentModel.src)
         shutil.copyfile(sdf_file, os.path.join(self.__temp_directory, os.path.basename(sdf_file)))
+        # Update the experiment configuration file with the new paths and saves it
+        experiment_dom.environmentModel.src = os.path.basename(sdf_file)
+        bibi_configuration_file = os.path.join(self.__models_folder, experiment_dom.bibiConf.src)
+        experiment_dom.bibiConf.src = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+        flattened_exp_configuration_file = \
+            os.path.join(
+                self.__temp_directory,
+                NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME
+            )
+        with open(flattened_exp_configuration_file, "w") as f:
+            f.write(experiment_dom.toDOM().toprettyxml())
 
-        # Update the experiment configuration file with the new path(s) and saves it
-        experiment.environmentModel.src = os.path.basename(sdf_file)
-        flattened_exd_configuration = \
-            os.path.join(self.__temp_directory,
-                         NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME)
-        with open(flattened_exd_configuration, "w") as flattened_exd_configuration_file:
-            flattened_exd_configuration_file.write(experiment.toDOM().toprettyxml())
-
+        self.__flatten_bibi_configuration(bibi_configuration_file)
         return self.__temp_directory
+
+    def __flatten_bibi_configuration(self, bibi_configuration_file):
+        """
+        Flatten the bibi configuration with respect to transfer function
+        external references:
+        Copy all external dependencies (tf python scripts) for transfer functions in
+        a temporary 'flattened' folder
+        Update the file paths of the corresponding transfer functions
+        in the bibi configuration file
+        Copy the 'flattened' bibi configuration file to the above folder
+        :param bibi_configuration_file: path to the bibi configuration file
+        of the template experiment
+        """
+        # Get the bibi configuration file as a DOM object
+        with open(bibi_configuration_file) as b:
+            bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
+
+        # Copy 'flattened' dependencies to temporary folder
+        # and update file paths of TF python scripts
+        for tf in bibi_configuration_dom.transferFunction:
+            if hasattr(tf, "src") and tf.src:
+                tf_file = os.path.join(self.__models_folder, tf.src)
+                tf.src = os.path.basename(tf.src)
+                shutil.copyfile(
+                    tf_file,
+                    os.path.join(self.__temp_directory, tf.src)
+                )
+        flattened_bibi_configuration_file = os.path.join(
+            self.__temp_directory,
+            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+        )
+        with open(flattened_bibi_configuration_file, "w") as b:
+            b.write(bibi_configuration_dom.toDOM().toprettyxml())
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
