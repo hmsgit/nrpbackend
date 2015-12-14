@@ -6,15 +6,14 @@ for loading and saving experiment brain files
 
 __author__ = 'Bernd Eckstein'
 
-from flask_restful import Resource, fields
+from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__ExperimentService import \
-    ErrorMessages, get_brain_file
+    ErrorMessages
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
-import os
-import base64
 
 # pylint: disable=R0201
 # because it seems to be buggy:
@@ -23,93 +22,86 @@ import base64
 
 class ExperimentBrainFile(Resource):
     """
-    The resource to load experiment brain files
+    The resource to save experiment brain files to the collab
     """
 
     @swagger.model
-    class _brain(object):
+    class _Brain(object):
         """
-        Get and Set Experiment brain
+        Set Experiment brain
         Only used for swagger documentation
         """
 
         resource_fields = {
-            'brain_type': fields.String(),
-            'filename': fields.String(),
-            'data_type': fields.String(),
             'data': fields.String()
         }
-        required = ['brain_type', 'filename', 'data_type', 'data']
+        required = ['data']
 
     @swagger.operation(
-        notes='Get the brain file of a given experiment.',
-        responseClass=_brain.__name__,
+        notes='Save a brain model PyNN of an experiment to the collab.',
         parameters=[
             {
-                "name": "exp_id",
-                "description": "The ID of the experiment brain file to be retrieved",
+                "name": "brain_model",
                 "required": True,
-                "paramType": "path",
-                "dataType": basestring.__name__
-            }
+                "description": "Brain model in the Python language (using PyNN)",
+                "paramType": "body",
+                "dataType": _Brain.__name__
+            },
         ],
         responseMessages=[
             {
                 "code": 500,
-                "message": ErrorMessages.VARIABLE_ERROR
-            },
-            {
-                "code": 500,
-                "message": ErrorMessages.EXPERIMENT_BRAIN_FILE_NOT_FOUND_500
+                "message": ErrorMessages.ERROR_SAVING_FILE_500
             },
             {
                 "code": 404,
-                "message": ErrorMessages.EXPERIMENT_NOT_FOUND_404
+                "message": ErrorMessages.COLLAB_NOT_FOUND_404
+            },
+            {
+                "code": 400,
+                "message": "Neural network python code should be sent in "
+                           "the body under the 'data' key"
             },
             {
                 "code": 200,
-                "message": "Success. The experiment brain file was retrieved"
             }
         ]
     )
-    def get(self, exp_id):
+    def put(self, context_id):
         """
-        Gets brain file of the experiment specified with experiment ID.
-        Depending of the type of brain file, it is transmitted as text or
-        as base64 (given in the field data_type)
+         Save a brain model PyNN of an experiment to the collab.
 
-        :param exp_id: The experiment ID
-        :>json string brain_type: Type of the brain file ("h5" or "py")
-        :>json string filename: Name of the experiment file
-        :>json string data_type: type of the data field ('text' or 'base64')
-        :>json string data: Contents of the brain file. Encoding given in field data_type
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 500: The experiment brain file was not found
-        :status 404: The experiment with the given ID was not found
-        :status 200: Success. The experiment brain file was retrieved
+        :param path context_id: The context UUID of the Collab where the transfer functions
+         will be saved
+        :<json body json string data: PyNN script of the model
+        :status 500: Error saving file
+        :status 404: The collab with the given context ID was not found
+        :status 400: The request body is malformed
+        :status 200: Success. File written.
         """
 
-        filename = get_brain_file(exp_id)
+        # Done here in order to avoid circular dependencies introduced by the
+        # way we __init__ the rest_server module.
+        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
+            import NeuroroboticsCollabClient
 
-        if not os.path.isfile(filename):
+        body = request.get_json(force=True)
+        if (not 'data' in body):
             raise NRPServicesClientErrorException(
-                ErrorMessages.EXPERIMENT_BRAIN_FILE_NOT_FOUND_500, error_code=500)
+                "Neural network python code should be sent in the body under the 'data' key"
+            )
 
-        # Get file ending ('py' or 'h5')
-        brain_type = os.path.splitext(filename)[1][1:]
+        data = body['data']
 
-        with open(filename, "rb") as _file:
-            if brain_type == "py":
-                data = _file.read()
-                data_type = "text"
-            elif brain_type == "h5":
-                data = base64.b64encode(_file.read())
-                data_type = "base64"
-            else:
-                data = None
-                data_type = None
+        client = NeuroroboticsCollabClient(
+            UserAuthentication.get_header_token(request),
+            context_id
+        )
 
-        return {'filename': filename,
-                'brain_type': brain_type,
-                'data_type': data_type,
-                'data': data}, 200
+        client.save_string_to_file_in_collab(
+            data,
+            client.BRAIN_PYNN_MIMETYPE,
+            "recovered_pynn_brain_model.py"
+        )
+
+        return 200

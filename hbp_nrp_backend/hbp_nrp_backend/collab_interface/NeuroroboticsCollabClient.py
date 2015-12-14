@@ -6,10 +6,13 @@ import logging
 import os
 import tempfile
 import shutil
+import re
 
 from bbp_client.oidc.client import BBPOIDCClient
 from bbp_client.collab_service.client import Client as CollabClient
+from hbp_nrp_backend.collab_interface import NRPServicesUploadException
 from bbp_client.document_service.client import Client as DocumentClient
+from bbp_client.document_service.exceptions import DocException
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import get_or_raise as get_or_raise_collab_context
 from hbp_nrp_backend import hbp_nrp_backend_config
@@ -27,6 +30,7 @@ class NeuroroboticsCollabClient(object):
     EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.xml"
     EXPERIMENT_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics+xml"
     SDF_WORLD_MIMETYPE = "application/hbp-neurorobotics.sdf.world+xml"
+    BRAIN_PYNN_MIMETYPE = "application/hbp-neurorobotics.brain+python"
     # BIBI stands for Brain Interface and Body Integration.
     # It encompasses brain model and transfer functions
     # while it holds a reference to the body model.
@@ -53,12 +57,13 @@ class NeuroroboticsCollabClient(object):
         self.__project = self.__document_client.get_project_by_collab_id(
             self.__collab_client.collab_id)
 
-    def get_mimetype(self, file_name):
+    def get_mimetype(self, file_path):
         """
         Returns the mimetype of the given file
-        :param file_name: file name
+        :param file_path: file path for which the mimetyp should be returned
         :return: the mimetype of the given file
         """
+        file_name = os.path.basename(file_path)
         mimetype = None
         if file_name == self.EXPERIMENT_CONFIGURATION_FILE_NAME:
             mimetype = self.EXPERIMENT_CONFIGURATION_MIMETYPE
@@ -66,7 +71,24 @@ class NeuroroboticsCollabClient(object):
             mimetype = self.BIBI_CONFIGURATION_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.sdf'):
             mimetype = self.SDF_WORLD_MIMETYPE
+        elif (self.__find_regexp(file_path, r'import pyNN')):
+            mimetype = self.BRAIN_PYNN_MIMETYPE
         return mimetype
+
+    @staticmethod
+    def __find_regexp(file_path, expr):
+        """
+        Returns True if expr is found in file
+        :param file_path: file path where to look for the expression
+        :param expr: expression to find in file
+        :return: True if found
+        """
+        with open(file_path, 'r') as content:
+            for line in content:
+                if re.search(expr, line):
+                    return True
+
+        return False
 
     def get_context_app_name(self):
         """
@@ -110,15 +132,29 @@ class NeuroroboticsCollabClient(object):
         created_folder_uuid = self.__document_client.mkdir(folder_name)
 
         logger.debug("Creating a temporary directory where flattened files will go")
+        raise_upload_exception = False
         with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
-            logger.debug("Uploading the flattened experiment to the collab")
+            logger.debug("Uploading the flattened experiment files to the Collab")
             for filename in os.listdir(temporary_folder):
-                mimetype = self.get_mimetype(filename)
-                self.__document_client.upload_file(
-                    os.path.join(temporary_folder, filename),
-                    folder_name + '/' + filename,
-                    mimetype
-                )
+                filepath = os.path.join(temporary_folder, filename)
+                mimetype = self.get_mimetype(filepath)
+                try:
+                    self.__document_client.upload_file(
+                        filepath,
+                        os.path.join(folder_name, filename),
+                        mimetype
+                    )
+                except DocException as e:
+                    # The clone operation is aborted,
+                    # the create folder is removed from the Collab storage
+                    self.__document_client.rmdir(folder_name, force=True)
+                    raise_upload_exception = True
+                    break
+
+        if raise_upload_exception:
+            # the front-end is notified of the upload failure
+            raise NRPServicesUploadException(e.message)
+
         return created_folder_uuid
 
     def clone_experiment_template_from_collab(self, collab_folder_uuid):
@@ -159,7 +195,45 @@ class NeuroroboticsCollabClient(object):
         """
         collab_context = get_or_raise_collab_context(self.__context_id)
         return self.clone_experiment_template_from_collab(
-            collab_context.experiment_folder_uuid)
+            collab_context.experiment_folder_uuid
+        )
+
+    def clone_bibi_from_collab(self, collab_folder_uuid):
+        """
+        Takes a collab folder and clones its bibi configuration file in a temporary folder.
+        The caller has then the responsability of managing this folder.
+        :param collab_folder_uuid: The UUID of the document service folder where the experiment is
+            saved
+        :return: A string containing the path of the cloned bibi configuration file.
+        """
+        temp_directory = tempfile.mkdtemp()
+        logger.debug(
+            "Sync bibi configuration file (.xml) from collab folder " +
+            collab_folder_uuid +
+            " to local folder " + temp_directory
+        )
+        collab_folder_path = self.__document_client.get_path_by_id(collab_folder_uuid)
+        for filename in self.__document_client.listdir(collab_folder_path):
+            filepath = collab_folder_path + '/' + filename
+            attr = self.__document_client.get_standard_attr(filepath)
+            if (
+                (attr['_entityType'] == 'file') and ('_contentType' in attr) and
+                (attr['_contentType'] == self.BIBI_CONFIGURATION_MIMETYPE)
+            ):
+                localpath = os.path.join(temp_directory, filename)
+                self.__document_client.download_file(filepath, localpath)
+                return localpath
+
+        return None
+
+    def clone_bibi_from_collab_context(self):
+        """
+        Takes a collab folder and clones the bibi configuration in a temporary folder.
+        The caller has then the responsability of managing the created folder.
+        :return: A string containing the path of the cloned bibi configuration file.
+        """
+        collab_context = get_or_raise_collab_context(self.__context_id)
+        return self.clone_bibi_from_collab(collab_context.experiment_folder_uuid)
 
     def get_first_file_path_with_mimetype(self, mimetype, default_filename):
         """
@@ -259,6 +333,12 @@ class _FlattenedExperimentDirectory(object):
         # Get the bibi configuration file as a DOM object
         with open(bibi_configuration_file) as b:
             bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
+
+        # Get the PyNN file path and copy it into the flattened experiment directory
+        brain_file = os.path.join(self.__models_folder, bibi_configuration_dom.brainModel.file)
+        brain_file_name = os.path.basename(brain_file)
+        shutil.copyfile(brain_file, os.path.join(self.__temp_directory, brain_file_name))
+        bibi_configuration_dom.brainModel.file = bibi_api_gen.Python_Filename(brain_file_name)
 
         # Copy 'flattened' dependencies to temporary folder
         # and update file paths of TF python scripts

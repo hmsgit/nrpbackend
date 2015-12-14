@@ -33,7 +33,7 @@ class NRPServicesGeneralException(Exception):
     """
     def __init__(self, message, error_type, error_code=500):
         super(NRPServicesGeneralException, self).__init__(message)
-        # This field is handled by the error handling HBP frontend code.
+        # These fields are handled by the front-end JS code.
         self.error_type = error_type
         self.error_code = error_code
 
@@ -89,8 +89,8 @@ class NRPServicesStateMachineException(NRPServicesClientErrorException):
 
 class NRPServicesWrongUserException(NRPServicesClientErrorException):
     """
-    State machine exception class that can be used to return meaningful messages
-    to the HBP frontend in case source code updates fail.
+    Exception class that can be used to return meaningful messages
+    to the HBP frontend in case an invalid user is detected.
     :param message: message displayed to the end user.
     """
     def __init__(self):
@@ -104,7 +104,7 @@ class NRPServicesWrongUserException(NRPServicesClientErrorException):
 
 class NRPServicesUnavailableROSService(NRPServicesGeneralException):
     """
-    Server error with status 500 (internal error) that a ROS service is unavailable.
+    Server error with status 500 (internal error) issued when a ROS service is unavailable.
     It can be used to return meaningful messages to the ExD frontend.
 
     :param message: message displayed to the end user. It contains the text of the

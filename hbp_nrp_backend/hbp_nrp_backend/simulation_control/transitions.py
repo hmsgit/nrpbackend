@@ -98,7 +98,6 @@ def initialize_simulation(simulation):
         from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
             import NeuroroboticsCollabClient
         models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-
         using_collab_storage = simulation.context_id is not None
         if using_collab_storage:
             client = NeuroroboticsCollabClient(
