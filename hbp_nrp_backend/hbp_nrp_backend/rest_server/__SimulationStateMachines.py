@@ -15,6 +15,7 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesStateMachineException, NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control.__Simulation import Simulation
+from sys import exc_info
 
 # pylint: disable=no-self-use
 
@@ -111,8 +112,8 @@ class SimulationStateMachines(Resource):
 
         state_machines = dict()
 
-        for sm in simulation.state_machines.keys():
-            state_machines[sm] = simulation.get_state_machine_code(sm)
+        for sm in simulation.state_machines:
+            state_machines[sm.sm_id] = simulation.get_state_machine_code(sm.sm_id)
 
         return dict(data=state_machines), 200
 
@@ -212,9 +213,11 @@ class SimulationStateMachine(Resource):
             )
             return "Success. The code was successfully patched.", 200
         except (AttributeError, NameError) as e:
-            raise NRPServicesStateMachineException(e.message, 400)
+            info = exc_info()
+            raise NRPServicesStateMachineException(e.message, 400), None, info[2]
 
         except SyntaxError as e:
+            info = exc_info()
             args_txt = ""
             for text in e.args:
                 args_txt += " {0}".format(text)
@@ -222,16 +225,17 @@ class SimulationStateMachine(Resource):
                 "The source code is invalid: "
                 "SyntaxError in line {0}{1}.".format(e.lineno, args_txt),
                 400
-            )
+            ), None, info[2]
 
         except Exception as e:
+            info = exc_info()
             raise NRPServicesGeneralException(
                 "Update of state machine code failed. "
                 "{0}: {1}".format(
                     e.__class__.__name__,
                     e.message
                 ), "State machine error"
-            )
+            ), None, info[2]
 
     @swagger.operation(
         notes='Delete a state machine.',
@@ -292,11 +296,12 @@ class SimulationStateMachine(Resource):
             if ok:
                 return "Success. The state machine was successfully deleted.", 200
         except Exception as e:
+            info = exc_info()
             raise NRPServicesGeneralException(
                 failure_message +
                 " {0}: {1}".format(e.__class__.__name__, e.message),
                 "State machine error",
-            )
+            ), None, info[2]
 
         raise NRPServicesStateMachineException(
             failure_message + "\n" +

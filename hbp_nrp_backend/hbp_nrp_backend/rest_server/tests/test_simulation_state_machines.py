@@ -12,7 +12,6 @@ from flask import Response, Request
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__SimulationControl import UserAuthentication
-from hbp_nrp_backend.experiment_control import ExperimentStateMachineInstance
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesStateMachineException, NRPServicesWrongUserException
@@ -20,21 +19,12 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
 
 SM = """\
 import mock
-initialize_cb = None
-def create_state_machine():
-    return mock_instance
-
-def __initialize_side_effect(*args, **kwargs):
-    global initialize_cb
-    initialize_cb = args[0]
-
-mock_instance = mock.Mock()
-mock_instance.sm.register_termination_cb.side_effect = __initialize_side_effect
+import time
+sm=mock.Mock()
+sm.execute=time.sleep
 """
 
-PATH = os.getcwd()
-if not os.path.exists("ExDConf"):
-    PATH += "/hbp_nrp_backend/hbp_nrp_backend/rest_server/tests"
+PATH = os.path.split(__file__)[0]
 
 
 class TestSimulationStateMachines(RestTest):
@@ -49,13 +39,22 @@ class TestSimulationStateMachines(RestTest):
         self.client.post('/simulation', data=json.dumps(load_data))
 
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state')
+        self.patch_sm = patch('hbp_nrp_backend.simulation_control.__Simulation.StateMachineInstance')
         self.mock_state = self.patch_state.start()
+        self.mock_sm = self.patch_sm.start()
+        self.mock_instance = Mock()
+        self.mock_sm.return_value = self.mock_instance
+        self.mock_instance.sm_id = "Control1"
         simulation = _get_simulation_or_abort(0)
         simulation.state = "initialized"
 
     def tearDown(self):
         del simulations[:]
         self.patch_state.stop()
+        self.patch_sm.stop()
+
+    def __put_initialization_side_effect(self, side_effect):
+        self.mock_instance.initialize_sm = Mock(side_effect=side_effect)
 
     def test_simulation_state_machines_get_ok(self):
         response = self.client.get('/simulation/0/state-machines')
@@ -66,26 +65,24 @@ class TestSimulationStateMachines(RestTest):
 
     def test_simulation_state_machines_get_ok2(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.get('/simulation/0/state-machines')
         self.assertIsInstance(response, Response)
+        print("Response data=" + response.data)
         self.assertMultiLineEqual(json.loads(response.data)["data"]["Control1"], SM)
         self.assertEqual(response.status_code, 200)
 
     def test_simulation_state_machines_put_source_code_error(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
-
+        self.__put_initialization_side_effect(Exception)
         response = self.client.put('/simulation/0/state-machines/Control1', data="ERROR")
         self.assertIsInstance(response, Response)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 500)
 
     def test_simulation_state_machines_put_OK(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.put('/simulation/0/state-machines/Control1', data=SM)
@@ -112,23 +109,20 @@ class TestSimulationStateMachines(RestTest):
 
     def test_simulation_state_machines_put_attribute_error(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
-
+        self.__put_initialization_side_effect(AttributeError)
         response = self.client.put('/simulation/0/state-machines/Control1', data="X = 1")
         self.assertEqual(response.status_code, 400)
 
     def test_simulation_state_machines_put_syntax_error(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
-
+        self.__put_initialization_side_effect(SyntaxError)
         response = self.client.put('/simulation/0/state-machines/Control1', data="X = 1 + .")
         self.assertEqual(response.status_code, 400)
 
     def test_simulation_state_machines_delete_OK(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.delete('/simulation/0/state-machines/Control1')
@@ -136,7 +130,6 @@ class TestSimulationStateMachines(RestTest):
 
     def test_simulation_state_machines_delete_not_found(self):
         simulation = _get_simulation_or_abort(0)
-        simulation.state_machines["Control1"] = ExperimentStateMachineInstance("Control1")
         simulation.set_state_machine_code("Control1", SM)
 
         response = self.client.delete('/simulation/0/state-machines/Control2')

@@ -27,6 +27,9 @@ class TestSimulationConfig(RestTest):
 
         utc.use_unit_test_transitions()
 
+    def tearDown(self):
+        utc.use_production_transitions()
+
     def test_get_simulation(self):
         response = self.client.get('/simulation/0')
         self.assertTrue('"experimentConfiguration": "experiment1"' in response.data)

@@ -17,9 +17,7 @@ from hbp_nrp_backend.rest_server.__ExperimentService import \
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 
 
-PATH = os.getcwd()
-if not os.path.exists("ExDConf"):
-    PATH += "/hbp_nrp_backend/hbp_nrp_backend/rest_server/tests"
+PATH = os.path.split(__file__)[0]
 
 imp1 = "@nrp.MapSpikeSink('left_wheel_neuron', nrp.brain.actors[1], nrp.population_rate)\n" \
        "@nrp.Neuron2Robot(Topic('/monitor/population_rate', cle_ros_msgs.msg.SpikeRate))\n" \
