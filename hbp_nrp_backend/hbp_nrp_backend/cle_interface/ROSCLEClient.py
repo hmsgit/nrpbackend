@@ -14,6 +14,7 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUS
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN
     # duplicated from CLE.__init__
+from cle_ros_msgs.srv import ResetSimulation
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli"
@@ -144,8 +145,8 @@ class ROSCLEClient(object):
         self.__cle_pause = ROSCLEServiceWrapper(SERVICE_SIM_PAUSE_ID(sim_id), Empty, self,
                                                 invalidate_on_failure=True)
         self.__cle_stop = ROSCLEServiceWrapper(SERVICE_SIM_STOP_ID(sim_id), Empty, self)
-        self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), Empty, self,
-                                                invalidate_on_failure=True)
+        self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), ResetSimulation,
+                                                self, invalidate_on_failure=True)
         self.__cle_state = ROSCLEServiceWrapper(
             SERVICE_SIM_STATE_ID(sim_id), srv.GetSimulationState, self)
         self.__cle_get_transfer_functions = ROSCLEServiceWrapper(
@@ -180,11 +181,17 @@ class ROSCLEClient(object):
         self.valid = False
         self.invalid_reason = "a previous stop request (triggering automatic disconnection)"
 
-    def reset(self):
+    def reset(self, reset_robot_pose=False, full_reset=False):
         """
         Reset the simulation.
+        :param reset_robot_pose: True if we want to reset the robot initial pose, False otherwise.
+        :param full_reset: True if we want to perform a full reset, False otherwise.
         """
-        self.__cle_reset()
+        # TODO: Uniform response from ROS CLE services so that this could be done directly
+        # in the wrapper class
+        resp = self.__cle_reset(reset_robot_pose, full_reset)
+        if not resp.success:
+            raise ROSCLEClientException(resp.error_message)
 
     # By default, we assume an experiment is in the stop state
     # (whether it is really stop or if something bad did happen.)
