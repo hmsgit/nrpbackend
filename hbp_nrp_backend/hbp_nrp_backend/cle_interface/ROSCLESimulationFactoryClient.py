@@ -34,7 +34,8 @@ class ROSCLESimulationFactoryClient(object):
         """
         Start the simulation.
         """
-        response = self.__create_new_simulation_service(environment_file, generated_cle_script_file)
+        response = self.__create_new_simulation_service(
+            environment_file, generated_cle_script_file, "", -1)
         success, status_message = response.success, response.status_message
         if not success:
             raise SimulationStartingFailureException(status_message)
