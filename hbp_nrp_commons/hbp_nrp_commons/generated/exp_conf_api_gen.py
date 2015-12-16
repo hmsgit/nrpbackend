@@ -33,7 +33,7 @@ ns = pyxb.namespace.NamespaceForURI('http://schemas.humanbrainproject.eu/SP10/20
 
 if ns is not None:
     print "Namespace: for bibi already exists."
-    from hbp_nrp_commons.generated.bibi_api_gen import *
+    from hbp_nrp_backend.exd_config.generated.exp_conf_api_gen import *
     pass
 
 else:

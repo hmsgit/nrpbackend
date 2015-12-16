@@ -18,10 +18,13 @@ from cle_ros_msgs import srv
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMULATION, \
     SERVICE_VERSION, SERVICE_HEALTH, SERVICE_IS_SIMULATION_RUNNING
 
+from hbp_nrp_commons.generated import bibi_api_gen
+from hbp_nrp_commons.generated import exp_conf_api_gen
+from pyxb import ValidationError
+
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
-logger = logging.getLogger('hbp_nrp_cle')
-
+logger = logging.getLogger('hbp_nrp_cleserver')
 
 # Warning: We do not use __name__  here, since it translates to __main__
 # when this file is run directly (such as python ROSCLESimulationFactory.py)
@@ -133,9 +136,9 @@ class ROSCLESimulationFactory(object):
         Handler for the ROS service. Spawn a new simulation.
         Warning: Multiprocesses can not be used: https://code.ros.org/trac/ros/ticket/972
 
-        :param: service_request: ROS service message (defined in hbp ROS packages)
+        :param service_request: ROS service message (defined in hbp ROS packages)
         """
-        logger.info("Start new simulation request")
+        logger.info("Create new simulation request")
         error_message = ""
         result = True
 
@@ -152,11 +155,15 @@ class ROSCLESimulationFactory(object):
             # In the future, it would be great to move the CLE script generation logic here.
             # For the time beeing, we rely on the calling process to send us this thing.
             self.simulation_initialized_event.clear()
+
             self.running_simulation_thread = threading.Thread(
                 target=self.__simulation,
                 args=(service_request.environment_file,
-                      service_request.generated_cle_script_file)
+                      service_request.generated_cle_script_file,
+                      service_request.gzserver_host,
+                      service_request.sim_id)
             )
+
             self.running_simulation_thread.daemon = True
             logger.info("Spawning new thread that will manage the experiment execution.")
             self.running_simulation_thread.start()
@@ -174,10 +181,89 @@ class ROSCLESimulationFactory(object):
             logger.error(error_message)
             result = False
 
-        logger.debug("Start_new_simulation return with status: " + str(result))
+        logger.debug("create_new_simulation return with status: " + str(result))
         return [result, error_message]
 
-    def __simulation(self, environment_file, generated_cle_script_file):
+    def __simulation(self, environment_file, generated_cle_or_exd_config, gzserver_host, sim_id):
+        """
+        Main simulation method. Start the simulation from the given script file.
+
+        :param: environment_file: Gazebo world file containing
+                                  the environment (without the robot)
+        :param: generated_cle_script_file: Generated CLE python script (main loop)
+        """
+
+        # todo: remove print
+        print("create new simulation {0} with for {1}".format(sim_id, gzserver_host))
+
+        if generated_cle_or_exd_config.endswith('.py'):
+            return self.__simulation_py(environment_file, generated_cle_or_exd_config)
+        elif generated_cle_or_exd_config.endswith('.xml'):
+            return self.__simulation_xml(environment_file, generated_cle_or_exd_config,
+                                         gzserver_host, sim_id)
+        else:
+            raise Exception("given file was neither py nor xml.")
+
+    def __simulation_xml(self, environment_file, exd_config_file, gzserver_host, sim_id):
+        """
+        Main simulation method. Start the simulation from the given script file.
+
+        :param: environment_file: Gazebo world file containing
+                                  the environment (without the robot)
+        :param: exd_config_file: The ExD Configuration file
+        """
+        self.__is_running_simulation_terminating = False
+        self.simulation_terminate_event.clear()
+        logger.info(
+            "Preparing new simulation with environment file: %s "
+            "and ExD config file: %s.",
+            environment_file, exd_config_file
+        )
+        logger.info("Starting the experiment closed loop engine.")
+        cle_server = models_path = gzweb = gzserver = None
+        self.simulation_exception_during_init = None
+
+        # We want any exception raised during initialization in this tread
+        # to be pass to the main thread so that it can be handled properly.
+        # noinspection PyBroadException
+        try:
+            logger.info("Read XML Files")
+            exd, bibi = get_experiment_data(exd_config_file)
+
+            logger.info("Create CLELauncher object")
+
+            # This import starts NEST. Don't move it to the imports at the top of the file,
+            # because NEST shall be started on the simulation thread.
+            from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
+
+            cle_launcher = CLELauncher(exd, bibi, get_basepath(), gzserver_host, sim_id)
+            [cle_server, models_path, gzweb, gzserver] = \
+                cle_launcher.cle_function_init(environment_file)
+
+            if cle_server is None:
+                raise Exception("Error in cle_function_init. Cannot start simulation.")
+
+        # pylint: disable=broad-except
+        except Exception:
+            logger.exception("Initialization failed")
+            self.simulation_exception_during_init = sys.exc_info()
+            self.simulation_initialized_event.set()
+            return
+
+        logger.info("Initialization done")
+        self.simulation_initialized_event.set()
+
+        cle_server.main()
+        self.__is_running_simulation_terminating = True
+        try:
+            logger.info("Shutdown simulation")
+            cle_launcher.shutdown(cle_server, models_path, gzweb, gzserver)
+        finally:
+            self.running_simulation_thread = None
+            self.__is_running_simulation_terminating = False
+            self.simulation_terminate_event.set()
+
+    def __simulation_py(self, environment_file, generated_cle_script_file):
         """
         Main simulation method. Start the simulation from the given script file.
 
@@ -223,6 +309,52 @@ class ROSCLESimulationFactory(object):
             self.running_simulation_thread = None
             self.__is_running_simulation_terminating = False
             self.simulation_terminate_event.set()
+
+
+def get_basepath():
+    """
+    :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
+    """
+
+    path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if path is None:
+        raise Exception('Environment Variable NRP_MODELS_DIRECTORY is not set on the server')
+
+    return path
+
+
+def get_experiment_data(experiment_file):
+    """
+    Parse experiment and bibi and return the objects
+
+    @param experiment_file: :param: environment_file: Gazebo world file containing
+                                  the environment (without the robot)
+    @return experiment, bibi: types: exp_conf_api_gen.ExD_, bibi_api_gen.BIBIConfiguration
+    """
+    experiment_dir = "ExDConf"
+    path = os.path.join(get_basepath(), experiment_dir)
+    experiment_file_abs = os.path.join(path, experiment_file)
+
+    with open(experiment_file_abs) as exd_file:
+        try:
+            experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+        except ValidationError, ve:
+            raise Exception("Could not parse experiment configuration {0:s} due to validation "
+                            "error: {0:s}".format(experiment_file_abs, str(ve)))
+
+    bibi_file = experiment.bibiConf.src
+    logger.info("Bibi: " + bibi_file)
+
+    bibi_file_abs = os.path.join(get_basepath(), bibi_file)
+    logger.info("BibiAbs:" + bibi_file_abs)
+    with open(bibi_file_abs) as b_file:
+        try:
+            bibi = bibi_api_gen.CreateFromDocument(b_file.read())
+        except ValidationError, ve:
+            raise Exception("Could not parse experiment configuration {0:s} due to validation "
+                            "error: {0:s}".format(bibi_file_abs, str(ve)))
+
+    return experiment, bibi
 
 
 # pylint: disable=unused-argument
@@ -272,7 +404,10 @@ def set_up_logger(logfile_name, verbose=False):
     logging.root.setLevel(logging.DEBUG if verbose else logging.INFO)
 
 
-if __name__ == '__main__':  # pragma: no cover
+def main():
+    """
+    Main function of ROSCLESimulationFactory
+    """
     if os.environ["ROS_MASTER_URI"] == "":
         raise Exception("You should run ROS first.")
 
@@ -301,3 +436,7 @@ if __name__ == '__main__':  # pragma: no cover
     set_up_logger(args.logfile, args.verbose)
     server.run()
     logger.info("CLE Server exiting.")
+
+
+if __name__ == '__main__':  # pragma: no cover
+    main()
