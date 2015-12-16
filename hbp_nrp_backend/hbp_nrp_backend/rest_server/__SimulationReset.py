@@ -111,13 +111,12 @@ class SimulationReset(Resource):
             if par not in SimulationReset.ResetRequest.resource_fields:
                 raise NRPServicesClientErrorException('Invalid parameter %s' % (par, ))
 
-        if body.get('robotPose'):
-            # TODO: implement the robot pose reset in the right place
-            pass
-        else:
-            try:
-                sim.cle.reset()
-            except ROSCLEClientException as e:
-                raise NRPServicesGeneralException(str(e), 'CLE error', 500)
+        try:
+            sim.cle.reset(
+                reset_robot_pose=body.get('robotPose'),
+                full_reset=body.get('fullReset')
+            )
+        except ROSCLEClientException as e:
+            raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
         return {}, 200

@@ -9,7 +9,7 @@ from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN
-from cle_ros_msgs.srv import DeleteTransferFunction
+from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, SetTransferFunction, \
     DeleteTransferFunction, GetBrain, SetBrain
@@ -107,7 +107,7 @@ class TestROSCLEClient(unittest.TestCase):
         self.assertEqual(len(self.serviceProxyMocks[4].mock_calls), 1) # state
         client.reset()
         # make sure no other services have been called
-        self.serviceProxyMocks[3].assert_called_with()
+        self.serviceProxyMocks[3].assert_called_with(False, False)
         self.assertEqual(len(self.serviceProxyMocks[0].mock_calls), 2) # start
         self.assertEqual(len(self.serviceProxyMocks[1].mock_calls), 2) # pause
         self.assertEqual(len(self.serviceProxyMocks[2].mock_calls), 1) # stop
