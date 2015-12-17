@@ -34,7 +34,9 @@ while getopts ":rh" optname
     esac
   done
 
-export IGNORE_LINT="platform_venv|hbp_nrp_backend/hbp_nrp_backend/exd_config/generated|hbp_nrp_commons/hbp_nrp_commons/generated|generated|build|CLE|hbp-flask-restful-swagger-master|GazeboRosPackage|hbp_nrp_backend/hbp_nrp_backend/rest_server/migrations"
+# Note: Dont put CLE into this list. otherwiese the files CLELauncher, ROSCLEServer and others will not be pep8 and pylint validated! 
+export IGNORE_LINT="platform_venv|hbp_nrp_backend/hbp_nrp_backend/exd_config/generated|hbp_nrp_commons/hbp_nrp_commons/generated|hbp-flask-restful-swagger-master|GazeboRosPackages|migrations|build"
+
 rm hbp_nrp_backend/hbp_nrp_backend/bibi_config/tests/generated_cle_script.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment_bibi.py

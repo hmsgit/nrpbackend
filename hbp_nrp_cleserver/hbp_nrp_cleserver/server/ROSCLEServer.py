@@ -446,7 +446,9 @@ class ROSCLEServer(threading.Thread):
 
         :param request: The mandatory rospy request parameter
         """
-        return numpy.asarray([tf.source for tf in tf_framework.get_transfer_functions()])
+        tfs = tf_framework.get_transfer_functions()
+        arr = numpy.asarray([tf.source.encode('UTF-8') for tf in tfs])
+        return arr
 
     def __set_transfer_function(self, request):
         """

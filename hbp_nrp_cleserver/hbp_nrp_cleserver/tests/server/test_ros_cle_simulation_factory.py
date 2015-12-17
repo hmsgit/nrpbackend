@@ -3,8 +3,8 @@ ROSCLESimulationFactory unit test
 """
 
 import hbp_nrp_cle
-from hbp_nrp_cleserver.server import ROSCLESimulationFactory, ROS_CLE_NODE_NAME, SERVICE_VERSION, SERVICE_CREATE_NEW_SIMULATION, \
-    SERVICE_HEALTH
+from hbp_nrp_cleserver.server import ROSCLESimulationFactory, ROS_CLE_NODE_NAME, SERVICE_VERSION,\
+    SERVICE_CREATE_NEW_SIMULATION, SERVICE_HEALTH
 import logging
 from mock import patch, MagicMock, Mock
 from testfixtures import log_capture, LogCapture
@@ -22,12 +22,13 @@ __author__ = 'HBP NRP software team'
 
 class TestROSCLESimulationFactory(unittest.TestCase):
 
-    LOGGER_NAME = 'hbp_nrp_cle'
+    LOGGER_NAME = 'hbp_nrp_cleserver'
 
     class MockedServiceRequest(object):
         environment_file = "environment_file.sdf"
         generated_cle_script_file = "path/to/the/generated/server/script/file"
         gzserver_host = "local"
+        sim_id = 0
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     def setUp(self, mocked_logger):
@@ -53,7 +54,9 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         self.mocked_service_request = self.MockedServiceRequest()
 
         self.simulation_event = threading.Event()
-        def mocked_simulation(mocked_self, environment_file, generated_cle_script_file):
+
+        def mocked_simulation(mocked_self, environment_file, generated_cle_script_file,
+                              gzserver_host, sim_id):
             self.__ros_cle_simulation_factory.simulation_initialized_event.set()
             self.simulation_event.wait()
 
@@ -188,7 +191,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
 
         ROSCLESimulationFactory.set_up_logger(None)
         logcapture.check((
-            'hbp_nrp_cle',
+            self.LOGGER_NAME,
             'WARNING',
             'Could not write to specified logfile or no logfile specified, logging to stdout now!'
         ))
@@ -209,12 +212,12 @@ class TestROSCLESimulationFactory(unittest.TestCase):
             extract_stack.return_value = [['dummy_file', 42, 'dummy_name', 'dummy_line']]
             ROSCLESimulationFactory.print_full_stack_trace(None, None)
             logcapture.check(
-                            ('hbp_nrp_cle', 'WARNING', '*** STACKTRACE - START ***'),
-                            ('hbp_nrp_cle', 'WARNING', '# ThreadID: 1234'),
-                            ('hbp_nrp_cle',
+                            (self.LOGGER_NAME, 'WARNING', '*** STACKTRACE - START ***'),
+                            (self.LOGGER_NAME, 'WARNING', '# ThreadID: 1234'),
+                            (self.LOGGER_NAME,
                              'WARNING', 'File: "dummy_file", line 42, in dummy_name'),
-                            ('hbp_nrp_cle', 'WARNING', '  dummy_line'),
-                            ('hbp_nrp_cle', 'WARNING', '*** STACKTRACE - END ***'))
+                            (self.LOGGER_NAME, 'WARNING', '  dummy_line'),
+                            (self.LOGGER_NAME, 'WARNING', '*** STACKTRACE - END ***'))
 
     def test_health(self):
         health = self.__ros_cle_simulation_factory.health(None)

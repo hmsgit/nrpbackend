@@ -15,7 +15,7 @@ setting_str = os.environ.get('APP_SETTINGS')
 # (see nrp-services/nrp-services-env.sh from server-scripts repo).
 # Some other valid config objects: config.TestConfig, config.LocalConfig.
 if setting_str is not None:
-    config_class_str = setting_str.split('.', 1)[1]
+    config_class_str = setting_str.split('.')[-1]
     # Application configuration object, shared accross all hbp_nrp_backend files
     hbp_nrp_backend_config = getattr(config, config_class_str)
 else:

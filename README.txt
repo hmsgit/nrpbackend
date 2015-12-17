@@ -2,7 +2,7 @@ This repository contains three packages
 
 1. hbp_nrp_backend
 ==================
-This packes is the implementation of the Experiment backend. This includes both the REST server implementation and supportive tools.
+This package is the implementation of the Experiment backend. This includes both the REST server implementation and supportive tools.
 
 2. hbp_nrp_commons
 ==================

@@ -7,7 +7,9 @@ __author__ = 'GeorgHinkel'
 
 import jinja2
 import os
+import re
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -50,6 +52,25 @@ __monitoring_topics = {'PopulationRate': '/monitor/population_rate',
                        'LeakyIntegratorAlpha': '/monitor/leaky_integrator_alpha',
                        'LeakyIntegratorExp': '/monitor/leaky_integrator_exp',
                        'SpikeRecorder': '/monitor/spike_recorder'}
+
+
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        """
+        Deprecation warning
+        """
+        message = "Call to deprecated function %s." % func.__name__
+        warnings.warn(message, category=DeprecationWarning)
+        logger.warn(message)
+        return func(*args, **kwargs)
+
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
 
 
 def __load_template(path):
@@ -268,6 +289,34 @@ def get_neuron_template(neurons):
                     + str(type(neurons)))
 
 
+def get_all_neurons_as_dict(populations):
+    """
+    Gets the indexing operator for the given neuron selector
+
+    :param populations: All populations
+    :return: A dict with population name and index/slice()/listNone
+    """
+    pop = dict()
+
+    for neurons in populations:
+        if isinstance(neurons, bibi_api_gen.Index):
+            pop[neurons.population] = neurons.index
+        elif isinstance(neurons, bibi_api_gen.Range):
+            pop[neurons.population] = slice(neurons.from_, neurons.to)
+        elif isinstance(neurons, bibi_api_gen.List):
+            n_list = []
+            for element in neurons.element:
+                n_list.append(element)
+            pop[neurons.population] = n_list
+        elif isinstance(neurons, bibi_api_gen.Population):
+            pop[neurons.population] = None
+        else:
+            raise Exception("Neuron Print: Don't know how to process neuron selector " +
+                            str(neurons))
+
+    return pop
+
+
 def get_collection_source(selector):
     """
     Gets the collection specifier for the given neuron source
@@ -447,7 +496,6 @@ def correct_indentation(text, first_line_indent_level, indent_string=FOUR_SPACES
     :return: the adapted text
     """
 
-    logger.debug(text)
     text.replace("\t", indent_string)
     lines = text.split("\n")
     result = []
@@ -484,6 +532,19 @@ def import_referenced_python_tfs(bibi_conf_inst, models_path):
                 tf.append(f.read())
 
 
+def get_tf_name(tf_code):
+    """
+    Returns the function name of transfer function code
+
+    @param tf_code: string with transfer function code
+    @return: function name
+    """
+
+    p = re.compile(ur'^.*def\s+(\w+)\s*\(.*', re.MULTILINE)
+    ret = re.findall(p, tf_code)
+    return ret[0]
+
+
 def generate_tf(tf):
     """
     Generates the code for the given transfer function
@@ -493,7 +554,11 @@ def generate_tf(tf):
     """
     names = dict(globals())
     names["tf"] = tf
-    return tf_template.render(names)
+    tf_source = tf_template.render(names)
+    if not hasattr(tf, 'name'):
+        tf.name = get_tf_name(tf_source)
+
+    return tf_source
 
 
 def get_all_tfs(bibi_conf, tf_path):
@@ -520,6 +585,7 @@ def get_all_tfs(bibi_conf, tf_path):
     return tfs
 
 
+@deprecated
 def generate_cle(bibi_conf, script_file_name, timeout, gzserver_host, sim_id, tf_path,
                  robot_initial_pose=None):
     """
@@ -537,6 +603,7 @@ def generate_cle(bibi_conf, script_file_name, timeout, gzserver_host, sim_id, tf
     :return string: Content of the generated file (only if script_file_name is None) else, \
         nothing is returned
     """
+
     logger.info("Generating CLE launch script")
     logger.debug("Loading BIBI Configuration")
     with open(bibi_conf) as bibi_xml:
