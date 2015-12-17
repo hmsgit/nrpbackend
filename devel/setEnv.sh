@@ -1,6 +1,8 @@
+#!/usr/bin/env bash
 
 export HBP=$( cd "$( dirname "${BASH_SOURCE[0]}")/../../" && pwd )
 export CLE=$HBP/CLE
+export EXC=$HBP/ExperimentControl
 export EXDB=$HBP/ExDBackend
 export EXDF=$HBP/ExDFrontend
 export GZ_ROS_PKGS=$HBP/GazeboRosPackages
@@ -11,6 +13,7 @@ export PATH=$PATH:$EXDB/devel
 export PYTHONPATH=$PYTHONPATH:/opt/nest/lib/python2.7/site-packages
 export PYTHONPATH=$PYTHONPATH:/opt/ros/indigo/lib/python2.7/site-packages
 export PYTHONPATH=$PYTHONPATH:$GZ_ROS_PKGS/devel/lib/python2.7/site-packages
+export PYTHONPATH=$PYTHONPATH:$EXC/hbp_nrp_excontrol
 export PYTHONPATH=$PYTHONPATH:$EXDB/hbp_nrp_backend
 export PYTHONPATH=$PYTHONPATH:$EXDB/hbp_nrp_cleserver
 export PYTHONPATH=$PYTHONPATH:$EXDB/hbp_nrp_commons
