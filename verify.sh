@@ -41,11 +41,22 @@ rm hbp_nrp_backend/hbp_nrp_backend/bibi_config/tests/generated_cle_script.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment.py
 rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment_bibi.py
 
+sed -ibak -f version.txt hbp_nrp_backend/hbp_nrp_backend/version.py hbp_nrp_backend/requirements.txt
+sed -ibak -f version.txt hbp_nrp_commons/hbp_nrp_commons/version.py hbp_nrp_commons/requirements.txt
+sed -ibak -f version.txt hbp_nrp_cleserver/hbp_nrp_cleserver/version.py hbp_nrp_cleserver/requirements.txt
+
 if [ "$RELEASE" = true ] ; then
     make verify
 else
 	make verify_base
 fi
 VERIFY_RET=$?
+
+mv hbp_nrp_backend/hbp_nrp_backend/version.pybak hbp_nrp_backend/hbp_nrp_backend/version.py -f
+mv hbp_nrp_commons/hbp_nrp_commons/version.pybak hbp_nrp_commons/hbp_nrp_commons/version.py -f
+mv hbp_nrp_cleserver/hbp_nrp_cleserver/version.pybak hbp_nrp_cleserver/hbp_nrp_cleserver/version.py -f
+mv hbp_nrp_backend/requirements.txtbak hbp_nrp_backend/requirements.txt -f
+mv hbp_nrp_commons/requirements.txtbak hbp_nrp_commons/requirements.txt -f
+mv hbp_nrp_cleserver/requirements.txtbak hbp_nrp_cleserver/requirements.txt -f
 
 exit $VERIFY_RET
