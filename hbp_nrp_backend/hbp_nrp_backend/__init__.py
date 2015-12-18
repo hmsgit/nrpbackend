@@ -10,7 +10,7 @@ __author__ = 'GeorgHinkel'
 
 setting_str = os.environ.get('APP_SETTINGS')
 # The APP_SETTINGS environment variable allows you to easily switch configurations.
-# Standard configurations are listed in config.py.
+# Standard configurations are listed in config.py .
 # APP_SETTINGS defaults to config.DeploymentConfig on a puppet-managed server
 # (see nrp-services/nrp-services-env.sh from server-scripts repo).
 # Some other valid config objects: config.TestConfig, config.LocalConfig.
