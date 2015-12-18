@@ -1,2 +1,2 @@
 """ Version defined here """
-VERSION = "%VERSION%"
+VERSION = "0.4.2.dev4"
