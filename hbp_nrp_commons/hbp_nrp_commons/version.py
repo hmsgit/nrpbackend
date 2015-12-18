@@ -1,2 +1,2 @@
 """ Version defined here """
-VERSION = "0.4.2.dev4"
+VERSION = "0.4.2.dev5"
