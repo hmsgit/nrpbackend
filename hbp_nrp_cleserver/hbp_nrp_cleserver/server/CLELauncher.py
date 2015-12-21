@@ -18,6 +18,7 @@ from geometry_msgs.msg import Pose
 from hbp_nrp_cleserver import config
 
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator
+from hbp_nrp_cle.bibi_config.notificator import Notificator as CLENotificator
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import compute_dependencies
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
@@ -90,16 +91,24 @@ class CLELauncher(object):
         """
 
         # Create ROS server
+
+        logger.info("Creating ROSCLEServer")
         cle_server = ROSCLEServer(self.sim_id)
+        logger.info("Setting up backend Notificator")
         Notificator.register_notification_function(
+            lambda subtask, update_progress:
+            cle_server.notify_current_task(subtask, update_progress, True)
+        )
+        logger.info("Setting up CLE Notificator")
+        CLENotificator.register_notification_function(
             lambda subtask, update_progress:
             cle_server.notify_current_task(subtask, update_progress, True)
         )
 
         # Only for Frontend progress bar logic
-        number_of_subtasks = 5
+        number_of_subtasks = 9
         if self.bibiConf.extRobotController is not None:
-            number_of_subtasks = 7
+            number_of_subtasks = 10
 
         cle_server.notify_start_task("Initializing the Neurorobotic Closed Loop Engine",
                                      "Importing needed packages",
@@ -115,7 +124,7 @@ class CLELauncher(object):
         # set models path variable
         models_path = get_basepath()
 
-        Notificator.notify("Resetting Gazebo robotic simulator", True)
+        Notificator.notify("Resetting Gazebo robotic simulator", True)  # subtask 1
 
         ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
         local_ip = ifaddress[netifaces.AF_INET][0]['addr']
@@ -143,13 +152,12 @@ class CLELauncher(object):
 
         empty_gazebo_world()
 
-        cle_server.notify_current_task("Loading experiment environment",
-                                       update_progress=True, block_ui=True)
+        Notificator.notify("Loading experiment environment", True)  # subtask 2
 
         load_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
-        cle_server.notify_current_task("Loading neuRobot", update_progress=True, block_ui=True)
+        Notificator.notify("Loading neuRobot", True)  # subtask 3
 
         if self.robot_initial_pose is not None:
             rpose = Pose()
@@ -174,8 +182,7 @@ class CLELauncher(object):
         if self.bibiConf.extRobotController is not None:  # load external robot controller
             robot_controller_filepath = os.path.join(models_path, self.bibiConf.extRobotController)
             if os.path.isfile(robot_controller_filepath):
-                cle_server.notify_current_task("Loading external robot controllers",
-                                               update_progress=True, block_ui=True)
+                Notificator.notify("Loading external robot controllers", True) # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
                 if res > 0:
                     logger.error("The external robot controller could not be loaded")
@@ -183,15 +190,13 @@ class CLELauncher(object):
                     return [None, None, None, None]
 
         # Create interfaces to brain
-        cle_server.notify_current_task("Loading neural Simulator NEST",
-                                       update_progress=True, block_ui=True)
+        Notificator.notify("Loading neural Simulator NEST", True)  # subtask 4
         # control adapter
         braincontrol = instantiate_control_adapter()
         # communication adapter
         braincomm = instantiate_communication_adapter()
         # Create transfer functions manager
-        cle_server.notify_current_task("Connecting neural simulator to neurobot",
-                                       update_progress=True, block_ui=True)
+        Notificator.notify("Connecting neural simulator to neurobot", True)  # subtask 5
         # tf manager
         tfmanager = nrp.config.active_node
 
@@ -206,8 +211,7 @@ class CLELauncher(object):
         # Create CLE
         cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, TIMESTEP)
 
-        cle_server.notify_current_task("Loading Brain",
-                                       update_progress=True, block_ui=True)
+        Notificator.notify("Loading Brain", True)  # subtask 6
         # load brain
         brainfilepath = self.bibiConf.brainModel.file
         if models_path is not None:
@@ -217,15 +221,13 @@ class CLELauncher(object):
         neurons_config = get_all_neurons_as_dict(self.bibiConf.brainModel.populations)
         cle.load_brain(brainfilepath, **neurons_config)
 
-        cle_server.notify_current_task("Initializing CLE",
-                                       update_progress=True, block_ui=True)
+        Notificator.notify("Initializing CLE", True) # subtask 7
         cle.initialize()
 
         # Now that we have everything ready, we could prepare the simulation
         cle_server.prepare_simulation(cle, self.timeout)
 
-        cle_server.notify_current_task("Injecting Transfer Functions",
-                                       update_progress=True, block_ui=True)
+        Notificator.notify("Injecting Transfer Functions", True)  # subtask 8
 
         # Create transfer functions
         import_referenced_python_tfs(self.bibiConf, self.tf_path)
@@ -245,7 +247,7 @@ class CLELauncher(object):
                 logger.error(e)
 
         # Loading is completed.
-        cle_server.notify_current_task("Finished", update_progress=True, block_ui=True)
+        Notificator.notify("Finished", True) # subtask 9
         cle_server.notify_finish_task()
 
         logger.info("CLELauncher Finished.")
@@ -290,7 +292,7 @@ class CLELauncher(object):
                                                                             update_progress, False)
         )
         cle_server.notify_current_task("Shutting down Closed Loop Engine",
-                                       Tupdate_progress=True, block_ui=False)
+                                       update_progress=True, block_ui=False)
 
         # we could close the notify task here but it will be closed in any case by shutdown()
         cle_server.shutdown()
