@@ -2,7 +2,7 @@
 Unit tests for the error handlers
 """
 
-__author__ = 'GeorgHinkel'
+__author__ = 'Georg Hinkel'
 
 import json
 import unittest

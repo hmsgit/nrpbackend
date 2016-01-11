@@ -2,7 +2,7 @@
 Unit test for model CollabContext
 """
 
-__author__ = 'peppicel'
+__author__ = 'Daniel Peppicelli'
 
 import unittest
 

@@ -199,10 +199,22 @@ class Simulation(object):
         try:
             transitions[new_state](self)
             self.__state = new_state
-        except Exception:
+        except:
+            import sys
+            exc = sys.exc_info()
+            logger.exception(exc[1])
             self.__state = "failed"
             if 'failed' in transitions:
-                transitions['failed'](self)
+                try:
+                    transitions['failed'](self)
+                except Exception as e:
+                    logger.exception(e)
+                    msg = "Exception trying to set the simulation to state {0}: '{1}'. However, " \
+                          "the cleanup command also failed with the error message '{2}'. Please " \
+                          "contact your system administrator."\
+                        .format(new_state, repr(exc[1]), repr(e))
+                    self.__errors += 2
+                    raise Exception(msg), None, exc[2]
             self.__errors += 1
 
             raise

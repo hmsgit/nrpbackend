@@ -2,7 +2,7 @@
 Unit tests for the simulation configuration
 """
 
-__author__ = 'GeorgHinkel'
+__author__ = 'Georg Hinkel'
 
 import unittest
 import mock

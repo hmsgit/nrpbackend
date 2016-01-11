@@ -3,7 +3,7 @@ Unit tests for the service stores and retrives
 key-value pairs of the form (Collab context UUID, experiment ID)
 """
 
-__author__ = 'LucGuyot'
+__author__ = 'Luc Guyot'
 
 import unittest
 import json

@@ -64,6 +64,7 @@ class TestSimulation(unittest.TestCase):
         )
 
     def test_simulation_get_state_machine_code(self):
+        self.assertIsNotNone(self.__simulation.state_machine_manager)
         code = self.__simulation.get_state_machine_code('SM2')
         self.assertFalse(code)
         code = self.__simulation.get_state_machine_code('SM3')
@@ -72,6 +73,7 @@ class TestSimulation(unittest.TestCase):
         self.assertFalse(response)
 
     def test_simulation_set_state_machine_code(self):
+        self.assertIsNotNone(self.__simulation.state_machine_manager)
         sm = MagicMock()
         sm.register_termination_cb = MagicMock(return_value=None)
         another_valid_code = "import smach_ros\n" +\
@@ -104,6 +106,7 @@ class TestSimulation(unittest.TestCase):
         self.assertEqual(another_valid_code, sm4_updated_code)
 
     def test_simulation_delete_state_machine(self):
+        self.assertIsNotNone(self.__simulation.state_machine_manager)
         number_of_state_machines = len(self.__simulation.state_machines)
         self.__simulation.delete_state_machine('SM2')
         self.assertEqual(number_of_state_machines - 1, len(self.__simulation.state_machines))

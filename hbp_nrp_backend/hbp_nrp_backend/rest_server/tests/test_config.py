@@ -2,6 +2,8 @@
 Configuration file for testing the database connection
 """
 
+__author__ = "Luc Guyot"
+
 class LocalConfigTest():
 
     """

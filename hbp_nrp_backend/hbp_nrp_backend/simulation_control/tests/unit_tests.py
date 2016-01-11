@@ -114,4 +114,6 @@ def use_production_transitions():
 def start_will_raise_exception(exception):
     # Dark magic taken from
     # http://stackoverflow.com/questions/8294618/define-a-lambda-expression-that-raises-an-exception
-    sm.start_simulation = lambda x: (_ for _ in ()).throw(exception)
+    def raise_ex(x):
+        raise exception
+    sm.start_simulation = raise_ex
