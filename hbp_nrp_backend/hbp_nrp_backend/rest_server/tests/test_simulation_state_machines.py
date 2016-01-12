@@ -54,6 +54,7 @@ class TestSimulationStateMachines(RestTest):
         self.patch_sm.stop()
 
     def __put_initialization_side_effect(self, side_effect):
+        self.mock_instance.is_running = False
         self.mock_instance.initialize_sm = Mock(side_effect=side_effect)
 
     def test_simulation_state_machines_get_ok(self):
