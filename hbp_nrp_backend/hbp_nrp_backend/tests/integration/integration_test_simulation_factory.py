@@ -4,13 +4,14 @@ This module starts the ROSCLESimulationFactory pushing all exceptions to a dedic
 
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_cle.cle import ROSCLESimulationFactory
+from hbp_nrp_cleserver.server import ROSCLESimulationFactory
 import rospy
 import std_msgs.msg
 import sys
 import logging
 
 error_publisher = None
+
 
 def unhandled_exception(type, value, traceback):
     error_message = "Unhandled exception of type {0}: {1}".format(type, value)
@@ -27,7 +28,8 @@ if __name__ == "__main__":
     server.initialize()
     ROSCLESimulationFactory.set_up_logger(None)
     logging.info("Create publisher for exceptions")
-    error_publisher = rospy.Publisher("/integration_test/exceptions", std_msgs.msg.String, queue_size=10)
+    error_publisher = rospy.Publisher("/integration_test/exceptions",
+                                      std_msgs.msg.String, queue_size=10)
     logging.info("Starting CLE server")
     server.run()
     logging.info("CLE server shutdown")

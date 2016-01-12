@@ -18,6 +18,7 @@ import traceback
 import subprocess
 from hbp_nrp_backend.rest_server import app
 
+
 log_format = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
 logger = logging.getLogger(__name__)
 console_handler = logging.StreamHandler(sys.stdout)
@@ -57,7 +58,7 @@ def monitor_callback(spike_rate):
     global max_spike_rate_left
     monitor_called = True
     assert isinstance(spike_rate, SpikeRate)
-    if 2 < spike_rate.simulationTime < 30:
+    if 4 < spike_rate.simulationTime < 30:
         if spike_rate.monitorName == "right_wheel_neuron_monitor":
             if not has_seen_red and spike_rate.rate < 30:
                 log_message = "Spike rate should have been at least 30 as Husky has not found red" \
@@ -94,7 +95,7 @@ def exception_callback(exc):
 
 def check_response(response, msg="Request", status_code=200):
     if response.status_code != status_code:
-        logger.error(msg + " failed, " + repr(response))
+        logger.error(msg + " failed, " + response.data)
         exit(1)
     else:
         logger.info(msg + " successfully completed")
@@ -105,7 +106,6 @@ def run_integration_test():
     global failed
 
     current_dir = os.path.split(__file__)[0]
-    generated_bibi_path = os.path.join(current_dir, '__generated_bibi.py')
     run_masked_simulation = os.path.join(current_dir, 'integration_test_simulation_factory.py')
 
     client = app.test_client()
@@ -129,7 +129,12 @@ def run_integration_test():
         auth_header = {'X-User-Name': "integration-test"}
 
         # Create experiment
-        response = client.post('/simulation', data='{"experimentConfiguration":"integration_test/integration_test_exd.xml"}',
+        rqdata = {
+            "experimentConfiguration": "integration_test/integration_test_exd.xml",
+            "gzserverHost": "local"
+        }
+        response = client.post('/simulation',
+                               data=json.dumps(rqdata),
                                headers=auth_header)
         check_response(response, "Create experiment", status_code=201)
 
@@ -146,7 +151,7 @@ def run_integration_test():
                 "g": "255",
                 "b": "255",
                 "a": "255"
-           }
+            }
         }
         response = client.put('/simulation/0/interaction/light',
                               data=json.dumps(light_data, ensure_ascii=True),
@@ -170,7 +175,25 @@ def run_integration_test():
                               headers=auth_header)
         check_response(response, "Pause experiment")
 
-        # Reset the experiment
+        # Reset the experiment, the new way
+        response = client.put('/simulation/0/reset',
+                              data=json.dumps({'oldReset': False,
+                                               'robotPose': False,
+                                               'fullReset': False}),
+                              headers=auth_header)
+        check_response(response, "Reset Experiment")
+
+        # Start experiment again
+        response = client.put('/simulation/0/state', data='{"state": "started"}',
+                              headers=auth_header)
+        check_response(response, "Start experiment")
+
+         # Pause the experiment again
+        response = client.put('/simulation/0/state', data='{"state": "paused"}',
+                              headers=auth_header)
+        check_response(response, "Pause experiment")
+
+        # Reset the experiment, the old way
         response = client.put('/simulation/0/state', data='{"state": "initialized"}',
                               headers=auth_header)
         check_response(response, "Reset experiment")
@@ -186,9 +209,6 @@ def run_integration_test():
 
         # This signal shutdown will only shutdown the monitoring subscriber, not a running gzserver
         rospy.signal_shutdown("Integration test is done")
-
-        if os.path.isfile(generated_bibi_path):
-            os.remove(generated_bibi_path)
 
     logger.info("Left actor neuron had spike rates between {0} and {1}"
                 .format(min_spike_rate_left, max_spike_rate_left))
