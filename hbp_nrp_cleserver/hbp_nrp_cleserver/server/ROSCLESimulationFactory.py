@@ -136,7 +136,7 @@ class ROSCLESimulationFactory(object):
         Handler for the ROS service. Spawn a new simulation.
         Warning: Multiprocesses can not be used: https://code.ros.org/trac/ros/ticket/972
 
-        :param service_request: ROS service message (defined in hbp ROS packages)
+        :param: service_request: ROS service message (defined in hbp ROS packages)
         """
         logger.info("Create new simulation request")
         error_message = ""

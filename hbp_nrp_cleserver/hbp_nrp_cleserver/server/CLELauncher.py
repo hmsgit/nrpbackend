@@ -141,8 +141,8 @@ class CLELauncher(object):
             gzserver.start(ros_master_uri)
 
         if gzserver is None:
-            logger.error("No configuration found for gzserver_host: '{0}'".format(
-                    self.gzserver_host))
+            logger.error("No configuration found for gzserver_host: "
+                         "'{0}'".format(self.gzserver_host))
             self.shutdown(cle_server, None, None, None)
             return [None, None, None, None]
 
@@ -182,7 +182,7 @@ class CLELauncher(object):
         if self.bibiConf.extRobotController is not None:  # load external robot controller
             robot_controller_filepath = os.path.join(models_path, self.bibiConf.extRobotController)
             if os.path.isfile(robot_controller_filepath):
-                Notificator.notify("Loading external robot controllers", True) # +1
+                Notificator.notify("Loading external robot controllers", True)  # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
                 if res > 0:
                     logger.error("The external robot controller could not be loaded")
@@ -221,8 +221,11 @@ class CLELauncher(object):
         neurons_config = get_all_neurons_as_dict(self.bibiConf.brainModel.populations)
         cle.load_brain(brainfilepath, **neurons_config)
 
-        Notificator.notify("Initializing CLE", True) # subtask 7
+        Notificator.notify("Initializing CLE", True)  # subtask 7
         cle.initialize()
+
+        # Set initial pose
+        cle.initial_robot_pose = rpose
 
         # Now that we have everything ready, we could prepare the simulation
         cle_server.prepare_simulation(cle, self.timeout)
@@ -247,7 +250,7 @@ class CLELauncher(object):
                 logger.error(e)
 
         # Loading is completed.
-        Notificator.notify("Finished", True) # subtask 9
+        Notificator.notify("Finished", True)  # subtask 9
         cle_server.notify_finish_task()
 
         logger.info("CLELauncher Finished.")
