@@ -186,13 +186,13 @@ class TestScript(unittest.TestCase):
     def test_print_synapse_dynamic(self):
         syn = api.TsodyksMarkramMechanism(u=1.0, tau_rec=0.0, tau_facil=0.0)
         self.assertEqual(print_synapse_dynamics(syn),
-                         "sim.SynapseDynamics(fast=sim.TsodyksMarkramMechanism(U=1.0, tau_rec=0.0, tau_facil=0.0))")
+                         "{'type':'TsodyksMarkram', 'U':1.0, 'tau_rec':0.0, 'tau_facil':0.0}")
         self.assertRaises(Exception, print_synapse_dynamics, None)
 
     def test_print_connector(self):
         con = api.OneToOneConnector(delays=0.8, weights=42.0)
         self.assertEqual(print_connector(con),
-                         "sim.OneToOneConnector(weights=42.0, delays=0.8)")
+                         "{'mode':'OneToOne', 'weights':42.0, 'delays':0.8}")
         self.assertRaises(Exception, print_connector, None)
 
     def test_print_device_config(self):
@@ -202,6 +202,30 @@ class TestScript(unittest.TestCase):
         dev.connectorRef = api.NeuronConnectorRef(ref="Bar")
         dev.target = 'Inhibitory'
         self.assertEqual(print_device_config(dev), ", synapse_dynamics=Foo, connector=Bar, target='inhibitory'")
+
+class TestEyeSensorTransmit(unittest.TestCase):
+
+    def setUp(self):
+        self.directory = os.path.split(__file__)[0]
+        milestone2 = os.path.join(self.directory, 'neuronalRedDetection.xml')
+        with open(milestone2) as bibi_xml:
+            self.config = bibi_api_gen.CreateFromDocument(bibi_xml.read())
+
+        self.eye_sensor_transmit = self.config.transferFunction[0]
+        self.assertEqual("eye_sensor_transmit", self.eye_sensor_transmit.name)
+
+    def test_connector_references(self):
+        connectors = get_referenced_connectors(self.eye_sensor_transmit, self.config)
+        self.assertEqual(2, len(connectors))
+
+    def test_dynamics_references(self):
+        dynamics = get_referenced_dynamics(self.eye_sensor_transmit, self.config)
+        self.assertEqual(1, len(dynamics))
+
+    def test_tf_generation(self):
+        tf_code = generate_tf(self.eye_sensor_transmit, self.config)
+        with open(os.path.join(self.directory, "eye_sensor_transmit.txt")) as goal:
+            self.assertMultiLineEqual(goal.read(), tf_code)
 
 if __name__ == '__main__':
     unittest.main()

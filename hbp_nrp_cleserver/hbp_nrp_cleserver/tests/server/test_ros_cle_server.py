@@ -17,7 +17,6 @@ import threading
 from functools import wraps
 from multiprocessing import Process
 
-
 __author__ = 'HBP NRP software team'
 
 
@@ -223,6 +222,7 @@ class TestROSCLEServer(unittest.TestCase):
         request.data_type = "not_supported"
         response = set_brain_implementation(request)
         self.assertEqual("Data type not_supported is invalid", response[0])
+
         def raise_syntax_error(foo):
             exec "Foo Bar"
         with patch("base64.decodestring") as mock_b64:
@@ -412,7 +412,6 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEqual(str(stopped), ROSCLEState.STOPPED)
 
     def test_task(self):
-        self.craft_ros_cle_server(True)
         mock_publisher = Mock()
         self.__ros_cle_server._ROSCLEServer__ros_status_pub = mock_publisher
         self.__ros_cle_server.notify_start_task('task', 'subtask', 1, False)
