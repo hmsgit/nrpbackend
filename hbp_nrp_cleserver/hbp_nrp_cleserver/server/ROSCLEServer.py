@@ -30,7 +30,6 @@ from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState
 from hbp_nrp_cleserver.server import ros_handler
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException
-from os import path
 import base64
 from tempfile import NamedTemporaryFile
 
@@ -391,21 +390,22 @@ class ROSCLEServer(threading.Thread):
         """
         return self.__double_timer.get_remaining_time()
 
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument, no-self-use
     def __get_brain(self, request):
         """
-        Returns the current neuronal network model
-
+        Returns the current neuronal network model. By default we
+        do assume that if the sources are not available, the model
+        comes from a h5 file. This has to be refined once we will
+        be more confident in the fate of the h5 files.
         :param request: The rospy request parameter
         """
-        braintype = path.splitext(self.__cle.network_file)[1][1:]
-        data_type = "text"
-        with open(self.__cle.network_file, "r") as brain:
-            if braintype == "h5":
-                data_type = "base64"
-                brain_code = base64.encodestring(brain.read())
-            else:
-                brain_code = brain.read()
+        braintype = "h5"
+        data_type = "base64"
+        brain_code = "N/A"
+        if tf_framework.get_brain_source():
+            braintype = "py"
+            data_type = "text"
+            brain_code = tf_framework.get_brain_source()
         return [braintype, brain_code, data_type]
 
     def __set_brain(self, request):
@@ -414,7 +414,6 @@ class ROSCLEServer(threading.Thread):
 
         :param request: The mandatory rospy request parameter
         """
-        old_brain = self.__cle.network_file
         try:
             if not isinstance(self.__state, ROSCLEServer.InitialState) and \
                     not isinstance(self.__state, ROSCLEServer.PausedState):
@@ -429,13 +428,11 @@ class ROSCLEServer(threading.Thread):
                     else:
                         tmp.delete = True
                         return ["Data type {0} is invalid".format(request.data_type), 0, 0]
-                self.__cle.network_file = tmp.name
+                self.__cle.load_network_from_file(tmp.name)
             return ["", 0, 0]
         except SyntaxError, e:
-            self.__cle.network_file = old_brain
             return ["The new brain could not be parsed: " + str(e), e.lineno, e.offset]
         except Exception, e:
-            self.__cle.network_file = old_brain
             return ["Error changing neuronal network: " + str(e), 0, 0]
 
     # pylint: disable=unused-argument

@@ -236,7 +236,10 @@ class ROSCLESimulationFactory(object):
             # because NEST shall be started on the simulation thread.
             from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
 
-            cle_launcher = CLELauncher(exd, bibi, get_basepath(), gzserver_host, sim_id)
+            cle_launcher = CLELauncher(exd,
+                                       bibi,
+                                       get_basepath(exd_config_file),
+                                       gzserver_host, sim_id)
             [cle_server, models_path, gzweb, gzserver] = \
                 cle_launcher.cle_function_init(environment_file)
 
@@ -311,19 +314,21 @@ class ROSCLESimulationFactory(object):
             self.simulation_terminate_event.set()
 
 
-def get_basepath():
+def get_basepath(experiment_file_path=None):
     """
     :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
     """
-
     path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if path not in experiment_file_path:
+        path = os.path.dirname(experiment_file_path)
+
     if path is None:
         raise Exception('Environment Variable NRP_MODELS_DIRECTORY is not set on the server')
 
     return path
 
 
-def get_experiment_data(experiment_file):
+def get_experiment_data(experiment_file_path):
     """
     Parse experiment and bibi and return the objects
 
@@ -331,21 +336,16 @@ def get_experiment_data(experiment_file):
                                   the environment (without the robot)
     @return experiment, bibi: types: exp_conf_api_gen.ExD_, bibi_api_gen.BIBIConfiguration
     """
-    experiment_dir = "ExDConf"
-    path = os.path.join(get_basepath(), experiment_dir)
-    experiment_file_abs = os.path.join(path, experiment_file)
-
-    with open(experiment_file_abs) as exd_file:
+    with open(experiment_file_path) as exd_file:
         try:
             experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         except ValidationError, ve:
             raise Exception("Could not parse experiment configuration {0:s} due to validation "
-                            "error: {0:s}".format(experiment_file_abs, str(ve)))
+                            "error: {0:s}".format(experiment_file_path, str(ve)))
 
     bibi_file = experiment.bibiConf.src
     logger.info("Bibi: " + bibi_file)
-
-    bibi_file_abs = os.path.join(get_basepath(), bibi_file)
+    bibi_file_abs = os.path.join(get_basepath(experiment_file_path), bibi_file)
     logger.info("BibiAbs:" + bibi_file_abs)
     with open(bibi_file_abs) as b_file:
         try:

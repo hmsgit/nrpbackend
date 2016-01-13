@@ -34,6 +34,7 @@ class ErrorMessages(object):
     """
     Definition of error strings
     """
+    COLLAB_NOT_FOUND_404 = "The collab with the given context ID was not found"
     EXPERIMENT_NOT_FOUND_404 = "The experiment with the given ID was not found"
     EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
     EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"

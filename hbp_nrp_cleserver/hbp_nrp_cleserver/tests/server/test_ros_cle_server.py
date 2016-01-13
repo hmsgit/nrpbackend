@@ -187,19 +187,20 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_cle.stop.assert_called_once_with()
 
     def test_get_brain(self):
-        self.craft_ros_cle_server(True)
-        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        directory = path.split(__file__)[0]
-        self.__mocked_cle.network_file = path.join(directory, "dummy_brain.py")
-        get_brain_implementation = self.__mocked_rospy.Service.call_args_list[8][0][2]
-        brain = get_brain_implementation(Mock())
-        self.assertEqual("py", brain[0])
-        self.assertEqual("Dummy = None", brain[1])
-        self.assertEqual("text", brain[2])
-        self.__mocked_cle.network_file = path.join(directory, "dummy_brain.h5")
-        brain = get_brain_implementation(Mock())
-        self.assertEqual("h5", brain[0])
-        self.assertEqual("base64", brain[2])
+        with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
+            mocked_tf_framework.get_brain_source.return_value = "Some python code"
+            self.craft_ros_cle_server(True)
+            self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
+            directory = path.split(__file__)[0]
+            get_brain_implementation = self.__mocked_rospy.Service.call_args_list[8][0][2]
+            brain = get_brain_implementation(Mock())
+            self.assertEqual("py", brain[0])
+            self.assertEqual("Some python code", brain[1])
+            self.assertEqual("text", brain[2])
+            mocked_tf_framework.get_brain_source.return_value = None
+            brain = get_brain_implementation(Mock())
+            self.assertEqual("h5", brain[0])
+            self.assertEqual("base64", brain[2])
 
     def test_set_brain(self):
         self.craft_ros_cle_server(True)
@@ -212,23 +213,12 @@ class TestROSCLEServer(unittest.TestCase):
         request.brain_type = "py"
         request.brain_data = "Dummy = None"
         response = set_brain_implementation(request)
-        self.assertEqual("", response[0])
-        self.assertEqual(0, response[1])
-        self.assertEqual(0, response[2])
-        brain1 = get_brain_implementation(None)
-        self.assertEqual(request.data_type, brain1[2])
-        self.assertEqual(request.brain_type, brain1[0])
-        self.assertEqual(request.brain_data, brain1[1])
+        self.__mocked_cle.load_network_from_file.assert_called()
+        self.__mocked_cle.load_network_from_file.reset_mock()
         request.data_type = "base64"
         request.brain_data = base64.encodestring(request.brain_data)
         response = set_brain_implementation(request)
-        self.assertEqual("", response[0])
-        self.assertEqual(0, response[1])
-        self.assertEqual(0, response[2])
-        brain2 = get_brain_implementation(None)
-        self.assertEqual(brain1[0], brain2[0])
-        self.assertEqual(brain1[1], brain2[1])
-        self.assertEqual(brain1[2], brain2[2])
+        self.__mocked_cle.load_network_from_file.assert_called()
         request.data_type = "not_supported"
         response = set_brain_implementation(request)
         self.assertEqual("Data type not_supported is invalid", response[0])

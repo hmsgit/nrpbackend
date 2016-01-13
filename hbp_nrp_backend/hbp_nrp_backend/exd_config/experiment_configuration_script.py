@@ -15,11 +15,16 @@ __author__ = 'Lorenzo Vannucci, Daniel Peppicelli'
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=E1103
+# pylint: disable=maybe-no-member
 # pylint infers the wrong type for config
 
 @deprecated
-def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id, models_path):
+def generate_bibi(experiment_conf,
+                  bibi_script_file_name,
+                  gzserver_host,
+                  sim_id,
+                  collab=True,
+                  tf_path=None):
     """
     Generates Code to run the Brain interface and Body integrator based on the
     given experiment configuration file.
@@ -33,6 +38,8 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id,
 
     :param gzserver_host: The host where the gzserver will run, local for local machine
         lugano for remote Lugano viz cluster.
+    :param sim_id: Integer identifying of the simulation
+    :param tf_path: path to the folder where transfer function scripts lie
     """
 
     logger.info(("Generating BIBI configuration for experiment {0} to {1}" +
@@ -45,7 +52,9 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id,
         experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
 
     # retrieve the bibi configuration file name.
-    bibi_conf = os.path.join(os.environ.get('NRP_MODELS_DIRECTORY'), experiment.bibiConf.src)
+    exp_configuration_folder = os.path.dirname(experiment_conf)
+    models_path = exp_configuration_folder if collab else os.environ.get('NRP_MODELS_DIRECTORY')
+    bibi_conf = os.path.join(models_path, experiment.bibiConf.src)
 
     # set timeout to 10 minutes, if not specified by default
     if experiment.timeout is None:
@@ -53,12 +62,14 @@ def generate_bibi(experiment_conf, bibi_script_file_name, gzserver_host, sim_id,
     else:
         timeout = experiment.timeout
 
+    if tf_path is None:
+        tf_path = os.path.dirname(bibi_conf)
     bibi_configuration_script.generate_cle(bibi_conf,
                                            bibi_script_file_name,
                                            timeout,
                                            gzserver_host,
                                            sim_id,
-                                           models_path,
+                                           tf_path,
                                            experiment.environmentModel.robotPose)
 
 
