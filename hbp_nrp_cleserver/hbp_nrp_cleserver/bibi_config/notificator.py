@@ -2,7 +2,10 @@
 This module implements an utility class for managing notifications during a simulation.
 """
 
-__author__ = 'Alessandro Ambrosano'
+__author__ = 'Alessandro Ambrosano, Georg Hinkel'
+
+
+import logging
 
 
 class Notificator(object):
@@ -30,3 +33,25 @@ class Notificator(object):
         :param update_progress: Boolean. Index of current subtask should be updated? (usually yes).
         """
         Notificator.__notification_function(message, update_progress)
+
+
+class NotificatorHandler(logging.Handler):
+    """
+    Log handler that forwards any logged messages to the notificator
+    """
+
+    def __init__(self):
+        super(NotificatorHandler, self).__init__()
+
+    def emit(self, record):
+        """
+        Emits the record to the notificator
+
+        :param record: The log record
+        """
+        if record.levelno == logging.INFO:
+            try:
+                Notificator.notify(record.getMessage(), False)
+            # pylint: disable=broad-except
+            except Exception:
+                self.handleError(record)

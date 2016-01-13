@@ -17,8 +17,7 @@ from geometry_msgs.msg import Pose
 
 from hbp_nrp_cleserver import config
 
-from hbp_nrp_cleserver.bibi_config.notificator import Notificator
-from hbp_nrp_cle.bibi_config.notificator import Notificator as CLENotificator
+from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import compute_dependencies
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
@@ -99,11 +98,13 @@ class CLELauncher(object):
             lambda subtask, update_progress:
             cle_server.notify_current_task(subtask, update_progress, True)
         )
-        logger.info("Setting up CLE Notificator")
-        CLENotificator.register_notification_function(
-            lambda subtask, update_progress:
-            cle_server.notify_current_task(subtask, update_progress, True)
-        )
+
+        # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
+        # information that is useful to know for the user.
+        # In here, we forward any info message sent to this logger to the notificator
+        gazebo_logger = logging.getLogger('hbp_nrp_cle.user_notifications')
+        gazebo_logger.setLevel(logging.INFO)
+        gazebo_logger.handlers.append(NotificatorHandler())
 
         # Only for Frontend progress bar logic
         number_of_subtasks = 9
