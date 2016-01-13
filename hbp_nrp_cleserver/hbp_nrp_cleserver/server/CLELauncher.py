@@ -177,9 +177,13 @@ class CLELauncher(object):
         else:
             rpose = None
 
+        robot_file = self.__bibi_conf.bodyModel
+        logger.info("Robot: " + robot_file)
+        robot_file_abs = os.path.join(self.__experiment_path, robot_file)
+        logger.info("RobotAbs: " + robot_file_abs)
         # spawn robot model
         self.__gazebo_helper \
-            .load_gazebo_model_file('robot', self.__bibi_conf.bodyModel, rpose)
+            .load_gazebo_model_file('robot', robot_file_abs, rpose)
 
         # control adapter
         roscontrol = RosControlAdapter()

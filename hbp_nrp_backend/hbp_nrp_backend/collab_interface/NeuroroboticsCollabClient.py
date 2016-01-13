@@ -30,6 +30,7 @@ class NeuroroboticsCollabClient(object):
     EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.xml"
     EXPERIMENT_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics+xml"
     SDF_WORLD_MIMETYPE = "application/hbp-neurorobotics.sdf.world+xml"
+    SDF_ROBOT_MIMETYPE = "application/hbp-neurorobotics.sdf.robot+xml"
     BRAIN_PYNN_MIMETYPE = "application/hbp-neurorobotics.brain+python"
     # BIBI stands for Brain Interface and Body Integration.
     # It encompasses brain model and transfer functions
@@ -72,8 +73,12 @@ class NeuroroboticsCollabClient(object):
             mimetype = self.EXPERIMENT_CONFIGURATION_MIMETYPE
         elif file_name == self.BIBI_CONFIGURATION_FILE_NAME:
             mimetype = self.BIBI_CONFIGURATION_MIMETYPE
-        elif (os.path.splitext(file_name)[1] == '.sdf'):
+        elif (os.path.splitext(file_name)[1] == '.sdf') and\
+             (self.__find_regexp(file_path, r'<world', re.I)):
             mimetype = self.SDF_WORLD_MIMETYPE
+        elif (os.path.splitext(file_name)[1] == '.sdf') and\
+             (self.__find_regexp(file_path, r'<model', re.I)):
+            mimetype = self.SDF_ROBOT_MIMETYPE
         elif (self.__find_regexp(file_path, r'import\s+pyNN|from\s+PyNN\s+import')):
             mimetype = self.BRAIN_PYNN_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.py'):
@@ -81,7 +86,7 @@ class NeuroroboticsCollabClient(object):
         return mimetype
 
     @staticmethod
-    def __find_regexp(file_path, expr):
+    def __find_regexp(file_path, expr, flags=0):
         """
         Returns True if expr is found in file
         :param file_path: file path where to look for the expression
@@ -90,7 +95,7 @@ class NeuroroboticsCollabClient(object):
         """
         with open(file_path, 'r') as content:
             for line in content:
-                if re.search(expr, line):
+                if re.search(expr, line, flags):
                     return True
 
         return False
@@ -190,12 +195,14 @@ class NeuroroboticsCollabClient(object):
                         experiment_path['experiment_conf'] = localpath
                     elif attr['_contentType'] == self.SDF_WORLD_MIMETYPE:
                         experiment_path['environment_conf'] = localpath
+                    elif attr['_contentType'] == self.SDF_ROBOT_MIMETYPE:
+                        experiment_path['robot_model'] = localpath
         return experiment_path
 
     def clone_experiment_template_from_collab_context(self):
         """
-        Takes a collab folder and clones all the file in a temporary folder. The caller has
-        then the responsability of managing the returned folder.
+        Takes a collab folder and clones all the files in a temporary folder. The caller has
+        then the responsibility of managing the returned folder.
         :return: A dictionary containing the various path of the cloned elements.
         """
         return self.clone_experiment_template_from_collab(
@@ -307,9 +314,8 @@ class NeuroroboticsCollabClient(object):
 class _FlattenedExperimentDirectory(object):
     """
     Helper context class. It takes all the files useful to describe an
-    experiment (ExdConfiguration and the SDF environment file for the moment)
-    and puts them at the root of a temporary directory. All the links in these
-    files are updated.
+    experiment and puts them at the root of a temporary directory.
+    All the links in these files are updated.
     """
 
     def __init__(self, exp_configuration):
@@ -341,18 +347,22 @@ class _FlattenedExperimentDirectory(object):
         # Get the SDF file path and copy it into the flattened experiment directory
         sdf_file = os.path.join(self.__models_folder, experiment_dom.environmentModel.src)
         shutil.copyfile(sdf_file, os.path.join(self.__temp_directory, os.path.basename(sdf_file)))
-        # Update the experiment configuration file with the new paths and saves it
+        # Update the experiment configuration file with the new paths
         experiment_dom.environmentModel.src = os.path.basename(sdf_file)
+        # Get the BIBI file path and copy it into the flattened experiment directory
         bibi_configuration_file = os.path.join(self.__models_folder, experiment_dom.bibiConf.src)
+        # Update the BIBI configuration file with the new paths
         experiment_dom.bibiConf.src = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
         flattened_exp_configuration_file = \
             os.path.join(
                 self.__temp_directory,
                 NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME
             )
+        # save experiment configuration file
         with open(flattened_exp_configuration_file, "w") as f:
             f.write(experiment_dom.toDOM().toprettyxml())
 
+        # flatten bibi configuration file and save
         self.__flatten_bibi_configuration(bibi_configuration_file)
         return self.__temp_directory
 
@@ -372,6 +382,11 @@ class _FlattenedExperimentDirectory(object):
         with open(bibi_configuration_file) as b:
             bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
 
+        # Get the robot file path and copy it into the flattened experiment directory
+        robot_sdf_file = os.path.join(self.__models_folder, bibi_configuration_dom.bodyModel)
+        robot_sdf_file_name = os.path.basename(robot_sdf_file)
+        shutil.copyfile(robot_sdf_file, os.path.join(self.__temp_directory, robot_sdf_file_name))
+        bibi_configuration_dom.bodyModel = bibi_api_gen.SDF_Filename(robot_sdf_file_name)
         # Get the PyNN file path and copy it into the flattened experiment directory
         brain_file = os.path.join(self.__models_folder, bibi_configuration_dom.brainModel.file)
         brain_file_name = os.path.basename(brain_file)

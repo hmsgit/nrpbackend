@@ -57,13 +57,32 @@ class DeploymentConfig(Config):
 class LocalConfig(Config):
 
     """
-    Database config that allows running the platform locally without having to connect to the
-    EPFL postgresql server
+    Database config that allows running the platform locally with a local postgresql database
 
-    If a persistant storage of the database is desired the following should be changed to a file
-    path.
+    Make sure that postgresql is available on the system and that neurorobotics_collab database
+    is existing. User postgres, password postgres.
+    """
+    SQLALCHEMY_DATABASE_URI = (
+        'postgresql://postgres:postgres'
+        '@localhost:5432/neurorobotics_collab')
+
+    COLLAB_CLIENT_CONFIG = {
+        'collab_server': 'https://services.humanbrainproject.eu/collab/v0',
+        'oidc_server': 'https://services.humanbrainproject.eu/oidc/',
+        'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
+    }
+
+
+class NoDBConfig(Config):
+
+    """
+    Dummy database config that allows running the platform locally without having to connect to a
+    postgresql server (no collab support then).
 
     Make sure that sqlite3 as well as pysqlite libraries are available on the dev system.
+
+    Axel: SQLite is not fully supported by SQLAlchemy (no support for ALTER dans DROP), so this
+    cannot be used as a real local database.
     """
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
