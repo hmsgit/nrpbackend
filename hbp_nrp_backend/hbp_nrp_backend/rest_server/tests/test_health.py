@@ -2,7 +2,7 @@
 Unit tests for the service that patches transfer function sources
 """
 
-__author__ = 'DanielPeppicelli, LucGuyot'
+__author__ = 'Daniel Peppicelli, Luc Guyot'
 
 import unittest
 from hbp_nrp_backend.rest_server.tests import RestTest
