@@ -53,10 +53,10 @@ def reset_simulation(simulation):
 
     :param simulation: The simulation
     """
-    simulation.state_machine_manager.terminate_all()
 
     logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (sm.sm_id, str(sm.result))
                                                         for sm in simulation.state_machines))
+    simulation.state_machine_manager.terminate_all()
 
     # The following two lines are part of a fix for [NRRPLT-1899]
     # To be removed when the following Gazebo issue is solved:
