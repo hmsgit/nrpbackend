@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   codedoc/hbp_nrp_cleserver.bibi_config
+   codedoc/hbp_nrp_cleserver.server
 
 
 Indices and tables

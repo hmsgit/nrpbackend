@@ -37,7 +37,6 @@ class MockedServiceRequest(object):
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=Mock())
 class SimulationTestCase(unittest.TestCase):
 
-
     def test_simulation_local(self):
 
         factory = ROSCLESimulationFactory()
@@ -47,7 +46,7 @@ class SimulationTestCase(unittest.TestCase):
         self.assertEqual(factory.simulation_count, 1)
         self.assertEqual(factory.failed_simulation_count, 0)
 
-    def test_simulation_lugano(self,):
+    def test_simulation_lugano(self):
 
         MockedServiceRequest.gzserver_host = 'lugano'
 

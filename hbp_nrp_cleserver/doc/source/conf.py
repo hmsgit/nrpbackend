@@ -241,3 +241,13 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+# Mocking external deps
+# nest - messes with sphinx with it's self-starting on import
+# The following config variable will work in sphinx 1.3
+autodoc_mock_imports = [ 'pyNN', 'pyNN.nest', 'nest' ]
+
+# As we are using sphinx 1.2.2, we mock it ourselves.
+from mock import Mock
+for mod_name in autodoc_mock_imports:
+    sys.modules[mod_name] = Mock()

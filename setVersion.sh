@@ -2,18 +2,27 @@
 # Substitutes versions of all packages in this repo
 # by Bernd Eckstein
 
-if [ -z $1 ]; then
-    echo "This script substitutes the versions in:"
-    echo "version.py and requirements.txt for the projects"
-    echo "hbp_nrp_commons, hbp_nrp_cleserver and hbp_nrp_backend"
+function showSyntax() {
     echo
-    echo "Syntax:    ./setVersion.sh M.m.p[.devX]"
+    echo "This script substitutes the versions in version.py and requirements.txt"
+    echo "for the projects hbp_nrp_commons, hbp_nrp_cleserver and hbp_nrp_backend"
     echo
-    echo "Examples:  ./setVersion.sh 0.4.2.dev5"
-    echo "           ./setVersion.sh 0.4.3"
+    echo "Syntax:    ./setVersion.sh [parameter]"
     echo
-    exit
-fi
+    echo "Parameters:"
+    echo "           --set M.m.p[.devX]]   Set version. See examples below"
+    echo "           --show                Show current version"
+    echo "           --help                Show this help"
+    echo
+    echo "Examples:  ./setVersion.sh --set 0.4.2.dev5"
+    echo "           ./setVersion.sh --set 0.4.3"
+    echo
+}
+
+
+function showVersion() {
+    cat hbp_nrp_backend/hbp_nrp_backend/version.py | grep VERSION
+}
 
 function testVersion() {
     version=$1
@@ -21,9 +30,9 @@ function testVersion() {
         return
     else
         echo
-        echo "Version string $version not in the format M.m.p[.devX]"
-        echo "Examples:      0.4.2.dev5"
-        echo "               0.4.3"
+        echo "Version string '$version' is not in the format M.m.p[.devX]"
+        echo "Examples:      '0.4.2.dev5'"
+        echo "               '0.4.3'"
         echo
         exit -1
     fi
@@ -48,10 +57,30 @@ function subVersion() {
 }
 
 
+
 # make sure we are in the directory of the script
 cd "$(dirname "$0")"
 
-version=$1
+case "$1" in
+    --help)
+        showSyntax
+        exit
+        ;;
+    --show)
+        showVersion
+        exit
+        ;;
+    --set)
+        # just continue
+        ;;
+     *)
+        showSyntax
+        exit
+        ;;
+esac
+
+
+version=$2
 
 testVersion $version # may exit
 

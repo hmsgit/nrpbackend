@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 CLELauncher starts a new CLE. It substitutes the old cle_template.pyt
 """
