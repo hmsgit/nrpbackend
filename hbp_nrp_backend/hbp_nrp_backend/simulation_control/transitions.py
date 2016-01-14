@@ -10,6 +10,7 @@ from hbp_nrp_backend.exd_config \
 from hbp_nrp_backend import NRPServicesGeneralException
 from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from gazebo_msgs.srv import SetVisualProperties
 
 import os
 import shutil
@@ -64,6 +65,22 @@ def reset_simulation(simulation):
     simulation.left_screen_color = 'Gazebo/Blue'  # pragma: no cover
     simulation.right_screen_color = 'Gazebo/Blue'  # pragma: no cover
     simulation.cle.reset()
+
+    # The following lines are part of a fix for [NRRPLT-2844]
+    # As a Gazebo reset does not touch visual properties, we have to reset them explicitly
+    try:
+        set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
+                                                   SetVisualProperties)
+        set_visual_properties(model_name='right_vr_screen', link_name='body',
+                              visual_name='screen_glass',
+                              property_name='material:script:name',
+                              property_value='Gazebo/Blue')
+        set_visual_properties(model_name='left_vr_screen', link_name='body',
+                              visual_name='screen_glass',
+                              property_name='material:script:name',
+                              property_value='Gazebo/Blue')
+    except rospy.ServiceException:
+        pass
 
     simulation.state_machine_manager.start_all()
     logger.info("simulation reset")
