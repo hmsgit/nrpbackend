@@ -15,7 +15,7 @@ from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 PATH = os.path.split(__file__)[0]
 
 
-@patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
+@patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiment_basepath")
 class TestExperimentStateMachines(RestTest):
 
     def test_experiment_state_machines_get_ok(self, mock_bp0):

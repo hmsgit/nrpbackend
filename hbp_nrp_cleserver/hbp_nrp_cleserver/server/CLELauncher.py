@@ -125,7 +125,7 @@ class CLELauncher(object):
         TIMESTEP = 0.02
 
         # set models path variable
-        models_path = get_basepath()
+        models_path = get_experiment_basepath()
 
         Notificator.notify("Resetting Gazebo robotic simulator", True)  # subtask 1
 
@@ -308,7 +308,7 @@ class CLELauncher(object):
         # shutdown is complete
 
 
-def get_basepath():
+def get_experiment_basepath():
     """
     :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
     """

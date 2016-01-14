@@ -20,9 +20,8 @@ def create_brain():
     """
     Initializes PyNN with the neuronal network that has to be simulated
     """
-    # sim.setup(timestep=0.1, min_delay=0.1, max_delay=20.0, threads=1, rng_seeds=[1234])
-    C_m = 25.0  # 25.0, 0.025, stimmen die Einheiten?
-    g_L = 2.5  # stimmt das ueberhaupt oder ist g_L was anderes?
+    C_m = 25.0
+    g_L = 2.5
     t_m = C_m / g_L
 
     SENSORPARAMS = {'a': 0.0,
@@ -30,10 +29,9 @@ def create_brain():
                     'delta_T': 0.0,
                     'tau_w': 10.0,
                     'v_spike': 0.0,
-                    'cm': C_m,  # 25.0 or 0.025?
+                    'cm': C_m,
                     'v_rest': -60.5,
                     'tau_m': t_m,
-                    # 'i_offset': 0.0,			# in der HDF5-Datei nicht vorhanden
                     'e_rev_E': 0.0,
                     'e_rev_I': -75.0,
                     'v_reset': -60.5,
@@ -50,7 +48,6 @@ def create_brain():
                     'cm': C_m,
                     'v_rest': -60.5,
                     'tau_m': t_m,
-                    # 'i_offset': 0.0,
                     'e_rev_E': 0.0,
                     'e_rev_I': -75.0,
                     'v_reset': -61.6,

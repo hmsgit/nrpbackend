@@ -12,7 +12,7 @@ from flask import Response, Request
 from mock import patch
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.rest_server.__ExperimentService import \
-    ErrorMessages, get_basepath, save_file, \
+    ErrorMessages, get_experiment_basepath, save_file, \
     get_control_state_machine_files, get_evaluation_state_machine_files
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 
@@ -38,7 +38,7 @@ class DevNull(object):
         pass
 
 
-@patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
+@patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiment_basepath")
 class TestExperimentService(RestTest):
 
     def setUp(self):
@@ -66,7 +66,7 @@ class TestExperimentService(RestTest):
         message = json.loads(response.get_data())['message']
         self.assertEqual(message, ErrorMessages.EXPERIMENT_NOT_FOUND_404)
 
-    @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_basepath")
+    @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_experiment_basepath")
     def test_experiment_preview_get_preview_not_found(self, mock_bp1, mock_bp0):
         mock_bp0.return_value = PATH
         mock_bp1.return_value = PATH
@@ -77,7 +77,7 @@ class TestExperimentService(RestTest):
         message = json.loads(response.get_data())['message']
         self.assertEqual(message, ErrorMessages.EXPERIMENT_PREVIEW_NOT_FOUND_404)
 
-    @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_basepath")
+    @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_experiment_basepath")
     def test_experiment_preview_get_ok(self, mock_bp1, mock_bp0):
         mock_bp0.return_value = PATH
         mock_bp1.return_value = PATH
@@ -229,16 +229,16 @@ class TestExperimentService(RestTest):
 class TestExperimentService2(unittest.TestCase):
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentService.os")
-    def test_get_basepath_ok(self, mock_os):
+    def test_get_experiment_basepath_ok(self, mock_os):
         mock_os.environ.get.return_value = "/test1"
-        self.assertEqual("/test1", get_basepath())
+        self.assertEqual("/test1", get_experiment_basepath())
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentService.os")
-    def test_get_basepath_error(self, mock_os):
+    def test_get_experiment_basepath_error(self, mock_os):
         mock_os.environ.get.return_value = None
-        self.assertRaises(NRPServicesGeneralException, get_basepath)
+        self.assertRaises(NRPServicesGeneralException, get_experiment_basepath)
 
-    @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_basepath")
+    @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiment_basepath")
     def test_save_file(self, mock_basepath):
         mock_basepath.return_value = "/allowed/path"
         self.assertRaises(NRPServicesGeneralException, save_file, "SGVsbG8gV29ybGQK",

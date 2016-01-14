@@ -238,7 +238,7 @@ class ROSCLESimulationFactory(object):
 
             cle_launcher = CLELauncher(exd,
                                        bibi,
-                                       get_basepath(exd_config_file),
+                                       get_experiment_basepath(exd_config_file),
                                        gzserver_host, sim_id)
             [cle_server, models_path, gzweb, gzserver] = \
                 cle_launcher.cle_function_init(environment_file)
@@ -314,16 +314,23 @@ class ROSCLESimulationFactory(object):
             self.simulation_terminate_event.set()
 
 
-def get_basepath(experiment_file_path=None):
+def get_experiment_basepath(experiment_file_path=None):
     """
-    :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
+    Get the name of the folder containing the experiment configuration
+    path.
+
+    :param: experiment_file_path: path to the experiment configuration file
+    :return: path to the directory that contains the experiment configuration file
+             defaults to NRP_MODELS_DIRECTORY, e.g. /opt/hbp/gazebo/models
     """
     path = os.environ.get('NRP_MODELS_DIRECTORY')
-    if path not in experiment_file_path:
-        path = os.path.dirname(experiment_file_path)
-
     if path is None:
         raise Exception('Environment Variable NRP_MODELS_DIRECTORY is not set on the server')
+
+    # the experiment configuration was copied from Collab storage
+    # and lies into a temporary folder
+    if path not in experiment_file_path:
+        path = os.path.dirname(experiment_file_path)
 
     return path
 
@@ -344,7 +351,7 @@ def get_experiment_data(experiment_file_path):
 
     bibi_file = experiment.bibiConf.src
     logger.info("Bibi: " + bibi_file)
-    bibi_file_abs = os.path.join(get_basepath(experiment_file_path), bibi_file)
+    bibi_file_abs = os.path.join(get_experiment_basepath(experiment_file_path), bibi_file)
     logger.info("BibiAbs:" + bibi_file_abs)
     with open(bibi_file_abs) as b_file:
         try:

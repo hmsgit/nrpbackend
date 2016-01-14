@@ -28,7 +28,6 @@ class TestTransition(unittest.TestCase):
         self.__sm_patch = mock.patch("hbp_nrp_backend.simulation_control.Simulation.state_machine_manager")
         self.__sm_man = self.__sm_patch.start()
 
-        transitions.generate_bibi = mock.Mock(return_value=mock.Mock())
         transitions.initialize_experiment = mock.Mock(return_value="set_cle")
         transitions.generate_experiment_control = mock.Mock(return_value={'test_sm': 'test_sm.py'})
 

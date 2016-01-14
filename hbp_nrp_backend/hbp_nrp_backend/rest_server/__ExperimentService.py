@@ -16,7 +16,6 @@ from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_commons.generated import bibi_api_gen
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_tfs
 
 from flask import request
 from pyxb import ValidationError
@@ -132,7 +131,7 @@ def get_experiments():
     """
 
     experiment_dir = "ExDConf"
-    path = os.path.join(get_basepath(), experiment_dir)
+    path = os.path.join(get_experiment_basepath(), experiment_dir)
     experiment_names = os.listdir(path)
 
     experiment_dict = {}
@@ -140,7 +139,7 @@ def get_experiments():
     for current in experiment_names:
         if current.lower().endswith('.xml'):
             # Parse Experiment
-            experiment_conf = os.path.join(get_basepath(), experiment_dir, current)
+            experiment_conf = os.path.join(get_experiment_basepath(), experiment_dir, current)
             ex = None
             with open(experiment_conf) as exd_file:
                 try:
@@ -215,7 +214,7 @@ def save_file(base64_data, filename_abs, data=None):
             )
 
     base_path = os.path.abspath(filename_abs)
-    allowed_path = get_basepath()
+    allowed_path = get_experiment_basepath()
 
     if base_path.startswith(allowed_path):
         pass
@@ -232,7 +231,7 @@ def save_file(base64_data, filename_abs, data=None):
         return filename
 
 
-def get_basepath():
+def get_experiment_basepath():
     """
     :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
     """
@@ -270,7 +269,7 @@ def get_experiment_conf(exp_id):
     """
 
     experiment_file = get_experiment_rel(exp_id)
-    experiment_conf = os.path.join(get_basepath(), experiment_file)
+    experiment_conf = os.path.join(get_experiment_basepath(), experiment_file)
     return experiment_conf
 
 
@@ -288,7 +287,7 @@ def get_bibi_file(exp_id):
         experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
     assert isinstance(experiment, exp_conf_api_gen.ExD_)
     bibi_file = experiment.bibiConf.src
-    bibi_conf = os.path.join(get_basepath(), bibi_file)
+    bibi_conf = os.path.join(get_experiment_basepath(), bibi_file)
     return bibi_conf
 
 
@@ -304,7 +303,7 @@ def get_brain_file(exp_id):
         bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
         assert isinstance(bibi, bibi_api_gen.BIBIConfiguration)
         brain_file_name = bibi.brainModel.file
-        return os.path.join(get_basepath(), brain_file_name)
+        return os.path.join(get_experiment_basepath(), brain_file_name)
 
     return None
 
@@ -353,7 +352,7 @@ def _get_state_machine_files(exp_id, which):
     if files:
         for sm in files.stateMachine:
             if isinstance(sm, exp_conf_api_gen.SMACHStateMachine):
-                ret[sm.id] = os.path.join(get_basepath(), sm.src)
+                ret[sm.id] = os.path.join(get_experiment_basepath(), sm.src)
 
     return ret
 
@@ -391,16 +390,3 @@ def substitute_bibi_transferfunctions(bibi_file, tf_list):
         bibi.transferFunction.append(ptf)
 
     return str(bibi.toxml("utf-8"))
-
-
-def get_transfer_functions(bibi_file):
-    """
-    Generates cle from bibi_file and returns the transfer functions as array of strings
-
-    :param bibi_file: bibi filename
-    :type bibi_file: basestring
-    :return: array of strings containing transfer functions
-    """
-
-    models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-    return get_all_tfs(bibi_file, models_path)

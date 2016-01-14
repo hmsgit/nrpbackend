@@ -10,8 +10,8 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
-from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_rel, get_basepath, \
-    ErrorMessages
+from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_rel, \
+    get_experiment_basepath, ErrorMessages
 
 import base64
 import os
@@ -82,7 +82,7 @@ class ExperimentPreview(Resource):
         # Check experiment
         experiment_file = get_experiment_rel(exp_id)
 
-        preview_file = os.path.join(get_basepath(), os.path.splitext(
+        preview_file = os.path.join(get_experiment_basepath(), os.path.splitext(
             experiment_file)[0] + ".png")
 
         if not os.path.isfile(preview_file):

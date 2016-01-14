@@ -29,8 +29,10 @@ class MockedServiceRequest(object):
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.nrp.config.active_node", new=Mock())
-@patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_basepath", new=Mock(return_value=PATH))
-@patch("hbp_nrp_cleserver.server.CLELauncher.get_basepath", new=Mock(return_value=PATH))
+@patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
+    new=Mock(return_value=PATH)
+)
+@patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=PATH))
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
        new=LocalGazeboServerInstance)
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=Mock())

@@ -2,8 +2,6 @@
 Script to run Experiment from ExperimentDesigner Configuration File
 """
 from hbp_nrp_commons.generated import exp_conf_api_gen
-from hbp_nrp_cleserver.bibi_config import bibi_configuration_script
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import deprecated
 import os
 import logging
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
@@ -17,60 +15,6 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=maybe-no-member
 # pylint infers the wrong type for config
-
-@deprecated
-def generate_bibi(experiment_conf,
-                  bibi_script_file_name,
-                  gzserver_host,
-                  sim_id,
-                  collab=True,
-                  tf_path=None):
-    """
-    Generates Code to run the Brain interface and Body integrator based on the
-    given experiment configuration file.
-
-    :param experiment_conf: The Experiment Designer configuration. The code will
-                            search in the folder set in NRP_MODELS_DIRECTORY
-                            environment variable for this file. relative path from
-                            there must be included.
-    :param bibi_script_file_name: The file name of the script to be generated, \
-                                  including .py and the complete path.
-
-    :param gzserver_host: The host where the gzserver will run, local for local machine
-        lugano for remote Lugano viz cluster.
-    :param sim_id: Integer identifying of the simulation
-    :param tf_path: path to the folder where transfer function scripts lie
-    """
-
-    logger.info(("Generating BIBI configuration for experiment {0} to {1}" +
-                 "(gz services running on {2})")
-                .format(experiment_conf, bibi_script_file_name, gzserver_host))
-
-    with open(experiment_conf) as exd_file:
-
-        # parse experiment configuration
-        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-
-    # retrieve the bibi configuration file name.
-    exp_configuration_folder = os.path.dirname(experiment_conf)
-    models_path = exp_configuration_folder if collab else os.environ.get('NRP_MODELS_DIRECTORY')
-    bibi_conf = os.path.join(models_path, experiment.bibiConf.src)
-
-    # set timeout to 10 minutes, if not specified by default
-    if experiment.timeout is None:
-        timeout = 600.0
-    else:
-        timeout = experiment.timeout
-
-    if tf_path is None:
-        tf_path = os.path.dirname(bibi_conf)
-    bibi_configuration_script.generate_cle(bibi_conf,
-                                           bibi_script_file_name,
-                                           timeout,
-                                           gzserver_host,
-                                           sim_id,
-                                           tf_path,
-                                           experiment.environmentModel.robotPose)
 
 
 def generate_experiment_control(experiment_conf, conf_path):
@@ -117,7 +61,7 @@ def generate_experiment_control(experiment_conf, conf_path):
 def initialize_experiment(experiment_conf, environment_path, sim_id,
                           gzserver_host):
     """
-    Initialize experiment based on generated code by generate_bibi.
+    Initialize experiment.
 
     @param experiment_conf: The Experiment Designer configuration. The code will \
         search in the folder set in NRP_MODELS_DIRECTORY \

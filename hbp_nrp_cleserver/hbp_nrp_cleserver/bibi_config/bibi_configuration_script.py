@@ -85,7 +85,6 @@ def __load_template(path):
         return jinja2.Template(template_file.read())
 
 
-cle_template = __load_template('cle_template.pyt')
 tf_template = __load_template('tf_template.pyt')
 
 
@@ -559,75 +558,3 @@ def generate_tf(tf):
         tf.name = get_tf_name(tf_source)
 
     return tf_source
-
-
-def get_all_tfs(bibi_conf, tf_path):
-    """
-    Generates all transfer functions and returns a dictionary with {"tf_name": "tf_code"}
-
-    :param bibi_conf: The BIBI configuration
-    :param tf_path: A folder where the system may look for transfer function source code
-    :return dict(): key: name of tf, value: python source code of tf
-    """
-
-    with open(bibi_conf) as bibi_xml:
-        config = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-
-    import_referenced_python_tfs(config, tf_path)
-
-    tfs = dict()
-    for tf in config.transferFunction:
-        tf_code = generate_tf(tf)
-        tf_code = correct_indentation(tf_code, 0)
-        tf_code = tf_code.strip() + "\n"
-        tfs[tf.name] = tf_code
-
-    return tfs
-
-
-@deprecated
-def generate_cle(bibi_conf, script_file_name, timeout, gzserver_host, sim_id, tf_path,
-                 robot_initial_pose=None):
-    """
-    Generates Code to run the CLE based on the given configuration file
-
-    :param bibi_conf: The BIBI configuration
-    :param script_file_name: The file name of the script to be generated. \
-        If None, the generated file will be returned as string
-    :param timeout: The timeout found in the ExDConfig
-    :param gzserver_host: The host where the gzserver will run, local for local machine \
-        lugano for remote Lugano viz cluster.
-    :param sim_id: The simulation id
-    :param tf_path: A folder where the system may look for transfer function source code
-    :param robot_initial_pose (optional): The XML tag object referring to the robot initial pose
-    :return string: Content of the generated file (only if script_file_name is None) else, \
-        nothing is returned
-    """
-
-    logger.info("Generating CLE launch script")
-    logger.debug("Loading BIBI Configuration")
-    with open(bibi_conf) as bibi_xml:
-        config = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-
-    logger.debug("Resolving python code references")
-    import_referenced_python_tfs(config, tf_path)
-
-    names = dict(globals())
-    names['config'] = config
-    names['dependencies'] = compute_dependencies(config)
-    # system functions are somehow not included in globals
-    names['len'] = len
-    names['timeout'] = timeout
-    names['gzserver_host'] = gzserver_host
-    names['sim_id'] = sim_id
-    names['robot_initial_pose'] = robot_initial_pose
-    logger.debug("Instantiate CLE Template")
-
-    if script_file_name is None:
-        # Generate into string and return it
-        return cle_template.render(names)
-
-    else:
-        # Generate into file and save to disk
-        with open(script_file_name, 'w') as output_file:
-            output_file.write(cle_template.render(names))
