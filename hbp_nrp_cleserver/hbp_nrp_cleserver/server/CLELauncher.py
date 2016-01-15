@@ -51,14 +51,14 @@ class CLELauncher(object):
     CLELauncher substitutes generated cle
     """
 
-    def __init__(self, exdConf, bibiConf, experiment_path, gzserver_host, sim_id):
+    def __init__(self, exd_conf, bibi_conf, experiment_path, gzserver_host, sim_id):
         """
         Constructor of CLELauncher
 
-        @param exdConf: Experiment Configuration
-        @type exdConf: generated_experiment_api.ExD
-        @param bibiConf: Bibi Configuration
-        @type bibiConf: generated_bibi_api.BIBIConfiguration
+        @param exd_conf: Experiment Configuration
+        @type exd_conf: generated_experiment_api.ExD
+        @param bibi_conf: Bibi Configuration
+        @type bibi_conf: generated_bibi_api.BIBIConfiguration
         @param experiment_path: path for the experiment. Useful because sometime
         we are starting a template (with path being /opt/hbp/...) and sometime we
         are starting an experiment from a collab temp folder (with path being
@@ -70,16 +70,16 @@ class CLELauncher(object):
         @return: [cle_server, models_path, gzweb, gzserver]
         """
 
-        assert isinstance(exdConf, exp_conf_api_gen.ExD_)
-        assert isinstance(bibiConf, bibi_api_gen.BIBIConfiguration)
+        assert isinstance(exd_conf, exp_conf_api_gen.ExD_)
+        assert isinstance(bibi_conf, bibi_api_gen.BIBIConfiguration)
 
-        self.__exdConf = exdConf
-        self.__bibiConf = bibiConf
+        self.__exd_conf = exd_conf
+        self.__bibi_conf = bibi_conf
         self.__experiment_path = experiment_path
         self.__gzserver_host = gzserver_host
         self.__sim_id = sim_id
-        self.__dependencies = compute_dependencies(bibiConf)
-        self.__gazebo_helper = GazeboHelper()
+        self.__dependencies = compute_dependencies(bibi_conf)
+        self.__gazebo_helper = None  # Will be instantiated after gazebo is started
 
     def cle_function_init(self, world_file):
         """
@@ -111,7 +111,7 @@ class CLELauncher(object):
 
         # Only for Frontend progress bar logic
         number_of_subtasks = 9
-        if self.__bibiConf.extRobotController is not None:
+        if self.__bibi_conf.extRobotController is not None:
             number_of_subtasks = 10
 
         cle_server.notify_start_task("Initializing the Neurorobotic Closed Loop Engine",
@@ -144,6 +144,8 @@ class CLELauncher(object):
             gzserver = LuganoVizClusterGazebo()
             gzserver.start(ros_master_uri)
 
+        self.__gazebo_helper = GazeboHelper()
+
         if gzserver is None:
             logger.error("No configuration found for gzserver_host: '{0}'"
                          "".format(self.__gzserver_host))
@@ -163,7 +165,7 @@ class CLELauncher(object):
         # Create interfaces to Gazebo
         Notificator.notify("Loading neuRobot", True)  # subtask 3
 
-        robot_initial_pose = self.__exdConf.environmentModel.robotPose
+        robot_initial_pose = self.__exd_conf.environmentModel.robotPose
         if robot_initial_pose is not None:
             rpose = Pose()
             rpose.position.x = robot_initial_pose.x
@@ -177,16 +179,17 @@ class CLELauncher(object):
             rpose = None
 
         # spawn robot model
-        self.__gazebo_helper.load_gazebo_model_file('robot', self.__bibiConf.bodyModel, rpose)
+        self.__gazebo_helper \
+            .load_gazebo_model_file('robot', self.__bibi_conf.bodyModel, rpose)
 
         # control adapter
         roscontrol = RosControlAdapter()
         # communication adapter
         roscomm = RosCommunicationAdapter()
 
-        if self.__bibiConf.extRobotController is not None:  # load external robot controller
+        if self.__bibi_conf.extRobotController is not None:  # load external robot controller
             robot_controller_filepath = os.path.join(models_path,
-                                                     self.__bibiConf.extRobotController)
+                                                     self.__bibi_conf.extRobotController)
             if os.path.isfile(robot_controller_filepath):
                 Notificator.notify("Loading external robot controllers", True)  # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
@@ -219,27 +222,27 @@ class CLELauncher(object):
 
         Notificator.notify("Loading Brain", True)  # subtask 6
         # load brain
-        brainfilepath = self.__bibiConf.brainModel.file
+        brainfilepath = self.__bibi_conf.brainModel.file
         if self.__experiment_path is not None:
             brainfilepath = os.path.join(self.__experiment_path, brainfilepath)
 
         # initialize everything
         Notificator.notify("Initializing CLE", True)  # subtask 7
-        neurons_config = get_all_neurons_as_dict(self.__bibiConf.brainModel.populations)
+        neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
         cle.initialize(brainfilepath, **neurons_config)
 
         # Set initial pose
         cle.initial_robot_pose = rpose
 
         # Now that we have everything ready, we could prepare the simulation
-        cle_server.prepare_simulation(cle, self.__exdConf.timeout)
+        cle_server.prepare_simulation(cle, self.__exd_conf.timeout)
 
         Notificator.notify("Injecting Transfer Functions", True)  # subtask 8
 
         # Create transfer functions
-        import_referenced_python_tfs(self.__bibiConf, self.__experiment_path)
+        import_referenced_python_tfs(self.__bibi_conf, self.__experiment_path)
 
-        for tf in self.__bibiConf.transferFunction:
+        for tf in self.__bibi_conf.transferFunction:
             tf_code = generate_tf(tf)
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
@@ -284,10 +287,10 @@ class CLELauncher(object):
         if gzserver is not None:
             gzserver.stop()
 
-        if self.__bibiConf.extRobotController is not None:  # optionally stop all external robot
+        if self.__bibi_conf.extRobotController is not None:  # optionally stop all external robot
             # controllers
             robot_controller_filepath = os.path.join(models_path,
-                                                     self.__bibiConf.extRobotController)
+                                                     self.__bibi_conf.extRobotController)
             if os.path.isfile(robot_controller_filepath):
                 cle_server.notify_current_task("Stopping external robot controllers",
                                                update_progress=True, block_ui=False)
