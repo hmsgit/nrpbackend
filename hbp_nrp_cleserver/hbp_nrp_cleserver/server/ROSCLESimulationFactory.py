@@ -332,9 +332,8 @@ def get_experiment_data(experiment_file_path):
     """
     Parse experiment and bibi and return the objects
 
-    @param experiment_file: :param: environment_file: Gazebo world file containing
-                                  the environment (without the robot)
-    @return experiment, bibi: types: exp_conf_api_gen.ExD_, bibi_api_gen.BIBIConfiguration
+    @param experiment_file: experiment file
+    @return experiment, bibi, parsed experiment and bibi
     """
     with open(experiment_file_path) as exd_file:
         try:
