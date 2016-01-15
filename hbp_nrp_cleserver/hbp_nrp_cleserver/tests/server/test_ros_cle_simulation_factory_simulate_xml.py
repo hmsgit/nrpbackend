@@ -26,9 +26,6 @@ class MockedServiceRequest(object):
 
 
 @patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLEServer", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.empty_gazebo_world", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.load_gazebo_world_file", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.load_gazebo_model_file", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.nrp.config.active_node", new=Mock())
@@ -36,22 +33,21 @@ class MockedServiceRequest(object):
 @patch("hbp_nrp_cleserver.server.CLELauncher.get_basepath", new=Mock(return_value=PATH))
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
        new=LocalGazeboServerInstance)
+@patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=Mock())
+@patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=Mock())
 class SimulationTestCase(unittest.TestCase):
+
 
     def test_simulation_local(self):
 
-
         factory = ROSCLESimulationFactory()
-        mock = patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLESimulationFactory.cle_launcher"
-                     ".ROSCLEServer")
-
         factory.create_new_simulation(MockedServiceRequest())
 
         factory.simulation_terminate_event.wait()
         self.assertEqual(factory.simulation_count, 1)
         self.assertEqual(factory.failed_simulation_count, 0)
 
-    def test_simulation_lugano(self):
+    def test_simulation_lugano(self,):
 
         MockedServiceRequest.gzserver_host = 'lugano'
 

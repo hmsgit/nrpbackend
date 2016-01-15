@@ -29,8 +29,7 @@ from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
 from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
 from hbp_nrp_cle.robotsim.LocalGazebo import LocalGazeboBridgeInstance, LocalGazeboServerInstance
 from hbp_nrp_cle.robotsim.LuganoVizClusterGazebo import LuganoVizClusterGazebo
-from hbp_nrp_cle.robotsim.GazeboLoadingHelper import \
-    load_gazebo_model_file, empty_gazebo_world, load_gazebo_world_file
+from hbp_nrp_cle.robotsim.GazeboHelper import GazeboHelper
 
 # These imports start NEST.
 from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
@@ -80,6 +79,7 @@ class CLELauncher(object):
         self.__gzserver_host = gzserver_host
         self.__sim_id = sim_id
         self.__dependencies = compute_dependencies(bibiConf)
+        self.__gazebo_helper = GazeboHelper()
 
     def cle_function_init(self, world_file):
         """
@@ -154,11 +154,11 @@ class CLELauncher(object):
         # We do not know here in which state the previous user did let us gzweb.
         gzweb.restart()
 
-        empty_gazebo_world()
+        self.__gazebo_helper.empty_gazebo_world()
 
         Notificator.notify("Loading experiment environment", True)  # subtask 2
 
-        load_gazebo_world_file(world_file)
+        self.__gazebo_helper.load_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
         Notificator.notify("Loading neuRobot", True)  # subtask 3
@@ -177,7 +177,7 @@ class CLELauncher(object):
             rpose = None
 
         # spawn robot model
-        load_gazebo_model_file('robot', self.__bibiConf.bodyModel, rpose)
+        self.__gazebo_helper.load_gazebo_model_file('robot', self.__bibiConf.bodyModel, rpose)
 
         # control adapter
         roscontrol = RosControlAdapter()
@@ -277,7 +277,7 @@ class CLELauncher(object):
                                      "Emptying 3D world",
                                      number_of_subtasks=2,
                                      block_ui=False)
-        empty_gazebo_world()
+        self.__gazebo_helper.empty_gazebo_world()
 
         if gzweb is not None:
             gzweb.stop()
