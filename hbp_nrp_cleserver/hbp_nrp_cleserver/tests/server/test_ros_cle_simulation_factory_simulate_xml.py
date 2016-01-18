@@ -12,7 +12,6 @@ from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFac
 from mock import Mock, patch
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_cle.robotsim.LocalGazebo import LocalGazeboServerInstance
-
 PATH = os.getcwd()
 if not os.path.exists("ExDConf"):
     PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
@@ -25,6 +24,10 @@ class MockedServiceRequest(object):
     sim_id = 0
 
 
+LocalGazeboServerInstance.start = LocalGazeboServerInstance.stop = \
+    LocalGazeboServerInstance.restart = Mock()
+
+
 @patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLEServer", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
@@ -35,6 +38,7 @@ class MockedServiceRequest(object):
 @patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=PATH))
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
        new=LocalGazeboServerInstance)
+@patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=Mock())
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=Mock())
 class SimulationTestCase(unittest.TestCase):

@@ -4,7 +4,8 @@ ROSCLEServer unit test
 
 from cle_ros_msgs.srv import ResetSimulation
 from hbp_nrp_cleserver.server import ROSCLEServer
-from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState
+from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState, State, InitialState, RunningState, \
+    PausedState, StoppedState
 import logging
 from mock import patch, MagicMock, Mock, PropertyMock
 from testfixtures import log_capture
@@ -100,7 +101,7 @@ class TestROSCLEServer(unittest.TestCase):
 
     def test_set_state(self):
         self.craft_ros_cle_server()
-        st = ROSCLEServer.ROSCLEServer.InitialState(self.__ros_cle_server)
+        st = InitialState(self.__ros_cle_server)
         self.__ros_cle_server.set_state(st)
         self.assertEquals(self.__ros_cle_server._ROSCLEServer__state, st)
 
@@ -121,7 +122,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.__ros_cle_server.stop_timeout()
         self.assertGreaterEqual(mock_double_timer.disable_second_callback.call_count, 1)
 
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.ROSCLEServer.State')
+    @patch('hbp_nrp_cleserver.server.ROSCLEState.State')
     def test_quit_by_timeout(self, mock_state):
         self.craft_ros_cle_server()
         mock_state.stop_simulation = Mock()
@@ -182,7 +183,7 @@ class TestROSCLEServer(unittest.TestCase):
         timer.start()
         # now start the "infinite loop"
         self.assertEqual(str(state_handler(_)), ROSCLEState.STARTED)
-        self.__ros_cle_server.main()
+        self.__ros_cle_server.run()
         self.assertEqual(str(state_handler(_)), ROSCLEState.STOPPED)
         self.__mocked_cle.stop.assert_called_once_with()
 
@@ -294,11 +295,10 @@ class TestROSCLEServer(unittest.TestCase):
         response = delete_transfer_function_handler(request)
         self.assertEqual(True, response)
 
-    def test_run(self):
+    def test_rospy_spin_is_called(self):
         self.craft_ros_cle_server(True)
-        self.__ros_cle_server.run()
         self.assertTrue(self.__mocked_rospy.spin.called)
-        self.assertEqual(1, self.__mocked_rospy.spin.call_count)
+        self.assertEqual(2, self.__mocked_rospy.spin.call_count)
 
     def test_notify_start_task(self):
         self.craft_ros_cle_server(True)
@@ -320,7 +320,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_plain_state(self):
         self.craft_ros_cle_server(True)
         # Testing class State
-        state = ROSCLEServer.ROSCLEServer.State(None)
+        state = State(None)
         self.assertRaises(RuntimeError, state.start_simulation)
         self.assertRaises(RuntimeError, state.pause_simulation)
         self.assertRaises(RuntimeError, state.stop_simulation)
@@ -337,7 +337,7 @@ class TestROSCLEServer(unittest.TestCase):
         ctx.start_simulation = Mock()
         ctx.stop_simulation = Mock()
 
-        initialized = ROSCLEServer.ROSCLEServer.InitialState(ctx)
+        initialized = InitialState(ctx)
         self.assertRaises(RuntimeError, initialized.pause_simulation)
         msg = ResetSimulation()
         msg.reset_robot_pose = False
@@ -359,7 +359,7 @@ class TestROSCLEServer(unittest.TestCase):
         ctx.stop_simulation = Mock()
         ctx.pause_simulation = Mock()
 
-        running = ROSCLEServer.ROSCLEServer.RunningState(ctx)
+        running = RunningState(ctx)
         self.assertRaises(RuntimeError, running.start_simulation)
         self.assertFalse(running.is_final_state())
 
@@ -382,7 +382,7 @@ class TestROSCLEServer(unittest.TestCase):
         ctx.stop_simulation = Mock()
         ctx.reset_simulation = Mock()
 
-        paused = ROSCLEServer.ROSCLEServer.PausedState(ctx)
+        paused = PausedState(ctx)
         self.assertRaises(RuntimeError, paused.pause_simulation)
         self.assertFalse(paused.is_final_state())
 
@@ -400,7 +400,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_stopped_state(self):
         self.craft_ros_cle_server(True)
         # Testing class StoppedState
-        stopped = ROSCLEServer.ROSCLEServer.StoppedState(None)
+        stopped = StoppedState(None)
         self.assertRaises(RuntimeError, stopped.start_simulation)
         self.assertRaises(RuntimeError, stopped.pause_simulation)
         self.assertRaises(RuntimeError, stopped.stop_simulation)
@@ -411,15 +411,16 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertTrue(stopped.is_final_state())
         self.assertEqual(str(stopped), ROSCLEState.STOPPED)
 
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.ROSCLEServer._ROSCLEServer__push_status_on_ros')
-    def test_task(self, mock_publisher):
+    def test_task(self):
         self.craft_ros_cle_server(True)
+        mock_publisher = Mock()
+        self.__ros_cle_server._ROSCLEServer__ros_status_pub = mock_publisher
         self.__ros_cle_server.notify_start_task('task', 'subtask', 1, False)
-        self.assertEquals(mock_publisher.call_count, 1)
+        self.assertEquals(mock_publisher.publish.call_count, 1)
         self.__ros_cle_server.notify_current_task('new_subtask', True, False)
-        self.assertEquals(mock_publisher.call_count, 2)
+        self.assertEquals(mock_publisher.publish.call_count, 2)
         self.__ros_cle_server.notify_finish_task()
-        self.assertEquals(mock_publisher.call_count, 3)
+        self.assertEquals(mock_publisher.publish.call_count, 3)
 
     def test_shutdown(self):
         self.craft_ros_cle_server()
