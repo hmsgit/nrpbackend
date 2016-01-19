@@ -5,6 +5,7 @@ On the other side of ROS, the calls are handled by ROSCLEServer.py
 
 import logging
 import rospy
+import timeout_decorator
 from std_srvs.srv import Empty
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages repository.
@@ -83,6 +84,7 @@ class ROSCLEServiceWrapper(object):
             logger.error(message)
             raise ROSCLEClientException(message)
 
+    @timeout_decorator.timeout(ROS_SERVICE_TIMEOUT)
     def __call__(self, *args, **kwargs):
         if self.__ros_cle_client.valid:
             try:
