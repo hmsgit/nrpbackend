@@ -26,7 +26,7 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_SIM_START_ID, \
     SERVICE_SIM_PAUSE_ID, SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN
-from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState
+from hbp_nrp_cleserver.server.ROSCLEState import InitialState, PausedState
 from hbp_nrp_cleserver.server import ros_handler
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException
@@ -128,115 +128,11 @@ class DoubleTimer(Thread):
 
 # pylint: disable=R0902
 # the attributes are reasonable in this case
-class ROSCLEServer(threading.Thread):
+class ROSCLEServer(object):
     """
     A ROS server wrapper around the Closed Loop Engine.
     """
     STATUS_UPDATE_INTERVAL = 1.0
-
-    class State(object):
-        """
-        Represents the state in which a ROSCLEServer instance can be.
-        This is the base class defining the basic behavior, which means
-        that no transitions are to be made to other states and this base
-        state itself is not a final state.
-        """
-        def __init__(self, context):
-            self._context = context
-
-        # We disable the docstring here since there is nothing more to say than
-        # what the method name already reveals.
-        # pylint: disable=missing-docstring, unused-argument
-        def reset_simulation(self, request):
-            raise RuntimeError('You cannot reset the simulation while in %s.' %
-                               (type(self).__name__, ))
-
-        def stop_simulation(self):
-            raise RuntimeError('You cannot stop the simulation while in %s.' %
-                               (type(self).__name__, ))
-
-        def pause_simulation(self):
-            raise RuntimeError('You cannot pause the simulation while in %s.' %
-                               (type(self).__name__, ))
-
-        def start_simulation(self):
-            raise RuntimeError('You cannot start the simulation while in %s.' %
-                               (type(self).__name__, ))
-
-        # pylint: disable=no-self-use
-        def is_final_state(self):
-            return False
-
-    class InitialState(State):
-        """
-        The initial state in which an instance of ROSCLEServer starts its lifecycle.
-        """
-        def start_simulation(self):
-            result = self._context.start_simulation()
-            self._context.set_state(ROSCLEServer.RunningState(self._context))
-            return result
-
-        def stop_simulation(self):
-            result = self._context.stop_simulation()
-            self._context.set_state(ROSCLEServer.StoppedState(self._context))
-            return result
-
-        def __repr__(self):
-            return ROSCLEState.INITIALIZED
-
-    class RunningState(State):
-        """
-        Represents a running ROSCLEServer.
-        """
-        def reset_simulation(self, request):
-            result = self._context.reset_simulation(request)
-            self._context.set_state(ROSCLEServer.InitialState(self._context))
-            return result
-
-        def stop_simulation(self):
-            result = self._context.stop_simulation()
-            self._context.set_state(ROSCLEServer.StoppedState(self._context))
-            return result
-
-        def pause_simulation(self):
-            result = self._context.pause_simulation()
-            self._context.set_state(ROSCLEServer.PausedState(self._context))
-            return result
-
-        def __repr__(self):
-            return ROSCLEState.STARTED
-
-    class StoppedState(State):
-        """
-        Represents a stopped ROSCLEServer.
-        """
-        def is_final_state(self):
-            return True
-
-        def __repr__(self):
-            return ROSCLEState.STOPPED
-
-    class PausedState(State):
-        """
-        Represents a paused ROSCLEServer.
-        """
-        def start_simulation(self):
-            result = self._context.start_simulation()
-            self._context.set_state(ROSCLEServer.RunningState(self._context))
-            return result
-
-        def stop_simulation(self):
-            result = self._context.stop_simulation()
-            self._context.set_state(ROSCLEServer.StoppedState(self._context))
-            return result
-
-        def reset_simulation(self, request):
-            result = self._context.reset_simulation(request)
-            self._context.set_state(ROSCLEServer.InitialState(self._context))
-            return result
-
-        def __repr__(self):
-            return ROSCLEState.PAUSED
 
     def __init__(self, sim_id):
         """
@@ -244,8 +140,6 @@ class ROSCLEServer(threading.Thread):
 
         :param sim_id: The simulation id
         """
-        super(ROSCLEServer, self).__init__()
-        self.daemon = True
 
         # ROS allows multiple calls to init_node, as long as
         # the arguments are the same.
@@ -255,7 +149,7 @@ class ROSCLEServer(threading.Thread):
         self.__event_flag.clear()
         self.__done_flag = threading.Event()
         self.__done_flag.clear()
-        self.__state = ROSCLEServer.InitialState(self)
+        self.__state = InitialState(self)
 
         self.__service_start = None
         self.__service_pause = None
@@ -291,6 +185,15 @@ class ROSCLEServer(threading.Thread):
         self.__timeout = None
         self.__double_timer = None
 
+        # Start another thread calling rospy.spin
+        # This line has been put here because it has to be called before prepare_simulation,
+        # where all the 'rospy.Service's are initialized.
+        # This is the best place I managed to found, as it doesn't seem to hurt anybody.
+        # Any enhancement is warmly welcomed.
+        rospy_thread = threading.Thread(target=rospy.spin)
+        rospy_thread.setDaemon(True)
+        rospy_thread.start()
+
     def set_state(self, state):
         """
         Sets the current state of the ROSCLEServer. This is used from the State Pattern
@@ -312,7 +215,7 @@ class ROSCLEServer(threading.Thread):
         if not self.__cle.is_initialized:
             self.__cle.initialize()
 
-        self.__cle.tfm.publish_error_callback = self.__push_tf_error_on_ros
+        self.__cle.tfm.publish_error_callback = self.__ros_tf_error_pub.publish
 
         logger.info("Registering ROS Service handlers")
 
@@ -415,8 +318,8 @@ class ROSCLEServer(threading.Thread):
         :param request: The mandatory rospy request parameter
         """
         try:
-            if not isinstance(self.__state, ROSCLEServer.InitialState) and \
-                    not isinstance(self.__state, ROSCLEServer.PausedState):
+            if not isinstance(self.__state, InitialState) and \
+                    not isinstance(self.__state, PausedState):
                 self.__state.pause_simulation()
             with NamedTemporaryFile(prefix='brain', suffix='.' + request.brain_type, delete=False)\
                     as tmp:
@@ -485,7 +388,7 @@ class ROSCLEServer(threading.Thread):
                 "NoOrMultipleNames",
                 error_msg,
                 original_name)
-            self.__push_tf_error_on_ros(msg)
+            self.__ros_tf_error_pub.publish(msg)
             return msg.message
 
         # Compile (synchronously) transfer function's new code in restricted mode
@@ -509,7 +412,7 @@ class ROSCLEServer(threading.Thread):
                 e.text,
                 e.filename
             )
-            self.__push_tf_error_on_ros(msg)
+            self.__ros_tf_error_pub.publish(msg)
             return message
 
         # Make sure CLE is stopped. If already stopped, these calls are harmless.
@@ -588,22 +491,14 @@ class ROSCLEServer(threading.Thread):
             'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
         }
         logger.info(json.dumps(message))
-        self.__push_status_on_ros(json.dumps(message))
+        self.__ros_status_pub.publish(json.dumps(message))
 
-    # TODO(Stefan)
-    # Probably it would be better to only have a run method and get rid of main.
-    # This is the conventional use of Thread and users expect to call Thread.start() which
-    # in turn calls the run method.
-    # The reason why we have a main method here is that we want to have rospy.spin() called
-    # from the run method. This can most probably be made much cleaner by using something like
-    # "Thread( ... target=rospy.spin)"
-    # But we would have to check out first how this exactly works ...
-    def main(self):
+    def run(self):
         """
-        Main control loop. From outside only the main method should be called, which calls
-        itself self.start() that triggers run().
+        This method implements the main logic of ROSCLEServer.
+        It loops, executing and consuming callbacks from a list, which is filled by ROS service
+        handlers, until the simulation is not stopped (i.e. its state is set to Stopped).
         """
-        self.start()
 
         while not self.__state.is_final_state():
             if self.__to_be_executed_within_main_thread:
@@ -617,7 +512,7 @@ class ROSCLEServer(threading.Thread):
                             e.message,
                             e.tf_name
                         )
-                        self.__push_tf_error_on_ros(tf_error)
+                        self.__ros_tf_error_pub.publish(tf_error)
 
                 self.__to_be_executed_within_main_thread = []
                 self.__done_flag.set()
@@ -626,12 +521,6 @@ class ROSCLEServer(threading.Thread):
 
         self.__publish_state_update()
         logger.info("Finished main loop")
-
-    def run(self):
-        """
-        Inherited from threading.Thread, override.
-        """
-        rospy.spin()
 
     def shutdown(self):
         """
@@ -687,7 +576,7 @@ class ROSCLEServer(threading.Thread):
                                 'number_of_subtasks': number_of_subtasks,
                                 'subtask_index': self.__current_subtask_index,
                                 'block_ui': block_ui}}
-        self.__push_status_on_ros(json.dumps(message))
+        self.__ros_status_pub.publish(json.dumps(message))
 
     def notify_current_task(self, new_subtask_name, update_progress, block_ui):
         """
@@ -709,7 +598,7 @@ class ROSCLEServer(threading.Thread):
                                 'number_of_subtasks': self.__current_subtask_count,
                                 'subtask_index': self.__current_subtask_index,
                                 'block_ui': block_ui}}
-        self.__push_status_on_ros(json.dumps(message))
+        self.__ros_status_pub.publish(json.dumps(message))
 
     def notify_finish_task(self):
         """
@@ -720,7 +609,7 @@ class ROSCLEServer(threading.Thread):
             return
         message = {'progress': {'task': self.__current_task,
                                 'done': True}}
-        self.__push_status_on_ros(json.dumps(message))
+        self.__ros_status_pub.publish(json.dumps(message))
         self.__current_subtask_count = 0
         self.__current_subtask_index = 0
         self.__current_task = None
@@ -764,6 +653,9 @@ class ROSCLEServer(threading.Thread):
             else:
                 # we have to call the stop function here, otherwise the main thread
                 # will not stop executing the simulation loop
+
+                # TODO (Alessandro): not sure if this is still needed, the comment below
+                # seems to imply that stop() is already done on reset()
                 self.__cle.stop()
                 self.stop_timeout()
                 self.__done_flag.wait()
@@ -774,19 +666,3 @@ class ROSCLEServer(threading.Thread):
             return True, ""
         except Exception as e:
             return False, str(e)
-
-    def __push_status_on_ros(self, message):
-        """
-        Push the given message to ROS
-
-        :param: message: The message to publish
-        """
-        self.__ros_status_pub.publish(message)
-
-    def __push_tf_error_on_ros(self, tf_error):
-        """
-        Push the given error message message to ROS
-
-        :param: message: The message to publish
-        """
-        self.__ros_tf_error_pub.publish(tf_error)

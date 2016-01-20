@@ -256,7 +256,7 @@ class ROSCLESimulationFactory(object):
         logger.info("Initialization done")
         self.simulation_initialized_event.set()
 
-        cle_server.main()
+        cle_server.run()  # This is a blocking call, not to be confused with threading.Thread.start
         self.__is_running_simulation_terminating = True
         try:
             logger.info("Shutdown simulation")
@@ -303,7 +303,7 @@ class ROSCLESimulationFactory(object):
         logger.info("Initialization done")
         self.simulation_initialized_event.set()
 
-        cle_server.main()
+        cle_server.run()  # This is a blocking call, not to be confused with threading.Thread.start
         self.__is_running_simulation_terminating = True
         try:
             logger.info("Shutdown simulation")
