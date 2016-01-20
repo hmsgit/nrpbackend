@@ -5,7 +5,7 @@ the Close Loop Engine Simulation Factory (CLESimulationFactory)
 The ROSCLEServer module provides utility classes to run the Closed Loop
 Engine in a separate process, while communicating with it through ROS services.
 """
-from hbp_nrp_cleserver import config
+from hbp_nrp_cle import config
 
 __author__ = 'LorenzoVannucci'
 

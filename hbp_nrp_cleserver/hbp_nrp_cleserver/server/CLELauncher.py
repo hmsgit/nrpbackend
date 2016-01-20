@@ -14,7 +14,7 @@ from RestrictedPython import compile_restricted
 
 from geometry_msgs.msg import Pose
 
-from hbp_nrp_cleserver import config
+from hbp_nrp_cle.cle import config
 
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import compute_dependencies
