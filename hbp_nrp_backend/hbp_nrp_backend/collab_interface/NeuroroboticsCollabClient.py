@@ -37,6 +37,7 @@ class NeuroroboticsCollabClient(object):
     BIBI_CONFIGURATION_FILE_NAME = "bibi_configuration.xml"
     BIBI_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics.bibi+xml"
     TRANSFER_FUNCTIONS_FILE_NAME = "transfer_functions.py"
+    TRANSFER_FUNCTIONS_PY_MIMETYPE = "application/hbp-neurorobotics.tfs+python"
 
     def __init__(self, token, context_id):
         """
@@ -57,6 +58,8 @@ class NeuroroboticsCollabClient(object):
         self.__project = self.__document_client.get_project_by_collab_id(
             self.__collab_client.collab_id)
 
+        self.__collab_context = get_or_raise_collab_context(self.__context_id)
+
     def get_mimetype(self, file_path):
         """
         Returns the mimetype of the given file
@@ -71,8 +74,10 @@ class NeuroroboticsCollabClient(object):
             mimetype = self.BIBI_CONFIGURATION_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.sdf'):
             mimetype = self.SDF_WORLD_MIMETYPE
-        elif (self.__find_regexp(file_path, r'import pyNN')):
+        elif (self.__find_regexp(file_path, r'import\s+pyNN|from\s+PyNN\s+import')):
             mimetype = self.BRAIN_PYNN_MIMETYPE
+        elif (os.path.splitext(file_name)[1] == '.py'):
+            mimetype = self.TRANSFER_FUNCTIONS_PY_MIMETYPE
         return mimetype
 
     @staticmethod
@@ -193,9 +198,8 @@ class NeuroroboticsCollabClient(object):
         then the responsability of managing the returned folder.
         :return: A dictionary containing the various path of the cloned elements.
         """
-        collab_context = get_or_raise_collab_context(self.__context_id)
         return self.clone_experiment_template_from_collab(
-            collab_context.experiment_folder_uuid
+            self.__collab_context.experiment_folder_uuid
         )
 
     def clone_bibi_from_collab(self, collab_folder_uuid):
@@ -232,8 +236,7 @@ class NeuroroboticsCollabClient(object):
         The caller has then the responsability of managing the created folder.
         :return: A string containing the path of the cloned bibi configuration file.
         """
-        collab_context = get_or_raise_collab_context(self.__context_id)
-        return self.clone_bibi_from_collab(collab_context.experiment_folder_uuid)
+        return self.clone_bibi_from_collab(self.__collab_context.experiment_folder_uuid)
 
     def get_first_file_path_with_mimetype(self, mimetype, default_filename):
         """
@@ -244,26 +247,46 @@ class NeuroroboticsCollabClient(object):
         :param default_filename: A default filename to return along with the
         collab path when nothing is found.
         """
-        collab_context = get_or_raise_collab_context(self.__context_id)
         collab_folder_path = \
-            self.__document_client.get_path_by_id(collab_context.experiment_folder_uuid)
+            self.__document_client.get_path_by_id(self.__collab_context.experiment_folder_uuid)
         for filename in self.__document_client.listdir(collab_folder_path):
             filepath = collab_folder_path + '/' + filename
             attr = self.__document_client.get_standard_attr(filepath)
             if '_contentType' in attr and attr['_contentType'] == mimetype:
                 return filepath
 
-        default_filepath = collab_folder_path + '/' + default_filename
+        default_filepath = os.path.join(collab_folder_path, default_filename)
         return default_filepath
 
-    def save_string_to_file_in_collab(self, string, mimetype, default_filename):
+    def replace_file_content_in_collab(self, content, mimetype, default_filename):
         """
-        Save a given file in the collab.
+        Replace the content of the first file found with a given mimetype by some
+        new content
+
+        :param content: new content (in UTF-8)
+        :param mimetype: mimetype of the file to search for
+        :param default_filename: if no file with the given mimetype is found, create
+        a new file with this default filename.
         """
         filepath = self.get_first_file_path_with_mimetype(mimetype, default_filename)
         if self.__document_client.exists(filepath):
             self.__document_client.remove(filepath)
-        self.__document_client.upload_string(string, filepath, mimetype)
+        self.__document_client.upload_string(content, filepath, mimetype)
+
+    def write_file_with_content_in_collab(self, content, mimetype, filename):
+        """
+        Create or override a file in the collab with a given content, mimetype and filename
+
+        :param content: content of the file (in UTF-8).
+        :param mimetype: mimetype of the file.
+        :param filename: self explaining.
+        """
+        collab_folder_path = \
+            self.__document_client.get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        filepath = os.path.join(collab_folder_path, filename)
+        if self.__document_client.exists(filepath):
+            self.__document_client.remove(filepath)
+        self.__document_client.upload_string(content, filepath, mimetype)
 
 
 class _FlattenedExperimentDirectory(object):

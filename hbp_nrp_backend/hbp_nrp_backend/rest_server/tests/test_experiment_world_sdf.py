@@ -30,7 +30,7 @@ class TestExperimentWorldSDF(RestTest):
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
         response = self.client.put('/experiment/' + context_id + '/sdf_world')
         self.assertEqual(response.status_code, 200)
-        self.mock_collabClient_instance.save_string_to_file_in_collab.assert_called_with(
+        self.mock_collabClient_instance.replace_file_content_in_collab.assert_called_with(
             "<sdf/>",
             ANY,
             ANY

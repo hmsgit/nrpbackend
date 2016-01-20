@@ -365,28 +365,3 @@ def get_username():
     """
     user_name = UserAuthentication.get_x_user_name_header(request)
     return user_name
-
-
-def substitute_bibi_transferfunctions(bibi_file, tf_list):
-    """
-    Create a new bibi, containing given transfer functions
-
-    :param bibi_file: filename of bibi
-    :param tf_list: list(string) of transfer functions (python)
-    :return: the new bibi as string containing these transfer functions
-    """
-
-    with open(bibi_file) as bibi_xml:
-        bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-    assert isinstance(bibi, bibi_api_gen.BIBIConfiguration)
-
-    # Remove all transfer functions from BIBI
-    del bibi.transferFunction[:]
-
-    # Add given TFs
-    for current in tf_list:
-        ptf = bibi_api_gen.PythonTransferFunction()
-        ptf.append(current)
-        bibi.transferFunction.append(ptf)
-
-    return str(bibi.toxml("utf-8"))

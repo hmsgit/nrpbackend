@@ -78,8 +78,8 @@ class ExperimentWorldSDF(Resource):
 
         client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request),
                                            context_id)
-        client.save_string_to_file_in_collab(sdf_string,
-                                             NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
-                                             "recovered_world.sdf")
+        client.replace_file_content_in_collab(sdf_string,
+                                              NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
+                                              "recovered_world.sdf")
 
         return 200

@@ -75,7 +75,7 @@ def create_brain():
         data = {'data': self.brain_model}
         response = self.client.put('/experiment/' + context_id + '/brain', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
-        save_string_to_file = self.mock_collabClient_instance.save_string_to_file_in_collab
+        save_string_to_file = self.mock_collabClient_instance.replace_file_content_in_collab
         argslist = [
             x[0] for x in save_string_to_file.call_args_list
         ]

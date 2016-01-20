@@ -98,7 +98,7 @@ class ExperimentBrainFile(Resource):
             context_id
         )
 
-        client.save_string_to_file_in_collab(
+        client.replace_file_content_in_collab(
             data,
             client.BRAIN_PYNN_MIMETYPE,
             "recovered_pynn_brain_model.py"

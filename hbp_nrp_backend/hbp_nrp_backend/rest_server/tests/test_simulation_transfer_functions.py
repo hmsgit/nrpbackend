@@ -13,7 +13,7 @@ from hbp_nrp_backend.rest_server.tests import RestTest
 
 class TestSimulationTransferFunctions(RestTest):
     def test_get_tf_name(self):
-        self.assertRaises(AssertionError, get_tf_name, "def tf1:\n return")
+        self.assertEqual(None, get_tf_name(" not valid :)"))
         self.assertEqual("tf1", get_tf_name("def tf1():\n return"))
         self.assertEqual("tf1", get_tf_name("def tf1(a,b,c):\n return"))
         self.assertEqual("tf1", get_tf_name("def tf1  (a,b,c):\n return"))
