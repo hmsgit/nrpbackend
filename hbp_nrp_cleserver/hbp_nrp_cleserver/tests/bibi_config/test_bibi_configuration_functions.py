@@ -23,28 +23,6 @@ class TestScript(unittest.TestCase):
     def test_print_expression_raises(self):
         self.assertRaises(Exception, print_expression, "foo")
 
-    def test_monitoring_population_rate(self):
-        monitor = api.Neuron2Monitor(name="testMonitor",
-                                     device=[api.DeviceChannel(type="PopulationRate", name="neurons",
-                                                              neurons=api.List(population="pop", element=[1, 2, 3]))])
-        self.assertEqual(get_monitoring_type(monitor), "cle_ros_msgs.msg.SpikeRate")
-        self.assertEqual(get_monitoring_topic(monitor), "/monitor/population_rate")
-
-        impl = 'cle_ros_msgs.msg.SpikeRate(t, neurons.rate, ' \
-               '"testMonitor")'
-        self.assertEqual(get_monitoring_impl(monitor), impl)
-
-    def test_monitoring_spike_detector(self):
-        neurons=api.List(population="pop", element=[1, 2, 3])
-        dc=api.DeviceChannel(type="SpikeRecorder", name="neurons", neurons=neurons)
-        monitor = api.Neuron2Monitor(name="testMonitor", device=[dc])
-
-        self.assertEqual(get_monitoring_type(monitor), "cle_ros_msgs.msg.SpikeEvent")
-        self.assertEqual(get_monitoring_topic(monitor), "/monitor/spike_recorder")
-
-        impl = 'monitoring.create_spike_recorder_message(t, 3, neurons.times, "testMonitor")'
-        self.assertEqual(get_monitoring_impl(monitor), impl)
-
     def test_get_neuron_count(self):
         self.assertEqual(3, get_neuron_count(api.List(population="pop", element=[1, 2, 3])))
         self.assertEqual(1, get_neuron_count(api.Index(population="pop")))

@@ -385,6 +385,18 @@ def print_full_stack_trace(sig, frame):
     logger.warn("*** STACKTRACE - END ***")
 
 
+def __except_hook(ex_type, value, ex_traceback):
+    """
+    Logs the unhandled exception
+
+    :param ex_type: The exception type
+    :param value: The exception value
+    :param ex_traceback: The traceback
+    """
+    logger.critical("Unhandled exception of type {0}: {1}".format(ex_type, value))
+    logger.exception(ex_traceback)
+
+
 def set_up_logger(logfile_name, verbose=False):
     """
     Configure the root logger of the CLE application
@@ -408,6 +420,8 @@ def set_up_logger(logfile_name, verbose=False):
         logger.warn("Could not write to specified logfile or no logfile specified, "
                     "logging to stdout now!")
     logging.root.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+    sys.excepthook = __except_hook
 
 
 def main():

@@ -17,7 +17,7 @@ import time
 from testfixtures import log_capture
 import sys
 
-__author__ = 'HBP NRP software team'
+__author__ = 'Georg Hinkel, Bernd Eckstein'
 
 
 class TestROSCLESimulationFactory(unittest.TestCase):
@@ -199,6 +199,16 @@ class TestROSCLESimulationFactory(unittest.TestCase):
 
         ROSCLESimulationFactory.set_up_logger(None, True)
         self.assertEqual(logging.getLogger().getEffectiveLevel(), logging.DEBUG)
+
+    @log_capture(level=logging.CRITICAL)
+    def test_except_hook(self, logcapture):
+        ROSCLESimulationFactory.set_up_logger(None)
+        sys.excepthook(Exception, Exception("Something really bad happened"), "This is a stacktrace")
+        logcapture.check((
+            self.LOGGER_NAME,
+            'CRITICAL',
+            "Unhandled exception of type <type 'exceptions.Exception'>: Something really bad happened"
+        ))
 
     def test_get_version(self):
         cle_version = str(self.__ros_cle_simulation_factory.get_version(None))
