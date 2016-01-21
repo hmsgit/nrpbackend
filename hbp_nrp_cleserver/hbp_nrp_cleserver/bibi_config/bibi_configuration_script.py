@@ -10,6 +10,7 @@ import os
 import re
 import logging
 import warnings
+import itertools
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -374,6 +375,48 @@ def print_neuron_group(neuron_group):
     raise Exception("Don't know how to print group of type " + str(type(neuron_group)))
 
 
+def get_referenced_connectors(tf, config):
+    """
+    Gets the connectors referenced by the given transfer function
+
+    :param tf: The given transfer function
+    :return: A list of connectors
+    """
+    connector_names = []
+    for dev in itertools.chain(tf.device, tf.deviceGroup):
+        if dev.connectorRef is not None and not dev.connectorRef.ref in connector_names:
+            connector_names.append(dev.connectorRef.ref)
+    if len(connector_names) > 0:
+        conn_dict = {}
+        for conn in config.connectors:
+            conn_dict[conn.name] = conn
+        for i in range(0, len(connector_names)):
+            connector_names[i] = conn_dict[connector_names[i]]
+    return connector_names
+
+
+def get_referenced_dynamics(tf, config):
+    """
+    Gets the connectors referenced by the given transfer function
+
+    :param tf: The given transfer function
+    :return: A list of connectors
+    """
+    assert isinstance(tf, bibi_api_gen.BIBITransferFunction)
+    assert isinstance(config, bibi_api_gen.BIBIConfiguration)
+    dynamics_names = []
+    for dev in itertools.chain(tf.device, tf.deviceGroup):
+        if dev.synapseDynamicsRef is not None and not dev.synapseDynamicsRef.ref in dynamics_names:
+            dynamics_names.append(dev.synapseDynamicsRef.ref)
+    if len(dynamics_names) > 0:
+        dynamics_dict = {}
+        for dyn in config.synapseDynamics:
+            dynamics_dict[dyn.name] = dyn
+        for i in range(0, len(dynamics_names)):
+            dynamics_names[i] = dynamics_dict[dynamics_names[i]]
+    return dynamics_names
+
+
 def print_device_config(dev):
     """
     Prints the configuration of the given device or device group
@@ -403,8 +446,7 @@ def print_synapse_dynamics(synapse_dynamics):
     :return: Code that creates the synapse dynamics
     """
     if isinstance(synapse_dynamics, bibi_api_gen.TsodyksMarkramMechanism):
-        return "sim.SynapseDynamics(fast=" \
-               "sim.TsodyksMarkramMechanism(U={0}, tau_rec={1}, tau_facil={2}))" \
+        return "{{'type':'TsodyksMarkram', 'U':{0}, 'tau_rec':{1}, 'tau_facil':{2}}}" \
             .format(synapse_dynamics.u, synapse_dynamics.tau_rec, synapse_dynamics.tau_facil)
     raise Exception(
         "Don't know how to print synapse dynamics of type " + str(type(synapse_dynamics)))
@@ -418,13 +460,13 @@ def print_connector(connector):
     :return: Code that creates the neuron connector
     """
     if isinstance(connector, bibi_api_gen.OneToOneConnector):
-        return "sim.OneToOneConnector(weights={0}, delays={1})".format(connector.weights,
-                                                                       connector.delays)
+        return "{{'mode':'OneToOne', 'weights':{0}, 'delays':{1}}}".format(connector.weights,
+                                                                           connector.delays)
     if isinstance(connector, bibi_api_gen.AllToAllConnector):
-        return "sim.AllToAllConnector(weights={0}, delays={1})".format(connector.weights,
-                                                                       connector.delays)
+        return "{{'mode':'AllToAll', 'weights':{0}, 'delays':{1}}}".format(connector.weights,
+                                                                           connector.delays)
     if isinstance(connector, bibi_api_gen.FixedNumberPreConnector):
-        return "sim.FixedNumberPreConnector({2}, weights={0}, delays={1})".format(
+        return "{{'mode':'Fixed', 'n':{2}, 'weights':{0}, 'delays':{1}}}".format(
             connector.weights, connector.delays, connector.count)
     raise Exception("Don't know how to print connector of type " + str(type(connector)))
 
@@ -544,17 +586,21 @@ def get_tf_name(tf_code):
     return ret[0]
 
 
-def generate_tf(tf):
+def generate_tf(tf, config):
     """
     Generates the code for the given transfer function
 
     :param tf: The transfer function to generate code for
+    :param config: The parent BIBI configuration
     :return: A unicode string with the generated code
     """
     names = dict(globals())
     names["tf"] = tf
+    if isinstance(tf, bibi_api_gen.BIBITransferFunction):
+        names["connectors"] = get_referenced_connectors(tf, config)
+        names["dynamics"] = get_referenced_dynamics(tf, config)
     tf_source = tf_template.render(names)
     if not hasattr(tf, 'name'):
         tf.name = get_tf_name(tf_source)
 
-    return tf_source
+    return ''.join(l for l in tf_source.splitlines(True) if not l.isspace())

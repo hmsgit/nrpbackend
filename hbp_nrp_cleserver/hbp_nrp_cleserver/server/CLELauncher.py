@@ -242,7 +242,7 @@ class CLELauncher(object):
         import_referenced_python_tfs(self.__bibi_conf, self.__experiment_path)
 
         for tf in self.__bibi_conf.transferFunction:
-            tf_code = generate_tf(tf)
+            tf_code = generate_tf(tf, self.__bibi_conf)
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
             logger.info("TF: " + tf.name + "\n" + tf_code + '\n')
@@ -254,6 +254,7 @@ class CLELauncher(object):
             except Exception as e:
                 logger.error("Error while loading new transfer function")
                 logger.error(e)
+                raise
 
         # Loading is completed.
         Notificator.notify("Finished", True)  # subtask 9

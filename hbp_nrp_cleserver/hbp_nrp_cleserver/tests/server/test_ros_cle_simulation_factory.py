@@ -207,7 +207,9 @@ class TestROSCLESimulationFactory(unittest.TestCase):
     @patch('traceback.extract_stack')
     @patch('sys._current_frames')
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger.info')
-    def test_print_full_stack_trace(self, mocked_info, current_frames, extract_stack):
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.logger.info')
+    def test_print_full_stack_trace(self, mocked_info_2, mocked_info_1, current_frames,
+                                    extract_stack):
         with LogCapture() as logcapture:
             current_frames.return_value = {'1234': 'dummystack'}
             extract_stack.return_value = [['dummy_file', 42, 'dummy_name', 'dummy_line']]
