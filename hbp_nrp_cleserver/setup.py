@@ -43,8 +43,7 @@ config = {
                  'hbp_nrp_cleserver.bibi_config',
                  'hbp_nrp_cleserver.server'],
     'package_data': {
-        'hbp_nrp_cleserver.bibi_config': ['cle_template.pyt', 'tf_template.pyt'],
-        'hbp_nrp_cleserver': ['config.ini']
+        'hbp_nrp_cleserver.bibi_config': ['tf_template.pyt']
     },
     'scripts': [],
     'name': 'hbp-nrp-cleserver',
