@@ -300,7 +300,8 @@ class Simulation(object):
             self.state_machines.append(sm)
         sm.sm_path = file_path
 
-        sm.initialize_sm()
+        if not sm.is_running:
+            sm.initialize_sm()
 
     def delete_state_machine(self, name):
         """

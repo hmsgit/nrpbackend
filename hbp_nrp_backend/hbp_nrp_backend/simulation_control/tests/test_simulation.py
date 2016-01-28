@@ -73,9 +73,6 @@ class TestSimulation(unittest.TestCase):
         self.assertFalse(response)
 
     def test_simulation_set_state_machine_code(self):
-        self.assertIsNotNone(self.__simulation.state_machine_manager)
-        sm = MagicMock()
-        sm.register_termination_cb = MagicMock(return_value=None)
         another_valid_code = "import smach_ros\n" +\
             "from mock import Mock\n" +\
             "sm = Mock()"
@@ -93,6 +90,7 @@ class TestSimulation(unittest.TestCase):
 
         # The create method is mandatory in the state machine code
         self.__simulation.state_machines[0].initialize_sm = Mock(side_effect=AttributeError)
+        self.__simulation.state_machines[0].is_running = False
         invalid_code = "def spwan_state_machine():\n return None"
         self.assertRaises(
             AttributeError,
