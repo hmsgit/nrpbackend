@@ -459,4 +459,18 @@ def main():
 
 
 if __name__ == '__main__':  # pragma: no cover
+    # After some debugging, it turned out that for some reason when not using
+    # the ROSCLEServer.__to_be_executed_within_main_thread list for executing
+    # CLE actions, the program was crashing due to NEST having a number of OpenMP
+    # threads changing for no apparent reason, resulting in a segmentation fault.
+    # Even though I didn't manage to find out why the number of threads changed
+    # (seemingly omp_set_num_threads is never called with a value different than 1,
+    # but the number of threads at crash time was 8), I noticed that forcing the
+    # number of threads with this environment variable made the CLE work properly.
+    # Please, refer to change cebfd56f045228b11e800a4338b82a39ebbc691a for a version
+    # using ROSCLEServer.__to_be_executed_within_main_thread, as I'm removing it in
+    # this commit. (Alessandro)
+    # This value should match the one in PyNNControlAdapter.initialize and in any
+    # other place pyNN.nest.setup() is called.
+    os.environ['OMP_NUM_THREADS'] = "1"
     main()

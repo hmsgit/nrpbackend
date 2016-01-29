@@ -163,8 +163,6 @@ class ROSCLEServer(object):
         self.__service_set_brain = None
         self.__cle = None
 
-        self.__to_be_executed_within_main_thread = []
-
         self.__simulation_id = sim_id
         self.__ros_status_pub = rospy.Publisher(
             TOPIC_STATUS,
@@ -184,6 +182,7 @@ class ROSCLEServer(object):
         # timeout stuff
         self.__timeout = None
         self.__double_timer = None
+        self.start_thread = None
 
         # Start another thread calling rospy.spin
         # This line has been put here because it has to be called before prepare_simulation,
@@ -425,10 +424,18 @@ class ROSCLEServer(object):
 
         # Make sure CLE is stopped. If already stopped, these calls are harmless.
         # (Execution of updated code is asynchronous)
-        self.__execute_high_priority_function_within_main_thread_with_cle_stopped(
-            lambda s=new_source, c=new_code, n=new_name:
-            tf_framework.set_transfer_function(s, c, n)
-        )
+        self.__cle.stop()
+        try:
+            tf_framework.set_transfer_function(new_source, new_code, new_name)
+        except TFLoadingException as e:
+            tf_error = SimulationFactoryCLEError(
+                "Transfer Function",
+                "Loading",
+                e.message,
+                e.tf_name
+            )
+            self.__ros_tf_error_pub.publish(tf_error)
+
         return ""
 
     def __delete_transfer_function(self, request):
@@ -439,29 +446,10 @@ class ROSCLEServer(object):
         :return: always True as this command is executed asynchronously.
                  ROS forces us to return a value.
         """
-        self.__execute_high_priority_function_within_main_thread_with_cle_stopped(
-            lambda n=request.transfer_function_name:
-            tf_framework.delete_transfer_function(n)
-        )
-        return True
-
-    def __execute_high_priority_function_within_main_thread_with_cle_stopped(self, function):
-        """
-        Execute a function within main thread. The function will be placed at the highest priority
-        in the list of functions to be executed. The CLE will be stopped prior of executing the
-        function (in case it was in a started state).
-        :param function: Function to be executed
-        """
-
         self.__cle.stop()
-        self.__done_flag.wait()
-        self.__done_flag.clear()
+        tf_framework.delete_transfer_function(request.transfer_function_name)
 
-        self.__to_be_executed_within_main_thread.insert(
-            0,  # Make sure that the function is in the first position of the list
-            function
-        )
-        self.__event_flag.set()
+        return True
 
     def start_timeout(self):
         """
@@ -509,21 +497,6 @@ class ROSCLEServer(object):
         """
 
         while not self.__state.is_final_state():
-            if self.__to_be_executed_within_main_thread:
-                for function in self.__to_be_executed_within_main_thread:
-                    try:
-                        function()
-                    except TFLoadingException as e:
-                        tf_error = SimulationFactoryCLEError(
-                            "Transfer Function",
-                            "Loading",
-                            e.message,
-                            e.tf_name
-                        )
-                        self.__ros_tf_error_pub.publish(tf_error)
-
-                self.__to_be_executed_within_main_thread = []
-                self.__done_flag.set()
             self.__event_flag.wait()  # waits until an event is set
             self.__event_flag.clear()
 
@@ -627,7 +600,10 @@ class ROSCLEServer(object):
         """
         Handler for the CLE start() call, also used for resuming after pause().
         """
-        self.__to_be_executed_within_main_thread.append(self.__cle.start)
+        # The start() is blocking so it has to be called on a separate thread
+        self.start_thread = threading.Thread(target=self.__cle.start)
+        self.start_thread.setDaemon(True)
+        self.start_thread.start()
 
     @ros_handler
     def pause_simulation(self):
@@ -645,6 +621,10 @@ class ROSCLEServer(object):
         self.stop_timeout()
         self.__double_timer.cancel_all()
         self.__cle.stop()
+        self.start_thread.join(60)
+        if self.start_thread.isAlive():
+            logger.error("Error while stopping the simulation, impossible to join the simulation "
+                         "thread")
 
     # pylint: disable=broad-except
     def reset_simulation(self, request):
@@ -666,10 +646,8 @@ class ROSCLEServer(object):
                 # seems to imply that stop() is already done on reset()
                 self.__cle.stop()
                 self.stop_timeout()
-                self.__done_flag.wait()
-                self.__done_flag.clear()
                 # CLE reset() already includes stop() and wait_step()
-                self.__to_be_executed_within_main_thread.append(self.__cle.reset)
+                self.__cle.reset()
                 self.start_timeout()
             return True, ""
         except Exception as e:
