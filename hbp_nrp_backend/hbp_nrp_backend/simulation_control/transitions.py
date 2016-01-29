@@ -11,6 +11,7 @@ from hbp_nrp_backend import NRPServicesGeneralException
 from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from gazebo_msgs.srv import SetVisualProperties
+from cle_ros_msgs.srv import ResetSimulationRequest
 
 import os
 import shutil
@@ -59,7 +60,12 @@ def reset_simulation(simulation):
                                                         for sm in simulation.state_machines))
     simulation.state_machine_manager.terminate_all()
 
-    simulation.cle.reset()
+    # The following two lines are part of a fix for [NRRPLT-1899]
+    # To be removed when the following Gazebo issue is solved:
+    # https://bitbucket.org/osrf/gazebo/issue/1573/scene_info-does-not-reflect-older-changes
+    simulation.left_screen_color = 'Gazebo/Blue'  # pragma: no cover
+    simulation.right_screen_color = 'Gazebo/Blue'  # pragma: no cover
+    simulation.cle.reset(ResetSimulationRequest.RESET_OLD)
 
     # The following lines are part of a fix for [NRRPLT-2844]
     # As a Gazebo reset does not touch visual properties, we have to reset them explicitly

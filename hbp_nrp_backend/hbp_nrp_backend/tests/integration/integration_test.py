@@ -10,6 +10,7 @@ import sys
 import rospy
 import std_msgs.msg
 from cle_ros_msgs.msg import SpikeRate
+from cle_ros_msgs.srv import ResetSimulationRequest
 from threading import Thread
 import json
 import os
@@ -176,12 +177,11 @@ def run_integration_test():
         check_response(response, "Pause experiment")
 
         # Reset the experiment, the new way
+        # RESET_FULL is still not working
         response = client.put('/simulation/0/reset',
-                              data=json.dumps({'oldReset': False,
-                                               'robotPose': False,
-                                               'fullReset': False}),
+                              data=json.dumps({'resetType': ResetSimulationRequest.RESET_FULL}),
                               headers=auth_header)
-        check_response(response, "Reset Experiment")
+        check_response(response, "Reset Experiment", 500)
 
         # Start experiment again
         response = client.put('/simulation/0/state', data='{"state": "started"}',

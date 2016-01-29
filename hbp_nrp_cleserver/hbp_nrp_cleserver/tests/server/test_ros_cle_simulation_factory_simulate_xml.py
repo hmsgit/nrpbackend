@@ -28,6 +28,14 @@ LocalGazeboServerInstance.start = LocalGazeboServerInstance.stop = \
     LocalGazeboServerInstance.restart = Mock()
 
 
+class MockedGazeboHelper(object):
+
+    def load_gazebo_world_file(self, world):
+        return {}, {}
+
+    def __getattr__(self, x):
+        return Mock()
+
 @patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLEServer", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
@@ -39,8 +47,8 @@ LocalGazeboServerInstance.start = LocalGazeboServerInstance.stop = \
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
        new=LocalGazeboServerInstance)
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=Mock())
-@patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
+@patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
 class SimulationTestCase(unittest.TestCase):
 
     def test_simulation_local(self):

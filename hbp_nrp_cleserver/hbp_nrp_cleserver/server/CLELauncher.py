@@ -159,7 +159,7 @@ class CLELauncher(object):
 
         Notificator.notify("Loading experiment environment", True)  # subtask 2
 
-        self.__gazebo_helper.load_gazebo_world_file(world_file)
+        w_models, w_lights = self.__gazebo_helper.load_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
         Notificator.notify("Loading neuRobot", True)  # subtask 3
@@ -232,6 +232,9 @@ class CLELauncher(object):
 
         # Set initial pose
         cle.initial_robot_pose = rpose
+        # Set initial models and lights
+        cle.initial_models = w_models
+        cle.initial_lights = w_lights
 
         # Now that we have everything ready, we could prepare the simulation
         cle_server.prepare_simulation(cle, self.__exd_conf.timeout)

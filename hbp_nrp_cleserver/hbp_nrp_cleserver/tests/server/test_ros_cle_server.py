@@ -2,7 +2,7 @@
 ROSCLEServer unit test
 """
 
-from cle_ros_msgs.srv import ResetSimulation
+from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
 from hbp_nrp_cleserver.server import ROSCLEServer
 from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState, State, InitialState, RunningState, \
     PausedState, StoppedState
@@ -142,14 +142,13 @@ class TestROSCLEServer(unittest.TestCase):
         self.__ros_cle_server.start_simulation()
         self.__ros_cle_server.pause_simulation()
         msg = ResetSimulation()
-        msg.reset_robot_pose = False
-        msg.full_reset = False
+        msg.reset_type = ResetSimulationRequest.RESET_OLD
         self.__ros_cle_server.reset_simulation(msg)
         # start_timeout has been called in prepare_simulation AND in reset_simulation
         self.assertEqual(2, self.__ros_cle_server.start_timeout.call_count)
         self.assertEqual(1, self.__ros_cle_server.stop_timeout.call_count)
 
-        msg.full_reset = True
+        msg.reset_type = ResetSimulationRequest.RESET_FULL
         resp = self.__ros_cle_server.reset_simulation(msg)
         self.assertFalse(resp[0])
 
@@ -349,8 +348,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertRaises(RuntimeError, state.pause_simulation)
         self.assertRaises(RuntimeError, state.stop_simulation)
         msg = ResetSimulation()
-        msg.reset_robot_pose = False
-        msg.full_reset = False
+        msg.reset_type = ResetSimulationRequest.RESET_OLD
         self.assertRaises(RuntimeError, state.reset_simulation, msg)
         self.assertFalse(state.is_final_state())
 
@@ -364,8 +362,7 @@ class TestROSCLEServer(unittest.TestCase):
         initialized = InitialState(ctx)
         self.assertRaises(RuntimeError, initialized.pause_simulation)
         msg = ResetSimulation()
-        msg.reset_robot_pose = False
-        msg.full_reset = False
+        msg.reset_type = ResetSimulationRequest.RESET_OLD
         self.assertRaises(RuntimeError, initialized.reset_simulation, msg)
         self.assertFalse(initialized.is_final_state())
 
@@ -374,6 +371,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEqual(ctx.start_simulation.call_count, 1)
         self.assertEqual(ctx.stop_simulation.call_count, 1)
         self.assertEqual(str(initialized), ROSCLEState.INITIALIZED)
+
 
     def test_running_state(self):
         self.craft_ros_cle_server(True)
@@ -388,8 +386,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertFalse(running.is_final_state())
 
         msg = ResetSimulation()
-        msg.reset_robot_pose = False
-        msg.full_reset = False
+        msg.reset_type = ResetSimulationRequest.RESET_OLD
         running.reset_simulation(msg)
         running.stop_simulation()
         running.pause_simulation()

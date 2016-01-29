@@ -30,12 +30,8 @@ class SimulationReset(Resource):
         Represents a request for the API implemented by SimulationReset
         """
 
-        resource_fields = {
-            'oldReset': fields.Boolean,
-            'robotPose': fields.Boolean,
-            'fullReset': fields.Boolean
-        }
-        required = ['oldReset', 'robotPose', 'fullReset']
+        resource_fields = {'resetType': fields.Integer}
+        required = ['resetType']
 
     @swagger.operation(
         notes='Handles the reset of a given simulation.',
@@ -84,10 +80,8 @@ class SimulationReset(Resource):
         Calls the CLE for resetting a given simulation.
 
         :param sim_id: The simulation ID.
-        :>json oldReset: this reset can be performed directly by the frontend, and will be
-            eventually removed.
-        :>json robotPose: request to reset the robot pose to the initial one.
-        :>json fullReset: request to reset completely the simulation.
+        :>json resetType: the reset type the user wants to be performed, details about possible
+            values are given in GazeboRosPackages/src/cle_ros_msgs/srv/ResetSimulation.srv
         :status 200: The requested reset was performed successfully.
         :status 400: Invalid request, the JSON parameters are incorrect.
         :status 401: Operation only allowed by simulation owner.
@@ -112,10 +106,7 @@ class SimulationReset(Resource):
                 raise NRPServicesClientErrorException('Invalid parameter %s' % (par, ))
 
         try:
-            sim.cle.reset(
-                reset_robot_pose=body.get('robotPose'),
-                full_reset=body.get('fullReset')
-            )
+            sim.cle.reset(body.get('resetType'))
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 

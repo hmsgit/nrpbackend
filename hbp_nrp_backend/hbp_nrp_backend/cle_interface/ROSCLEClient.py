@@ -183,15 +183,15 @@ class ROSCLEClient(object):
         self.valid = False
         self.invalid_reason = "a previous stop request (triggering automatic disconnection)"
 
-    def reset(self, reset_robot_pose=False, full_reset=False):
+    def reset(self, reset_type):
         """
         Reset the simulation.
-        :param reset_robot_pose: True if we want to reset the robot initial pose, False otherwise.
-        :param full_reset: True if we want to perform a full reset, False otherwise.
+        :param reset_type: Denotes the kind of reset the user wants to perform, details about
+            reset types and details are given in the ResetSimulation service request message.
         """
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
-        resp = self.__cle_reset(reset_robot_pose, full_reset)
+        resp = self.__cle_reset(reset_type)
         if not resp.success:
             raise ROSCLEClientException(resp.error_message)
 

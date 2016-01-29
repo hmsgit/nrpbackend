@@ -631,16 +631,22 @@ class ROSCLEServer(object):
     # pylint: disable=broad-except
     def reset_simulation(self, request):
         """
-        Handler for the CLE reset() call, additionally triggers a CLE stop().
+        Handler for the CLE reset() call.
+
+        :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
         """
 
-        if request.full_reset:
-            return False, "This feature has not been implemented yet."
+        rsr = srv.ResetSimulationRequest
+        reset_type = request.reset_type
 
         try:
-            if request.reset_robot_pose:
+            if reset_type == rsr.RESET_ROBOT_POSE:
                 self.__cle.reset_robot_pose()
-            else:
+            elif reset_type == rsr.RESET_WORLD:
+                self.__cle.reset_world()
+            elif reset_type == rsr.RESET_FULL:
+                return False, "This feature has not been implemented yet."
+            elif reset_type == rsr.RESET_OLD:
                 # we have to call the stop function here, otherwise the main thread
                 # will not stop executing the simulation loop
 
@@ -651,6 +657,7 @@ class ROSCLEServer(object):
                 # CLE reset() already includes stop() and wait_step()
                 self.__cle.reset()
                 self.start_timeout()
-            return True, ""
         except Exception as e:
             return False, str(e)
+
+        return True, ""
