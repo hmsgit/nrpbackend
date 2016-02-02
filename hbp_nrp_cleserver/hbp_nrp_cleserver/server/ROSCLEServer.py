@@ -300,7 +300,9 @@ class ROSCLEServer(object):
         do assume that if the sources are not available, the model
         comes from a h5 file. This has to be refined once we will
         be more confident in the fate of the h5 files.
+
         :param request: The rospy request parameter
+        :return: an array compatible with the GetBrain.srv ROS service
         """
         braintype = "h5"
         data_type = "base64"
@@ -309,7 +311,13 @@ class ROSCLEServer(object):
             braintype = "py"
             data_type = "text"
             brain_code = tf_framework.get_brain_source()
-        return [braintype, brain_code, data_type]
+
+        return [
+            braintype,
+            brain_code,
+            data_type,
+            json.dumps(tf_framework.get_brain_populations())
+        ]
 
     def __set_brain(self, request):
         """

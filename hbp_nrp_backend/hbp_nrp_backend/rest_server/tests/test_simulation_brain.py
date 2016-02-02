@@ -50,13 +50,45 @@ class DefaultDotDict(defaultdict):
 
 
 # Test Data
-brain_data = DefaultDotDict(brain_data="Data", brain_type="py", data_type="text")
-send_data = {'data': "Data", 'brain_type': "py", 'data_type': "text"}
+brain_populations_json = """
+{
+   "population_1": 1,
+   "population_2": 2,
+   "slice_1": {
+     "from": 1,
+     "to": 10,
+     "step": 1
+   },
+   "slice_2": {
+     "from": 1,
+     "to": 10
+   },
+   "list_1": [1, 2, 3]
+}
+"""
+brain_data = DefaultDotDict(
+    brain_data="Data",
+    brain_type="py",
+    data_type="text",
+    brain_populations=brain_populations_json
+)
+send_data = {
+    'data': "Data",
+    'brain_type': "py",
+    'data_type': "text",
+    'brain_populations': brain_populations_json
+}
+get_return_data = {
+    'data': "Data",
+    'brain_type': "py",
+    'data_type': "text",
+    'brain_populations': brain_populations_json
+}
 set_ret_ok = DefaultDotDict(error_message="")
 set_ret_error = DefaultDotDict(error_message="Crash boom bang", error_line=10, error_column=5)
 
 
-class TestSimulationTransferFunction(RestTest):
+class TestSimulationBrain(RestTest):
 
     def setUp(self):
         del simulations[:]
@@ -73,6 +105,7 @@ class TestSimulationTransferFunction(RestTest):
     def test_simulation_brain_get(self):
         response = self.client.get('/simulation/0/brain')
         self.assertEqual(self.sim.cle.get_simulation_brain.call_count, 1)
+        self.assertEqual(response.data.strip(), json.dumps(get_return_data))
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/4/brain')

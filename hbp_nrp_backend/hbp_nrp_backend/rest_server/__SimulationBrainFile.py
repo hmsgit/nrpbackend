@@ -99,9 +99,12 @@ class SimulationBrainFile(Resource):
 
         result = simulation.cle.get_simulation_brain()
 
-        return {'data': result.brain_data,
-                'brain_type': result.brain_type,
-                'data_type': result.data_type}, 200
+        return {
+            'data': result.brain_data,
+            'brain_type': result.brain_type,
+            'data_type': result.data_type,
+            'brain_populations': result.brain_populations
+        }, 200
 
     @swagger.operation(
         notes='Get the brain file of the given simulation.',

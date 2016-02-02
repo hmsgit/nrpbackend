@@ -189,6 +189,14 @@ class TestROSCLEServer(unittest.TestCase):
     def test_get_brain(self):
         with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
             mocked_tf_framework.get_brain_source.return_value = "Some python code"
+            slice1 = { 'from': 1, 'to': 2, 'step': 3}
+            slice2 = { 'from': 1, 'to': 2}
+            populations_json_slice = {
+              'population_1': 1, 'population_2': 2,
+              'slice_1': slice1, 'slice_2': slice2,
+              'list_1': [1, 2, 3]
+            }
+            mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
             self.craft_ros_cle_server(True)
             self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
             directory = path.split(__file__)[0]
@@ -197,6 +205,7 @@ class TestROSCLEServer(unittest.TestCase):
             self.assertEqual("py", brain[0])
             self.assertEqual("Some python code", brain[1])
             self.assertEqual("text", brain[2])
+            self.assertEqual(json.dumps(populations_json_slice), brain[3])
             mocked_tf_framework.get_brain_source.return_value = None
             brain = get_brain_implementation(Mock())
             self.assertEqual("h5", brain[0])
