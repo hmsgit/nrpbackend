@@ -215,14 +215,23 @@ class TestROSCLEServer(unittest.TestCase):
         self.craft_ros_cle_server(True)
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
         self.__mocked_cle.network_file = PropertyMock()
-        get_brain_implementation = self.__mocked_rospy.Service.call_args_list[8][0][2]
         set_brain_implementation = self.__mocked_rospy.Service.call_args_list[9][0][2]
+        populations = json.dumps({
+            'index1': 1,
+            'list1': [1, 2, 3],
+            'slice1': {'from': 1, 'to': 2, 'step': 1}
+        })
         request = Mock()
         request.data_type = "text"
         request.brain_type = "py"
         request.brain_data = "Dummy = None"
+        request.brain_populations = populations
         response = set_brain_implementation(request)
-        self.__mocked_cle.load_network_from_file.assert_called()
+        print(self.__mocked_cle.load_network_from_file.call_args[0][1])
+        expected_populations_arg = json.dumps(
+            self.__mocked_cle.load_network_from_file.call_args[0][1]
+        )
+        self.assertEqual(populations, expected_populations_arg)
         self.__mocked_cle.load_network_from_file.reset_mock()
         request.data_type = "base64"
         request.brain_data = base64.encodestring(request.brain_data)
@@ -231,6 +240,11 @@ class TestROSCLEServer(unittest.TestCase):
         request.data_type = "not_supported"
         response = set_brain_implementation(request)
         self.assertEqual("Data type not_supported is invalid", response[0])
+
+        request.brain_populations = "invalid JSON"
+        response = set_brain_implementation(request)
+        self.assertEqual("Data type not_supported is invalid", response[0])
+        request.brain_populations = populations
 
         def raise_syntax_error(foo):
             exec "Foo Bar"

@@ -52,8 +52,8 @@ class DefaultDotDict(defaultdict):
 # Test Data
 brain_populations_json = """
 {
-   "population_1": 1,
-   "population_2": 2,
+   "population_1": [1],
+   "population_2": [2],
    "slice_1": {
      "from": 1,
      "to": 10,
@@ -82,7 +82,7 @@ get_return_data = {
     'data': "Data",
     'brain_type': "py",
     'data_type': "text",
-    'brain_populations': brain_populations_json
+    'brain_populations': json.loads(brain_populations_json)
 }
 set_ret_ok = DefaultDotDict(error_message="")
 set_ret_error = DefaultDotDict(error_message="Crash boom bang", error_line=10, error_column=5)
@@ -105,7 +105,7 @@ class TestSimulationBrain(RestTest):
     def test_simulation_brain_get(self):
         response = self.client.get('/simulation/0/brain')
         self.assertEqual(self.sim.cle.get_simulation_brain.call_count, 1)
-        self.assertEqual(response.data.strip(), json.dumps(get_return_data))
+        self.assertEqual(json.loads(response.data.strip()), get_return_data)
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get('/simulation/4/brain')
@@ -114,7 +114,7 @@ class TestSimulationBrain(RestTest):
     def test_simulation_brain_put(self):
         response = self.client.put('/simulation/0/brain', data=json.dumps(send_data))
         self.assertEqual(self.sim.cle.set_simulation_brain.call_count, 1)
-        self.sim.cle.set_simulation_brain.assert_called_with("py", "Data", "text")
+        self.sim.cle.set_simulation_brain.assert_called_with("py", "Data", "text", json.dumps(brain_populations_json))
         self.assertEqual(response.status_code, 200)
 
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_error)

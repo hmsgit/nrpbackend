@@ -4,9 +4,13 @@ Unit tests for the experiment SDF services
 __author__ = 'Daniel Peppicelli'
 
 import json
+import shutil
 from mock import patch
 from hbp_nrp_backend.rest_server.tests import RestTest
-
+import os
+import json
+import tempfile
+from hbp_nrp_commons.generated import bibi_api_gen
 
 class TestExperimentBrain(RestTest):
 
@@ -70,15 +74,48 @@ def create_brain():
     params = {'U': 1.0, 'tau_rec': 0.0, 'tau_facil': 0.0}
     syndynamics = sim.SynapseDynamics(fast=sim.TsodyksMarkramMechanism(**params))"""
 
+        self.test_directory = os.path.split(__file__)[0]
+        self.temp_directory = tempfile.mkdtemp()
+
     def test_experiment_brain_put(self):
+
+        bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
+        bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
+        shutil.copyfile(bibi_original_path, bibi_temp_path)
+        self.mock_collabClient_instance.clone_bibi_from_collab_context.return_value = bibi_temp_path
+
         context_id = '123456'
-        data = {'data': self.brain_model}
-        response = self.client.put('/experiment/' + context_id + '/brain', data=json.dumps(data))
+        brain_populations = {'index': [0], 'slice': {'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
+        body = {'data': self.brain_model, 'brain_populations': brain_populations}
+        response = self.client.put(
+            '/experiment/' + context_id + '/brain',
+            data=json.dumps(body)
+        )
         self.assertEqual(response.status_code, 200)
+
         save_string_to_file = self.mock_collabClient_instance.replace_file_content_in_collab
-        argslist = [
-            x[0] for x in save_string_to_file.call_args_list
-        ]
-        arg1, arg2, arg3 = argslist[0]
+
+        arg1, arg2, arg3 = save_string_to_file.call_args_list[0][0]
         self.assertEqual(arg1, self.brain_model)
         self.assertEqual(arg3, "recovered_pynn_brain_model.py")
+
+        arg1, arg2, arg3 = save_string_to_file.call_args_list[1][0]
+        bibi = bibi_api_gen.CreateFromDocument(arg1)
+        for population in bibi.brainModel.populations:
+            if population.population == 'index':
+                self.assertEqual(population.element, [0])
+            elif population.population == 'slice':
+                self.assertEqual(population.from_, 0)
+                self.assertEqual(population.to, 12)
+                self.assertEqual(population.step, 2)
+            elif population.population == 'list':
+                self.assertEqual(population.element, [1, 2, 3])
+            else:
+                self.fail("Unexpected identifier: " + population.population)
+
+
+
+
+
+
+        self.assertEqual(arg3, "recovered_bibi_configuration.xml")
