@@ -16,8 +16,9 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesGeneralException
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages, \
-    substitute_bibi_transferfunctions
+from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
+from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import get_tf_name
+from hbp_nrp_commons.generated import bibi_api_gen
 
 logger = logging.getLogger(__name__)
 # pylint: disable=no-self-use
@@ -132,7 +133,7 @@ class ExperimentTransferfunctions(Resource):
                 "Transfer functions code should be sent in "
                 "the body under the 'transfer_functions' key"
             )
-        tfs = body['transfer_functions']
+        transfer_functions = body['transfer_functions']
 
         client = NeuroroboticsCollabClient(
             UserAuthentication.get_header_token(request),
@@ -146,7 +147,32 @@ class ExperimentTransferfunctions(Resource):
                 "BIBI not found"
             )
 
-        bibi = substitute_bibi_transferfunctions(bibi_file_path, tfs)
+        bibi = None
+        with open(bibi_file_path) as bibi_xml:
+            bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
+            if not isinstance(bibi, bibi_api_gen.BIBIConfiguration):
+                raise NRPServicesGeneralException(
+                    "BIBI configuration file content is not valid.",
+                    "BIBI not valid"
+                )
+
+        # Remove all transfer functions from BIBI. Then we save them in a separate python file.
+        del bibi.transferFunction[:]
+
+        for transfer_function in transfer_functions:
+            transfer_function_name = get_tf_name(transfer_function)
+            if (transfer_function_name is not None):
+                transfer_function_filename = transfer_function_name + ".py"
+                transfer_function_node = bibi_api_gen.PythonTransferFunction()
+                transfer_function_node.src = transfer_function_filename
+                bibi.transferFunction.append(transfer_function_node)
+
+                client.write_file_with_content_in_collab(
+                    transfer_function,
+                    client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
+                    transfer_function_filename
+                )
+
         if tempfile.gettempdir() in bibi_file_path:
             logger.debug(
                 "removing the temporary bibi configuration file %s",
@@ -154,8 +180,8 @@ class ExperimentTransferfunctions(Resource):
             )
             shutil.rmtree(os.path.dirname(bibi_file_path))
 
-        client.save_string_to_file_in_collab(
-            bibi,
+        client.replace_file_content_in_collab(
+            bibi.toxml("utf-8"),
             client.BIBI_CONFIGURATION_MIMETYPE,
             "recovered_bibi_configuration.xml"
         )

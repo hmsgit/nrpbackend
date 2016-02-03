@@ -260,7 +260,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         result = neurorobotic_collab_client.get_first_file_path_with_mimetype("application/hbp-neurorobotics.sdf.world+xml", "default_file.txt")
         self.assertEqual(result, os.path.join(experiment_folder,environment_conf))
 
-    def test_save_string_to_file_in_collab(self):
+    def test_replace_file_content_in_collab(self):
         filepath = "/fake_collab/fake_experiment_folder/file.txt"
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
         neurorobotic_collab_client.get_first_file_path_with_mimetype = MagicMock()
@@ -268,7 +268,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.mock_document_client_instance.exists.side_effect = [True]
         mimetype = "fake_mime_type"
         string_to_upload = "some_string"
-        neurorobotic_collab_client.save_string_to_file_in_collab(string_to_upload, mimetype, "default_file_name.txt")
+        neurorobotic_collab_client.replace_file_content_in_collab(string_to_upload, mimetype, "default_file_name.txt")
         self.assertEqual(self.mock_document_client_instance.exists.call_count, 1)
         self.assertEqual(self.mock_document_client_instance.remove.call_count, 1)
         self.assertEqual(self.mock_document_client_instance.upload_string.call_count, 1)
@@ -284,6 +284,11 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.assertIsNotNone(ncc.get_mimetype(ncc.BIBI_CONFIGURATION_FILE_NAME))
         self.assertEqual(ncc.get_mimetype('my_world.sdf'), ncc.SDF_WORLD_MIMETYPE)
         brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain.py')
+        self.assertEqual(
+            ncc.get_mimetype(brain_file_path),
+            ncc.BRAIN_PYNN_MIMETYPE
+        )
+        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain_2.py')
         self.assertEqual(
             ncc.get_mimetype(brain_file_path),
             ncc.BRAIN_PYNN_MIMETYPE
