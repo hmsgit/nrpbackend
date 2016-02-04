@@ -39,21 +39,6 @@ __operator_symbols = {bibi_api_gen.Subtract: '({0} - {1})',
                       bibi_api_gen.Min: 'min({0}, {1})',
                       bibi_api_gen.Max: 'max({0}, {1})'}
 
-__monitoring_types = {'PopulationRate': 'cle_ros_msgs.msg.SpikeRate',
-                      'LeakyIntegratorAlpha': 'cle_ros_msgs.msg.SpikeRate',
-                      'LeakyIntegratorExp': 'cle_ros_msgs.msg.SpikeRate',
-                      'SpikeRecorder': 'cle_ros_msgs.msg.SpikeEvent'}
-# 1 = simulation time,  2 = spikes, 3 = port name, 4 = number of monitored neurons
-__monitoring_factory = {'PopulationRate': '{0}({1}, {2}, "{3}")',
-                        'LeakyIntegratorAlpha': '{0}({1}, {2}, "{3}")',
-                        'LeakyIntegratorExp': '{0}({1}, {2}, "{3}")',
-                        'SpikeRecorder': 'monitoring.create_spike_recorder_message'
-                                         '({1}, {4}, {2}, "{3}")'}
-__monitoring_topics = {'PopulationRate': '/monitor/population_rate',
-                       'LeakyIntegratorAlpha': '/monitor/leaky_integrator_alpha',
-                       'LeakyIntegratorExp': '/monitor/leaky_integrator_exp',
-                       'SpikeRecorder': '/monitor/spike_recorder'}
-
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions
@@ -141,42 +126,6 @@ def print_expression(expression):
         return "t"
 
     raise Exception('No idea how to print expression of type ' + repr(type(expression)))
-
-
-def get_monitoring_topic(monitor):
-    """
-    Gets the monitoring topic for the given neuron monitor
-
-    :param monitor: The neuron monitor
-    :return: The topic address as string
-    """
-    devtype = monitor.device[0].type
-    return __monitoring_topics.get(devtype)
-
-
-def get_monitoring_type(monitor):
-    """
-    Gets the topic type for the given neuron monitor
-
-    :param monitor: The neuron monitor
-    :return: The topic of the monitoring
-    """
-    devtype = monitor.device[0].type
-    return __monitoring_types.get(devtype)
-
-
-def get_monitoring_impl(monitor):
-    """
-    Gets the monitoring implementation for the given monitor
-
-    :param monitor: The given monitor
-    :return: The implementation, i.e. the value to send to the monitoring topic as code
-    """
-    dev = monitor.device[0]
-    function = __monitoring_factory.get(monitor.device[0].type)
-    return function.format(get_monitoring_type(monitor), "t",
-                           dev.name + "." + get_default_property(dev.type),
-                           monitor.name, get_neuron_count(dev.neurons))
 
 
 def print_operator(expression):

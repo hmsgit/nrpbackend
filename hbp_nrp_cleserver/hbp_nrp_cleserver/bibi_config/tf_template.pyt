@@ -50,10 +50,9 @@
 
 {% elif __builtins__.type(tf) == bibi_api_gen.Neuron2Monitor %}
 
-    @nrp.MapSpikeSink("{{tf.device[0].name}}", {{print_neurons(tf.device[0].neurons)}}, nrp.{{get_device_name(tf.device[0].type)}})
-    @nrp.Neuron2Robot(Topic('{{get_monitoring_topic(tf)}}', {{get_monitoring_type(tf)}}))
-    def {{tf.name}}(t, {{tf.device[0].name}}):
-        return {{get_monitoring_impl(tf)}}
+    @nrp.NeuronMonitor({{print_neurons(tf.device[0].neurons)}}, nrp.{{get_device_name(tf.device[0].type)}})
+    def {{tf.name}}(t):
+        return True
 
 {% elif __builtins__.type(tf) == bibi_api_gen.Robot2Neuron %}
 
