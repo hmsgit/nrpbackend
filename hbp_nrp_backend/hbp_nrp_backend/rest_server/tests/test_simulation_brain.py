@@ -76,13 +76,13 @@ send_data = {
     'data': "Data",
     'brain_type': "py",
     'data_type': "text",
-    'brain_populations': brain_populations_json
+    'additional_populations': brain_populations_json
 }
 get_return_data = {
     'data': "Data",
     'brain_type': "py",
     'data_type': "text",
-    'brain_populations': json.loads(brain_populations_json)
+    'additional_populations': json.loads(brain_populations_json)
 }
 set_ret_ok = DefaultDotDict(error_message="")
 set_ret_error = DefaultDotDict(error_message="Crash boom bang", error_line=10, error_column=5)

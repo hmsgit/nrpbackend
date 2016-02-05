@@ -88,23 +88,29 @@ from hbp_nrp_backend.rest_server.__SimulationStateMachines import SimulationStat
     SimulationStateMachine
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
+from hbp_nrp_backend.rest_server.__SimulationPopulations import SimulationPopulations
 
+# Register /collab
 api.add_resource(CollabHandler, '/collab/configuration/<string:context_id>')
 api.add_resource(MaterialControl, '/simulation/<int:sim_id>/interaction/material_change')
+
+# Register /experiment
 api.add_resource(Experiment, '/experiment')
-api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')
 api.add_resource(ExperimentBrainFile, '/experiment/<string:context_id>/brain')
+api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-machines')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
 api.add_resource(ExperimentPutStateMachine,
                  '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')
 api.add_resource(ExperimentTransferfunctions, '/experiment/<string:context_id>/transfer-functions')
 api.add_resource(ExperimentWorldSDF, '/experiment/<string:context_id>/sdf_world')
-api.add_resource(Last24HoursErrorCheck, '/health/errors-last-24h')
+
+# Register /simulation
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationBrainFile, '/simulation/<int:sim_id>/brain')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
+api.add_resource(SimulationPopulations, '/simulation/<int:sim_id>/populations')
 api.add_resource(SimulationReset, '/simulation/<int:sim_id>/reset')
 api.add_resource(SimulationResetCollab, '/simulation/<int:sim_id>/<string:context_id>/reset')
 api.add_resource(SimulationService, '/simulation')
@@ -115,9 +121,16 @@ api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machin
 api.add_resource(SimulationTransferFunction,
                  '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
-api.add_resource(TotalErrorCheck, '/health/errors')
-api.add_resource(Version, '/version')
+
+# This should not be on the /simulation path ... as it does not apply to a running simulation
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
+
+# Register /health
+api.add_resource(TotalErrorCheck, '/health/errors')
+api.add_resource(Last24HoursErrorCheck, '/health/errors-last-24h')
+
+# Register /version
+api.add_resource(Version, '/version')
 
 
 def db_create_and_check(database, timeout=1):

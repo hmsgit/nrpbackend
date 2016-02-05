@@ -10,10 +10,13 @@ from std_srvs.srv import Empty
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
+from cle_ros_msgs.msg import CLEError
+from std_msgs.msg import String
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN
+    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
+    SERVICE_GET_POPULATIONS, TOPIC_CLE_ERROR, TOPIC_STATUS
     # duplicated from CLE.__init__
 from cle_ros_msgs.srv import ResetSimulation
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
@@ -86,20 +89,14 @@ class ROSCLEServiceWrapper(object):
 
     @timeout_decorator.timeout(ROS_SERVICE_TIMEOUT)
     def __call__(self, *args, **kwargs):
-        if self.__ros_cle_client.valid:
-            try:
-                return self.__handler(*args, **kwargs)
-            except (rospy.ServiceException, rospy.exceptions.ROSInterruptException) as e:
-                if self.invalidate_on_failure:
-                    self.__ros_cle_client.valid = False
-                    self.__ros_cle_client.invalid_reason = "a previous communication error"
-                message = "Error executing service \"%s\", unable to communicate with the CLE.\n" \
-                      "Error: %s" % (self.__handler.resolved_name, str(e), )
-                logger.error(message)
-                raise ROSCLEClientException(message)
-        else:
-            message = "Action \"%s\" can't be peformed on an invalid client (reason: %s)." % \
-                  (self.__handler.resolved_name, self.__ros_cle_client.invalid_reason)
+        try:
+            return self.__handler(*args, **kwargs)
+        except (rospy.ServiceException, rospy.exceptions.ROSInterruptException) as e:
+            if self.invalidate_on_failure:
+                self.__ros_cle_client.valid = False
+                self.__ros_cle_client.invalid_reason = "a previous communication error"
+            message = "Error executing service \"%s\", unable to communicate with the CLE.\n" \
+                  "Error: %s" % (self.__handler.resolved_name, str(e), )
             logger.error(message)
             raise ROSCLEClientException(message)
 
@@ -138,17 +135,13 @@ class ROSCLEClient(object):
         Create the wrapper client
         :param sim_id: The simulation id
         """
-        self.valid = True
-        self.invalid_reason = ""
 
         # Creates service proxies
-        self.__cle_start = ROSCLEServiceWrapper(SERVICE_SIM_START_ID(sim_id), Empty, self,
-                                                invalidate_on_failure=True)
-        self.__cle_pause = ROSCLEServiceWrapper(SERVICE_SIM_PAUSE_ID(sim_id), Empty, self,
-                                                invalidate_on_failure=True)
+        self.__cle_start = ROSCLEServiceWrapper(SERVICE_SIM_START_ID(sim_id), Empty, self)
+        self.__cle_pause = ROSCLEServiceWrapper(SERVICE_SIM_PAUSE_ID(sim_id), Empty, self)
         self.__cle_stop = ROSCLEServiceWrapper(SERVICE_SIM_STOP_ID(sim_id), Empty, self)
         self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), ResetSimulation,
-                                                self, invalidate_on_failure=True)
+                                                self)
         self.__cle_state = ROSCLEServiceWrapper(
             SERVICE_SIM_STATE_ID(sim_id), srv.GetSimulationState, self)
         self.__cle_get_transfer_functions = ROSCLEServiceWrapper(
@@ -162,26 +155,61 @@ class ROSCLEClient(object):
 
         self.__cle_get_brain = ROSCLEServiceWrapper(SERVICE_GET_BRAIN(sim_id), srv.GetBrain, self)
         self.__cle_set_brain = ROSCLEServiceWrapper(SERVICE_SET_BRAIN(sim_id), srv.SetBrain, self)
+        self.__cle_get_populations = ROSCLEServiceWrapper(SERVICE_GET_POPULATIONS(sim_id),
+                                                          srv.GetPopulations, self)
+
+        self.__cle_error_listener = rospy.Subscriber(TOPIC_CLE_ERROR, String,
+                                                     self.__cle_error_handler)
+        self.__cle_status_listener = rospy.Subscriber(TOPIC_STATUS, CLEError,
+                                                      self.__cle_status_handler)
+        self.cle_handler = None
+        self.__stop_reason = None
+
+    def __cle_error_handler(self, error):
+        """
+        Delegates error message to a handler function
+
+        :param error: The error message
+        """
+        self.__stop_reason = "Simulation failed"
+        if self.cle_handler is not None:
+            self.cle_handler.handle_error(error)
+
+    def __cle_status_handler(self, status):
+        """
+        Delegates status message to a handler function
+
+        :param status: The CLE status
+        """
+        if self.cle_handler is not None:
+            self.cle_handler.handle_status(status)
 
     def start(self):
         """
         Start the simulation.
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         self.__cle_start()
 
     def pause(self):
         """
         Pause the simulation.
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         self.__cle_pause()
 
     def stop(self):
         """
         Stop the simulation.
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         self.__cle_stop()
-        self.valid = False
-        self.invalid_reason = "a previous stop request (triggering automatic disconnection)"
+        self.__cle_error_listener.unregister()
+        self.__cle_status_listener.unregister()
+        self.__stop_reason = "Simulation stopped"
 
     def reset(self, reset_type, payload=""):
         """
@@ -190,6 +218,8 @@ class ROSCLEClient(object):
             reset types and details are given in the ResetSimulation service request message.
         :param payload: Data useful to reset the simulation
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
         resp = self.__cle_reset(reset_type, payload)
@@ -212,6 +242,8 @@ class ROSCLEClient(object):
 
         :return: dict with brain_data, brain_type, data_type
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_get_brain()
 
     def set_simulation_brain(self, brain_type, data, data_type, brain_populations):
@@ -227,6 +259,8 @@ class ROSCLEClient(object):
         dictionary containing the 'from', 'to' and 'step' values.
         :return: response of the cle
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_set_brain(brain_type, data, data_type, brain_populations)
 
     @fallback_retval([])
@@ -237,6 +271,8 @@ class ROSCLEClient(object):
         :returns: An array of strings containing the source code of the transfer
                   functions.
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_get_transfer_functions().transfer_functions
 
     @fallback_retval(False)
@@ -247,6 +283,8 @@ class ROSCLEClient(object):
         :param transfer_function_name: Name of the transfer function to delete
         :return: True if the call to ROS is successful, False otherwise
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_delete_transfer_function(transfer_function_name).success
 
     def set_simulation_transfer_function(self, transfer_function_name, transfer_function_source):
@@ -258,5 +296,40 @@ class ROSCLEClient(object):
         :returns: "" if the call to ROS is successful,
                      a string containing an error message otherwise
         """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_set_transfer_function(transfer_function_name, transfer_function_source) \
                    .error_message
+
+    def get_populations(self):
+        """
+        Gets the neurons of the brain in the simulation
+
+        :return: populations as dict
+        """
+        populations = self.__cle_get_populations()
+        result = {'populations': [
+            {
+                'name': p.name,
+                'neuron_model': p.neuron_model,
+                'parameters': ROSCLEClient.__convert_parameter_list(p.parameters),
+                'gids': p.gids
+            } for p in populations
+            ]
+        }
+        return result
+
+    @staticmethod
+    def __convert_parameter_list(parameters):
+        """
+        Gets the specified parameter list as dictionary
+
+        :param parameters: A list of NeuronParameters
+        :return: neuron parameters as list
+        """
+        return [
+            {
+                'parameterName': p.parameterName,
+                'value': p.value
+            } for p in parameters
+        ]

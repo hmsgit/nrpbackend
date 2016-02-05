@@ -12,6 +12,7 @@ from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from gazebo_msgs.srv import SetVisualProperties
 from cle_ros_msgs.srv import ResetSimulationRequest
+from hbp_nrp_backend.simulation_control.__SimulationCLEHandler import SimulationCLEHandler
 
 import os
 import shutil
@@ -136,6 +137,8 @@ def initialize_simulation(simulation):
                                                environment,
                                                simulation.sim_id,
                                                gzserver_host)
+
+        simulation.cle.cle_handler = SimulationCLEHandler(simulation)
 
         logger.info("simulation initialized")
         if using_collab_storage:

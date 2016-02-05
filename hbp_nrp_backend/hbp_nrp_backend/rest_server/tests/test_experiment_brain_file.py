@@ -86,7 +86,7 @@ def create_brain():
 
         context_id = '123456'
         brain_populations = {'index': [0], 'slice': {'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
-        body = {'data': self.brain_model, 'brain_populations': brain_populations}
+        body = {'data': self.brain_model, 'additional_populations': brain_populations}
         response = self.client.put(
             '/experiment/' + context_id + '/brain',
             data=json.dumps(body)

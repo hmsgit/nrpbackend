@@ -1,51 +1,17 @@
 #!/bin/bash
+# This script is designed for local usage.
 
-# ------------------------------------------------------------------
-# Simple wrapper around the "make verify" target of the common hbp 
-# Makefile for python. This is mainly use for local development.
-# ------------------------------------------------------------------
-
-read -d '' USAGE << EOF
-Usage: ./verify.sh -hr\n
-r     Try to release the code to HBP pypy server\n
-h     Print usage
-
-EOF
-
-while getopts ":rh" optname
-  do
-    case "$optname" in
-      "r")
-        RELEASE=true
-        ;;
-      "h")
-        echo "$USAGE"
-        exit 0;
-        ;;
-      "?")
-        echo "Unknown option $OPTARG"
-        echo "$USAGE"
-        exit 0;
-        ;;
-      *)
-        echo "Unknown error while processing options"
-        exit 0;
-        ;;
-    esac
-  done
-
-# Note: Dont put CLE into this list. otherwiese the files CLELauncher, ROSCLEServer and others will not be pep8 and pylint validated! 
+# Note: Dont put CLE into this list. otherwiese the files CLELauncher, ROSCLEServer and others will not be pep8 and pylint validated!
 export IGNORE_LINT="platform_venv|hbp_nrp_backend/hbp_nrp_backend/exd_config/generated|hbp_nrp_commons/hbp_nrp_commons/generated|hbp-flask-restful-swagger-master|GazeboRosPackages|migrations|build"
 
-rm hbp_nrp_backend/hbp_nrp_backend/bibi_config/tests/generated_cle_script.py
-rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment.py
-rm hbp_nrp_backend/hbp_nrp_backend/exd_config/tests/experiment_bibi.py
+# This script only runs static code analysis, the tests can be run separately using run_tests.sh
+make run_pep8 run_pylint
+RET=$?
 
-if [ "$RELEASE" = true ] ; then
-    make verify
+if [ $RET == 0 ]; then
+    echo -e "\033[32mVerify sucessfull.\e[0m Run ./run_tests.sh to run the tests."
 else
-	make verify_base
+    echo -e "\033[31mVerify failed.\e[0m"
 fi
-VERIFY_RET=$?
 
-exit $VERIFY_RET
+exit $RET

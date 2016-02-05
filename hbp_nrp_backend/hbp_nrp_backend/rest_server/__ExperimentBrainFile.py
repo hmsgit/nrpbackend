@@ -41,7 +41,8 @@ class ExperimentBrainFile(Resource):
         """
 
         resource_fields = {
-            'data': fields.String()
+            'data': fields.String(),
+            'additional_populations': fields.Arbitrary()
         }
         required = ['data']
 
@@ -95,13 +96,13 @@ class ExperimentBrainFile(Resource):
             import NeuroroboticsCollabClient
 
         body = request.get_json(force=True)
-        if (not 'data' in body):
+        if 'data' not in body:
             raise NRPServicesClientErrorException(
                 "Neural network python code should be sent in the body under the 'data' key"
             )
 
         data = body['data']
-        brain_populations = body.get('brain_populations')
+        brain_populations = body.get('additional_populations')
 
         client = NeuroroboticsCollabClient(
             UserAuthentication.get_header_token(request),
@@ -121,7 +122,6 @@ class ExperimentBrainFile(Resource):
                 "BIBI not found"
             )
 
-        bibi = None
         with open(bibi_file_path) as bibi_xml:
             bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
             if not isinstance(bibi, bibi_api_gen.BIBIConfiguration):
@@ -133,19 +133,20 @@ class ExperimentBrainFile(Resource):
         # Remove all populations from BIBI.
         del bibi.brainModel.populations[:]
 
-        for key, value in brain_populations.iteritems():
-            population_node = None
-            if isinstance(value, list):
-                population_node = bibi_api_gen.List()
-                for index in value:
-                    population_node.append(index)
-            if isinstance(value, dict):
-                population_node = bibi_api_gen.Range()
-                population_node.from_ = value['from']
-                population_node.to = value['to']
-                population_node.step = value.get('step')
-            population_node.population = key
-            bibi.brainModel.populations.append(population_node)
+        if brain_populations is not None:
+            for key, value in brain_populations.iteritems():
+                population_node = None
+                if isinstance(value, list):
+                    population_node = bibi_api_gen.List()
+                    for index in value:
+                        population_node.append(index)
+                if isinstance(value, dict):
+                    population_node = bibi_api_gen.Range()
+                    population_node.from_ = value['from']
+                    population_node.to = value['to']
+                    population_node.step = value.get('step')
+                population_node.population = key
+                bibi.brainModel.populations.append(population_node)
 
         if tempfile.gettempdir() in bibi_file_path:
             logger.debug(

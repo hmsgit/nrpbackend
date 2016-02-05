@@ -23,7 +23,7 @@ __author__ = 'HBP NRP software team'
 class TestROSCLEClient(unittest.TestCase):
 
     LOGGER_NAME = ROSCLEClient.__name__
-    NUMBER_OF_SERVICE_PROXIES = 10
+    NUMBER_OF_SERVICE_PROXIES = 11
 
     def setUp(self):
         patcher = patch('rospy.ServiceProxy')
@@ -43,8 +43,6 @@ class TestROSCLEClient(unittest.TestCase):
             SERVICE_SET_BRAIN(0), SERVICE_GET_BRAIN(0)
         ]
         self.assertNotIn(False, [x in listened_services for x in expected_services])
-        self.assertTrue(client.valid)
-        self.assertEquals(client.invalid_reason, "")
 
     @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
     def test_rosservicewrapper_constructor(self, service_proxy_mock):
@@ -63,7 +61,6 @@ class TestROSCLEClient(unittest.TestCase):
     @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
     def test_rosservicewrapper_call(self, service_proxy_mock):
         client = ROSCLEClient.ROSCLEClient(0)
-        client.valid = True
 
         # When everything is fine, the service should just be called
         service_wrapper = ROSCLEClient.ROSCLEServiceWrapper('service_name', Empty, client)
@@ -76,18 +73,15 @@ class TestROSCLEClient(unittest.TestCase):
         service_wrapper.handler.side_effect = rospy.ServiceException()
 
         self.assertRaises(ROSCLEClient.ROSCLEClientException, service_wrapper)
-        self.assertTrue(client.valid)
 
         service_wrapper.handler.side_effect = rospy.exceptions.ROSInterruptException()
 
         self.assertRaises(ROSCLEClient.ROSCLEClientException, service_wrapper)
-        self.assertTrue(client.valid)
 
         # and invalidate the ROSCLEClient if asked to
         service_wrapper = ROSCLEClient.ROSCLEServiceWrapper('service_name', Empty, client,
                                                             invalidate_on_failure=True)
         self.assertRaises(ROSCLEClient.ROSCLEClientException, service_wrapper)
-        self.assertFalse(client.valid)
 
     def test_start_pause_reset(self):
         client = ROSCLEClient.ROSCLEClient(0)
@@ -131,20 +125,13 @@ class TestROSCLEClient(unittest.TestCase):
             empty_payload = ''
             client.reset(ResetSimulationRequest.RESET_ROBOT_POSE, empty_payload)
 
-        # get state can still answer (with a warning though)
-        assert (ROSCLEState.STOPPED == client.get_simulation_state())
-
     def test_get_simulation_state(self):
         msg = GetSimulationState()
         msg.state = ROSCLEState.INITIALIZED
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        client.valid = False
-        self.assertEquals(client.get_simulation_state(), str(ROSCLEState.STOPPED))
-
         client._ROSCLEClient__cle_state = MagicMock(return_value=msg)
-        client.valid = True
         self.assertEquals(client.get_simulation_state(), str(msg.state))
 
     def test_get_simulation_transfer_functions(self):
@@ -153,11 +140,7 @@ class TestROSCLEClient(unittest.TestCase):
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        client.valid = False
-        self.assertEquals(client.get_simulation_transfer_functions(), [])
-
         client._ROSCLEClient__cle_get_transfer_functions = MagicMock(return_value=msg)
-        client.valid = True
         self.assertEquals(client.get_simulation_transfer_functions(), msg.transfer_functions)
 
     def test_set_simulation_transfer_function(self):
@@ -166,13 +149,7 @@ class TestROSCLEClient(unittest.TestCase):
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        client.valid = False
-        self.assertRaises(ROSCLEClient.ROSCLEClientException,
-                          client.set_simulation_transfer_function,
-                          "tf_0", "def tf_0(): \n return 0")
-
         client._ROSCLEClient__cle_set_transfer_function = MagicMock(return_value=resp)
-        client.valid = True
         self.assertEquals(
             client.set_simulation_transfer_function("tf_1", "def tf_1(): \n return 1"),
             resp.error_message)
@@ -183,10 +160,6 @@ class TestROSCLEClient(unittest.TestCase):
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        client.valid = False
-        self.assertEquals(client.delete_simulation_transfer_function("tf_0"), False)
-
-        client.valid = True
         client._ROSCLEClient__cle_delete_transfer_function = MagicMock(return_value=resp)
         self.assertEquals(client.delete_simulation_transfer_function("tf_1"), resp.success)
 
@@ -197,11 +170,7 @@ class TestROSCLEClient(unittest.TestCase):
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        client.valid = False
-        self.assertEquals(client.get_simulation_brain(), {})
-
         client._ROSCLEClient__cle_get_brain = MagicMock(return_value=resp)
-        client.valid = True
         self.assertEquals(client.get_simulation_brain(), resp)
 
     def test_set_brain(self):
@@ -209,11 +178,7 @@ class TestROSCLEClient(unittest.TestCase):
         resp = msg._response_class(error_message='error message', error_line=-1, error_column=-1)
 
         client = ROSCLEClient.ROSCLEClient(0)
-        client.valid = False
-        self.assertRaises(ROSCLEClient.ROSCLEClientException,
-            client.set_simulation_brain,'data', 'py', 'text', '{"population_1": 2}')
 
-        client.valid = True
         client._ROSCLEClient__cle_set_brain = MagicMock(return_value=resp)
         self.assertEquals(client.set_simulation_brain(
             'data', 'py', 'text', '{"population_1": 2}'), resp)

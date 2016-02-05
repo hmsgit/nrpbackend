@@ -28,7 +28,9 @@ class TestTransition(unittest.TestCase):
         self.__sm_patch = mock.patch("hbp_nrp_backend.simulation_control.Simulation.state_machine_manager")
         self.__sm_man = self.__sm_patch.start()
 
-        transitions.initialize_experiment = mock.Mock(return_value="set_cle")
+        self.__cle = mock.Mock()
+
+        transitions.initialize_experiment = mock.Mock(return_value=self.__cle)
         transitions.generate_experiment_control = mock.Mock(return_value={'test_sm': 'test_sm.py'})
 
         patch_CollabClient = mock.patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
@@ -48,7 +50,7 @@ class TestTransition(unittest.TestCase):
         This method tests all transitions (initialize, start, pause, stop, reset).
         """
         transitions.initialize_simulation(self.sim)
-        self.assertEqual(self.sim.cle, "set_cle")
+        self.assertEqual(self.sim.cle, self.__cle)
         self.sim.cle = self.__roscleclient_mock
         self.assertEqual(self.__sm_man.add_all.call_count, 1)
         self.assertEqual(self.__sm_man.initialize_all.call_count, 1)

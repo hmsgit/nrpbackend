@@ -132,7 +132,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.assertEqual(10, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(11, self.__mocked_rospy.Service.call_count)
         self.assertEqual(1, self.__mocked_cle.initialize.call_count)
         self.assertEqual(1, self.__ros_cle_server.start_timeout.call_count)
 
