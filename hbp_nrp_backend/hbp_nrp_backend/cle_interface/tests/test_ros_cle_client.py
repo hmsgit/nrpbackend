@@ -209,12 +209,14 @@ class TestROSCLEClient(unittest.TestCase):
         client = ROSCLEClient.ROSCLEClient(0)
         client.valid = False
         self.assertRaises(ROSCLEClient.ROSCLEClientException,
-            client.set_simulation_brain,'data', 'py', 'text')
+            client.set_simulation_brain,'data', 'py', 'text', '{"population_1": 2}')
 
         client.valid = True
         client._ROSCLEClient__cle_set_brain = MagicMock(return_value=resp)
-        self.assertEquals(client.set_simulation_brain('data', 'py', 'text'), resp)
-
+        self.assertEquals(client.set_simulation_brain(
+            'data', 'py', 'text', '{"population_1": 2}'), resp)
+        client._ROSCLEClient__cle_set_brain.assert_called_once_with(
+            'data', 'py', 'text', '{"population_1": 2}')
 
 if __name__ == '__main__':
     unittest.main()

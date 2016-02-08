@@ -243,14 +243,11 @@ def get_all_neurons_as_dict(populations):
     Gets the indexing operator for the given neuron selector
 
     :param populations: All populations
-    :return: A dict with population name and index/slice()/listNone
+    :return: A dict with population name and slice()/list/None
     """
     pop = dict()
-
     for neurons in populations:
-        if isinstance(neurons, bibi_api_gen.Index):
-            pop[neurons.population] = neurons.index
-        elif isinstance(neurons, bibi_api_gen.Range):
+        if isinstance(neurons, bibi_api_gen.Range):
             pop[neurons.population] = slice(neurons.from_, neurons.to)
         elif isinstance(neurons, bibi_api_gen.List):
             n_list = []

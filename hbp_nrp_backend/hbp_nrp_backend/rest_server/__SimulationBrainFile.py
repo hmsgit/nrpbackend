@@ -16,6 +16,8 @@ from hbp_nrp_backend.rest_server import NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
     UserAuthentication
 
+import json
+
 # pylint: disable=no-self-use
 # because it seems to be buggy:
 # pylint: disable=pointless-string-statement
@@ -82,14 +84,16 @@ class SimulationBrainFile(Resource):
     )
     def get(self, sim_id):
         """
-        Get brain file of the simulation specified with simulation ID.
-        Depending on the type of brain file, it is transmitted as text or
-        as base64 (given in the field data_type)
+        Get brain data of the simulation specified with simulation ID.
 
         :param sim_id: The simulation ID
         :>json string brain_type: Type of the brain file ('h5' or 'py')
         :>json string data_type: type of the data field ('text' or 'base64')
         :>json string data: Contents of the brain file. Encoding given in field data_type
+        :>json brain_populations:  A dictionary indexed by population names and
+        containing neuron indices. Neuron indices could be defined by individual integers,
+        lists of integers or python slices. Python slices are defined by a
+        dictionary containing the 'from', 'to' and 'step' values.
         :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
         :status 404: The simulation with the given ID was not found
         :status 200: Success. The experiment brain file was retrieved
@@ -103,7 +107,7 @@ class SimulationBrainFile(Resource):
             'data': result.brain_data,
             'brain_type': result.brain_type,
             'data_type': result.data_type,
-            'brain_populations': result.brain_populations
+            'brain_populations': json.loads(result.brain_populations)
         }, 200
 
     @swagger.operation(
@@ -158,6 +162,10 @@ class SimulationBrainFile(Resource):
         :<json string brain_type: Type of the brain file ('h5' or 'py')
         :<json string data_type: type of the data field ('text' or 'base64')
         :<json string data: Contents of the brain file. Encoding given in field data_type
+        :<json brain_populations:  A dictionary indexed by population names and
+        containing neuron indices. Neuron indices could be defined by individual integers,
+        lists of integers or python slices. Python slices are defined by a
+        dictionary containing the 'from', 'to' and 'step' values.
         :>json string error_message: Error Message if there is a syntax error in the code
         :>json int error_line: Line of code, where error occurred
         :>json int error_column: Column, where error occurred (if available)
@@ -173,10 +181,10 @@ class SimulationBrainFile(Resource):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
-
         result = simulation.cle.set_simulation_brain(body['brain_type'],
                                                      body['data'],
-                                                     body['data_type'])
+                                                     body['data_type'],
+                                                     json.dumps(body['brain_populations']))
 
         if result.error_message is not "":
             # Error in given brain

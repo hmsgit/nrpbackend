@@ -63,7 +63,7 @@ class NeuroroboticsCollabClient(object):
     def get_mimetype(self, file_path):
         """
         Returns the mimetype of the given file
-        :param file_path: file path for which the mimetyp should be returned
+        :param file_path: file path for which the mimetype should be returned
         :return: the mimetype of the given file
         """
         file_name = os.path.basename(file_path)

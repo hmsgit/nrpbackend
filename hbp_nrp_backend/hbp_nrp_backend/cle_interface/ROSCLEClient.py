@@ -213,16 +213,20 @@ class ROSCLEClient(object):
         """
         return self.__cle_get_brain()
 
-    def set_simulation_brain(self, data, brain_type, data_type):
+    def set_simulation_brain(self, brain_type, data, data_type, brain_populations):
         """
         Set the brain of the running simulation (will pause the simulation)
 
         :param data: brain data, data type defined in data_type
         :param brain_type: currently "py" or "h5"
         :param data_type: data type ("text" or "base64")
+        :param brain_populations: A dictionary indexed by population names and
+        containing neuron indices. Neuron indices could be defined by individual integers,
+        lists of integers or python slices. Python slices are defined by a
+        dictionary containing the 'from', 'to' and 'step' values.
         :return: response of the cle
         """
-        return self.__cle_set_brain(data, brain_type, data_type)
+        return self.__cle_set_brain(brain_type, data, data_type, brain_populations)
 
     @fallback_retval([])
     def get_simulation_transfer_functions(self):
