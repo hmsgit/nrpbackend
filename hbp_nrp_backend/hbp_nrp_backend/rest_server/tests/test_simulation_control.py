@@ -11,10 +11,10 @@ import mock
 import rospy
 import json
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException,\
-    NRPServicesUnavailableROSService, app
+    NRPServicesGeneralException, NRPServicesUnavailableROSService, app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_backend.rest_server.__SimulationControl import CustomEventControl, LightControl,\
-   UserAuthentication
+from hbp_nrp_backend.rest_server.__SimulationControl import MaterialControl, LightControl,\
+    UserAuthentication
 from hbp_nrp_backend.rest_server.tests import RestTest
 
 
@@ -46,51 +46,65 @@ class TestScript(RestTest):
         rospy.ServiceProxy = MockServiceProxy
         rospy.wait_for_service = mock.Mock(return_value=mock.Mock())
 
-        self.cec = CustomEventControl()
+        self.mc = MaterialControl()
         self.lc = LightControl()
 
         del simulations[:]
         simulations.append(Simulation(0, 'test', None, 'default-owner', 'created'))
 
     # The following methods test the class hbp_nrp_backend.rest_server.__SimulationControl
-    # .CustomEventControl
+    # .MaterialControl
 
-    def test_custom_event_control_wrong_user(self):
+    def test_material_control_wrong_user(self):
         """
         This method crafts a request from an user which is not the owner of the simulation.
         """
 
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
         with app.test_request_context(headers=hdr):
-            self.assertRaises(NRPServicesClientErrorException, self.cec.put, 0)
+            self.assertRaises(NRPServicesClientErrorException, self.mc.put, 0)
             try:
-                self.cec.put(0)
+                self.mc.put(0)
             except NRPServicesClientErrorException as e:
                 self.assertEquals(e.error_code, 401)
 
-    def test_custom_event_control_no_name(self):
+    def test_material_control_no_visual_path(self):
         """
-        This methods crafts a request from the owner of the simulation but missing the 'name'
-        parameter.
-        """
-
-        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
-        ddict = {}
-        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.cec.put(0)[1], 400)
-
-    def test_custom_event_control_wrong_name(self):
-        """
-        This method crafts a request from the owner of the simulation with an invalid 'name'
-        parameter.
+        This methods crafts a request from the owner of the simulation but missing the
+        'visual_path'.
         """
 
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
-        ddict = {"name": "randomstring"}
+        ddict = {'material': 'Gazebo/Blue'}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertEqual(self.cec.put(0)[1], 404)  # Wrong name
+            self.assertEqual(self.mc.put(0)[1], 400)
 
-    def test_custom_event_control_ros_wait_for_service_failure(self):
+    def test_material_control_no_material(self):
+        """
+        This methods crafts a request from the owner of the simulation but missing the
+        material' parameter.
+        """
+
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {'visual_path': 'randomstring'}
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertEqual(self.mc.put(0)[1], 400)
+
+    def test_material_control_invalid_visual_path(self):
+        """
+        This method crafts a request from the owner of the simulation with an invalid
+        'visual_path' parameter.
+        """
+
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {'visual_path': 'randomstring::randomstring', 'material': 'Gazebo/Red'}
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            try:
+                self.mc.put(0)
+            except NRPServicesClientErrorException as e:
+                self.assertEquals(e.error_code, 404)
+
+    def test_material_control_ros_wait_for_service_failure(self):
         """
         This method performs a good request while ROS is unavailable.
         """
@@ -98,17 +112,17 @@ class TestScript(RestTest):
         oldwfs = rospy.wait_for_service
         rospy.wait_for_service = lambda x, y: (_ for _ in ()).throw(rospy.ROSException)
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
-        ddict = {"name": "RightScreenToRed"}
+        ddict = {'visual_path': 'model::link::visual', 'material': 'Gazebo/Red'}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertRaises(NRPServicesUnavailableROSService, self.cec.put, 0)
+            self.assertRaises(NRPServicesUnavailableROSService, self.mc.put, 0)
             try:
-                self.cec.put(0)
+                self.mc.put(0)
             except NRPServicesUnavailableROSService as e:
                 self.assertEquals(e.error_code, 500)
 
         rospy.wait_for_service = oldwfs
 
-    def test_custom_event_control_ros_wait_service_proxy_failure(self):
+    def test_material_control_ros_wait_service_proxy_failure(self):
         """
         This method performs a good request with a ROS failure in the service proxy.
         """
@@ -117,27 +131,27 @@ class TestScript(RestTest):
         rospy.ServiceProxy = mock.Mock(return_value=lambda model_name='', link_name='',
             visual_name='', property_name='', property_value='': (_ for _ in ()).throw(rospy.ServiceException))
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
-        ddict = {"name": "RightScreenToRed"}
+        ddict = {"visual_path": "model::link::visual", 'material': 'Gazebo/Red'}
         with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-            self.assertRaises(NRPServicesClientErrorException, self.cec.put, 0)
+            self.assertRaises(NRPServicesGeneralException, self.mc.put, 0)
             try:
-                self.cec.put(0)
-            except NRPServicesClientErrorException as e:
-                self.assertEquals(e.error_code, 400)
+                self.mc.put(0)
+            except NRPServicesGeneralException as e:
+                self.assertEquals(e.error_code, 500)
 
         rospy.ServiceProxy = oldsp
 
-    def test_custom_event_control_good_request(self):
+    def test_material_control_good_request(self):
         """
         This method crafts some successful requests.
         """
-
-        for name in ["RightScreenToRed", "RightScreenToBlue", "LeftScreenToRed",
-             "LeftScreenToBlue"]:
-            hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
-            ddict = {"name": name}
-            with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
-                self.assertEquals(self.cec.put(0)[1], 200)
+        hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
+        ddict = {
+            'visual_path': 'sensible_model::actual_link::existing_visual',
+            'material': 'known_material'
+        }
+        with app.test_request_context(headers=hdr, data=json.dumps(ddict)):
+            self.assertEquals(self.mc.put(0)[1], 200)
 
     # The following methods test the class hbp_nrp_backend.rest_server.__SimulationControl
     # .LightControl

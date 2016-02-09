@@ -2,7 +2,8 @@
 This module contains the REST implementation for the simulation control
 """
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesWrongUserException, NRPServicesUnavailableROSService
+    NRPServicesWrongUserException, NRPServicesUnavailableROSService, \
+    NRPServicesGeneralException
 
 __author__ = 'GeorgHinkel'
 
@@ -18,7 +19,7 @@ from std_msgs.msg import ColorRGBA
 from gazebo_msgs.srv import SetVisualProperties, SetLightProperties, GetLightProperties
 import rospy
 
-# pylint: disable=R0201
+# pylint: disable=no-self-use
 
 
 def _get_simulation_or_abort(sim_id):
@@ -149,7 +150,6 @@ class LightControl(Resource):
                 "code": 200,
                 "message": "Successfully raised event"
             }
-            # pylint: disable=R0911
         ]
     )
     def put(self, sim_id):
@@ -264,43 +264,60 @@ class LightControl(Resource):
             return val
 
 
-class CustomEventControl(Resource):
+class MaterialControl(Resource):
     """
-    The resource to raise custom events
+    The resource to raise a material change
     """
 
     @swagger.model
-    class _CustomEvent(object):
-        """Describe an event"""
+    class _MaterialChange(object):
+        """Describe a material change command"""
         resource_fields = {
-            'name': fields.String,
+            'visual_path': fields.String,
+            'material': fields.String
         }
 
-    def __set_light(self, vr_name, color):
+    def __set_material(self, visual_path, material):
         """
-        Sets the light of a particular visual
-        :param vr_name: The visual name
-        :param color: The color
+        Sets the material of a particular visual
+        :param visual_path: The visual path in the world description, e.g.,
+        'left_screen::body::screen_glass', i.e., model_name::link_name::visual_name.
+        :param material: The material
         :return: The response
         """
         try:
             rospy.wait_for_service('/gazebo/set_visual_properties', 3)
         except rospy.ROSException as exc:
             raise NRPServicesUnavailableROSService(str(exc))
-        set_visual_properties = rospy.ServiceProxy('/gazebo/set_visual_properties',
-                                                   SetVisualProperties)
-        try:
-            set_visual_properties(model_name=vr_name, link_name='body',
-                                  visual_name='screen_glass',
-                                  property_name='material:script:name',
-                                  property_value=color)
-        except rospy.ServiceException as exc:
+        set_visual_properties = rospy.ServiceProxy(
+            '/gazebo/set_visual_properties',
+            SetVisualProperties
+        )
+        names = visual_path.split('::')
+        if len(names) < 3:
             raise NRPServicesClientErrorException(
-                "Service did not process request: " + str(exc))
-        return "Changed color", 200
+                "Invalid visual path: " + visual_path +
+                ".\n Expected: model_name::link_name::visual_name",
+                error_code=404
+            )
+        assert(material is not None)
+        try:
+            set_visual_properties(
+                model_name=names[0],
+                link_name="::".join(names[1:-1]),
+                visual_name=names[-1],
+                property_name='material:script:name',
+                property_value=material
+            )
+        except rospy.ServiceException as exc:
+            raise NRPServicesGeneralException(
+                "Service did not process request: " + str(exc),
+                "rospy service exception"
+            )
+        return {'message': 'Material changed sucessfully'}, 200
 
     @swagger.operation(
-        notes='Currently, only the change of screen colors is implemented',
+        notes='Currently, only the change of screen materials is implemented',
         parameters=[
             {
                 "name": "sim_id",
@@ -310,11 +327,11 @@ class CustomEventControl(Resource):
                 "dataType": int.__name__
             },
             {
-                "name": "event",
-                "description": "Custom event to raise",
+                "name": "material_change",
+                "description": "the path to the visual target and the material to apply",
                 "paramType": "body",
                 "required": True,
-                "dataType": _CustomEvent.__name__
+                "dataType": _MaterialChange.__name__
             }
         ],
         responseMessages=[
@@ -332,21 +349,23 @@ class CustomEventControl(Resource):
             },
             {
                 "code": 200,
-                "message": "Successfully raised event"
+                "message": "Material applied successfully"
             }
-            # pylint: disable=R0911
         ]
     )
     def put(self, sim_id):
         """
-        Raises a hardware event
+        Change the material of a given visual
 
         :param sim_id: The simulation id
-        :<json string name: The name of the event to raise
+        :<json string visual_path: The path to the visual for which
+        a change in material is requested
+        :<json string material_name: The name of the material that will
+        be applied
         :status 400: The parameters are invalid
         :status 401: Operation only allowed by simulation owner
         :status 404: The simulation with the given ID was not found
-        :status 200: Successfully raised event
+        :status 200: Material applied successfully
         """
         simulation = _get_simulation_or_abort(sim_id)
 
@@ -354,19 +373,9 @@ class CustomEventControl(Resource):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
-        if 'name' not in body:
-            return "No name given", 400
-        name = body['name']
-        if name == 'RightScreenToRed':
-            simulation.right_screen_color = 'Gazebo/Red'
-            return self.__set_light('right_vr_screen', 'Gazebo/Red')
-        if name == "RightScreenToBlue":
-            simulation.right_screen_color = 'Gazebo/Blue'
-            return self.__set_light('right_vr_screen', 'Gazebo/Blue')
-        if name == "LeftScreenToRed":
-            simulation.left_screen_color = 'Gazebo/Red'
-            return self.__set_light('left_vr_screen', 'Gazebo/Red')
-        if name == "LeftScreenToBlue":
-            simulation.left_screen_color = 'Gazebo/Blue'
-            return self.__set_light('left_vr_screen', 'Gazebo/Blue')
-        return "Interaction not found", 404
+        if 'visual_path' not in body:
+            return "No visual_path given", 400
+        if 'material' not in body:
+            return "No material given", 400
+
+        return self.__set_material(body['visual_path'], body['material'])

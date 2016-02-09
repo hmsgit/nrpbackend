@@ -39,9 +39,7 @@ class TestSimulationService(RestTest):
             'environmentConfiguration': None,
             'gzserverHost': 'local',
             'operationMode': 'view',
-            "contextID": None,
-            'left_screen_color': 'Gazebo/Blue',
-            'right_screen_color': 'Gazebo/Blue'
+            "contextID": None
         }
         erd = json.dumps(expected_response_data)
         self.assertEqual(response.data.strip(), erd)

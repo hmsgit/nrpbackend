@@ -77,7 +77,7 @@ from hbp_nrp_backend.rest_server.__ExperimentWorldSDF import ExperimentWorldSDF
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFile
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
-    CustomEventControl
+    MaterialControl
 from hbp_nrp_backend.rest_server.__SimulationReset import SimulationReset
 from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
@@ -89,7 +89,7 @@ from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 
 api.add_resource(CollabHandler, '/collab/configuration/<string:context_id>')
-api.add_resource(CustomEventControl, '/simulation/<int:sim_id>/interaction')
+api.add_resource(MaterialControl, '/simulation/<int:sim_id>/interaction/material_change')
 api.add_resource(Experiment, '/experiment')
 api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')

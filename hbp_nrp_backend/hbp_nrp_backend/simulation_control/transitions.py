@@ -59,11 +59,6 @@ def reset_simulation(simulation):
                                                         for sm in simulation.state_machines))
     simulation.state_machine_manager.terminate_all()
 
-    # The following two lines are part of a fix for [NRRPLT-1899]
-    # To be removed when the following Gazebo issue is solved:
-    # https://bitbucket.org/osrf/gazebo/issue/1573/scene_info-does-not-reflect-older-changes
-    simulation.left_screen_color = 'Gazebo/Blue'  # pragma: no cover
-    simulation.right_screen_color = 'Gazebo/Blue'  # pragma: no cover
     simulation.cle.reset()
 
     # The following lines are part of a fix for [NRRPLT-2844]
