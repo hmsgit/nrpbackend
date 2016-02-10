@@ -183,15 +183,16 @@ class ROSCLEClient(object):
         self.valid = False
         self.invalid_reason = "a previous stop request (triggering automatic disconnection)"
 
-    def reset(self, reset_type):
+    def reset(self, reset_type, payload=""):
         """
         Reset the simulation.
         :param reset_type: Denotes the kind of reset the user wants to perform, details about
             reset types and details are given in the ResetSimulation service request message.
+        :param payload: Data useful to reset the simulation
         """
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
-        resp = self.__cle_reset(reset_type)
+        resp = self.__cle_reset(reset_type, payload)
         if not resp.success:
             raise ROSCLEClientException(resp.error_message)
 

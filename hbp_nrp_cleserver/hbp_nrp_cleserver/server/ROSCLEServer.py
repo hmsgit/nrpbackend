@@ -643,7 +643,8 @@ class ROSCLEServer(object):
             if reset_type == rsr.RESET_ROBOT_POSE:
                 self.__cle.reset_robot_pose()
             elif reset_type == rsr.RESET_WORLD:
-                self.__cle.reset_world()
+                sdf_world_string = request.payload
+                self.__cle.reset_world(sdf_world_string)
             elif reset_type == rsr.RESET_FULL:
                 return False, "This feature has not been implemented yet."
             elif reset_type == rsr.RESET_OLD:

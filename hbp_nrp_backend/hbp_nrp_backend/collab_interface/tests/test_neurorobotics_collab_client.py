@@ -278,6 +278,15 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.assertEqual(arg2, filepath)
         self.assertEqual(arg3, mimetype)
 
+    def test_download_file_from_collab(self):
+
+        fake_filepath = '/abc/def'
+        neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
+
+        neurorobotic_collab_client.download_file_from_collab(fake_filepath)
+
+        self.mock_document_client_instance.download_file.assert_called_with(fake_filepath)
+
     def test_get_mimetype(self):
         ncc = NeuroroboticsCollabClient("token", 'aaa')
         self.assertIsNotNone(ncc.get_mimetype(ncc.EXPERIMENT_CONFIGURATION_FILE_NAME))

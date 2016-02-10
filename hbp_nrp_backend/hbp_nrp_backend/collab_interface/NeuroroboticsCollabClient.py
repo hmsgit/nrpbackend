@@ -288,6 +288,15 @@ class NeuroroboticsCollabClient(object):
             self.__document_client.remove(filepath)
         self.__document_client.upload_string(content, filepath, mimetype)
 
+    def download_file_from_collab(self, filepath):
+        """
+        Downloads the file with filepath from the collab.
+
+        :param filepath the file to download
+        :return the contents of the file as a string
+        """
+        return self.__document_client.download_file(filepath)
+
 
 class _FlattenedExperimentDirectory(object):
     """
