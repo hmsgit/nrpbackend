@@ -140,7 +140,7 @@ class ExperimentTransferfunctions(Resource):
             context_id
         )
 
-        bibi_file_path = client.clone_bibi_from_collab_context()
+        bibi_file_path = client.clone_file_from_collab_context(client.BIBI_CONFIGURATION_MIMETYPE)
         if bibi_file_path is None:
             raise NRPServicesGeneralException(
                 "BIBI configuration file not found in the Collab storage",

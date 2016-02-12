@@ -82,7 +82,7 @@ def create_brain():
         bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
-        self.mock_collabClient_instance.clone_bibi_from_collab_context.return_value = bibi_temp_path
+        self.mock_collabClient_instance.clone_file_from_collab_context.return_value = bibi_temp_path
 
         context_id = '123456'
         brain_populations = {'index': [0], 'slice': {'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
@@ -112,10 +112,4 @@ def create_brain():
                 self.assertEqual(population.element, [1, 2, 3])
             else:
                 self.fail("Unexpected identifier: " + population.population)
-
-
-
-
-
-
         self.assertEqual(arg3, "recovered_bibi_configuration.xml")

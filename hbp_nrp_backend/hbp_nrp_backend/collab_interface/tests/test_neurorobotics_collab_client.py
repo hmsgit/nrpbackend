@@ -203,7 +203,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         )
 
     @patch('tempfile.mkdtemp')
-    def test_clone_bibi_from_collab(self, mkdtemp_mock):
+    def test_clone_file_from_collab(self, mkdtemp_mock):
         tmp_dir = "/tmp/tmp_directory"
         mkdtemp_mock.return_value = tmp_dir
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
@@ -222,22 +222,22 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
               {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'},
               {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.bibi+xml'}
           ]
-        result = neurorobotic_collab_client.clone_bibi_from_collab('some_uuid',)
+        result = neurorobotic_collab_client.clone_file_from_collab('some_uuid', neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE)
         self.assertEqual(self.mock_document_client_instance.download_file.call_count, 1)
         bibi_configuration_path = os.path.join(tmp_dir, bibi_configuration_file)
         self.assertEqual(result, bibi_configuration_path)
 
     @patch(
-        'hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_bibi_from_collab'
+        'hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab'
     )
-    def test_clone_bibi_from_collab_context(self, clone_bibi_from_collab_mock):
+    def test_clone_file_from_collab_context(self, mock_clone_file_from_collab):
         uuid = "some uuid"
         collab_context = MagicMock(experiment_folder_uuid=uuid)
         self.mock_get_or_raise_collab_context.return_value = collab_context
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        neurorobotic_collab_client.clone_bibi_from_collab_context()
-        self.assertEqual(neurorobotic_collab_client.clone_bibi_from_collab.call_count, 1)
-        neurorobotic_collab_client.clone_bibi_from_collab.assert_called_with(uuid)
+        neurorobotic_collab_client.clone_file_from_collab_context(neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE)
+        self.assertEqual(neurorobotic_collab_client.clone_file_from_collab.call_count, 1)
+        neurorobotic_collab_client.clone_file_from_collab.assert_called_with(uuid, neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE)
 
     def test_get_first_file_path_with_mimetype(self):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
