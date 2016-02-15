@@ -192,7 +192,7 @@ class ROSCLEClient(object):
         """
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
-        resp = self.__cle_reset(reset_type, payload)
+        resp = self.__cle_reset(reset_type=reset_type, payload=payload)
         if not resp.success:
             raise ROSCLEClientException(resp.error_message)
 
