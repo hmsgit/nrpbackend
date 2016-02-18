@@ -226,9 +226,8 @@ class TestROSCLEServer(unittest.TestCase):
         request.brain_data = "Dummy = None"
         request.brain_populations = populations
         response = set_brain_implementation(request)
-        print(self.__mocked_cle.load_network_from_file.call_args[0][1])
         expected_populations_arg = json.dumps(
-            self.__mocked_cle.load_network_from_file.call_args[0][1]
+            self.__mocked_cle.load_network_from_file.call_args[1]
         )
         self.assertEqual(populations, expected_populations_arg)
         self.__mocked_cle.load_network_from_file.reset_mock()

@@ -338,7 +338,7 @@ class ROSCLEServer(object):
                     else:
                         tmp.delete = True
                         return ["Data type {0} is invalid".format(request.data_type), 0, 0]
-                self.__cle.load_network_from_file(tmp.name, json.loads(request.brain_populations))
+                self.__cle.load_network_from_file(tmp.name, **json.loads(request.brain_populations))
             return ["", 0, 0]
         except ValueError, e:
             return ["Population format is invalid: " + str(e), 0, 0]
