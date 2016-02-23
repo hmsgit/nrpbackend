@@ -20,16 +20,18 @@ from RestrictedPython import compile_restricted
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackage folder at the root of this CLE repository.
 from cle_ros_msgs import srv
-from hbp_nrp_cle.common import SimulationFactoryCLEError
+from cle_ros_msgs.msg import CLEError
+from cle_ros_msgs.msg import PopulationInfo, NeuronParameter
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_SIM_START_ID, \
-    TOPIC_STATUS, TOPIC_TRANSFER_FUNCTION_ERROR, \
+    TOPIC_STATUS, TOPIC_CLE_ERROR, \
     SERVICE_SIM_PAUSE_ID, SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN
+    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
+    SERVICE_GET_POPULATIONS
 from hbp_nrp_cleserver.server.ROSCLEState import InitialState, PausedState
 from hbp_nrp_cleserver.server import ros_handler
 import hbp_nrp_cle.tf_framework as tf_framework
-from hbp_nrp_cle.tf_framework import TFLoadingException
+from hbp_nrp_cle.tf_framework import TFLoadingException, TFException
 import base64
 from tempfile import NamedTemporaryFile
 
@@ -161,6 +163,7 @@ class ROSCLEServer(object):
         self.__service_delete_transfer_function = None
         self.__service_get_brain = None
         self.__service_set_brain = None
+        self.__service_get_populations = None
         self.__cle = None
 
         self.__simulation_id = sim_id
@@ -169,9 +172,9 @@ class ROSCLEServer(object):
             String,
             queue_size=10  # Not expecting more that 10hz
         )
-        self.__ros_tf_error_pub = rospy.Publisher(
-            TOPIC_TRANSFER_FUNCTION_ERROR,
-            SimulationFactoryCLEError,
+        self.__ros_cle_error_pub = rospy.Publisher(
+            TOPIC_CLE_ERROR,
+            CLEError,
             queue_size=10  # Not expecting more that 10hz
         )
 
@@ -193,6 +196,32 @@ class ROSCLEServer(object):
         rospy_thread.setDaemon(True)
         rospy_thread.start()
 
+    # pylint: disable=too-many-arguments
+    def publish_error(self, source_type, error_type, message,
+                      severity=CLEError.SEVERITY_ERROR, function_name="",
+                      line_number=-1, offset=-1, line_text="", file_name=""):
+        """
+        Publishes an error message
+
+        :param severity: The severity of the error
+        :param source_type: The module the error message comes from, e.g. "Transfer Function"
+        :param error_type: The error type, e.g. "Compile"
+        :param message: The error message description, e.g. unexpected indent
+        :param function_name: The function name, if available
+        :param line_number: The line number where the error ocurred
+        :param offset: The offset
+        :param line_text: The text of the line causing the error
+        """
+        if severity >= CLEError.SEVERITY_ERROR:
+            logger.exception("Error in {0} ({1}): {2}".format(source_type, error_type, message))
+        self.__ros_cle_error_pub.publish(
+            CLEError(severity, source_type, error_type, message,
+                     function_name, line_number, offset, line_text, file_name))
+        if severity == CLEError.SEVERITY_CRITICAL:
+            self.__state.fail()
+            self.stop_timeout()
+            self.__double_timer.cancel_all()
+
     def set_state(self, state):
         """
         Sets the current state of the ROSCLEServer. This is used from the State Pattern
@@ -201,20 +230,29 @@ class ROSCLEServer(object):
         self.__state = state
         self.__event_flag.set()
 
+    def __tf_except_hook(self, tf, tf_error):
+        """
+        Handles an exception in the Transfer Functions
+
+        :param tf: The transfer function that crashed
+        :param tf_error: The exception that was thrown
+        """
+        if tf.updated:
+            self.publish_error("Transfer Functions", "Runtime", str(tf_error),
+                               severity=CLEError.SEVERITY_ERROR, function_name=tf.name)
+
     def prepare_simulation(self, cle, timeout=600):
         """
         The CLE will be initialized within this method and ROS services for
         starting, pausing, stopping and resetting are setup here.
 
-        :param __cle: the closed loop engine
+        :param cle: the closed loop engine
         :param timeout: the timeout time of the simulation,
             default is 5 minutes
         """
         self.__cle = cle
         if not self.__cle.is_initialized:
             self.__cle.initialize()
-
-        self.__cle.tfm.publish_error_callback = self.__ros_tf_error_pub.publish
 
         logger.info("Registering ROS Service handlers")
 
@@ -276,6 +314,11 @@ class ROSCLEServer(object):
             self.__set_brain
         )
 
+        self.__service_get_populations = rospy.Service(
+            SERVICE_GET_POPULATIONS(self.__simulation_id), srv.GetPopulations,
+            self.__get_populations
+        )
+
         self.__timeout = timeout
         self.__double_timer = DoubleTimer(
             self.STATUS_UPDATE_INTERVAL,
@@ -286,11 +329,37 @@ class ROSCLEServer(object):
         self.__double_timer.start()
         self.start_timeout()
 
+        tf_framework.TransferFunction.excepthook = self.__tf_except_hook
+
     def __get_remaining(self):
         """
         Get the remaining time of the simulation
         """
         return self.__double_timer.get_remaining_time()
+
+    # pylint: disable=unused-argument
+    def __get_populations(self, request):
+        """
+        Gets the populations available in the neural network
+        """
+        return [
+            PopulationInfo(p.name, p.celltype,
+                           ROSCLEServer.__convert_parameters(p.parameters), p.gids)
+            for p in self.__cle.bca.get_populations()
+        ]
+
+    @staticmethod
+    def __convert_parameters(parameters):
+        """
+        Converts the given parameters to ROS types
+
+        :param parameters: A parameter dictionary
+        :return: A list of ROS-compatible neuron parameters
+        """
+        return [
+            NeuronParameter(key, parameters[key])
+            for key in parameters
+        ]
 
     # pylint: disable=unused-argument, no-self-use
     def __get_brain(self, request):
@@ -392,13 +461,9 @@ class ROSCLEServer(object):
             else:
                 error_msg += " has multiple definition names."
             error_msg += " Compilation aborted"
-            msg = SimulationFactoryCLEError(
-                "Transfer Function",
-                "NoOrMultipleNames",
-                error_msg,
-                original_name)
-            self.__ros_tf_error_pub.publish(msg)
-            return msg.message
+            self.publish_error("Transfer Function", "NoOrMultipleNames", error_msg,
+                               severity=CLEError.SEVERITY_ERROR, function_name=original_name)
+            return error_msg
 
         # Compile (synchronously) transfer function's new code in restricted mode
         new_name = m[0]
@@ -410,18 +475,10 @@ class ROSCLEServer(object):
                 + " transfer function named " + new_name \
                 + " in restricted mode.\n" \
                 + str(e)
-            logger.error(message)
-            msg = SimulationFactoryCLEError(
-                "Transfer Function",
-                "Compile",
-                str(e),
-                new_name,
-                e.lineno,
-                e.offset,
-                e.text,
-                e.filename
-            )
-            self.__ros_tf_error_pub.publish(msg)
+            self.publish_error("Transfer Function", "Compile", str(e),
+                               severity=CLEError.SEVERITY_ERROR, function_name=new_name,
+                               line_number=e.lineno, offset=e.offset, line_text=e.text,
+                               file_name=e.filename)
             return message
 
         # Make sure CLE is stopped. If already stopped, these calls are harmless.
@@ -430,14 +487,9 @@ class ROSCLEServer(object):
         try:
             tf_framework.set_transfer_function(new_source, new_code, new_name)
         except TFLoadingException as e:
-            tf_error = SimulationFactoryCLEError(
-                "Transfer Function",
-                "Loading",
-                e.message,
-                e.tf_name
-            )
-            self.__ros_tf_error_pub.publish(tf_error)
-
+            self.publish_error("Transfer Function", "Loading", e.message,
+                               severity=CLEError.SEVERITY_ERROR, function_name=e.tf_name)
+            return e.message
         return ""
 
     def __delete_transfer_function(self, request):
@@ -529,7 +581,7 @@ class ROSCLEServer(object):
         logger.info("Shutting down set_brain service")
         self.__service_set_brain.shutdown()
         logger.info("Unregister error/transfer_function topic")
-        self.__ros_tf_error_pub.unregister()
+        self.__ros_cle_error_pub.unregister()
         self.__cle.shutdown()
         self.notify_finish_task()
         logger.info("Unregister status topic")
@@ -597,13 +649,25 @@ class ROSCLEServer(object):
         self.__current_subtask_index = 0
         self.__current_task = None
 
+    def __simulation(self):
+        """
+        Runs the Simulation and registers any exceptions
+        """
+        try:
+            self.__cle.start()
+        except TFException, e:
+            self.publish_error("Transfer Function", e.error_type, str(e),
+                               e.tf_name)
+        except Exception, e:
+            self.publish_error("CLE", "General Error", str(e))
+
     @ros_handler
     def start_simulation(self):
         """
         Handler for the CLE start() call, also used for resuming after pause().
         """
         # The start() is blocking so it has to be called on a separate thread
-        self.start_thread = threading.Thread(target=self.__cle.start)
+        self.start_thread = threading.Thread(target=self.__simulation)
         self.start_thread.setDaemon(True)
         self.start_thread.start()
 

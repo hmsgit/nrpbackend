@@ -68,17 +68,20 @@ def __clean(simulation):
 
 
 stateMachine = {'created': {'initialized': __initialize_simulation,
-                            'failed': __clean},
+                            'halted': __clean},
                 'initialized': {'started': __start_simulation,
                                 'stopped': __stop_simulation,
-                                'failed': __clean},
+                                'halted': __clean},
                 'started': {'paused': __pause_simulation,
                             'initialized': __reset_simulation,
                             'stopped': __stop_simulation,
-                            'failed': __clean},
+                            'halted': __clean},
                 'paused': {'started': __start_simulation,
                            'initialized': __reset_simulation,
                            'stopped': __stop_simulation,
-                           'failed': __clean},
+                           'halted': __clean},
+                'halted': {'failed': __stop_simulation},
                 'stopped': {},
                 'failed': {}}
+
+reroutes = {'halted': {'stopped': 'failed'}}

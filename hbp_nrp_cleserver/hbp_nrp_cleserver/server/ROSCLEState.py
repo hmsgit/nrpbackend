@@ -15,6 +15,7 @@ class ROSCLEState(object):
     STOPPED = "stopped"
     INITIALIZED = "initialized"
     PAUSED = "paused"
+    FAILED = "failed"
 
 
 class State(object):
@@ -46,9 +47,26 @@ class State(object):
         raise RuntimeError('You cannot start the simulation while in %s.' %
                            (type(self).__name__, ))
 
+    def fail(self):
+        self._context.set_state(FailureState(self._context))
+
     # pylint: disable=no-self-use
     def is_final_state(self):
         return False
+
+
+class FailureState(State):
+    """
+    The failure state means that the simulation failed and cannot be recovered
+    """
+    def is_final_state(self):
+        return True
+
+    def fail(self):
+        pass
+
+    def __repr__(self):
+        return ROSCLEState.FAILED
 
 
 class InitialState(State):

@@ -20,3 +20,7 @@ SERVICE_DELETE_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/delete_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_BRAIN = lambda sim_id: '/%s/%d/get_brain' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SET_BRAIN = lambda sim_id: '/%s/%d/set_brain' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_GET_POPULATIONS = lambda sim_id: '/%s/%d/get_populations' % (ROS_CLE_NODE_NAME, sim_id)
+
+TOPIC_STATUS = '/%s/status' % ROS_CLE_NODE_NAME
+TOPIC_CLE_ERROR = '/%s/cle_error' % ROS_CLE_NODE_NAME

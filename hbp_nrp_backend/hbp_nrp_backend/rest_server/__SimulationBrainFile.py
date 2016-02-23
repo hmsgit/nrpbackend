@@ -107,7 +107,7 @@ class SimulationBrainFile(Resource):
             'data': result.brain_data,
             'brain_type': result.brain_type,
             'data_type': result.data_type,
-            'brain_populations': json.loads(result.brain_populations)
+            'additional_populations': json.loads(result.brain_populations)
         }, 200
 
     @swagger.operation(
@@ -184,7 +184,7 @@ class SimulationBrainFile(Resource):
         result = simulation.cle.set_simulation_brain(body['brain_type'],
                                                      body['data'],
                                                      body['data_type'],
-                                                     json.dumps(body['brain_populations']))
+                                                     json.dumps(body['additional_populations']))
 
         if result.error_message is not "":
             # Error in given brain

@@ -56,7 +56,7 @@ class TestSimulationState(unittest.TestCase):
         self.assertRaises(FooBarException, set_initialized)
         self.assertEqual(3, utc.last_sim_id)
         self.assertEqual("clean", utc.last_transition)
-        self.assertEqual("failed", sim.state)
+        self.assertEqual("halted", sim.state)
         self.assertEqual(1, sim.errors)
 
     def test_state_transition_cleanup_failed(self):
@@ -76,9 +76,17 @@ class TestSimulationState(unittest.TestCase):
         except Exception as e:
             exception_raised = True
             msg = repr(e)
-            self.assertTrue("initialized" in msg)
-            self.assertTrue("Foo" in msg)
-            self.assertTrue("Bar" in msg)
+            self.assertIn("initialized", msg)
+            self.assertIn("Foo", msg)
+            self.assertIn("Bar", msg)
         self.assertTrue(exception_raised)
-        self.assertEqual("failed", sim.state)
+        self.assertEqual("halted", sim.state)
         self.assertEqual(2, sim.errors)
+
+    def test_state_transition_reroute(self):
+        sim = Simulation(5, "foo", "foo", "me", None, state="halted")
+        sim.state = "stopped"
+        self.assertEqual(5, utc.last_sim_id)
+        self.assertEqual("stop", utc.last_transition)
+        self.assertEqual("failed", sim.state)
+        self.assertEqual(0, sim.errors)

@@ -4,7 +4,7 @@ This module contains the simulation class
 
 __author__ = 'Georg Hinkel'
 
-from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine
+from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine, reroutes
 from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
 from hbp_nrp_excontrol.StateMachineInstance import StateMachineInstance
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
@@ -153,6 +153,9 @@ class Simulation(object):
         Sets the state of the simulation to the given value
         :param new_state: The new state
         """
+        reroute = reroutes.get(self.__state)
+        if reroute is not None:
+            new_state = reroute.get(new_state, new_state)
         try:
             transitions = stateMachine[self.__state]
         except KeyError:
@@ -160,16 +163,22 @@ class Simulation(object):
         if new_state not in transitions:
             raise InvalidStateTransitionException()
         try:
-            transitions[new_state](self)
+            transition = transitions[new_state]
+            if transition is not None:
+                # pylint: disable=not-callable
+                transition(self)
             self.__state = new_state
         except:
             import sys
             exc = sys.exc_info()
             logger.exception(exc[1])
-            self.__state = "failed"
-            if 'failed' in transitions:
+            self.__state = "halted"
+            if 'halted' in transitions:
                 try:
-                    transitions['failed'](self)
+                    backup_transition = transitions['halted']
+                    if backup_transition is not None:
+                        # pylint: disable=not-callable
+                        backup_transition(self)
                 except Exception as e:
                     logger.exception(e)
                     msg = "Exception trying to set the simulation to state {0}: '{1}'. However, " \
