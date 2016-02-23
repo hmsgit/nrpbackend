@@ -202,17 +202,20 @@ class NeuroroboticsCollabClient(object):
             self.__collab_context.experiment_folder_uuid
         )
 
-    def clone_bibi_from_collab(self, collab_folder_uuid):
+    def clone_file_from_collab(self, collab_folder_uuid, mimetype):
         """
-        Takes a collab folder and clones its bibi configuration file in a temporary folder.
+        Takes a collab folder and clones a file according to a given mimetype in a
+        temporary folder.
         The caller has then the responsability of managing this folder.
+
         :param collab_folder_uuid: The UUID of the document service folder where the experiment is
             saved
+        :param mimetype: The mimetype of the file to clone
         :return: A string containing the path of the cloned bibi configuration file.
         """
         temp_directory = tempfile.mkdtemp()
         logger.debug(
-            "Sync bibi configuration file (.xml) from collab folder " +
+            "Sync file with mimetype " + mimetype + " from collab folder " +
             collab_folder_uuid +
             " to local folder " + temp_directory
         )
@@ -222,7 +225,7 @@ class NeuroroboticsCollabClient(object):
             attr = self.__document_client.get_standard_attr(filepath)
             if (
                 (attr['_entityType'] == 'file') and ('_contentType' in attr) and
-                (attr['_contentType'] == self.BIBI_CONFIGURATION_MIMETYPE)
+                (attr['_contentType'] == mimetype)
             ):
                 localpath = os.path.join(temp_directory, filename)
                 self.__document_client.download_file(filepath, localpath)
@@ -230,13 +233,16 @@ class NeuroroboticsCollabClient(object):
 
         return None
 
-    def clone_bibi_from_collab_context(self):
+    def clone_file_from_collab_context(self, mimetype):
         """
-        Takes a collab folder and clones the bibi configuration in a temporary folder.
+        Takes a collab folder and clones a file according to a given mimetype in a
+        temporary folder.
         The caller has then the responsability of managing the created folder.
+
+        :param mimetype: The mimetype of the file to clone
         :return: A string containing the path of the cloned bibi configuration file.
         """
-        return self.clone_bibi_from_collab(self.__collab_context.experiment_folder_uuid)
+        return self.clone_file_from_collab(self.__collab_context.experiment_folder_uuid, mimetype)
 
     def get_first_file_path_with_mimetype(self, mimetype, default_filename):
         """
