@@ -158,9 +158,9 @@ class ROSCLEClient(object):
         self.__cle_get_populations = ROSCLEServiceWrapper(SERVICE_GET_POPULATIONS(sim_id),
                                                           srv.GetPopulations, self)
 
-        self.__cle_error_listener = rospy.Subscriber(TOPIC_CLE_ERROR, String,
+        self.__cle_error_listener = rospy.Subscriber(TOPIC_CLE_ERROR, CLEError,
                                                      self.__cle_error_handler)
-        self.__cle_status_listener = rospy.Subscriber(TOPIC_STATUS, CLEError,
+        self.__cle_status_listener = rospy.Subscriber(TOPIC_STATUS, String,
                                                       self.__cle_status_handler)
         self.cle_handler = None
         self.__stop_reason = None
