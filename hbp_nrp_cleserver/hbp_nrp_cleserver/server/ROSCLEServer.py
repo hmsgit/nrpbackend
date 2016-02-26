@@ -35,9 +35,19 @@ import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException, TFException
 import base64
 from tempfile import NamedTemporaryFile
+from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
+import contextlib
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 logger = logging.getLogger(__name__)
+
+
+# We use the logger hbp_nrp_cle.user_notifications in the CLE to log
+# information that is useful to know for the user.
+# In here, we forward any info message sent to this logger to the notificator
+gazebo_logger = logging.getLogger('hbp_nrp_cle.user_notifications')
+gazebo_logger.setLevel(logging.INFO)
+notificator_handler = NotificatorHandler()
 
 
 # from http://stackoverflow.com/questions/12435211/
@@ -429,7 +439,7 @@ class ROSCLEServer(object):
             if not isinstance(self.__state, InitialState) and \
                     not isinstance(self.__state, PausedState):
                 self.__state.pause_simulation()
-            with NamedTemporaryFile(prefix='brain', suffix='.' + request.brain_type, delete=False)\
+            with NamedTemporaryFile(prefix='brain', suffix='.' + request.brain_type, delete=False) \
                     as tmp:
                 with tmp.file as brain_file:
                     if request.data_type == "text":
@@ -742,11 +752,20 @@ class ROSCLEServer(object):
         reset_type = request.reset_type
 
         try:
+            gazebo_logger.handlers.append(notificator_handler)
+
+            Notificator.register_notification_function(
+                lambda subtask, update_progress: self.notify_current_task(subtask, update_progress,
+                                                                          True)
+            )
+
             if reset_type == rsr.RESET_ROBOT_POSE:
                 self.__cle.reset_robot_pose()
             elif reset_type == rsr.RESET_WORLD:
-                sdf_world_string = request.payload
-                self.__cle.reset_world(sdf_world_string)
+                with self.task_notifier("Resetting Environment", "Emptying 3D world"):
+                    sdf_world_string = request.payload
+                    self.__cle.reset_world(sdf_world_string)
+
             elif reset_type == rsr.RESET_FULL:
                 return False, "This feature has not been implemented yet."
             elif reset_type == rsr.RESET_OLD:
@@ -762,5 +781,25 @@ class ROSCLEServer(object):
                 self.start_timeout()
         except Exception as e:
             return False, str(e)
+        finally:
+            gazebo_logger.handlers.remove(notificator_handler)
 
         return True, ""
+
+    @contextlib.contextmanager
+    def task_notifier(self, task_name, subtask_name):
+
+        """
+        Task notifier context manager
+
+        :param task_name:
+        :param subtask_name:
+        """
+
+        self.notify_start_task(task_name, subtask_name,
+                               number_of_subtasks=0,
+                               block_ui=True)
+        try:
+            yield
+        finally:
+            self.notify_finish_task()

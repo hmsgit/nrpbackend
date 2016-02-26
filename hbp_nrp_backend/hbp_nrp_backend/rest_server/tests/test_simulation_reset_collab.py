@@ -124,9 +124,6 @@ class TestSimulationResetCollab(RestTest):
         self.assertEqual(SimulationResetCollab._compute_payload(reset_robot_pose_type, self.context_id),
                          empty_payload)
 
-    #UserAuthentication.get_header_token
-    # NeuroroboticsCollabClient
-    # client.get_first_file_path_with_mimetype
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_get_sdf_world_from_collab(self, mock_get_header_token):
 
@@ -136,7 +133,7 @@ class TestSimulationResetCollab(RestTest):
         fake_world_sdf_string = '<sdf></sdf>'
         self.mock_collabClient_instance.download_file_from_collab.return_value = fake_world_sdf_string
 
-        #restore constant field
+        # restore constant field
         self.mock_CollabClient.SDF_WORLD_MIMETYPE = NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE
 
         # call target function
