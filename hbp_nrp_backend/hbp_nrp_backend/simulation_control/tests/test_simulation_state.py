@@ -34,18 +34,16 @@ class TestSimulationState(unittest.TestCase):
         def set_state():
             sim.state = new_state
         self.assertRaises(InvalidStateTransitionException, set_state)
-        self.assertEqual("clean", utc.last_transition)
         self.assertEqual("created", sim.state)
         self.assertEqual(0, sim.errors)
 
         sim = Simulation(2, "foo", "foo", "me", None, state="created")
         new_state = "not existing"
         self.assertRaises(InvalidStateTransitionException, set_state)
-        self.assertEqual("clean", utc.last_transition)
         self.assertEqual("created", sim.state)
         self.assertEqual(0, sim.errors)
 
-    def test_state_transition_exception(self):
+    def test_state_transition_exception_created(self):
         sim = Simulation(3, "foo", "foo", "me", None, state="created")
         new_state = "initialized"
         def raise_exception(x):
@@ -56,11 +54,25 @@ class TestSimulationState(unittest.TestCase):
         self.assertRaises(FooBarException, set_initialized)
         self.assertEqual(3, utc.last_sim_id)
         self.assertEqual("clean", utc.last_transition)
+        self.assertEqual("failed", sim.state)
+        self.assertEqual(1, sim.errors)
+
+    def test_state_transition_exception_initialized(self):
+        sim = Simulation(4, "foo", "foo", "me", None, state="initialized")
+        new_state = "started"
+        def raise_exception(x):
+            raise FooBarException()
+        sm.start_simulation = raise_exception
+        def set_started():
+            sim.state = new_state
+        self.assertRaises(FooBarException, set_started)
+        self.assertEqual(4, utc.last_sim_id)
+        self.assertEqual("clean", utc.last_transition)
         self.assertEqual("halted", sim.state)
         self.assertEqual(1, sim.errors)
 
     def test_state_transition_cleanup_failed(self):
-        sim = Simulation(4, "foo", "foo", "me", None, state="created")
+        sim = Simulation(5, "foo", "foo", "me", None, state="created")
         sim.counter = 0
         def raise_exception(x):
             sim.counter += 1
@@ -80,13 +92,13 @@ class TestSimulationState(unittest.TestCase):
             self.assertIn("Foo", msg)
             self.assertIn("Bar", msg)
         self.assertTrue(exception_raised)
-        self.assertEqual("halted", sim.state)
+        self.assertEqual("failed", sim.state)
         self.assertEqual(2, sim.errors)
 
     def test_state_transition_reroute(self):
-        sim = Simulation(5, "foo", "foo", "me", None, state="halted")
+        sim = Simulation(6, "foo", "foo", "me", None, state="halted")
         sim.state = "stopped"
-        self.assertEqual(5, utc.last_sim_id)
+        self.assertEqual(6, utc.last_sim_id)
         self.assertEqual("stop", utc.last_transition)
         self.assertEqual("failed", sim.state)
         self.assertEqual(0, sim.errors)

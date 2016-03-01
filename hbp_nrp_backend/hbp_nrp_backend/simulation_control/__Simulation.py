@@ -4,7 +4,7 @@ This module contains the simulation class
 
 __author__ = 'Georg Hinkel'
 
-from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine, reroutes
+from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine, reroutes, fail_states
 from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
 from hbp_nrp_excontrol.StateMachineInstance import StateMachineInstance
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
@@ -172,10 +172,10 @@ class Simulation(object):
             import sys
             exc = sys.exc_info()
             logger.exception(exc[1])
-            self.__state = "halted"
-            if 'halted' in transitions:
+            self.__state = fail_states.get(self.__state, "failed")
+            if self.__state in transitions:
                 try:
-                    backup_transition = transitions['halted']
+                    backup_transition = transitions[self.__state]
                     if backup_transition is not None:
                         # pylint: disable=not-callable
                         backup_transition(self)
@@ -186,6 +186,7 @@ class Simulation(object):
                           "contact your system administrator."\
                         .format(new_state, repr(exc[1]), repr(e))
                     self.__errors += 2
+                    self.__state = "failed"
                     raise Exception(msg), None, exc[2]
             self.__errors += 1
 
