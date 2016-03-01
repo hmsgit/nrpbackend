@@ -32,6 +32,7 @@ def run_server(server, args):  # pragma: no cover
     port is given a default port, defined as a constant above, is used.
     (This function takes those two arguments in order to be able to inject mocks
     easily and hence make the function easy to test.)
+
     :param server: The server on which the run method is called
     :param args: The parsed arguments
     """
@@ -81,8 +82,23 @@ if __name__ == '__main__':  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument('--logfile', dest='logfile', help='specify the logfile for the ExDBackend')
     parser.add_argument('--port', dest='port', help='specify the application server\'s port')
+    parser.add_argument('-p', '--pycharm',
+                        dest='pycharm',
+                        help='debug with pyCharm. IP adress and port are needed.',
+                        nargs='+')
     init()
-    run_server(app, parser.parse_args())
+    _args = parser.parse_args()
+
+    if _args.pycharm:
+        # pylint: disable=import-error
+        import pydevd
+
+        pydevd.settrace(_args.pycharm[0],
+                        port=int(_args.pycharm[1]),
+                        stdoutToServer=True,
+                        stderrToServer=True)
+
+    run_server(app, _args)
 else:
     # Started with uWSGI or any other framework. Logging is done through the console.
     __init_console_logging()
