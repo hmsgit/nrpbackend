@@ -72,7 +72,7 @@ class TestSimulationResetCollab(RestTest):
     def test_reset_is_called_properly(self):
         simulations[0].cle = mock.MagicMock()
 
-        empty_payload = ""
+        empty_payload = []
 
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
@@ -107,7 +107,7 @@ class TestSimulationResetCollab(RestTest):
         reset_world_type = ResetSimulationRequest.RESET_WORLD
 
         self.assertEqual(SimulationResetCollab._compute_payload(reset_world_type, self.context_id),
-                         fake_world_sdf_string)
+                         [fake_world_sdf_string])
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_sdf_world_from_collab')
     def test_compute_payload_no_payload(self, mock_get_sdf):
@@ -119,10 +119,18 @@ class TestSimulationResetCollab(RestTest):
 
         reset_robot_pose_type = ResetSimulationRequest.RESET_ROBOT_POSE
 
-        empty_payload = ''
+        empty_payload = []
 
         self.assertEqual(SimulationResetCollab._compute_payload(reset_robot_pose_type, self.context_id),
                          empty_payload)
+
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_brain_info_from_collab')
+    def test_compute_payload_reset_brain(self, mock_get_brain_info):
+        from cle_ros_msgs.srv import ResetSimulationRequest
+        mock_get_brain_info.return_value = "random return value to check that this what we get"
+        payload = SimulationResetCollab._compute_payload(ResetSimulationRequest.RESET_BRAIN, self.context_id)
+        self.assertEqual(mock_get_brain_info.call_count, 1)
+        self.assertEqual(payload, mock_get_brain_info.return_value)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_get_sdf_world_from_collab(self, mock_get_header_token):
@@ -148,6 +156,35 @@ class TestSimulationResetCollab(RestTest):
         self.mock_collabClient_instance.download_file_from_collab.assert_called_with(fake_filepath)
 
         self.assertEqual(world_sdf_string, fake_world_sdf_string)
+
+
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.tempfile')
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.get_all_neurons_as_dict')
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.bibi_api_gen.CreateFromDocument')
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
+    def test_get_brain_info_from_collab(self, mock_get_brain_info, mock_create_from_document,
+        mock_get_all_neurons_as_dict, mock_tempfile):
+        import os
+        dummy_dir = "/my/temp/dir"
+        mock_tempfile.mkdtemp.return_value = dummy_dir
+
+        dummy_path = "/path/to/a/file/that/won't/be/used/because/of/mocks"
+
+        self.mock_collabClient_instance.get_first_file_path_with_mimetype.return_value = dummy_path
+
+        # restore constant field
+        self.mock_CollabClient.BRAIN_PYNN_MIMETYPE = NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE
+        self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE
+        self.mock_CollabClient.BIBI_CONFIGURATION_FILE_NAME = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+
+        # Not really a clean solution but: first we return the brain file, then the bibi configuration
+        # self.mock_collabClient_instance.download_file_from_collab.side_effect = [
+        #     dummy_path, , dummy_path
+        # ]
+        dummy_populations = {'pop1': (0, 1, 1), 'pop2': (1, 2, 1)}
+        mock_get_all_neurons_as_dict.return_value = dummy_populations
+        data_from_collab = SimulationResetCollab._get_brain_info_from_collab(self.context_id)
+        self.assertEqual(data_from_collab, [os.path.join(dummy_dir, 'brain.py'), str(dummy_populations)])
 
 if __name__ == '__main__':
     unittest.main()

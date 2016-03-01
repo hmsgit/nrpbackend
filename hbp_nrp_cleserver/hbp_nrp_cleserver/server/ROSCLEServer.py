@@ -1,6 +1,8 @@
 """
 ROS wrapper around the CLE
 """
+
+import ast
 import json
 import logging
 import threading
@@ -763,9 +765,22 @@ class ROSCLEServer(object):
                 self.__cle.reset_robot_pose()
             elif reset_type == rsr.RESET_WORLD:
                 with self.task_notifier("Resetting Environment", "Emptying 3D world"):
-                    sdf_world_string = request.payload
-                    self.__cle.reset_world(sdf_world_string)
-
+                    if request.payload != []:
+                        sdf_world_string = request.payload[0]
+                        self.__cle.reset_world(sdf_world_string)
+                    else:
+                        self.__cle.reset_world()
+            elif reset_type == rsr.RESET_BRAIN:
+                if request.payload != []:
+                    brain_temp_path = request.payload[0]
+                    neurons_conf = ast.literal_eval(request.payload[1])
+                    tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
+                    network_conf_orig = {
+                        k: tuple2slice(v) for k, v in neurons_conf.iteritems()
+                    }
+                    self.__cle.reset_brain(brain_temp_path, network_conf_orig)
+                else:
+                    self.__cle.reset_brain()
             elif reset_type == rsr.RESET_FULL:
                 return False, "This feature has not been implemented yet."
             elif reset_type == rsr.RESET_OLD:

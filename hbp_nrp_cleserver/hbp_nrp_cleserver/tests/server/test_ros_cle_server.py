@@ -153,6 +153,54 @@ class TestROSCLEServer(unittest.TestCase):
         resp = self.__ros_cle_server.reset_simulation(msg)
         self.assertFalse(resp[0])
 
+    def test_reset_simulation(self):
+        self.__mocked_cle.is_initialized = False
+        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
+        self.__ros_cle_server.start_simulation()
+        self.__ros_cle_server.pause_simulation()
+
+        # Reset robot pose without Collab
+        msg = ResetSimulation()
+        msg.reset_type = ResetSimulationRequest.RESET_ROBOT_POSE
+        msg.payload = []
+        self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual(1, self.__mocked_cle.reset_robot_pose.call_count)
+        self.__mocked_cle.reset_mock()
+
+        # Reset Brain without Collab
+        msg.reset_type = ResetSimulationRequest.RESET_BRAIN
+        msg.payload = []
+        self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual(1, self.__mocked_cle.reset_brain.call_count)
+        self.__mocked_cle.reset_mock()
+
+        # Reset World without Collab
+        msg.reset_type = ResetSimulationRequest.RESET_WORLD
+        msg.payload = []
+        self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual(1, self.__mocked_cle.reset_world.call_count)
+        self.__mocked_cle.reset_mock()
+
+        # Reset Brain within Collab
+        msg.reset_type = ResetSimulationRequest.RESET_BRAIN
+        msg.payload = ["/random/tmp/file.brain",
+                       "{'population1': (0, 5, 1), 'population2': (5, 10, 1)}"]
+        self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual(1, self.__mocked_cle.reset_brain.call_count)
+        self.assertEqual(self.__mocked_cle.reset_brain.call_args_list[0][0][0],
+                         "/random/tmp/file.brain")
+        self.assertEqual(self.__mocked_cle.reset_brain.call_args_list[0][0][1],
+                         {'population1': slice(0, 5, 1), 'population2': slice(5, 10, 1)})
+        self.__mocked_cle.reset_mock()
+
+        # Reset World within Collab
+        msg.reset_type = ResetSimulationRequest.RESET_WORLD
+        msg.payload = ["<a valid sdf string>"]
+        self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual(1, self.__mocked_cle.reset_world.call_count)
+        self.assertEqual(self.__mocked_cle.reset_world.call_args_list[0][0][0], msg.payload[0])
+        self.__mocked_cle.reset_mock()
+
     def __get_handlers_for_testing_main(self):
         self.__mocked_cle.is_initialized = True
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)

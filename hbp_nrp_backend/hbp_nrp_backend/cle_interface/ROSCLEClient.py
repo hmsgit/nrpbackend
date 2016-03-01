@@ -216,13 +216,15 @@ class ROSCLEClient(object):
         self.__cle_status_listener.unregister()
         self.__stop_reason = "Simulation stopped"
 
-    def reset(self, reset_type, payload=""):
+    def reset(self, reset_type, payload=None):
         """
         Reset the simulation.
         :param reset_type: Denotes the kind of reset the user wants to perform, details about
             reset types and details are given in the ResetSimulation service request message.
         :param payload: Data useful to reset the simulation
         """
+
+        payload = payload if payload is not None else []
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
         # TODO: Uniform response from ROS CLE services so that this could be done directly

@@ -331,14 +331,15 @@ class NeuroroboticsCollabClient(object):
 
         return created_folder_uuid
 
-    def download_file_from_collab(self, filepath):
+    def download_file_from_collab(self, file_path, dst_path=None):
         """
         Downloads the file with filepath from the collab.
 
-        :param filepath the file to download
-        :return the contents of the file as a string
+        :param file_path: the collab path of the file to download
+        :param dst_path: the destination where the file has to be saved (optional)
+        :return the contents of the file as a string or the path if dst_path is provided
         """
-        return self.__document_client.download_file(filepath)
+        return self.__document_client.download_file(file_path, dst_path)
 
 
 class _FlattenedExperimentDirectory(object):

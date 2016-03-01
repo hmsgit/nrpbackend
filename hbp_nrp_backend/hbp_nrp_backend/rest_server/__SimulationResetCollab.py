@@ -5,6 +5,9 @@ Using the Collab as storage
 
 __author__ = "Alessandro Ambrosano, Ugo Albanese"
 
+import os
+import tempfile
+
 from cle_ros_msgs import srv
 from flask import request
 from flask_restful import Resource, fields
@@ -16,6 +19,8 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_commons.generated import bibi_api_gen
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
 # pylint: disable=no-self-use
 
@@ -113,6 +118,7 @@ class SimulationResetCollab(Resource):
         payload = SimulationResetCollab._compute_payload(reset_type, context_id)
 
         try:
+            print reset_type, payload
             sim.cle.reset(reset_type, payload)
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
@@ -131,21 +137,62 @@ class SimulationResetCollab(Resource):
         rsr = srv.ResetSimulationRequest
 
         if reset_type == rsr.RESET_WORLD:
-            payload = SimulationResetCollab._get_sdf_world_from_collab(context_id)
+            payload = [SimulationResetCollab._get_sdf_world_from_collab(context_id)]
+        elif reset_type == rsr.RESET_BRAIN:
+            payload = SimulationResetCollab._get_brain_info_from_collab(context_id)
         else:
-            payload = ''
+            payload = []
 
         return payload
 
     @staticmethod
+    def _get_brain_info_from_collab(context_id):
+        """
+        Gathers from the collab the brain script and the populations by getting the BIBI
+        configuration file.
+
+        :param context_id: the UUID of the collab in which to look for the brain information
+        :return: A list with the path to the brain file and the dictionary with the populations
+        """
+
+        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
+            import NeuroroboticsCollabClient
+
+        header_token = UserAuthentication.get_header_token(request)
+        client = NeuroroboticsCollabClient(header_token, context_id)
+
+        brain_collab_path = client.get_first_file_path_with_mimetype(
+            NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE, "brain.py")
+
+        bibi_collab_path = client.get_first_file_path_with_mimetype(
+            NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE,
+            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+        )
+
+        temp_directory = tempfile.mkdtemp()
+        brain_dst_path = os.path.join(temp_directory, 'brain.py')
+
+        client.download_file_from_collab(brain_collab_path, brain_dst_path)
+
+        bibi = bibi_api_gen.CreateFromDocument(client.download_file_from_collab(bibi_collab_path))
+        neurons_config = get_all_neurons_as_dict(bibi.brainModel.populations)
+
+        slice2tuple = (lambda x: (x.start, x.stop, x.step) if isinstance(x, slice) else x)
+        neurons_config_clean = {
+            k: slice2tuple(v) for k, v in neurons_config.iteritems()
+        }
+
+        return [brain_dst_path, str(neurons_config_clean)]
+
+    @staticmethod
     def _get_sdf_world_from_collab(context_id):
-        '''
+        """
         Download from the collab an sdf world file as a string.
         The file belongs to the collab identified by context_id
 
         :param context_id: the UUID of the collab in which to look for the world sdf
         :return: The content of the world sdf file as a string
-        '''
+        """
 
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module.

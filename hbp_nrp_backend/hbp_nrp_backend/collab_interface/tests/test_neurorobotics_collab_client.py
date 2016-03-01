@@ -326,7 +326,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
 
         neurorobotic_collab_client.download_file_from_collab(fake_filepath)
 
-        self.mock_document_client_instance.download_file.assert_called_with(fake_filepath)
+        self.mock_document_client_instance.download_file.assert_called_with(fake_filepath, None)
 
     def test_get_mimetype(self):
         ncc = NeuroroboticsCollabClient("token", 'aaa')
