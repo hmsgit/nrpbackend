@@ -342,11 +342,13 @@ class ROSCLEServer(object):
         """
         Gets the populations available in the neural network
         """
-        return [
-            PopulationInfo(p.name, p.celltype,
+        return_val = srv.GetPopulationsResponse([
+            PopulationInfo(str(p.name), str(p.celltype),
                            ROSCLEServer.__convert_parameters(p.parameters), p.gids)
             for p in self.__cle.bca.get_populations()
-        ]
+        ])
+        logger.info(repr(return_val))
+        return return_val
 
     @staticmethod
     def __convert_parameters(parameters):
@@ -357,7 +359,7 @@ class ROSCLEServer(object):
         :return: A list of ROS-compatible neuron parameters
         """
         return [
-            NeuronParameter(key, parameters[key])
+            NeuronParameter(str(key), float(parameters[key]))
             for key in parameters
         ]
 
