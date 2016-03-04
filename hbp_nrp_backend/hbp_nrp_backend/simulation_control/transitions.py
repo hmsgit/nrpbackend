@@ -130,7 +130,7 @@ def initialize_simulation(simulation):
 
         gzserver_host = simulation.gzserver_host
         state_machine_paths = generate_experiment_control(experiment, models_path)
-        simulation.state_machine_manager.add_all(state_machine_paths)
+        simulation.state_machine_manager.add_all(state_machine_paths, simulation.sim_id)
         simulation.state_machine_manager.initialize_all()
 
         simulation.cle = initialize_experiment(experiment,
