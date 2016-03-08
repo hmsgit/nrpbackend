@@ -115,7 +115,7 @@ class ExperimentTransferfunctions(Resource):
         :param path context_id: The context UUID of the Collab where the transfer functions
          will be saved
         :<json body json array of string transfer_functions: the transfer functions as python
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
+        :status 500: BIBI configuration file not found
         :status 500: Error saving file
         :status 404: The collab with the given context ID was not found
         :status 404: The request body is malformed

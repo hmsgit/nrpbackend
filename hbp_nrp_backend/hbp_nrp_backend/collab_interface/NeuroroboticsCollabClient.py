@@ -57,7 +57,8 @@ class NeuroroboticsCollabClient(object):
 
         self.__document_client = DocumentClient(cfg['document_server'], oidc)
         self.__project = self.__document_client.get_project_by_collab_id(
-            self.__collab_client.collab_id)
+            self.__collab_client.collab_id
+        )
 
         self.__collab_context = get_or_raise_collab_context(self.__context_id)
 
@@ -300,6 +301,35 @@ class NeuroroboticsCollabClient(object):
         if self.__document_client.exists(filepath):
             self.__document_client.remove(filepath)
         self.__document_client.upload_string(content, filepath, mimetype)
+
+    def populate_subfolder_in_collab(self, foldername, files, mimetype=None):
+        """
+        Create or overwrite a subfolder of the collab experiment folder
+        and populate it with files specified by means of their paths
+
+        :param foldername: self explaining.
+        :param files: an array of dictionaries {name: 'my_file.txt', temporary_path: 'my_file_path'}
+        :param mimetype: mimetype common to all files
+        :return the created folder uuid
+        """
+        collab_experiment_folderpath = \
+            self.__document_client.get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        self.__document_client.chdir(collab_experiment_folderpath)
+        folderpath = os.path.join(collab_experiment_folderpath, foldername)
+        if self.__document_client.exists(folderpath):
+            self.__document_client.rmdir(foldername)
+        created_folder_uuid = self.__document_client.mkdir(foldername)
+        try:
+            for f in files:
+                self.__document_client.upload_file(
+                    f.temporary_path,
+                    os.path.join(foldername, f.name),
+                    mimetype
+                )
+        except DocException as e:
+            raise NRPServicesUploadException(e.message)
+
+        return created_folder_uuid
 
     def download_file_from_collab(self, filepath):
         """

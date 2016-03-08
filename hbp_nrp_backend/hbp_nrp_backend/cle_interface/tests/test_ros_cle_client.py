@@ -8,7 +8,9 @@ from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN
+    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
+    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
+    SERVICE_CLEAN_CSV_RECORDERS_FILES
 from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation, ResetSimulationRequest
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, SetTransferFunction, \
@@ -23,7 +25,7 @@ __author__ = 'HBP NRP software team'
 class TestROSCLEClient(unittest.TestCase):
 
     LOGGER_NAME = ROSCLEClient.__name__
-    NUMBER_OF_SERVICE_PROXIES = 11
+    NUMBER_OF_SERVICE_PROXIES = 13
 
     def setUp(self):
         patcher = patch('rospy.ServiceProxy')
@@ -40,7 +42,8 @@ class TestROSCLEClient(unittest.TestCase):
             SERVICE_SIM_START_ID(0), SERVICE_SIM_PAUSE_ID(0), SERVICE_SIM_STOP_ID(0),
             SERVICE_SIM_RESET_ID(0), SERVICE_SIM_STATE_ID(0), SERVICE_GET_TRANSFER_FUNCTIONS(0),
             SERVICE_SET_TRANSFER_FUNCTION(0), SERVICE_DELETE_TRANSFER_FUNCTION(0),
-            SERVICE_SET_BRAIN(0), SERVICE_GET_BRAIN(0)
+            SERVICE_GET_BRAIN(0), SERVICE_SET_BRAIN(0), SERVICE_GET_POPULATIONS(0),
+            SERVICE_GET_CSV_RECORDERS_FILES(0)
         ]
         self.assertNotIn(False, [x in listened_services for x in expected_services])
 

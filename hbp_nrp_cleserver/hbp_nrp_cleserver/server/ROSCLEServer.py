@@ -21,13 +21,14 @@ from RestrictedPython import compile_restricted
 # in the GazeboRosPackage folder at the root of this CLE repository.
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError
-from cle_ros_msgs.msg import PopulationInfo, NeuronParameter
+from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_SIM_START_ID, \
     TOPIC_STATUS, TOPIC_CLE_ERROR, \
     SERVICE_SIM_PAUSE_ID, SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
-    SERVICE_GET_POPULATIONS
+    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
+    SERVICE_CLEAN_CSV_RECORDERS_FILES
 from hbp_nrp_cleserver.server.ROSCLEState import InitialState, PausedState
 from hbp_nrp_cleserver.server import ros_handler
 import hbp_nrp_cle.tf_framework as tf_framework
@@ -164,6 +165,8 @@ class ROSCLEServer(object):
         self.__service_get_brain = None
         self.__service_set_brain = None
         self.__service_get_populations = None
+        self.__service_get_CSV_recorders_files = None
+        self.__service_clean_CSV_recorders_files = None
         self.__cle = None
 
         self.__simulation_id = sim_id
@@ -319,6 +322,16 @@ class ROSCLEServer(object):
             self.__get_populations
         )
 
+        self.__service_get_CSV_recorders_files = rospy.Service(
+            SERVICE_GET_CSV_RECORDERS_FILES(self.__simulation_id), srv.GetCSVRecordersFiles,
+            self.__get_CSV_recorders_files
+        )
+
+        self.__service_clean_CSV_recorders_files = rospy.Service(
+            SERVICE_CLEAN_CSV_RECORDERS_FILES(self.__simulation_id), Empty,
+            self.__clean_CSV_recorders_files
+        )
+
         self.__timeout = timeout
         self.__double_timer = DoubleTimer(
             self.STATUS_UPDATE_INTERVAL,
@@ -347,8 +360,25 @@ class ROSCLEServer(object):
                            ROSCLEServer.__convert_parameters(p.parameters), p.gids)
             for p in self.__cle.bca.get_populations()
         ])
-        logger.info(repr(return_val))
         return return_val
+
+    # pylint: disable=unused-argument, no-self-use
+    def __get_CSV_recorders_files(self, request):
+        """
+        Return the recorder file paths along with the name wanted by the user
+        """
+        return srv.GetCSVRecordersFilesResponse([
+            CSVRecordedFile(recorded_file[0], recorded_file[1])
+            for recorded_file in tf_framework.dump_csv_recorder_to_files()
+        ])
+
+    # pylint: disable=unused-argument, no-self-use
+    @ros_handler
+    def __clean_CSV_recorders_files(self, request):
+        """
+        Remove temporary recorders files from the server
+        """
+        tf_framework.clean_csv_recorders_files()
 
     @staticmethod
     def __convert_parameters(parameters):
@@ -582,6 +612,12 @@ class ROSCLEServer(object):
         self.__service_get_brain.shutdown()
         logger.info("Shutting down set_brain service")
         self.__service_set_brain.shutdown()
+        logger.info("Shutting down get_populations service")
+        self.__service_get_populations.shutdown()
+        logger.info("Shutting down get_CSV_recorders_files service")
+        self.__service_get_CSV_recorders_files.shutdown()
+        logger.info("Shutting down clean_CSV_recorders_files service")
+        self.__service_clean_CSV_recorders_files.shutdown()
         logger.info("Unregister error/transfer_function topic")
         self.__ros_cle_error_pub.unregister()
         self.__cle.shutdown()

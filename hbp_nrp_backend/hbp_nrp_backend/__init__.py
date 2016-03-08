@@ -5,6 +5,8 @@ This package contains the python code to run the REST web server and supportive 
 from hbp_nrp_backend.version import VERSION as __version__  # pylint: disable=unused-import
 from hbp_nrp_backend import config
 import os
+import time
+import string
 
 __author__ = 'GeorgHinkel'
 
@@ -115,3 +117,14 @@ class NRPServicesUnavailableROSService(NRPServicesGeneralException):
             "ROS service not available: " + message,
             "Unavailable ROS service"
         )
+
+
+def get_date_and_time_string():
+    """
+    Utility function that returns a string reflecting the current date and time
+    with a format that is suitable for file or folder names
+
+    :return a string containing the date and time under the format
+    YYYY-mm-dd_HH-MM-SS
+    """
+    return string.join([time.strftime("%Y-%m-%d"), time.strftime("%H-%M-%S")], '_')

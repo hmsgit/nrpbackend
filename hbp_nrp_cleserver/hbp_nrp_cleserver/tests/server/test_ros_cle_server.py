@@ -3,6 +3,7 @@ ROSCLEServer unit test
 """
 
 from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
+from cle_ros_msgs.msg import CSVRecordedFile
 from hbp_nrp_cleserver.server import ROSCLEServer
 from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState, State, InitialState, RunningState, \
     PausedState, StoppedState
@@ -132,7 +133,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.assertEqual(11, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(13, self.__mocked_rospy.Service.call_count)
         self.assertEqual(1, self.__mocked_cle.initialize.call_count)
         self.assertEqual(1, self.__ros_cle_server.start_timeout.call_count)
 
@@ -256,6 +257,23 @@ class TestROSCLEServer(unittest.TestCase):
             mock_b64.side_effect = Exception
             response = set_brain_implementation(request)
             self.assertNotEqual("", response[0])
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
+    def test_CSV_recorders_functions(self, mocked_tf_framework):
+        self.craft_ros_cle_server(True)
+        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
+        get_CSV_recorders_files_implementation = self.__mocked_rospy.Service.call_args_list[11][0][2]
+        clean_CSV_recorders_files_implementation = self.__mocked_rospy.Service.call_args_list[12][0][2]
+        mocked_tf_framework.dump_csv_recorder_to_files = Mock()
+        mocked_tf_framework.dump_csv_recorder_to_files.return_value = [('a','b'),('c','d')]
+        result_value = get_CSV_recorders_files_implementation(None).files
+        self.assertEqual(result_value[0].name, 'a')
+        self.assertEqual(result_value[0].temporary_path, 'b')
+        self.assertEqual(result_value[1].name, 'c')
+        self.assertEqual(result_value[1].temporary_path, 'd')
+        mocked_tf_framework.clean_csv_recorders_files = Mock()
+        clean_CSV_recorders_files_implementation(None)
+        self.assertEqual(1, mocked_tf_framework.clean_csv_recorders_files.call_count)
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_get_transfer_functions(self, mocked_tf_framework):
@@ -456,9 +474,12 @@ class TestROSCLEServer(unittest.TestCase):
         k = self.__ros_cle_server._ROSCLEServer__service_set_transfer_function = MagicMock()
         l = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
         m = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
+        n = self.__ros_cle_server._ROSCLEServer__service_get_populations = MagicMock()
+        o = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files = MagicMock()
+        p = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
 
         self.__ros_cle_server.shutdown()
-        for x in [b, c, d, e, f, i, j, k, l, m]:
+        for x in [b, c, d, e, f, i, j, k, l, m, n, o, p]:
             self.assertEquals(x.shutdown.call_count, 1)
         self.assertEquals(a.join.call_count, 1)
         self.assertEquals(h.unregister.call_count, 1)

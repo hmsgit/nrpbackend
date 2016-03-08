@@ -86,6 +86,7 @@ from hbp_nrp_backend.rest_server.__SimulationTransferFunction import SimulationT
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunctions
 from hbp_nrp_backend.rest_server.__SimulationStateMachines import SimulationStateMachines, \
     SimulationStateMachine
+from hbp_nrp_backend.rest_server.__SimulationCSVRecorders import SimulationCSVRecorders
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__SimulationPopulations import SimulationPopulations
@@ -121,6 +122,10 @@ api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machin
 api.add_resource(SimulationTransferFunction,
                  '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
+api.add_resource(
+    SimulationCSVRecorders,
+    '/simulation/<int:sim_id>/<string:context_id>/csv-recorders'
+)
 
 # This should not be on the /simulation path ... as it does not apply to a running simulation
 api.add_resource(WorldSDFService, '/simulation/sdf_world')

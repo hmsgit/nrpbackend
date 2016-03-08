@@ -16,7 +16,7 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUS
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
-    SERVICE_GET_POPULATIONS, TOPIC_CLE_ERROR, TOPIC_STATUS
+    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, TOPIC_CLE_ERROR, TOPIC_STATUS
     # duplicated from CLE.__init__
 from cle_ros_msgs.srv import ResetSimulation
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
@@ -96,7 +96,7 @@ class ROSCLEServiceWrapper(object):
                 self.__ros_cle_client.valid = False
                 self.__ros_cle_client.invalid_reason = "a previous communication error"
             message = "Error executing service \"%s\", unable to communicate with the CLE.\n" \
-                  "Error: %s" % (self.__handler.resolved_name, str(e), )
+                "Error: %s" % (self.__handler.resolved_name, str(e), )
             logger.error(message)
             raise ROSCLEClientException(message)
 
@@ -157,6 +157,11 @@ class ROSCLEClient(object):
         self.__cle_set_brain = ROSCLEServiceWrapper(SERVICE_SET_BRAIN(sim_id), srv.SetBrain, self)
         self.__cle_get_populations = ROSCLEServiceWrapper(SERVICE_GET_POPULATIONS(sim_id),
                                                           srv.GetPopulations, self)
+
+        self.__cle_get_CSV_recorders_files = ROSCLEServiceWrapper(
+            SERVICE_GET_CSV_RECORDERS_FILES(sim_id),
+            srv.GetCSVRecordersFiles, self
+        )
 
         self.__cle_error_listener = rospy.Subscriber(TOPIC_CLE_ERROR, CLEError,
                                                      self.__cle_error_handler)
@@ -308,13 +313,14 @@ class ROSCLEClient(object):
         :return: populations as dict
         """
         populations = self.__cle_get_populations()
-        result = {'populations': [
-            {
-                'name': p.name,
-                'neuron_model': p.neuron_model,
-                'parameters': ROSCLEClient.__convert_parameter_list(p.parameters),
-                'gids': p.gids
-            } for p in populations.neurons
+        result = {
+            'populations': [
+                {
+                    'name': p.name,
+                    'neuron_model': p.neuron_model,
+                    'parameters': ROSCLEClient.__convert_parameter_list(p.parameters),
+                    'gids': p.gids
+                } for p in populations.neurons
             ]
         }
         return result
@@ -333,3 +339,13 @@ class ROSCLEClient(object):
                 'value': p.value
             } for p in parameters
         ]
+
+    @fallback_retval([])
+    def get_simulation_CSV_recorders_files(self):
+        """
+        Get the file paths of simulation's CSV recorders
+
+        :returns: An array of dictionaries
+        {name: 'my_recorder_file.csv', temporary_path: 'my_recorder_file_path'}
+        """
+        return self.__cle_get_CSV_recorders_files().files

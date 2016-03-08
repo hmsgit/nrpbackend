@@ -28,7 +28,7 @@ class TestConfig(Config):
     Used by Jenkins (see neurorobotics.defaults.yaml from jjb-neurorobotics)
     """
     SQLALCHEMY_DATABASE_URI = (
-        'postgresql://neurorobotics_collab_test:WRITE_THE_TEST_USER_PASSWORD_HERE'
+        'postgresql://neurorobotics_collab_test:2wmAQw7s'
         '@bbpdbsrv03.epfl.ch:5432/neurorobotics_collab_test'
     )
 
