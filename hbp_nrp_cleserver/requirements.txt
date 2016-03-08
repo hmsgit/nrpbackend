@@ -1,3 +1,3 @@
-hbp-nrp-cle==0.4.5.dev1
-hbp-nrp-commons==0.4.5.dev2
+hbp-nrp-cle==0.4.5.dev3
+hbp-nrp-commons==0.4.5.dev3
 pyxb==1.2.4
