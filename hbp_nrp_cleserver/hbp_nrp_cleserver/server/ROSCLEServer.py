@@ -735,10 +735,13 @@ class ROSCLEServer(object):
         self.stop_timeout()
         self.__double_timer.cancel_all()
         self.__cle.stop()
-        self.start_thread.join(60)
-        if self.start_thread.isAlive():
-            logger.error("Error while stopping the simulation, impossible to join the simulation "
-                         "thread")
+        if self.start_thread is not None:
+            self.start_thread.join(60)
+            if self.start_thread.isAlive():
+                logger.error(
+                    "Error while stopping the simulation, "
+                    "impossible to join the simulation thread"
+                )
 
     # pylint: disable=broad-except
     def reset_simulation(self, request):

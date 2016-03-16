@@ -11,6 +11,8 @@ created
 initialized
     --> started
         starts the simulation
+    --> stopped
+        stops the simulation and release the resources
 
 started
     --> paused
