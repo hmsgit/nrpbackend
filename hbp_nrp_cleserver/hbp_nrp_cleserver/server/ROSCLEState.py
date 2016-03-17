@@ -15,7 +15,7 @@ class ROSCLEState(object):
     STOPPED = "stopped"
     INITIALIZED = "initialized"
     PAUSED = "paused"
-    FAILED = "failed"
+    HALTED = "halted"
 
 
 class State(object):
@@ -48,16 +48,17 @@ class State(object):
                            (type(self).__name__, ))
 
     def fail(self):
-        self._context.set_state(FailureState(self._context))
+        self._context.set_state(HaltedState(self._context))
 
     # pylint: disable=no-self-use
     def is_final_state(self):
         return False
 
 
-class FailureState(State):
+class HaltedState(State):
     """
-    The failure state means that the simulation failed and cannot be recovered
+    The halted state means that the simulation failed and cannot be recovered.
+    However, simulation resources are still occupied and need to be released.
     """
     def is_final_state(self):
         return True
@@ -66,7 +67,7 @@ class FailureState(State):
         pass
 
     def __repr__(self):
-        return ROSCLEState.FAILED
+        return ROSCLEState.HALTED
 
 
 class InitialState(State):

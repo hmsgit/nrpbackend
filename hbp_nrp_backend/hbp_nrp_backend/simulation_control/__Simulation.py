@@ -137,7 +137,7 @@ class Simulation(object):
         ourself and query it ! If the state is final (such as failed or stopped),
         then we don't bother with the CLE object.
         """
-        if self.__cle is not None and self.__state not in ["stopped", "failed"]:
+        if self.__cle is not None and self.__state not in ["stopped", "failed", "halted"]:
             try:
                 self.__state = self.__cle.get_simulation_state()
             except ROSCLEClientException:
