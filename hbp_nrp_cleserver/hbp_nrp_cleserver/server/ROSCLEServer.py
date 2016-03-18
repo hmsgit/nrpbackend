@@ -202,6 +202,8 @@ class ROSCLEServer(object):
         self.__double_timer = None
         self.start_thread = None
 
+        self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
+
         # Start another thread calling rospy.spin
         # This line has been put here because it has to be called before prepare_simulation,
         # where all the 'rospy.Service's are initialized.
@@ -745,6 +747,68 @@ class ROSCLEServer(object):
                     "impossible to join the simulation thread"
                 )
 
+    def _reset_world(self, request):
+        """
+        Helper function for reset() call, it handles the RESET_WORLD message.
+
+        :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
+        """
+
+        with self.task_notifier("Resetting Environment", "Emptying 3D world"):
+            if request.payload != []:
+                sdf_world_string = request.payload[0]
+                self.__cle.reset_world(sdf_world_string)
+            else:
+                self.__cle.reset_world()
+
+    def _reset_brain(self, request):
+        """
+        Helper function for reset() call, it handles the RESET_BRAIN message.
+
+        :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
+        """
+
+        if request.payload != []:
+            brain_temp_path = request.payload[0]
+            neurons_conf = ast.literal_eval(request.payload[1])
+            network_conf_orig = {
+                k: self._tuple2slice(v) for k, v in neurons_conf.iteritems()
+            }
+            self.__cle.reset_brain(brain_temp_path, network_conf_orig)
+        else:
+            self.__cle.reset_brain()
+
+    def _reset_full(self, request):
+        """
+        Helper function for reset() call, it handles the RESET_FULL message.
+
+        :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
+        """
+
+        self.__cle.reset_robot_pose()
+        if request.payload != []:
+            sdf_world_string = request.payload[0]
+            brain_temp_path = request.payload[1]
+            neurons_conf = ast.literal_eval(request.payload[2])
+            network_conf_orig = {
+                k: self._tuple2slice(v) for k, v in neurons_conf.iteritems()
+            }
+            with self.task_notifier("Resetting the simulation", ""):
+                self.notify_current_task("Restoring the 3D world", False, True)
+                self.__cle.reset_world(sdf_world_string)
+                self.notify_current_task("Restoring the brain", False, True)
+                self.__cle.reset_brain(brain_temp_path, network_conf_orig)
+        else:
+            with self.task_notifier("Resetting the simulation", ""):
+                self.notify_current_task("Restoring the 3D world", False, True)
+                self.__cle.reset_world()
+                self.notify_current_task("Restoring the brain", False, True)
+                self.__cle.reset_brain()
+        self.__cle.stop()
+        self.stop_timeout()
+        self.__cle.reset()
+        self.start_timeout()
+
     # pylint: disable=broad-except
     def reset_simulation(self, request):
         """
@@ -767,25 +831,11 @@ class ROSCLEServer(object):
             if reset_type == rsr.RESET_ROBOT_POSE:
                 self.__cle.reset_robot_pose()
             elif reset_type == rsr.RESET_WORLD:
-                with self.task_notifier("Resetting Environment", "Emptying 3D world"):
-                    if request.payload != []:
-                        sdf_world_string = request.payload[0]
-                        self.__cle.reset_world(sdf_world_string)
-                    else:
-                        self.__cle.reset_world()
+                self._reset_world(request)
             elif reset_type == rsr.RESET_BRAIN:
-                if request.payload != []:
-                    brain_temp_path = request.payload[0]
-                    neurons_conf = ast.literal_eval(request.payload[1])
-                    tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
-                    network_conf_orig = {
-                        k: tuple2slice(v) for k, v in neurons_conf.iteritems()
-                    }
-                    self.__cle.reset_brain(brain_temp_path, network_conf_orig)
-                else:
-                    self.__cle.reset_brain()
+                self._reset_brain(request)
             elif reset_type == rsr.RESET_FULL:
-                return False, "This feature has not been implemented yet."
+                self._reset_full(request)
             elif reset_type == rsr.RESET_OLD:
                 # we have to call the stop function here, otherwise the main thread
                 # will not stop executing the simulation loop

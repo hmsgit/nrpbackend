@@ -165,6 +165,7 @@ class TestSimulationResetCollab(RestTest):
     def test_get_brain_info_from_collab(self, mock_get_brain_info, mock_create_from_document,
         mock_get_all_neurons_as_dict, mock_tempfile):
         import os
+
         dummy_dir = "/my/temp/dir"
         mock_tempfile.mkdtemp.return_value = dummy_dir
 
@@ -177,10 +178,6 @@ class TestSimulationResetCollab(RestTest):
         self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE
         self.mock_CollabClient.BIBI_CONFIGURATION_FILE_NAME = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
 
-        # Not really a clean solution but: first we return the brain file, then the bibi configuration
-        # self.mock_collabClient_instance.download_file_from_collab.side_effect = [
-        #     dummy_path, , dummy_path
-        # ]
         dummy_populations = {'pop1': (0, 1, 1), 'pop2': (1, 2, 1)}
         mock_get_all_neurons_as_dict.return_value = dummy_populations
         data_from_collab = SimulationResetCollab._get_brain_info_from_collab(self.context_id)
