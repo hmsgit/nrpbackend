@@ -77,7 +77,7 @@ class TestSimulationConfig(RestTest):
         utc.last_transition = None
 
         response = self.client.put('/simulation/0/state', data='{"state": "created"}')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         self.assertTrue(utc.last_sim_id is None)
 
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
@@ -112,7 +112,7 @@ class TestSimulationConfig(RestTest):
         utc.last_transition = None
 
         response = self.client.put('/simulation/1/state', data='{"state": "initialized"}')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         self.assertIs(utc.last_sim_id, None)
 
         response = self.client.put('/simulation/1/state', data='{"state": "created"}')
@@ -144,7 +144,7 @@ class TestSimulationConfig(RestTest):
         utc.last_transition = None
 
         response = self.client.put('/simulation/2/state', data='{"state": "started"}')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         self.assertIs(utc.last_sim_id, None)
 
         response = self.client.put('/simulation/2/state', data='{"state": "created"}')
@@ -185,7 +185,7 @@ class TestSimulationConfig(RestTest):
         utc.last_transition = None
 
         response = self.client.put('/simulation/5/state', data='{"state": "paused"}')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         self.assertIs(utc.last_sim_id, None)
 
         response = self.client.put('/simulation/5/state', data='{"state": "created"}')
@@ -226,7 +226,7 @@ class TestSimulationConfig(RestTest):
         utc.last_transition = None
 
         response = self.client.put('/simulation/8/state', data='{"state": "stopped"}')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
         self.assertIs(utc.last_sim_id, None)
 
         response = self.client.put('/simulation/8/state', data='{"state": "created"}')

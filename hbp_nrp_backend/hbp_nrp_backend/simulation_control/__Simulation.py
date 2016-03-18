@@ -157,7 +157,10 @@ class Simulation(object):
         # self.__state may not be properly updated. It results in false transition
         # errors. This is why we are calling the property at the beginning of this
         # method. Calling the property makes us refresh the local __state variable.
-        reroute = reroutes.get(self.state)
+        if new_state == self.state:
+            return
+
+        reroute = reroutes.get(self.__state)
         if reroute is not None:
             new_state = reroute.get(new_state, new_state)
         try:

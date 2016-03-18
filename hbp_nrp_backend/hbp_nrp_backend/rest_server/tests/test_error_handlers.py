@@ -55,11 +55,11 @@ class TestErrorHandlers(RestTest):
     def test_nrp_services_state_exception(self):
         del simulations[:]
         simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', state='started'))
-        # try to start an already started experiment: state invalid started->started
-        response = self.client.put('/simulation/0/state', data='{"state": "started"}')
+        # try to restart an already started experiment: state invalid started->created
+        response = self.client.put('/simulation/0/state', data='{"state": "created"}')
         self.assertEqual(response.status_code, 400)
         response_object = json.loads(response.data)
-        self.assertEqual(u"Invalid transition (started->started)", response_object['message'])
+        self.assertEqual(u"Invalid transition (started->created)", response_object['message'])
         self.assertEqual(u"Transition error", response_object['type'])
 
 
