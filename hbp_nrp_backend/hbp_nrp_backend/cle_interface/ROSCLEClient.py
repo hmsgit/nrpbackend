@@ -242,7 +242,6 @@ class ROSCLEClient(object):
         """
         return str(self.__cle_state().state)
 
-    @fallback_retval({})
     def get_simulation_brain(self):
         """
         Get the brain of the running simulation
