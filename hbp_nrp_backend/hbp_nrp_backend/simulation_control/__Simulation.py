@@ -276,7 +276,7 @@ class Simulation(object):
 
         sm = self.get_state_machine(name)
         if sm is None:
-            sm = StateMachineInstance(name)
+            sm = StateMachineInstance(name, self.sim_id)
             self.state_machines.append(sm)
         sm.sm_path = file_path
 

@@ -13,9 +13,10 @@ from hbp_nrp_backend.simulation_control import __Simulation as sim_module
 
 class TestSimulation(unittest.TestCase):
 
-    def create_sm_mock(self, sm_id, sm_path = None):
+    def create_sm_mock(self, sm_id, sim_id, sm_path = None):
         sm = Mock()
         sm.sm_id = sm_id
+        sm.sim_id = sim_id
         sm.sm_path = sm_path
         self.__simulation.state_machines.append(sm)
 
@@ -23,9 +24,10 @@ class TestSimulation(unittest.TestCase):
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state')
         self.mock_state = self.patch_state.start()
 
-        def create_state_machine_mock(id):
+        def create_state_machine_mock(id, sim_id):
             sm = Mock()
             sm.sm_id = id
+            sm.sim_id = sim_id
             return sm
 
         self.original_smi = sim_module.StateMachineInstance
@@ -37,9 +39,9 @@ class TestSimulation(unittest.TestCase):
         sim_gzserver_host = 'some_gzserver_host'
         self.__simulation = Simulation(sim_id, experiment_conf, None, owner, sim_gzserver_host)
         sm_path = path.join(path.split(__file__)[0], "sm_mock.py")
-        self.create_sm_mock('SM1', sm_path)
-        self.create_sm_mock('SM2')
-        self.create_sm_mock('SM3', sm_path)
+        self.create_sm_mock('SM1', 0, sm_path)
+        self.create_sm_mock('SM2', 0)
+        self.create_sm_mock('SM3', 0, sm_path)
 
         with open(sm_path, "r") as sm_file:
             self.valid_sm_code = sm_file.read()
