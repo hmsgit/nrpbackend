@@ -492,7 +492,7 @@ class ROSCLEServer(object):
         new_source = textwrap.dedent(request.transfer_function_source)
 
         # Check whether the function has a single definition name
-        logger.debug(
+        logger.info(
             "About to compile transfer function originally named "
             + original_name + "\n"
             + "with the following python code: \n"
@@ -525,6 +525,10 @@ class ROSCLEServer(object):
                                line_number=e.lineno, offset=e.offset, line_text=e.text,
                                file_name=e.filename)
             return message
+        except Exception as e:
+            self.publish_error("Transfer Function", "Compile", str(e),
+                               severity=CLEError.SEVERITY_ERROR, function_name=new_name)
+            return e.message
 
         # Make sure CLE is stopped. If already stopped, these calls are harmless.
         # (Execution of updated code is asynchronous)
@@ -534,6 +538,10 @@ class ROSCLEServer(object):
         except TFLoadingException as e:
             self.publish_error("Transfer Function", "Loading", e.message,
                                severity=CLEError.SEVERITY_ERROR, function_name=e.tf_name)
+            return e.message
+        except Exception as e:
+            self.publish_error("Transfer Function", "Loading", e.message,
+                               severity=CLEError.SEVERITY_CRITICAL, function_name=new_name)
             return e.message
         return ""
 

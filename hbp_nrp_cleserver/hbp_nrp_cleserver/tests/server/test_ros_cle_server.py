@@ -384,6 +384,17 @@ class TestROSCLEServer(unittest.TestCase):
         response = set_transfer_function_handler(request)
         self.assertIn("multiple definition names", response)
 
+        with patch('hbp_nrp_cleserver.server.ROSCLEServer.compile_restricted') as compile_restricted:
+            request.transfer_function_name = "tf_4"
+            request.transfer_function_source = "def tf_4(): \n return 0"
+            compile_restricted.side_effect = Exception("foo")
+            response = set_transfer_function_handler(request)
+            self.assertEqual("foo", response)
+
+        mocked_tf_framework.set_transfer_function.side_effect = Exception("bar")
+        response = set_transfer_function_handler(request)
+        self.assertEqual("bar", response)
+
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_delete_transfer_function(self, mocked_tf_framework):
         self.craft_ros_cle_server(True)
