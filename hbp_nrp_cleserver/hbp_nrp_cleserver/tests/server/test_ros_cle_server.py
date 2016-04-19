@@ -382,11 +382,14 @@ class TestROSCLEServer(unittest.TestCase):
         response = delete_transfer_function_handler(request)
         self.assertEqual(True, response)
 
-    def test_rospy_spin_is_called(self):
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.threading')
+    def test_rospy_spin_is_called(self, threading_mock):
+        # The setUp already created a ros cle server that must be deleted before
+        self.__mocked_rospy.spin.reset_mock()
+        # We do not use threading but execute the target straight away
+        threading_mock.Thread = lambda target: target()
         self.craft_ros_cle_server(True)
-        self.assertTrue(self.__mocked_rospy.spin.called)
-        # Daniel: randomly failing - deactivate
-        # self.assertEqual(2, self.__mocked_rospy.spin.call_count)
+        self.assertEqual(1, self.__mocked_rospy.spin.call_count)
 
     def test_notify_start_task(self):
         self.craft_ros_cle_server(True)
