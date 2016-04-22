@@ -3,12 +3,12 @@ This module contains REST services for handling simulations reset,
 Using the Collab as storage
 """
 
-__author__ = "Alessandro Ambrosano, Ugo Albanese"
+__author__ = "Alessandro Ambrosano, Ugo Albanese, Georg Hinkel"
 
 import os
 import tempfile
 
-from cle_ros_msgs import srv
+from cle_ros_msgs import srv, msg
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
@@ -115,11 +115,12 @@ class SimulationResetCollab(Resource):
 
         reset_type = body.get('resetType')
 
-        payload = SimulationResetCollab._compute_payload(reset_type, context_id)
+        world_sdf, brain_file, populations = SimulationResetCollab\
+            ._compute_payload(reset_type, context_id)
 
         try:
-            print reset_type, payload
-            sim.cle.reset(reset_type, payload)
+            sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
+                          populations=populations)
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
@@ -127,23 +128,23 @@ class SimulationResetCollab(Resource):
 
     @staticmethod
     def _compute_payload(reset_type, context_id):
-        '''
+        """
         Compute the payload corresponding to a certain reset type
+
         :param reset_type:
         :param context_id: the collab context_id needed by RESET_WORLD
-        :return: the payload
-        '''
+        :return: the payload for the reset request: a tuple of (world_sdf, brain_path, populations)
+        """
 
         rsr = srv.ResetSimulationRequest
 
         if reset_type == rsr.RESET_WORLD:
-            payload = [SimulationResetCollab._get_sdf_world_from_collab(context_id)]
+            return SimulationResetCollab._get_sdf_world_from_collab(context_id), None, None
         elif reset_type == rsr.RESET_BRAIN:
-            payload = SimulationResetCollab._get_brain_info_from_collab(context_id)
+            brain, populations = SimulationResetCollab._get_brain_info_from_collab(context_id)
+            return None, brain, populations
         else:
-            payload = []
-
-        return payload
+            return None, None, None
 
     @staticmethod
     def _get_brain_info_from_collab(context_id):
@@ -152,7 +153,7 @@ class SimulationResetCollab(Resource):
         configuration file.
 
         :param context_id: the UUID of the collab in which to look for the brain information
-        :return: A list with the path to the brain file and the dictionary with the populations
+        :return: A tuple with the path to the brain file and a list of populations
         """
 
         from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
@@ -177,12 +178,30 @@ class SimulationResetCollab(Resource):
         bibi = bibi_api_gen.CreateFromDocument(client.download_file_from_collab(bibi_collab_path))
         neurons_config = get_all_neurons_as_dict(bibi.brainModel.populations)
 
-        slice2tuple = (lambda x: (x.start, x.stop, x.step) if isinstance(x, slice) else x)
-        neurons_config_clean = {
-            k: slice2tuple(v) for k, v in neurons_config.iteritems()
-        }
+        neurons_config_clean = [
+            SimulationResetCollab._get_experiment_population(name, v)
+            for (name, v) in neurons_config.iteritems()
+        ]
 
-        return [brain_dst_path, str(neurons_config_clean)]
+        return brain_dst_path, neurons_config_clean
+
+    @staticmethod
+    def _get_experiment_population(name, value):
+        """
+        Gets an ExperimentPopulation object for the given population
+
+        :param name: The population name
+        :param value: The value describing the population
+        :return:
+        """
+        if value is None:
+            return msg.ExperimentPopulationInfo(name=name, type=0, ids=[], start=0, stop=0, step=0)
+        elif isinstance(value, slice):
+            return msg.ExperimentPopulationInfo(name=name, type=1, ids=[], start=value.start,
+                                                stop=value.stop, step=value.step)
+        elif isinstance(value, list):
+            return msg.ExperimentPopulationInfo(name=name, type=2, ids=value, start=0,
+                                                stop=0, step=0)
 
     @staticmethod
     def _get_sdf_world_from_collab(context_id):
