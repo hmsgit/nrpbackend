@@ -102,12 +102,11 @@ class TestROSCLEClient(unittest.TestCase):
         self.assertEqual(len(self.serviceProxyMocks[2].mock_calls), 1) # stop
         self.assertEqual(len(self.serviceProxyMocks[3].mock_calls), 1) # reset
         self.assertEqual(len(self.serviceProxyMocks[4].mock_calls), 1) # state
-        empty_payload = ['']
-        client.reset(ResetSimulationRequest.RESET_ROBOT_POSE, empty_payload)
+        client.reset(ResetSimulationRequest.RESET_ROBOT_POSE)
         # make sure no other services have been called
         self.serviceProxyMocks[3].assert_called_with(
             reset_type=ResetSimulationRequest.RESET_ROBOT_POSE,
-            payload=empty_payload)
+            world_sdf="", brain_path="", populations=[])
         self.assertEqual(len(self.serviceProxyMocks[0].mock_calls), 2) # start
         self.assertEqual(len(self.serviceProxyMocks[1].mock_calls), 2) # pause
         self.assertEqual(len(self.serviceProxyMocks[2].mock_calls), 1) # stop

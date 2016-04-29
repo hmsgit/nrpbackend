@@ -2,7 +2,6 @@
 ROS wrapper around the CLE
 """
 
-import ast
 import json
 import logging
 import threading
@@ -22,7 +21,7 @@ from RestrictedPython import compile_restricted
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackage folder at the root of this CLE repository.
 from cle_ros_msgs import srv
-from cle_ros_msgs.msg import CLEError
+from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_SIM_START_ID, \
     TOPIC_STATUS, TOPIC_CLE_ERROR, \
@@ -40,7 +39,7 @@ from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 import contextlib
 
-__author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
+__author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
 
 
@@ -755,8 +754,8 @@ class ROSCLEServer(object):
         """
 
         with self.task_notifier("Resetting Environment", "Emptying 3D world"):
-            if request.payload != []:
-                sdf_world_string = request.payload[0]
+            if request.world_sdf is not None and request.world_sdf is not "":
+                sdf_world_string = request.world_sdf
                 self.__cle.reset_world(sdf_world_string)
             else:
                 self.__cle.reset_world()
@@ -768,11 +767,11 @@ class ROSCLEServer(object):
         :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
         """
 
-        if request.payload != []:
-            brain_temp_path = request.payload[0]
-            neurons_conf = ast.literal_eval(request.payload[1])
+        if request.brain_path is not None and request.brain_path is not "":
+            brain_temp_path = request.brain_path
+            neurons_conf = request.populations
             network_conf_orig = {
-                k: self._tuple2slice(v) for k, v in neurons_conf.iteritems()
+                p.name: self._get_population_value(p) for p in neurons_conf
             }
             self.__cle.reset_brain(brain_temp_path, network_conf_orig)
         else:
@@ -786,12 +785,12 @@ class ROSCLEServer(object):
         """
 
         self.__cle.reset_robot_pose()
-        if request.payload != []:
-            sdf_world_string = request.payload[0]
-            brain_temp_path = request.payload[1]
-            neurons_conf = ast.literal_eval(request.payload[2])
+        if request.world_sdf is not None and request.world_sdf is not "":
+            sdf_world_string = request.world_sdf
+            brain_temp_path = request.brain_path
+            neurons_conf = request.populations
             network_conf_orig = {
-                k: self._tuple2slice(v) for k, v in neurons_conf.iteritems()
+                p.name: self._get_population_value(p) for p in neurons_conf
             }
             with self.task_notifier("Resetting the simulation", ""):
                 self.notify_current_task("Restoring the 3D world", False, True)
@@ -871,3 +870,18 @@ class ROSCLEServer(object):
             yield
         finally:
             self.notify_finish_task()
+
+    @staticmethod
+    def _get_population_value(population_info):
+        """
+        Retrieves the population index from the given population info
+
+        :param population_info: The serialized population info object
+        :return: The index that the population info represents
+        """
+        if population_info.type == ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION:
+            return None
+        elif population_info.type == ExperimentPopulationInfo.TYPE_POPULATION_SLICE:
+            return slice(population_info.start, population_info.stop, population_info.step)
+        elif population_info.type == ExperimentPopulationInfo.TYPE_POPULATION_LISTVIEW:
+            return population_info.ids

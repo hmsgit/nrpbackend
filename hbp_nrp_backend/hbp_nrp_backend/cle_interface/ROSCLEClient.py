@@ -21,7 +21,7 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUS
 from cle_ros_msgs.srv import ResetSimulation
 from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
-__author__ = "Lorenzo Vannucci, Daniel Peppicelli"
+__author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
 
 
@@ -216,20 +216,24 @@ class ROSCLEClient(object):
         self.__cle_status_listener.unregister()
         self.__stop_reason = "Simulation stopped"
 
-    def reset(self, reset_type, payload=None):
+    def reset(self, reset_type, world_sdf=None, brain_path=None, populations=None):
         """
         Reset the simulation.
+
+        :param populations: To populations for the reset
+        :param brain_path: The brain path for the reset
+        :param world_sdf: The world sdf
         :param reset_type: Denotes the kind of reset the user wants to perform, details about
             reset types and details are given in the ResetSimulation service request message.
-        :param payload: Data useful to reset the simulation
         """
-
-        payload = payload if payload is not None else []
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
-        resp = self.__cle_reset(reset_type=reset_type, payload=payload)
+        resp = self.__cle_reset(reset_type=reset_type,
+                                world_sdf=world_sdf if world_sdf is not None else "",
+                                brain_path=brain_path if brain_path is not None else "",
+                                populations=populations if populations is not None else [])
         if not resp.success:
             raise ROSCLEClientException(resp.error_message)
 

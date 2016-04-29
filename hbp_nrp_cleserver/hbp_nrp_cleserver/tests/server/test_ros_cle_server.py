@@ -3,7 +3,7 @@ ROSCLEServer unit test
 """
 
 from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
-from cle_ros_msgs.msg import CSVRecordedFile
+from cle_ros_msgs.msg import CSVRecordedFile, ExperimentPopulationInfo
 from hbp_nrp_cleserver.server import ROSCLEServer
 from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState, State, InitialState, RunningState, \
     PausedState, StoppedState
@@ -160,32 +160,40 @@ class TestROSCLEServer(unittest.TestCase):
         self.__ros_cle_server.pause_simulation()
 
         # Reset robot pose without Collab
-        msg = ResetSimulation()
+        msg = ResetSimulationRequest()
         msg.reset_type = ResetSimulationRequest.RESET_ROBOT_POSE
-        msg.payload = []
-        self.__ros_cle_server.reset_simulation(msg)
+        response, message = self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual("", message)
+        self.assertTrue(response)
         self.assertEqual(1, self.__mocked_cle.reset_robot_pose.call_count)
         self.__mocked_cle.reset_mock()
 
         # Reset Brain without Collab
         msg.reset_type = ResetSimulationRequest.RESET_BRAIN
-        msg.payload = []
-        self.__ros_cle_server.reset_simulation(msg)
+        response, message = self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual("", message)
+        self.assertTrue(response)
         self.assertEqual(1, self.__mocked_cle.reset_brain.call_count)
         self.__mocked_cle.reset_mock()
 
         # Reset World without Collab
         msg.reset_type = ResetSimulationRequest.RESET_WORLD
-        msg.payload = []
-        self.__ros_cle_server.reset_simulation(msg)
+        response, message = self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual("", message)
+        self.assertTrue(response)
         self.assertEqual(1, self.__mocked_cle.reset_world.call_count)
         self.__mocked_cle.reset_mock()
 
         # Reset Brain within Collab
         msg.reset_type = ResetSimulationRequest.RESET_BRAIN
-        msg.payload = ["/random/tmp/file.brain",
-                       "{'population1': (0, 5, 1), 'population2': (5, 10, 1)}"]
-        self.__ros_cle_server.reset_simulation(msg)
+        msg.brain_path = "/random/tmp/file.brain"
+        msg.populations = [ExperimentPopulationInfo(name="population1", type=ExperimentPopulationInfo.TYPE_POPULATION_SLICE,
+                                                    ids=[], start=0, stop=5, step=1),
+                           ExperimentPopulationInfo(name="population2", type=ExperimentPopulationInfo.TYPE_POPULATION_SLICE,
+                                                    ids=[], start=5, stop=10, step=1)]
+        response, message = self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual("", message)
+        self.assertTrue(response)
         self.assertEqual(1, self.__mocked_cle.reset_brain.call_count)
         self.assertEqual(self.__mocked_cle.reset_brain.call_args_list[0][0][0],
                          "/random/tmp/file.brain")
@@ -195,10 +203,12 @@ class TestROSCLEServer(unittest.TestCase):
 
         # Reset World within Collab
         msg.reset_type = ResetSimulationRequest.RESET_WORLD
-        msg.payload = ["<a valid sdf string>"]
-        self.__ros_cle_server.reset_simulation(msg)
+        msg.world_sdf = "<a valid sdf string>"
+        response, message = self.__ros_cle_server.reset_simulation(msg)
+        self.assertEqual("", message)
+        self.assertTrue(response)
         self.assertEqual(1, self.__mocked_cle.reset_world.call_count)
-        self.assertEqual(self.__mocked_cle.reset_world.call_args_list[0][0][0], msg.payload[0])
+        self.assertEqual(self.__mocked_cle.reset_world.call_args_list[0][0][0], msg.world_sdf)
         self.__mocked_cle.reset_mock()
 
     def __get_handlers_for_testing_main(self):

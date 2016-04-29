@@ -2,7 +2,7 @@
 Unit tests for the __SimulationResetCollab module.
 """
 
-__author__ = 'Alessandro Ambrosano, Ugo Albanese'
+__author__ = 'Alessandro Ambrosano, Ugo Albanese, Georg Hinkel'
 
 import unittest
 import mock
@@ -72,29 +72,36 @@ class TestSimulationResetCollab(RestTest):
     def test_reset_is_called_properly(self):
         simulations[0].cle = mock.MagicMock()
 
-        empty_payload = []
-
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
         }))
-        simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_ROBOT_POSE, empty_payload)
+        simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_ROBOT_POSE,
+                                                    world_sdf=None,
+                                                    brain_path=None,
+                                                    populations=None)
 
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_FULL
         }))
-        simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_FULL, empty_payload)
+        simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_FULL,
+                                                    world_sdf=None,
+                                                    brain_path=None,
+                                                    populations=None)
 
         fake_world_sdf_string = '<sdf></sdf>'
 
         with patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._compute_payload') \
                 as mock_compute_payload:
 
-            mock_compute_payload.return_value = fake_world_sdf_string
+            mock_compute_payload.return_value = fake_world_sdf_string, None, None
 
             response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_WORLD
             }))
-            simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_WORLD, fake_world_sdf_string)
+            simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_WORLD,
+                                                        world_sdf=fake_world_sdf_string,
+                                                        brain_path=None,
+                                                        populations=None)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_sdf_world_from_collab')
     def test_compute_payload_reset_world(self, mock_get_sdf):
@@ -107,7 +114,7 @@ class TestSimulationResetCollab(RestTest):
         reset_world_type = ResetSimulationRequest.RESET_WORLD
 
         self.assertEqual(SimulationResetCollab._compute_payload(reset_world_type, self.context_id),
-                         [fake_world_sdf_string])
+                         (fake_world_sdf_string, None, None))
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_sdf_world_from_collab')
     def test_compute_payload_no_payload(self, mock_get_sdf):
@@ -119,7 +126,7 @@ class TestSimulationResetCollab(RestTest):
 
         reset_robot_pose_type = ResetSimulationRequest.RESET_ROBOT_POSE
 
-        empty_payload = []
+        empty_payload = (None, None, None)
 
         self.assertEqual(SimulationResetCollab._compute_payload(reset_robot_pose_type, self.context_id),
                          empty_payload)
@@ -127,10 +134,11 @@ class TestSimulationResetCollab(RestTest):
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_brain_info_from_collab')
     def test_compute_payload_reset_brain(self, mock_get_brain_info):
         from cle_ros_msgs.srv import ResetSimulationRequest
-        mock_get_brain_info.return_value = "random return value to check that this what we get"
+        fake_brain_file = "random return value to check that this what we get"
+        mock_get_brain_info.return_value = fake_brain_file, "foo"
         payload = SimulationResetCollab._compute_payload(ResetSimulationRequest.RESET_BRAIN, self.context_id)
         self.assertEqual(mock_get_brain_info.call_count, 1)
-        self.assertEqual(payload, mock_get_brain_info.return_value)
+        self.assertEqual(payload, (None, fake_brain_file, "foo"))
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_get_sdf_world_from_collab(self, mock_get_header_token):
@@ -178,10 +186,11 @@ class TestSimulationResetCollab(RestTest):
         self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE
         self.mock_CollabClient.BIBI_CONFIGURATION_FILE_NAME = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
 
-        dummy_populations = {'pop1': (0, 1, 1), 'pop2': (1, 2, 1)}
+        dummy_populations = {'pop1': slice(0, 1, 1), 'pop2': slice(1, 2, 1)}
         mock_get_all_neurons_as_dict.return_value = dummy_populations
-        data_from_collab = SimulationResetCollab._get_brain_info_from_collab(self.context_id)
-        self.assertEqual(data_from_collab, [os.path.join(dummy_dir, 'brain.py'), str(dummy_populations)])
+        data_from_collab, populations = SimulationResetCollab._get_brain_info_from_collab(self.context_id)
+        self.assertEqual(data_from_collab, os.path.join(dummy_dir, 'brain.py'))
+        self.assertEqual("[name: pop2\ntype: 1\nids: []\nstart: 1\nstop: 2\nstep: 1, name: pop1\ntype: 1\nids: []\nstart: 0\nstop: 1\nstep: 1]", str(populations))
 
 if __name__ == '__main__':
     unittest.main()
