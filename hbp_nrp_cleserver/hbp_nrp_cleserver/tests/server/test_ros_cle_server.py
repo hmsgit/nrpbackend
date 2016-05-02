@@ -46,13 +46,16 @@ class TestROSCLEServer(unittest.TestCase):
     LOGGER_NAME = ROSCLEServer.__name__
 
     def craft_ros_cle_server(self, mock_timeout=False):
-        # Set up our object under test and get sure it calls rospy.init in its
-        # constructor.
-        self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0)
-        if mock_timeout:
-            self.__ros_cle_server.start_timeout = MagicMock()
-            self.__ros_cle_server.stop_timeout = MagicMock()
-        self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
+        with patch('hbp_nrp_cleserver.server.ROSCLEServer.threading') as threading_patch:
+            # Set up our object under test and get sure it calls rospy.init in its
+            # constructor.
+            threading_patch.Thread = lambda target: target()
+            self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0)
+            if mock_timeout:
+                self.__ros_cle_server.start_timeout = MagicMock()
+                self.__ros_cle_server.stop_timeout = MagicMock()
+            self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
+        self.__mocked_rospy.init_node.assert_called_with('ros_cle_simulation')
 
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -77,7 +80,6 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_rospy = rospy_patcher.start()
 
         self.craft_ros_cle_server(True)
-        self.__mocked_rospy.init_node.assert_called_with('ros_cle_simulation')
 
         # Be sure we create as many publishers as required.
         from hbp_nrp_cleserver.server import *
@@ -392,13 +394,8 @@ class TestROSCLEServer(unittest.TestCase):
         response = delete_transfer_function_handler(request)
         self.assertEqual(True, response)
 
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.threading')
-    def test_rospy_spin_is_called(self, threading_mock):
-        # The setUp already created a ros cle server that must be deleted before
-        self.__mocked_rospy.spin.reset_mock()
-        # We do not use threading but execute the target straight away
-        threading_mock.Thread = lambda target: target()
-        self.craft_ros_cle_server(True)
+    def test_rospy_spin_is_called(self):
+        # Assert that rospy.spin has been called when the roscleserver has been created
         self.assertEqual(1, self.__mocked_rospy.spin.call_count)
 
     def test_notify_start_task(self):
