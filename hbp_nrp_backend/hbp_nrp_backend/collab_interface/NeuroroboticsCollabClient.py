@@ -76,12 +76,12 @@ class NeuroroboticsCollabClient(object):
         elif file_name == self.BIBI_CONFIGURATION_FILE_NAME:
             mimetype = self.BIBI_CONFIGURATION_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.sdf') and\
-             (self.__find_regexp(file_path, r'<world', re.I)):
+             (self.find_regexp(file_path, r'<world', re.I)):
             mimetype = self.SDF_WORLD_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.sdf') and\
-             (self.__find_regexp(file_path, r'<model', re.I)):
+             (self.find_regexp(file_path, r'<model', re.I)):
             mimetype = self.SDF_ROBOT_MIMETYPE
-        elif (self.__find_regexp(file_path, r'import\s+pyNN|from\s+PyNN\s+import')):
+        elif (self.find_regexp(file_path, r'import\s+pyNN|from\s+PyNN\s+import')):
             mimetype = self.BRAIN_PYNN_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.py'):
             mimetype = self.TRANSFER_FUNCTIONS_PY_MIMETYPE
@@ -90,17 +90,18 @@ class NeuroroboticsCollabClient(object):
         return mimetype
 
     @staticmethod
-    def __find_regexp(file_path, expr, flags=0):
+    def find_regexp(file_path, expr, flags=0):
         """
-        Returns True if expr is found in file
+        Returns a match if expr is found in file, False otherwise
         :param file_path: file path where to look for the expression
         :param expr: expression to find in file
-        :return: True if found
+        :return: match if found
         """
         with open(file_path, 'r') as content:
             for line in content:
-                if re.search(expr, line, flags):
-                    return True
+                match = re.search(expr, line, flags)
+                if match:
+                    return match
 
         return False
 
@@ -404,6 +405,45 @@ class _FlattenedExperimentDirectory(object):
         self.__flatten_bibi_configuration(bibi_configuration_file)
         return self.__temp_directory
 
+    def __get_retina_config_file(self, bibi_configuration_dom):
+        """
+        Returns retina config filenames used by the template experiment defined by the bibi.
+        This is determined whether a transfer function has a MapRetina decorator.
+
+        :param bibi_configuration_dom: the configuration file of the template experiment
+        :return: list of all matches for MapRetina decorator in all tf
+        """
+        mapRetina_regex = r'@nrp.MapRetina\s*\('\
+          r'\s*[\"\'][^\"\']*[\"\']\s*,\s*[\"\']'\
+          r'([^\"\']*)[\"\']\s*\)'
+        all_matches = []
+        for tf in bibi_configuration_dom.transferFunction:
+            if hasattr(tf, "src") and tf.src:
+                # the tf is in a file
+                tf_file = os.path.join(self.__models_folder, tf.src)
+                match = NeuroroboticsCollabClient.find_regexp(tf_file, mapRetina_regex)
+                if match:
+                    all_matches.append(match)
+            else:
+                # the tf is embedded in xml
+                for line in tf.orderedContent():
+                    if not isinstance(line.value, basestring):
+                        # the TF is real xml-based, it doesn't contain a retina
+                        break
+                    else:
+                        # the TF is python embedded in xml
+                        match = re.search(mapRetina_regex, line.value, 0)
+                        if match:
+                            all_matches.append(match)
+        return all_matches
+
+    def __copy_retina_file(self, retina_file_name):
+        """
+        Copy the provided retina config file to the flattened temporary directory.
+        """
+        retina_path = os.path.join(self.__models_folder, 'retina', retina_file_name)
+        shutil.copyfile(retina_path, os.path.join(self.__temp_directory, retina_file_name))
+
     def __flatten_bibi_configuration(self, bibi_configuration_file):
         """
         Flatten the bibi configuration with respect to transfer function
@@ -420,6 +460,13 @@ class _FlattenedExperimentDirectory(object):
         with open(bibi_configuration_file) as b:
             bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
 
+        # Get all retina file and copy them into the flattened experiment directory
+        all_retina_config = self.__get_retina_config_file(bibi_configuration_dom)
+        for retina_config in all_retina_config:
+            retina_file_name = retina_config.group(1)
+            logger.debug("Provided BIBI contains a retina TF. Retina config file name: " +
+                         retina_file_name)
+            self.__copy_retina_file(retina_file_name)
         # Get the robot file path and copy it into the flattened experiment directory
         robot_sdf_file = os.path.join(self.__models_folder, bibi_configuration_dom.bodyModel)
         robot_sdf_file_name = os.path.basename(robot_sdf_file)

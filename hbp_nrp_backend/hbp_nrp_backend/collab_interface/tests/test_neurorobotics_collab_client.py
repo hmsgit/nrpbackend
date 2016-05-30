@@ -368,6 +368,50 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
             bibi_configuration_file = os.path.join(self.models_directory, 'BIBI/milestone2_python_tf.xml')
             l = os.listdir(temporary_folder)
+            # make sure we do not copy things we aren't expecting
+            self.assertEqual(len(l), len(expected_list))
+            for expected_file in expected_list:
+                self.assertIn(expected_file, l)
+            flattened_bibi_configuration_file = os.path.join(
+                temporary_folder,
+                NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+            )
+            with open(flattened_bibi_configuration_file) as b:
+                bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
+
+            for tf in bibi_configuration_dom.transferFunction:
+                if hasattr(tf, "src") and tf.src:
+                    self.assertEqual(tf.src, os.path.basename(tf.src))
+                    path = os.path.join(temporary_folder, tf.src)
+                    self.assertEqual(os.path.exists(path), True)
+
+            self.assertEqual(
+                bibi_configuration_dom.bodyModel,
+                bibi_api_gen.SDF_Filename('model.sdf')
+            )
+            self.assertEqual(
+                bibi_configuration_dom.brainModel.file,
+                bibi_api_gen.Python_Filename('my_brain.py')
+            )
+
+    def test_flatten_bibi_configuration_retina(self):
+        exp_configuration = os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExampleRetina.xml')
+        expected_list = [
+            NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME,
+            'grab_image_retina_1.py',
+            'retina_config_1.py',
+            'retina_config_2.py',
+            'virtual_room.sdf',
+            'model.sdf',
+            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
+            'my_brain.py'
+        ]
+
+        with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
+            bibi_configuration_file = os.path.join(self.models_directory, 'BIBI/retina_bibi.xml')
+            l = os.listdir(temporary_folder)
+            # make sure we do not copy things we aren't expecting
+            self.assertEqual(len(l), len(expected_list))
             for expected_file in expected_list:
                 self.assertIn(expected_file, l)
             flattened_bibi_configuration_file = os.path.join(

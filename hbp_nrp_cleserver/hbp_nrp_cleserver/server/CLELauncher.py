@@ -91,6 +91,7 @@ class CLELauncher(object):
         """
 
         logger.info("Path is " + self.__experiment_path)
+        os.chdir(self.__experiment_path)
 
         # Create ROS server
         logger.info("Creating ROSCLEServer")
