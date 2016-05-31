@@ -20,9 +20,9 @@
 {% endif %}{% endfor %}
 {% for dev in tf.device %}
 {% if is_not_none(dev.body) %}
-    @nrp.MapSpikeSource("{{dev.name}}", {{print_neurons(dev.neurons)}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
+    @nrp.MapSpikeSource("{{dev.name}}", {{print_neurons(dev.neurons, "nrp.brain.")}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
 {% else %}
-    @nrp.MapSpikeSink("{{dev.name}}", {{print_neurons(dev.neurons)}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
+    @nrp.MapSpikeSink("{{dev.name}}", {{print_neurons(dev.neurons, "nrp.brain.")}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
 {% endif %}{% endfor %}
 {% for group in tf.deviceGroup %}
 {% if is_not_none(group.body) %}
@@ -50,7 +50,7 @@
 
 {% elif __builtins__.type(tf) == bibi_api_gen.Neuron2Monitor %}
 
-    @nrp.NeuronMonitor({{print_neurons(tf.device[0].neurons)}}, nrp.{{get_device_name(tf.device[0].type)}})
+    @nrp.NeuronMonitor({{print_neurons(tf.device[0].neurons, "nrp.brain.")}}, nrp.{{get_device_name(tf.device[0].type)}})
     def {{tf.name}}(t):
         return True
 
@@ -70,9 +70,9 @@
 {% endif %}{% endfor %}
 {% for dev in tf.device %}
 {% if is_not_none(dev.body) %}
-    @nrp.MapSpikeSource("{{dev.name}}", {{print_neurons(dev.neurons)}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
+    @nrp.MapSpikeSource("{{dev.name}}", {{print_neurons(dev.neurons, "nrp.brain.")}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
 {% else %}
-    @nrp.MapSpikeSink("{{dev.name}}", {{print_neurons(dev.neurons)}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
+    @nrp.MapSpikeSink("{{dev.name}}", {{print_neurons(dev.neurons, "nrp.brain.")}}, nrp.{{get_device_name(dev.type)}}{{print_device_config(dev)}})
 {% endif %}{% endfor %}
 {% for group in tf.deviceGroup %}{% if is_not_none(group.body) %}
     @nrp.MapSpikeSource("{{group.name}}", {{print_neuron_group(group.neurons)}}, nrp.{{get_device_name(group.type)}}{{print_device_config(group)}})

@@ -4,21 +4,13 @@ Test for single functions of the bibi configuration script
 
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import *
+from hbp_nrp_commons.bibi_functions import *
 import hbp_nrp_commons.generated.bibi_api_gen as api
 import unittest
 import pyxb
 
 
 class TestScript(unittest.TestCase):
-    def test_is_not_none(self):
-        self.assertTrue(is_not_none("Foo"))
-        self.assertFalse(is_not_none(None))
-
-    def test_remove_extension(self):
-        self.assertEqual(remove_extension("myFile.txt"), "myFile")
-        self.assertEqual(remove_extension("foo.bar.txt"), "foo.bar")
-        self.assertEqual(remove_extension("foo/bar.txt"), "foo/bar")
 
     def test_print_expression_raises(self):
         self.assertRaises(Exception, print_expression, "foo")
@@ -56,37 +48,45 @@ class TestScript(unittest.TestCase):
         idx.population = "Foo"
         idx.index = 42
         self.assertEqual(get_neurons_index(idx), str(idx.index))
-        self.assertEqual(print_neurons(idx), "nrp.brain.Foo[42]")
+        self.assertEqual(print_neurons(idx, "nrp.brain."), "nrp.brain.Foo[42]")
 
     def test_print_neurons_range(self):
         rng = api.Range()
         rng.population = "Foo"
         rng.from_ = 7
         rng.to = 12
-        self.assertEqual(get_neurons_index(rng), "slice(7, 12)")
-        self.assertEqual(print_neurons(rng), "nrp.brain.Foo[slice(7, 12)]")
+        self.assertEqual(print_neurons_index(rng), "slice(7, 12)")
+        self.assertEqual(get_neurons_index(rng), "7:12")
+        self.assertEqual(print_neurons(rng), "Foo[7:12]")
+        self.assertEqual(print_neurons(rng, "nrp.brain."), "nrp.brain.Foo[slice(7, 12)]")
         rng.step = 2
-        self.assertEqual(get_neurons_index(rng), "slice(7, 12, 2)")
-        self.assertEqual(print_neurons(rng), "nrp.brain.Foo[slice(7, 12, 2)]")
+        self.assertEqual(print_neurons_index(rng), "slice(7, 12, 2)")
+        self.assertEqual(get_neurons_index(rng), "7:2:12")
+        self.assertEqual(print_neurons(rng), "Foo[7:2:12]")
+        self.assertEqual(print_neurons(rng, "nrp.brain."), "nrp.brain.Foo[slice(7, 12, 2)]")
 
     def test_print_neurons_list(self):
         lst = api.List()
         lst.population = "Foo"
         self.assertEqual(get_neurons_index(lst), "[]")
-        self.assertEqual(print_neurons(lst), "nrp.brain.Foo[[]]")
+        self.assertEqual(print_neurons(lst), "Foo[[]]")
+        self.assertEqual(print_neurons(lst, "nrp.brain."), "nrp.brain.Foo[[]]")
         lst.element.append(5)
         self.assertEqual(get_neurons_index(lst), "[5]")
-        self.assertEqual(print_neurons(lst), "nrp.brain.Foo[[5]]")
+        self.assertEqual(print_neurons(lst), "Foo[[5]]")
+        self.assertEqual(print_neurons(lst, "nrp.brain."), "nrp.brain.Foo[[5]]")
         lst.element.append(10)
         self.assertEqual(get_neurons_index(lst), "[5, 10]")
-        self.assertEqual(print_neurons(lst), "nrp.brain.Foo[[5, 10]]")
+        self.assertEqual(print_neurons(lst), "Foo[[5, 10]]")
+        self.assertEqual(print_neurons(lst, "nrp.brain."), "nrp.brain.Foo[[5, 10]]")
 
     def test_print_neurons_population(self):
         pop = api.Population()
         pop.population = "Foo"
         pop.count = 42
         self.assertEqual(get_neurons_index(pop), None)
-        self.assertEqual(print_neurons(pop), "nrp.brain.Foo")
+        self.assertEqual(print_neurons(pop), "Foo")
+        self.assertEqual(print_neurons(pop, "nrp.brain."), "nrp.brain.Foo")
 
     def test_print_neurons_index_template(self):
         idx = api.IndexTemplate()
@@ -180,30 +180,6 @@ class TestScript(unittest.TestCase):
         dev.connectorRef = api.NeuronConnectorRef(ref="Bar")
         dev.target = 'Inhibitory'
         self.assertEqual(print_device_config(dev), ", synapse_dynamics=Foo, connector=Bar, target='inhibitory'")
-
-class TestEyeSensorTransmit(unittest.TestCase):
-
-    def setUp(self):
-        self.directory = os.path.split(__file__)[0]
-        milestone2 = os.path.join(self.directory, 'neuronalRedDetection.xml')
-        with open(milestone2) as bibi_xml:
-            self.config = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-
-        self.eye_sensor_transmit = self.config.transferFunction[0]
-        self.assertEqual("eye_sensor_transmit", self.eye_sensor_transmit.name)
-
-    def test_connector_references(self):
-        connectors = get_referenced_connectors(self.eye_sensor_transmit, self.config)
-        self.assertEqual(2, len(connectors))
-
-    def test_dynamics_references(self):
-        dynamics = get_referenced_dynamics(self.eye_sensor_transmit, self.config)
-        self.assertEqual(1, len(dynamics))
-
-    def test_tf_generation(self):
-        tf_code = generate_tf(self.eye_sensor_transmit, self.config)
-        with open(os.path.join(self.directory, "eye_sensor_transmit.txt")) as goal:
-            self.assertMultiLineEqual(goal.read(), tf_code)
 
 if __name__ == '__main__':
     unittest.main()
