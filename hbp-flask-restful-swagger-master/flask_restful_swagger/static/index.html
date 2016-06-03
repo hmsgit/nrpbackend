@@ -49,8 +49,11 @@
         success: function(result) {
           var url      = result.auth.url;
           var clientId = result.auth.clientId;
+          var deactivateAuth = result.auth.deactivate;
+          if(deactivateAuth == undefined) deactivateAuth = false; 
+          console.log('deactivateAuth:', deactivateAuth);
           if(url && clientId) {
-            bootstrapSwaggerUi(url, clientId);
+            bootstrapSwaggerUi(deactivateAuth, url, clientId);
           } else {
             console.log('Error loading config.json. Response:', result);
           }
@@ -58,10 +61,12 @@
       });
     });
 
-    var bootstrapSwaggerUi = function (authServer, clientId) {
+    var bootstrapSwaggerUi = function (deactivateAuth, authServer, clientId) {
 
-      var client = new bbp.client({auth_server: authServer,
-                                   client_id: clientId});
+      if( !deactivateAuth ) {
+        var client = new bbp.client({auth_server: authServer,
+                                     client_id: clientId});
+      }
 
       window.swaggerUi = new SwaggerUi({
         url: '{{resource_list_url}}',
@@ -91,9 +96,10 @@
         }
       })
 
-      window.authorizations.add("key", new ApiKeyAuthorization(
-      "Authorization", 'Bearer ' + client.getToken(), "header"));
-
+      if( !deactivateAuth ) {
+        window.authorizations.add("key", new ApiKeyAuthorization(
+                "Authorization", 'Bearer ' + client.getToken(), "header"));
+      }
       window.swaggerUi.load();
     };
 
