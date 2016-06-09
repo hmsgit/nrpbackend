@@ -7,9 +7,11 @@ __author__ = 'GeorgHinkel'
 
 import argparse
 from hbp_nrp_backend.rest_server import init, app, db
+from hbp_nrp_backend.rest_server.cleanup import clean_simulations
 from hbp_nrp_backend.rest_server import db_create_and_check, NRPServicesDatabaseTimeoutException
 import logging
 import sys
+from threading import Thread
 
 DEFAULT_PORT = 5000
 DEFAULT_HOST = '0.0.0.0'
@@ -60,8 +62,12 @@ def run_server(server, args):  # pragma: no cover
         root_logger.warn("Database connection timeout ( " + str(e) +
                          " ). You are probably in the local mode. ")
 
+    root_logger.info("Starting cleanup thread")
+    cleanup_thread = Thread(target=clean_simulations)
+    cleanup_thread.setDaemon(True)
+    cleanup_thread.start()
+
     root_logger.info("Starting the REST backend server now ...")
-    #server.debug = True
     server.run(port=port, host=DEFAULT_HOST)
     root_logger.info("REST backend server terminated.")
 

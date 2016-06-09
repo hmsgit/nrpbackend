@@ -19,19 +19,30 @@ class TestTransition(unittest.TestCase):
     """
 
     def setUp(self):
-        self.__roscleclient_patch = mock.patch('hbp_nrp_backend.cle_interface.ROSCLEClient.ROSCLEClient')
-        self.__roscleclient_mock = self.__roscleclient_patch.start()
-        self.__roscleclient_mock.start = mock.Mock()
-        self.__roscleclient_mock.pause = mock.Mock()
-        self.__roscleclient_mock.stop = mock.Mock()
-        self.__roscleclient_mock.reset = mock.Mock()
-        self.__sm_patch = mock.patch("hbp_nrp_backend.simulation_control.Simulation.state_machine_manager")
-        self.__sm_man = self.__sm_patch.start()
+        roscleclient_patch = mock.patch('hbp_nrp_backend.cle_interface.ROSCLEClient.ROSCLEClient')
+        self.__roscleclient_mock = roscleclient_patch.start()
+        self.addCleanup(roscleclient_patch.stop)
+
+        sm_patch = mock.patch("hbp_nrp_backend.simulation_control.Simulation.state_machine_manager")
+        self.__sm_man = sm_patch.start()
+        self.addCleanup(sm_patch.stop)
 
         self.__cle = mock.Mock()
 
-        transitions.initialize_experiment = mock.Mock(return_value=self.__cle)
-        transitions.generate_experiment_control = mock.Mock(return_value={'test_sm': 'test_sm.py'})
+        self.__experiment_mock = mock.Mock()
+        self.__experiment_mock.timeout = 600
+        load_experiment_patch = mock.patch('hbp_nrp_backend.simulation_control.transitions.load_experiment', return_value=self.__experiment_mock)
+        load_experiment_patch.start()
+        self.addCleanup(load_experiment_patch.stop)
+
+        initialize_experiment_patch = mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment', return_value=self.__cle)
+        initialize_experiment_patch.start()
+        self.addCleanup(initialize_experiment_patch.stop)
+
+        generate_experiment_control_patch = mock.patch('hbp_nrp_backend.simulation_control.transitions.generate_experiment_control',
+                                                       return_value={'test_sm': 'test_sm.py'})
+        generate_experiment_control_patch.start()
+        self.addCleanup(generate_experiment_control_patch.stop)
 
         patch_CollabClient = mock.patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
         self.addCleanup(patch_CollabClient.stop)
@@ -40,10 +51,6 @@ class TestTransition(unittest.TestCase):
 
         self.sim = Simulation(0, 'ExDConf/ExDXMLExample.xml', None, 'default-owner', 'local', state='created')
         self.sim2 = Simulation(1, 'ExDConf/ExDXMLExample.xml', None, 'default-owner', 'local', state='created', context_id='some_uuid')
-
-    def tearDown(self):
-        self.__roscleclient_patch.stop()
-        self.__sm_patch.stop()
 
     def test_all_transitions(self):
         """
@@ -81,8 +88,8 @@ class TestTransition(unittest.TestCase):
         self.mock_collabClient_instance.clone_experiment_template_from_collab_context.return_value = \
             {'experiment_conf': 'some_exp', 'environment_conf': 'some_env'}
         transitions.initialize_simulation(self.sim2)
-        mock_initialize_experiment.assert_called_with("some_exp", "some_env", 1, \
-                                                                 'local'),
+        mock_initialize_experiment.assert_called_with(self.__experiment_mock, "some_exp",
+                                                      "some_env", 1, 'local'),
         self.sim2.cle = self.__roscleclient_mock
         self.assertEqual(self.__sm_man.initialize_all.call_count, 1)
         transitions.start_simulation(self.sim2)
@@ -110,29 +117,19 @@ class TestTransition(unittest.TestCase):
         transitions.initialize_simulation(self.sim)
         self.assertEquals(mock_initialize_experiment.call_count, 4)
 
-
-    def test_initialize_ros_exception(self):
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment', side_effect=ROSException)
+    def test_initialize_ros_exception(self, initialize_mock):
         """
         This method simulates a ROSException during simulation initialization
         """
-
-        oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(
-                ROSException)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, self.sim)
 
-        transitions.initialize_experiment = oldie
-
-    def test_initialize_io_error(self):
+    @mock.patch('hbp_nrp_backend.simulation_control.transitions.initialize_experiment', side_effect=IOError)
+    def test_initialize_io_error(self, initialize_mock):
         """
         This method induces an IOError during simulation initialization
         """
-
-        oldie = transitions.initialize_experiment
-        transitions.initialize_experiment = lambda x, y, z, w: (_ for _ in ()).throw(IOError)
         self.assertRaises(NRPServicesGeneralException, transitions.initialize_simulation, self.sim)
-
-        transitions.initialize_experiment = oldie
 
 if __name__ == '__main__':
     unittest.main()

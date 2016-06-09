@@ -4,6 +4,7 @@ This module contains the simulation class
 
 __author__ = 'Georg Hinkel'
 
+from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine, reroutes, fail_states
 from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
 from hbp_nrp_excontrol.StateMachineInstance import StateMachineInstance
@@ -11,7 +12,6 @@ from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from tempfile import NamedTemporaryFile
 from flask_restful import fields
 from flask_restful_swagger import swagger
-from pytz import timezone
 import datetime
 import logging
 
@@ -48,9 +48,10 @@ class Simulation(object):
         self.__gzserver_host = sim_gzserver_host
         self.__context_id = context_id
         self.__operation_mode = sim_operation_mode
-        self.__creation_datetime = datetime.datetime.now(tz=timezone('Europe/Zurich'))
+        self.__creation_datetime = datetime.datetime.now(tz=timezone)
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
+        self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
         self.__errors = 0  # We use that for monitoring
 
     @property
@@ -59,6 +60,22 @@ class Simulation(object):
         :return: the number of errors for the current simulation
         """
         return self.__errors
+
+    @property
+    def kill_datetime(self):
+        """
+        Gets the time when the simulation should be killed
+        """
+        return self.__kill_datetime
+
+    @kill_datetime.setter
+    def kill_datetime(self, new_value):
+        """
+        Sets the time when the simulation should be killed
+
+        :param new_value: The time when the simulation should be killed
+        """
+        self.__kill_datetime = new_value
 
     @property
     def experiment_conf(self):
