@@ -3,7 +3,7 @@
 import os
 
 from setuptools import setup
-
+import pip
 from pip.req import parse_requirements
 from optparse import Option
 
@@ -14,7 +14,19 @@ def parse_reqs(reqs_file):
     ''' parse the requirements '''
     options = Option('--workaround')
     options.skip_requirements_regex = None
-    install_reqs = parse_requirements(reqs_file, options=options)
+    # Hack for old pip versions
+    # Versions greater than 1.x have a required parameter "session" in
+    # parse_requirements
+    if pip.__version__.startswith('1.'):
+        install_reqs = parse_requirements(reqs_file, options=options)
+    else:
+        from pip.download import PipSession  # pylint:disable=no-name-in-module
+        options.isolated_mode = False
+        install_reqs = parse_requirements(  # pylint:disable=unexpected-keyword-arg
+            reqs_file,
+            session=PipSession,
+            options=options
+        )
     return [str(ir.req) for ir in install_reqs]
 
 
