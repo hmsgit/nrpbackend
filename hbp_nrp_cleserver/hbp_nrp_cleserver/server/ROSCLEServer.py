@@ -498,7 +498,7 @@ class ROSCLEServer(object):
             + "with the following python code: \n"
             + repr(new_source)
         )
-        m = re.findall(r"def\s+(\w+)\s*\(", new_source)
+        m = re.findall(r"(?:\n|^)def\s+(\w+)\s*\(", new_source)
         if len(m) != 1:
             error_msg = original_name
             if len(m) == 0:

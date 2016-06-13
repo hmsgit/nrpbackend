@@ -26,7 +26,7 @@ class TestNotificatorHandler(unittest.TestCase):
 
         logger = logging.getLogger("TestLogger")
         logger.addHandler(NotificatorHandler())
-
+        logger.setLevel(logging.INFO)
         logger.info("Foo")
         logger.info("%s", "Bar")
         logger.debug("Debug")

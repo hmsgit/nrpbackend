@@ -395,6 +395,14 @@ class TestROSCLEServer(unittest.TestCase):
         response = set_transfer_function_handler(request)
         self.assertEqual("bar", response)
 
+        mocked_tf_framework.set_transfer_function.reset_mock()
+        name ="tf_3_a"
+        request.transfer_function_name = name
+        request.transfer_function_source = "def tf_3_a(): \n\tdef tf_3_b(): \n\t\treturn -2\n\treturn -1"
+        response = set_transfer_function_handler(request)
+        assert name in mocked_tf_framework.set_transfer_function.call_args[0]
+        self.assertNotIn("multiple definition names", response)
+
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_delete_transfer_function(self, mocked_tf_framework):
         self.craft_ros_cle_server(True)
