@@ -29,10 +29,14 @@ def start_simulation(simulation):
 
     :param simulation: The simulation
     """
-
     if simulation.state != 'paused':
         logger.info("starting State Machines...")
-        simulation.state_machine_manager.start_all()
+        try:
+            simulation.state_machine_manager.start_all()
+        # pylint: disable=bare-except
+        except:
+            logger.error("Starting State Machines Failed")
+            # TODO: how to report this error to the front-end?
 
     logger.info("starting CLE...")
     simulation.cle.start()
@@ -84,7 +88,12 @@ def reset_simulation(simulation):
     except rospy.ServiceException:
         pass
 
-    simulation.state_machine_manager.start_all()
+    try:
+        simulation.state_machine_manager.start_all()
+    # pylint: disable=bare-except
+    except:
+        logger.error("Starting State Machines Failed")
+        # TODO: how to report this error to the front-end?
     logger.info("simulation reset")
 
 
