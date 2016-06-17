@@ -27,11 +27,8 @@ def get_tf_name(source):
     :param source: The source code of the transfer function
     :return: transfer function name
     """
-    result = None
     matches = re.findall(r"def\s+(\w+)\s*\(", source)
-    if (len(matches) == 1):
-        result = matches[0]
-    return result
+    return matches[0] if matches else None
 
 
 @swagger.model

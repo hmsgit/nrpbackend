@@ -17,6 +17,7 @@ class TestSimulationTransferFunctions(RestTest):
         self.assertEqual("tf1", get_tf_name("def tf1():\n return"))
         self.assertEqual("tf1", get_tf_name("def tf1(a,b,c):\n return"))
         self.assertEqual("tf1", get_tf_name("def tf1  (a,b,c):\n return"))
+        self.assertEqual("tf1", get_tf_name("def tf1(a,b,c):\n  def tf2(a):\n    return  return"))
 
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_functions_get(self, mocked_get_simulation_or_abort):
