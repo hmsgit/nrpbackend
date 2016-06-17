@@ -6,19 +6,21 @@ This file loads the production transitions
 __author__ = 'Georg Hinkel'
 
 from hbp_nrp_backend.exd_config \
-    import initialize_experiment, generate_experiment_control
+    import load_experiment, initialize_experiment, generate_experiment_control
 from hbp_nrp_backend import NRPServicesGeneralException
 from flask import request
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from gazebo_msgs.srv import SetVisualProperties
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_backend.simulation_control.__SimulationCLEHandler import SimulationCLEHandler
+from hbp_nrp_backend.simulation_control import timezone
 
 import os
 import shutil
 import logging
 import rospy
 import tempfile
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +105,8 @@ def stop_simulation(simulation):
 
     logger.info("simulation stopped")
 
+    simulation.kill_datetime = None
+
 
 def initialize_simulation(simulation):
     """
@@ -121,12 +125,15 @@ def initialize_simulation(simulation):
         if using_collab_storage:
             client = NeuroroboticsCollabClient(
                 UserAuthentication.get_header_token(request), simulation.context_id)
-            experiment_path = client.clone_experiment_template_from_collab_context()
-            experiment = experiment_path['experiment_conf']
-            environment = experiment_path['environment_conf']
+            experiment_paths = client.clone_experiment_template_from_collab_context()
+            experiment_path = experiment_paths['experiment_conf']
+            environment = experiment_paths['environment_conf']
         else:
-            experiment = os.path.join(models_path, simulation.experiment_conf)
+            experiment_path = os.path.join(models_path, simulation.experiment_conf)
             environment = simulation.environment_conf
+
+        # parse experiment configuration
+        experiment = load_experiment(experiment_path)
 
         gzserver_host = simulation.gzserver_host
         state_machine_paths = generate_experiment_control(experiment, models_path)
@@ -134,6 +141,7 @@ def initialize_simulation(simulation):
         simulation.state_machine_manager.initialize_all()
 
         simulation.cle = initialize_experiment(experiment,
+                                               experiment_path,
                                                environment,
                                                simulation.sim_id,
                                                gzserver_host)
@@ -142,7 +150,7 @@ def initialize_simulation(simulation):
 
         logger.info("simulation initialized")
         if using_collab_storage:
-            path_to_cloned_configuration_folder = os.path.split(experiment)[0]
+            path_to_cloned_configuration_folder = os.path.split(experiment_path)[0]
             if tempfile.gettempdir() in path_to_cloned_configuration_folder:
                 logger.debug(
                     "removing the temporary configuration folder %s",
@@ -150,13 +158,16 @@ def initialize_simulation(simulation):
                 )
                 shutil.rmtree(path_to_cloned_configuration_folder)
 
+        now = datetime.datetime.now(timezone)
+        simulation.kill_datetime = now + datetime.timedelta(seconds=experiment.timeout + 600)
+
     except IOError as e:
         raise NRPServicesGeneralException(
-            "Error while accessing simulation models (" + e.message + ")",
+            "Error while accessing simulation models (" + str(e) + ")",
             "Models error")
     except rospy.ROSException as e:
         raise NRPServicesGeneralException(
-            "Error while communicating with the CLE (" + e.message + ")",
+            "Error while communicating with the CLE (" + str(e) + ")",
             "CLE error")
 
 
