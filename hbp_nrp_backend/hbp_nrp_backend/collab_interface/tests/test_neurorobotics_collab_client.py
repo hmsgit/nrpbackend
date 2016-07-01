@@ -82,6 +82,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.mock_document_client_instance.mkdir.assert_called_with('folder_a')
         argslist = [x[0] for x in self.mock_document_client_instance.upload_file.call_args_list]
         self.assertTrue(any('folder_a/experiment_configuration.xml' in args for args in argslist))
+        self.assertTrue(any('folder_a/ExDXMLExample.png' in args for args in argslist))
         self.assertTrue(any('folder_a/virtual_room.sdf' in args for args in argslist))
         self.assertTrue(any('folder_a/model.sdf' in args for args in argslist))
         self.assertTrue(any('folder_a/bibi_configuration.xml' in args for args in argslist))
@@ -91,6 +92,8 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         # Check the external links has been flattened
         for (arg1, arg2, arg3) in argslist:
             self.assertTrue(os.path.exists(arg1))
+            if (arg2 == 'folder_a/ExDXMLExample.png'):
+                self.assertEqual(arg3, 'image/png')
             if (arg2 == 'folder_a/virtual_room.sdf'):
                 self.assertEqual(arg3, 'application/hbp-neurorobotics.sdf.world+xml')
             if (arg2 == 'folder_a/model.sdf'):
@@ -334,6 +337,8 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.assertIsNotNone(ncc.get_mimetype(ncc.BIBI_CONFIGURATION_FILE_NAME))
         world_file_path = os.path.join(self.models_directory, 'virtual_room/virtual_room.sdf')
         self.assertEqual(ncc.get_mimetype(world_file_path), ncc.SDF_WORLD_MIMETYPE)
+        image_file_path = os.path.join(self.models_directory, 'ExDConf/ExDXMLExample.png')
+        self.assertEqual(ncc.get_mimetype(image_file_path), ncc.PNG_IMAGE_MIMETYPE)
         model_file_path = os.path.join(self.models_directory, 'husky_model/model.sdf')
         self.assertEqual(ncc.get_mimetype(model_file_path), ncc.SDF_ROBOT_MIMETYPE)
         brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain.py')
@@ -355,6 +360,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             'braitenberg_husky_non_linear_twist.py',
             'virtual_room.sdf',
             'model.sdf',
+            'ExDXMLExample.png',
             NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
             'my_brain.py'
         ]

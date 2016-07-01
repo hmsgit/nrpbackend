@@ -39,6 +39,7 @@ class NeuroroboticsCollabClient(object):
     BIBI_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics.bibi+xml"
     TRANSFER_FUNCTIONS_FILE_NAME = "transfer_functions.py"
     TRANSFER_FUNCTIONS_PY_MIMETYPE = "application/hbp-neurorobotics.tfs+python"
+    PNG_IMAGE_MIMETYPE = "image/png"
 
     def __init__(self, token, context_id):
         """
@@ -84,6 +85,8 @@ class NeuroroboticsCollabClient(object):
             mimetype = self.BRAIN_PYNN_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.py'):
             mimetype = self.TRANSFER_FUNCTIONS_PY_MIMETYPE
+        elif (os.path.splitext(file_name)[1] == '.png'):
+            mimetype = self.PNG_IMAGE_MIMETYPE
         return mimetype
 
     @staticmethod
@@ -375,6 +378,10 @@ class _FlattenedExperimentDirectory(object):
         with open(self.__exp_configuration) as e:
             experiment_dom = exp_conf_api_gen.CreateFromDocument(e.read())
 
+        # Get the experiment image and copy it into the flattened experiment directory
+        exd_split = os.path.split(self.__exp_configuration)
+        img_file = os.path.join(exd_split[0], exd_split[-1].split('.')[0]) + '.png'
+        shutil.copyfile(img_file, os.path.join(self.__temp_directory, os.path.basename(img_file)))
         # Get the SDF file path and copy it into the flattened experiment directory
         sdf_file = os.path.join(self.__models_folder, experiment_dom.environmentModel.src)
         shutil.copyfile(sdf_file, os.path.join(self.__temp_directory, os.path.basename(sdf_file)))
