@@ -21,7 +21,7 @@ from flask_migrate import Migrate, MigrateCommand
 from hbp_nrp_backend.rest_server import app, db, init
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     init()
     migrate = Migrate(app, db, compare_type=True)
     manager = Manager(app)
