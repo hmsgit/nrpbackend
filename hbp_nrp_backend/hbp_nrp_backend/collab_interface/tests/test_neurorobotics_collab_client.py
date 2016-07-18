@@ -403,6 +403,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             'retina_config_2.py',
             'virtual_room.sdf',
             'model.sdf',
+            'ExDXMLExampleRetina.png',
             NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
             'my_brain.py'
         ]
