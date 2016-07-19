@@ -38,7 +38,6 @@ class TestSimulationService(RestTest):
             'experimentConfiguration': "MyExample.xml",
             'environmentConfiguration': None,
             'gzserverHost': 'local',
-            'operationMode': 'view',
             "contextID": None
         }
         erd = json.dumps(expected_response_data)
@@ -53,14 +52,6 @@ class TestSimulationService(RestTest):
                                     data=json.dumps({"experimentConfiguration": "MyExample.xml",
                                                      "gzserverHost": wrong_server}))
         self.assertEqual(response.status_code, 401)
-
-    def test_simulation_service_wrong_operation_mode(self):
-        wrong_operation_mode = "wrong_operation_mode"
-        response = self.client.post('/simulation',
-                                    data=json.dumps({"experimentConfiguration": "MyExample.xml",
-                                                     "gzserverHost": "local",
-                                                     "operationMode": wrong_operation_mode}))
-        self.assertEqual(response.status_code, 403)
 
     def test_simulation_service_get(self):
         ctx_id = '0a008f825ed94400110cba4700725e4dff2f55d1'

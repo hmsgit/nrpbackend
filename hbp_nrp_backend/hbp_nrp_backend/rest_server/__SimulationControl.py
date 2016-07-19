@@ -74,8 +74,6 @@ class SimulationControl(Resource):
         :>json string creationDate: Date of creation of this simulation
         :>json string gzserverHost: Denotes where the simulation will run once started. Set to \
         'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
-        :>json string operationMode: Denotes whether the simulation was started in 'edit' or \
-        'view' mode
         :status 404: The simulation with the given ID was not found
         :status 200: The simulation with the given ID is successfully retrieved
         """

@@ -25,7 +25,7 @@ class Simulation(object):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 context_id=None, sim_operation_mode='view', state='created'):
+                 context_id=None, state='created'):
         """
         Creates a new simulation
 
@@ -36,8 +36,6 @@ class Simulation(object):
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
         'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
         :param context_id: The context ID if the experiment is declared in the collab portal
-        :param sim_operation_mode: Denotes whether the simulation should be started in 'edit' or \
-        'view' mode
         :param state: The initial state (created by default)
         """
         self.__state = state
@@ -47,7 +45,6 @@ class Simulation(object):
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__context_id = context_id
-        self.__operation_mode = sim_operation_mode
         self.__creation_datetime = datetime.datetime.now(tz=timezone)
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
@@ -126,15 +123,6 @@ class Simulation(object):
         :return: The creation date
         """
         return self.__creation_datetime.isoformat()
-
-    @property
-    def operation_mode(self):
-        """
-        The operation mode of this simulation
-
-        :return: The operation mode ('view' or 'edit')
-        """
-        return self.__operation_mode
 
     @property
     def context_id(self):
@@ -340,11 +328,10 @@ class Simulation(object):
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),
-        'operationMode': fields.String(attribute='operation_mode'),
         'contextID': fields.String(attribute='context_id')
     }
     required = [
-        'state', 'simulationID', 'experimentConfiguration', 'gzserverHost', 'operationMode'
+        'state', 'simulationID', 'experimentConfiguration', 'gzserverHost'
     ]
 
 
