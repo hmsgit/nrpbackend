@@ -1,5 +1,4 @@
 {% if __builtins__.type(tf) == bibi_api_gen.PythonTransferFunction %}
-    # Imported Python Transfer Function
 {% for cont in tf.orderedContent() %}
 {{correct_indentation(cont.value, 1)}}
 {% endfor %}

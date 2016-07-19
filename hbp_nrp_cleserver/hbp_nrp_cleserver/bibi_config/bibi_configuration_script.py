@@ -194,4 +194,9 @@ def generate_tf(tf, config):
     if not hasattr(tf, 'name'):
         tf.name = get_tf_name(tf_source)
 
+    if isinstance(tf, bibi_api_gen.PythonTransferFunction):
+        importedLine = "    # Imported Python Transfer Function"
+        if importedLine not in tf_source:
+            tf_source = importedLine + tf_source
+
     return ''.join(l for l in tf_source.splitlines(True) if not l.isspace())
