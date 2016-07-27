@@ -56,10 +56,13 @@ class ExperimentObject(object):
         "description": fields.String(),
         "timeout": fields.Integer(),
         "maturity": fields.String(),
-        "cameraPose": fields.List(fields.Float)
+        "cameraPose": fields.List(fields.Float),
+        "visualModel": fields.String(),
+        "visualModelParams": fields.List(fields.Float)
     }
     required = ['name', 'experimentConfiguration', 'description',
-                'timeout', 'maturity', 'cameraPose']
+                'timeout', 'maturity', 'cameraPose',
+                'visualModel', 'visualModelParams']
 
 
 @swagger.model
@@ -171,6 +174,9 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     _maturity = experiment.maturity
     _cameraPoseObj = experiment.cameraPose
     _cameraPose = None
+    _visualModelObj = experiment.visualModel
+    _visualModel = None
+    _visualModelParams = None
 
     if _timeout is None:
         _timeout = 600
@@ -185,13 +191,21 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
         _cameraPose = [_cameraPoseObj.cameraPosition.x, _cameraPoseObj.cameraPosition.y,
                        _cameraPoseObj.cameraPosition.z, _cameraPoseObj.cameraLookAt.x,
                        _cameraPoseObj.cameraLookAt.y, _cameraPoseObj.cameraLookAt.z]
+    if _visualModelObj:
+        _visualModel = _visualModelObj.src
+        _visualModelParams = [_visualModelObj.visualPose.x, _visualModelObj.visualPose.y,
+                              _visualModelObj.visualPose.z, _visualModelObj.visualPose.ux,
+                              _visualModelObj.visualPose.uy, _visualModelObj.visualPose.uz,
+                              _visualModelObj.scale if _visualModelObj.scale else 1.0]
 
     current_exp = dict(name=_name,
                        description=_description,
                        experimentConfiguration=os.path.join(experiment_dir, experiment_file),
                        timeout=_timeout,
                        maturity=_maturity,
-                       cameraPose=_cameraPose)
+                       cameraPose=_cameraPose,
+                       visualModel=_visualModel,
+                       visualModelParams=_visualModelParams)
     return current_exp
 
 
