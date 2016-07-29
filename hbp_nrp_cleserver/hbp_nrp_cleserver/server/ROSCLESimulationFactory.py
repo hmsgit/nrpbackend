@@ -250,6 +250,8 @@ class ROSCLESimulationFactory(object):
         except Exception:
             logger.exception("Initialization failed")
             self.simulation_exception_during_init = sys.exc_info()
+            self.running_simulation_thread = None
+            self.__is_running_simulation_terminating = False
             self.simulation_initialized_event.set()
             return
 
@@ -287,8 +289,8 @@ class ROSCLESimulationFactory(object):
         experiment_generated_script = imp.load_source(
             'experiment_generated_script', generated_cle_script_file)
         logger.info("Executing script: " + generated_cle_script_file)
-        # We want any exception raised during initialization in this tread
-        # to be pass to the main thread so that it can be handled properly.
+        # We want any exception raised during initialization in this thread
+        # to be passed to the main thread so that it can be handled properly.
         # noinspection PyBroadException
         try:
             [cle_server, models_path, gzweb, gzserver] = experiment_generated_script. \
@@ -297,6 +299,8 @@ class ROSCLESimulationFactory(object):
         except Exception:
             logger.exception("Initialization failed")
             self.simulation_exception_during_init = sys.exc_info()
+            self.running_simulation_thread = None
+            self.__is_running_simulation_terminating = False
             self.simulation_initialized_event.set()
             return
 
