@@ -6,6 +6,10 @@
     <populations population="actors" xsi:type="Range" from="5" to="8"/>
   </brainModel>
   <bodyModel>husky_model/model.sdf</bodyModel>
+
+  <configuration type="retina" src="retina/retina_config_1.py"></configuration>
+  <configuration type="retina" src="retina/retina_config_2.py"></configuration>
+
   <transferFunction xsi:type="PythonTransferFunction" src="BIBI/grab_image_retina_1.py"/>
   <transferFunction xsi:type="PythonTransferFunction">
     #<![CDATA[
