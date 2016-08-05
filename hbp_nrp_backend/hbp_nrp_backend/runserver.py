@@ -11,6 +11,7 @@ from hbp_nrp_backend.rest_server.cleanup import clean_simulations
 from hbp_nrp_backend.rest_server import db_create_and_check, NRPServicesDatabaseTimeoutException
 import logging
 import sys
+import rospy
 from threading import Thread
 
 DEFAULT_PORT = 5000
@@ -67,9 +68,19 @@ def run_server(server, args):  # pragma: no cover
     cleanup_thread.setDaemon(True)
     cleanup_thread.start()
 
+    root_logger.info("Starting ROS node")
+    rospy.init_node("nrp_backend")
+
+    rospy_thread = Thread(target=rospy.spin)
+    rospy_thread.setDaemon(True)
+    rospy_thread.start()
+
     root_logger.info("Starting the REST backend server now ...")
     server.run(port=port, host=DEFAULT_HOST)
     root_logger.info("REST backend server terminated.")
+    rospy.signal_shutdown("Backend terminates")
+    # After 10s, we terminate and the deamon thread gets killed
+    rospy_thread.join(10)
 
 
 def __init_console_logging():

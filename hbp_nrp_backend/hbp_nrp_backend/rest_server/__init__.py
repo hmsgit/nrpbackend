@@ -57,6 +57,7 @@ class NRPServicesExtendedApi(Api):
 
 app = Flask(__name__)
 api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Import REST APIs

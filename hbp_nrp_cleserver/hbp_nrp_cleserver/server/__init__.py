@@ -13,6 +13,7 @@ ROS_CLE_NODE_NAME = config.config.get('ros', 'ros-cle-node-name')
 SERVICE_VERSION = '/%s/version' % ROS_CLE_NODE_NAME
 SERVICE_HEALTH = '/%s/health' % ROS_CLE_NODE_NAME
 TOPIC_STATUS = '/%s/status' % ROS_CLE_NODE_NAME
+TOPIC_LIFECYCLE = lambda sim_id: '/%s/%d/lifecycle' % (ROS_CLE_NODE_NAME, sim_id)
 TOPIC_CLE_ERROR = '/%s/cle_error' % ROS_CLE_NODE_NAME
 SERVICE_CREATE_NEW_SIMULATION = '/%s/create_new_simulation' % ROS_CLE_NODE_NAME
 SERVICE_IS_SIMULATION_RUNNING = '/%s/is_simulation_running' % ROS_CLE_NODE_NAME

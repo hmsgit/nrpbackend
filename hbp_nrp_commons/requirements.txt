@@ -1,1 +1,2 @@
 pyxb==1.2.4
+transitions==0.4.0

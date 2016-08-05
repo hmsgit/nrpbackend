@@ -5,10 +5,10 @@ This module contains the simulation class
 __author__ = 'Georg Hinkel'
 
 from hbp_nrp_backend.simulation_control import timezone
-from hbp_nrp_backend.simulation_control.__StateMachine import stateMachine, reroutes, fail_states
 from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
 from hbp_nrp_excontrol.StateMachineInstance import StateMachineInstance
-from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
+from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import \
+    BackendSimulationLifecycle
 from tempfile import NamedTemporaryFile
 from flask_restful import fields
 from flask_restful_swagger import swagger
@@ -34,11 +34,10 @@ class Simulation(object):
         :param environment_conf: The environment configuration (Path to environment configuration)
         :param owner: The name of the user owning the simulation
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
-        'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
+        'local' for localhost and 'lugano' for a dedicated machine on the Lugano viz cluster.
         :param context_id: The context ID if the experiment is declared in the collab portal
         :param state: The initial state (created by default)
         """
-        self.__state = state
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
         self.__environment_conf = environment_conf
@@ -49,6 +48,7 @@ class Simulation(object):
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
         self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
+        self.__lifecycle = BackendSimulationLifecycle(self, state)
         self.__errors = 0  # We use that for monitoring
 
     @property
@@ -135,74 +135,31 @@ class Simulation(object):
         return self.__context_id
 
     @property
+    def lifecycle(self):
+        """
+        Gets the lifecycle of this simulation
+
+        :return: The lifecycle instance
+        """
+        return self.__lifecycle
+
+    @property
     def state(self):
         """
-        Gets the state of the simulation.
-        If the simulation CLE object is created then we do trust the CLE more than
-        ourself and query it ! If the state is final (such as failed or stopped),
-        then we don't bother with the CLE object.
-        """
-        if self.__cle is not None and self.__state not in ["stopped", "failed", "halted"]:
-            try:
-                self.__state = self.__cle.get_simulation_state()
-            except ROSCLEClientException:
-                # If anything goes wrong, we assume that we are in the "stopped" state
-                self.__state = "stopped"
-                self.__errors += 1
-        return self.__state
+        Gets the state of the simulation
 
-    # pylint: disable=broad-except
+        :return: The state of the simulation as a string
+        """
+        return self.__lifecycle.state
+
     @state.setter
     def state(self, new_state):
         """
-        Sets the state of the simulation to the given value
+        Sets the simulation in a new state
+
         :param new_state: The new state
         """
-        # When the CLE changes the state without any intervention of the backend,
-        # self.__state may not be properly updated. It results in false transition
-        # errors. This is why we are calling the property at the beginning of this
-        # method. Calling the property makes us refresh the local __state variable.
-        if new_state == self.state:
-            return
-
-        reroute = reroutes.get(self.__state)
-        if reroute is not None:
-            new_state = reroute.get(new_state, new_state)
-        try:
-            transitions = stateMachine[self.__state]
-        except KeyError:
-            raise InvalidStateTransitionException()
-        if new_state not in transitions:
-            raise InvalidStateTransitionException()
-        try:
-            transition = transitions[new_state]
-            if transition is not None:
-                # pylint: disable=not-callable
-                transition(self)
-            self.__state = new_state
-        except:
-            import sys
-            exc = sys.exc_info()
-            logger.exception(exc[1])
-            self.__state = fail_states.get(self.__state, "failed")
-            if self.__state in transitions:
-                try:
-                    backup_transition = transitions[self.__state]
-                    if backup_transition is not None:
-                        # pylint: disable=not-callable
-                        backup_transition(self)
-                except Exception as e:
-                    logger.exception(e)
-                    msg = "Exception trying to set the simulation to state {0}: '{1}'. However, " \
-                          "the cleanup command also failed with the error message '{2}'. Please " \
-                          "contact your system administrator."\
-                        .format(new_state, repr(exc[1]), repr(e))
-                    self.__errors += 2
-                    self.__state = "failed"
-                    raise Exception(msg), None, exc[2]
-            self.__errors += 1
-
-            raise
+        self.__lifecycle.accept_command(new_state)
 
     @property
     def cle(self):
@@ -263,7 +220,7 @@ class Simulation(object):
     def set_state_machine_code(self, name, python_code):
         """
         Set state machine code.
-        Only works, when simulation is in state "initialized"
+        Only works when simulation is in state "paused"
 
         :param   name:        name of the state machine
         :type    name:        string
@@ -271,7 +228,7 @@ class Simulation(object):
         :type    python_code: string
         :raise:  NameError, SyntaxError, AttributeError, ...
         """
-        assert self.state == 'initialized'
+        assert self.state == 'paused'
 
         with NamedTemporaryFile(prefix='sm_', suffix='.py', delete=False) as tmp:
             with tmp.file as sm_file:

@@ -55,9 +55,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
 
         self.simulation_event = threading.Event()
 
-        def mocked_simulation(mocked_self, environment_file, generated_cle_script_file,
-                              gzserver_host, sim_id):
-            self.__ros_cle_simulation_factory.simulation_initialized_event.set()
+        def mocked_simulation(mocked_self, cle_launcher):
             self.simulation_event.wait()
 
         # Make sure we do not really start a simulation
@@ -73,7 +71,6 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         self.__mocked_threading.Thread = MagicMock(return_value=self.__mocked_thread)
         self.__ros_cle_simulation_factory.\
             running_simulation_thread = MagicMock(spec=threading.Thread)
-        self.__ros_cle_simulation_factory.simulation_initialized_event.wait = MagicMock(return_value=True)
 
     def tearDown(self):
         # remove all handlers after each test!
@@ -102,6 +99,11 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         self.assertEqual(self.__mocked_rospy.Service.call_count, 4)
         self.__mocked_rospy.spin.assert_called_once_with()
 
+    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_data',
+        MagicMock(return_value=('john', 'doe')))
+    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath',
+        MagicMock(return_value=('john')))
+    @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
     def test_is_simulation_running(self):
         self.assertFalse(
             self.__ros_cle_simulation_factory.is_simulation_running(self.mocked_service_request)
@@ -109,26 +111,28 @@ class TestROSCLESimulationFactory(unittest.TestCase):
 
         self.simulation_event.clear()
 
-        background_simulation = threading.Thread(
-            target=self.__ros_cle_simulation_factory.create_new_simulation,
-            args=[self.mocked_service_request]
-        )
-        background_simulation.start()
-        self.__ros_cle_simulation_factory.simulation_initialized_event.wait()
+        self.__ros_cle_simulation_factory.create_new_simulation(self.mocked_service_request)
         self.assertTrue(
             self.__ros_cle_simulation_factory.is_simulation_running(self.mocked_service_request)
         )
+
         self.simulation_event.set()
+
         time.sleep(1)
         self.assertFalse(
             self.__ros_cle_simulation_factory.is_simulation_running(self.mocked_service_request)
         )
 
-
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.os')
     @patch('hbp_nrp_cle.robotsim.LocalGazebo.os')
+    @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
+    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_data',
+        MagicMock(return_value=('john', 'doe')))
+    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath',
+        MagicMock(return_value=('john')))
     def test_create_new_simulation_dead_thread(self, mocked_os, mocked_cle_os, mocked_logger):
+        print "test_create_new_simulation_dead_thread"
         self.mockThreading()
         self.__ros_cle_simulation_factory.\
             running_simulation_thread.is_alive = MagicMock(return_value=False)
@@ -140,7 +144,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                 self.mocked_service_request
             )
 
-        self.assertEqual(mocked_logger.info.call_count, 3)
+        self.assertEqual(mocked_logger.info.call_count, 8)
         self.assertEqual(mocked_logger.error.call_count, 0)
 
         self.assertEqual(self.__mocked_threading.Thread.call_count, 1)

@@ -30,9 +30,9 @@ def reset_simulation_or_raise(simulation):
     """
     state = simulation.state
     if state == 'paused' or state == 'started':
-        state = simulation.state = 'initialized'
+        state = simulation.state = 'paused'
 
-    if state != 'initialized':
+    if state != 'paused':
         raise NRPServicesGeneralException(
             "Simulation in state {0}. Can't update the state machine".format(state),
             "Server error"
