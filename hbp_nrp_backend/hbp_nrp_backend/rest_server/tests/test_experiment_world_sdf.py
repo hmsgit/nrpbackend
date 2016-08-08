@@ -64,8 +64,11 @@ class TestExperimentWorldSDF(RestTest):
 
         response = self.client.put('/experiment/' + context_id + '/sdf_world')
         self.assertEqual(response.status_code, 200)
-        arg1, arg2, arg3 = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[0][0]
+        arg1, arg2, arg3, arg4 = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[0][0]
+        self.assertFalse("THIS SHOULD NOT BE SAVED" in arg1)
+        self.assertEqual(arg4, "recovered_world.sdf")
 
+        arg1, arg2, arg3, arg4 = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[1][0]
         experiment_configuration = exp_conf_api_gen.CreateFromDocument(arg1)
         self.assertEqual(experiment_configuration.environmentModel.robotPose.x, 1)
         self.assertEqual(experiment_configuration.environmentModel.robotPose.y, 2)
@@ -74,11 +77,7 @@ class TestExperimentWorldSDF(RestTest):
         self.assertEqual(experiment_configuration.environmentModel.robotPose.uy, 0.)
         self.assertEqual(experiment_configuration.environmentModel.robotPose.uz, 0.)
         self.assertEqual(experiment_configuration.environmentModel.robotPose.theta, 1.)
-        self.assertEqual(arg3, "recovered_experiment_configuration.xml")
-
-        arg1, arg2, arg3 = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[1][0]
-        self.assertFalse("THIS SHOULD NOT BE SAVED" in arg1)
-        self.assertEqual(arg3, "recovered_world.sdf")
+        self.assertEqual(arg4, "recovered_experiment_configuration.xml")
 
 
     @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')

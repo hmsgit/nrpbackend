@@ -50,15 +50,15 @@ class TestExperimentTransferFunctions(RestTest):
         self.assertEqual(response.status_code, 200)
 
         replace_file_argslist = [x[0] for x in self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list]
-        replace_file_arg1, replace_file_arg2, replace_file_arg3 = replace_file_argslist[0]
+        replace_file_arg1, replace_file_arg2, replace_file_arg3, replace_file_arg4  = replace_file_argslist[0]
         bibi = bibi_api_gen.CreateFromDocument(replace_file_arg1)
         tfs_names = [name + ".py" for name in self.tf1_name,self.tf2_name]
         for tf in bibi.transferFunction:
             self.assertTrue(tf.src in tfs_names)
-        self.assertEqual(replace_file_arg3, "recovered_bibi_configuration.xml")
+        self.assertEqual(replace_file_arg4, "recovered_bibi_configuration.xml")
 
         write_file_argslist  = [x[0] for x in self.mock_collabClient_instance.replace_file_content_in_collab.write_file_with_content_in_collab]
-        for write_file_arg1, write_file_arg2, write_file_arg3 in write_file_argslist:
-            self.assertTrue(write_file_arg3 in tfs_names)
+        for write_file_arg1, write_file_arg2, write_file_arg3, write_file_arg4 in write_file_argslist:
+            self.assertTrue(write_file_arg4 in tfs_names)
             self.assertTrue(write_file_arg1 in [self.tf1, self.tf2])
             self.assertEqual(write_file_arg2, "application/hbp-neurorobotics.tfs+python")

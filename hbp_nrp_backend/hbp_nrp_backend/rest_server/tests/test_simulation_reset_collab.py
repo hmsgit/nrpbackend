@@ -159,12 +159,11 @@ class TestSimulationResetCollab(RestTest):
         mock_get_header_token.assert_called()
 
         self.mock_collabClient_instance.get_first_file_path_with_mimetype.assert_called_with(
-            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE, ANY)
+            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE, ANY, ANY)
 
         self.mock_collabClient_instance.download_file_from_collab.assert_called_with(fake_filepath)
 
         self.assertEqual(world_sdf_string, fake_world_sdf_string)
-
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.tempfile')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.get_all_neurons_as_dict')

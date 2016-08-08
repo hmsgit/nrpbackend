@@ -10,6 +10,7 @@ import os
 import tempfile
 import shutil
 import logging
+from threading import Thread
 
 from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
@@ -109,13 +110,16 @@ class ExperimentBrainFile(Resource):
             context_id
         )
 
-        client.replace_file_content_in_collab(
-            data,
-            client.BRAIN_PYNN_MIMETYPE,
-            "recovered_pynn_brain_model.py"
+        replace_brain = Thread(target=client.replace_file_content_in_collab,
+                               args=(data,
+                                     client.BRAIN_PYNN_MIMETYPE,
+                                     client.BRAIN_PYNN_FILE_NAME,
+                                     "recovered_pynn_brain_model.py"))
+        replace_brain.start()
+        bibi_file_path = client.clone_file_from_collab_context(
+            client.BIBI_CONFIGURATION_MIMETYPE,
+            client.BIBI_CONFIGURATION_FILE_NAME
         )
-
-        bibi_file_path = client.clone_file_from_collab_context(client.BIBI_CONFIGURATION_MIMETYPE)
         if bibi_file_path is None:
             raise NRPServicesGeneralException(
                 "BIBI configuration file not found in the Collab storage",
@@ -154,11 +158,11 @@ class ExperimentBrainFile(Resource):
                 bibi_file_path
             )
             shutil.rmtree(os.path.dirname(bibi_file_path))
-
         client.replace_file_content_in_collab(
             bibi.toxml("utf-8"),
             client.BIBI_CONFIGURATION_MIMETYPE,
+            client.BIBI_CONFIGURATION_FILE_NAME,
             "recovered_bibi_configuration.xml"
         )
-
+        replace_brain.join()
         return 200

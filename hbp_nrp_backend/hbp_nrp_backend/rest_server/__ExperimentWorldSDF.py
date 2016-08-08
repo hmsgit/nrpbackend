@@ -10,6 +10,7 @@ import os
 import rospy
 import shutil
 import tempfile
+from threading import Thread
 import tf.transformations
 
 from lxml import etree as ET
@@ -67,7 +68,6 @@ class ExperimentWorldSDF(Resource):
         # way we __init__ the rest_server module.
         from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
             import NeuroroboticsCollabClient
-
         try:
             rospy.wait_for_service('/gazebo/export_world_sdf', 3)
         except rospy.ROSException as exc:
@@ -94,11 +94,18 @@ class ExperimentWorldSDF(Resource):
 
         client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request),
                                            context_id)
+        replace_sdf = Thread(target=client.replace_file_content_in_collab,
+                             args=(sdf_string,
+                                   NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
+                                   NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME,
+                                   "recovered_world.sdf"))
+        replace_sdf.start()
 
         # Save the robot position in the ExDConf file
-        if (len(robot_pose) is 6): # We need 6 elements (from Gazebo)
+        if (len(robot_pose) is 6):  # We need 6 elements (from Gazebo)
             experiment_configuration_file_path = client.clone_file_from_collab_context(
-                client.EXPERIMENT_CONFIGURATION_MIMETYPE)
+                client.EXPERIMENT_CONFIGURATION_MIMETYPE,
+                client.EXPERIMENT_CONFIGURATION_FILE_NAME)
             if experiment_configuration_file_path is None:
                 raise NRPServicesGeneralException(
                     "Experiment configuration file not found in the Collab storage",
@@ -133,18 +140,15 @@ class ExperimentWorldSDF(Resource):
                     experiment_configuration_file_path
                 )
                 shutil.rmtree(os.path.dirname(experiment_configuration_file_path))
-
             client.replace_file_content_in_collab(
                 experiment_configuration.toxml("utf-8"),
                 client.EXPERIMENT_CONFIGURATION_MIMETYPE,
+                client.EXPERIMENT_CONFIGURATION_FILE_NAME,
                 "recovered_experiment_configuration.xml"
             )
 
         else:
             logger.error("Malformed robot position tag in SDF: " + robot_pose)
 
-        client.replace_file_content_in_collab(sdf_string,
-                                              NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
-                                              "recovered_world.sdf")
-
+        replace_sdf.join()
         return 200

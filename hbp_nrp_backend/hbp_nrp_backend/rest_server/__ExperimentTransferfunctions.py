@@ -10,6 +10,7 @@ import os
 import tempfile
 import shutil
 import logging
+from threading import Thread
 from flask_restful import Resource, request, fields
 from flask_restful_swagger import swagger
 
@@ -133,14 +134,15 @@ class ExperimentTransferfunctions(Resource):
                 "Transfer functions code should be sent in "
                 "the body under the 'transfer_functions' key"
             )
-        transfer_functions = body['transfer_functions']
 
         client = NeuroroboticsCollabClient(
             UserAuthentication.get_header_token(request),
             context_id
         )
-
-        bibi_file_path = client.clone_file_from_collab_context(client.BIBI_CONFIGURATION_MIMETYPE)
+        bibi_file_path = client.clone_file_from_collab_context(
+            client.BIBI_CONFIGURATION_MIMETYPE,
+            client.BIBI_CONFIGURATION_FILE_NAME
+        )
         if bibi_file_path is None:
             raise NRPServicesGeneralException(
                 "BIBI configuration file not found in the Collab storage",
@@ -158,8 +160,8 @@ class ExperimentTransferfunctions(Resource):
 
         # Remove all transfer functions from BIBI. Then we save them in a separate python file.
         del bibi.transferFunction[:]
-
-        for transfer_function in transfer_functions:
+        threads = []
+        for transfer_function in body['transfer_functions']:
             transfer_function_name = get_tf_name(transfer_function)
             if (transfer_function_name is not None):
                 transfer_function_filename = transfer_function_name + ".py"
@@ -167,11 +169,12 @@ class ExperimentTransferfunctions(Resource):
                 transfer_function_node.src = transfer_function_filename
                 bibi.transferFunction.append(transfer_function_node)
 
-                client.write_file_with_content_in_collab(
-                    transfer_function,
-                    client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
-                    transfer_function_filename
-                )
+                t = Thread(target=client.write_file_with_content_in_collab,
+                           args=(transfer_function,
+                                 client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
+                                 transfer_function_filename))
+                t.start()
+                threads.append(t)
 
         if tempfile.gettempdir() in bibi_file_path:
             logger.debug(
@@ -179,11 +182,14 @@ class ExperimentTransferfunctions(Resource):
                 bibi_file_path
             )
             shutil.rmtree(os.path.dirname(bibi_file_path))
-
-        client.replace_file_content_in_collab(
+        t = Thread(target=client.replace_file_content_in_collab, args=(
             bibi.toxml("utf-8"),
             client.BIBI_CONFIGURATION_MIMETYPE,
+            client.BIBI_CONFIGURATION_FILE_NAME,
             "recovered_bibi_configuration.xml"
-        )
-
+        ))
+        t.start()
+        threads.append(t)
+        for x in threads:
+            x.join()
         return 200

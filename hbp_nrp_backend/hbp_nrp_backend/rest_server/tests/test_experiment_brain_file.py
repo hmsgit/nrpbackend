@@ -95,11 +95,11 @@ def create_brain():
 
         save_string_to_file = self.mock_collabClient_instance.replace_file_content_in_collab
 
-        arg1, arg2, arg3 = save_string_to_file.call_args_list[0][0]
+        arg1, arg2, arg3, arg4 = save_string_to_file.call_args_list[0][0]
         self.assertEqual(arg1, self.brain_model)
-        self.assertEqual(arg3, "recovered_pynn_brain_model.py")
+        self.assertEqual(arg4, "recovered_pynn_brain_model.py")
 
-        arg1, arg2, arg3 = save_string_to_file.call_args_list[1][0]
+        arg1, arg2, arg3, arg4 = save_string_to_file.call_args_list[1][0]
         bibi = bibi_api_gen.CreateFromDocument(arg1)
         for population in bibi.brainModel.populations:
             if population.population == 'index':
@@ -112,4 +112,4 @@ def create_brain():
                 self.assertEqual(population.element, [1, 2, 3])
             else:
                 self.fail("Unexpected identifier: " + population.population)
-        self.assertEqual(arg3, "recovered_bibi_configuration.xml")
+        self.assertEqual(arg4, "recovered_bibi_configuration.xml")
