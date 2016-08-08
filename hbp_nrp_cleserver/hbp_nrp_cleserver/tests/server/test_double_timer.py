@@ -4,7 +4,7 @@ Unit tests for the double timer used for the state publishing and the timeout
 
 __author__ = 'Lorenzo Vannucci, Alessandro Ambrosano'
 
-from hbp_nrp_cleserver.server.ROSCLEServer import DoubleTimer
+from hbp_nrp_cleserver.server.DoubleTimer import DoubleTimer
 import time
 import threading
 
@@ -34,10 +34,10 @@ class TestDoubleTimer(unittest.TestCase):
         dt = DoubleTimer(1, f1, 3000, f2)
         dt.stopped.wait = my_wait
         dt.enable_second_callback()
-        self.assertEqual(dt.get_remaining_time(), 3000)
+        self.assertEqual(dt.remaining_time(), 3000)
         dt.start()
         time.sleep(1)
-        self.assertTrue(dt.get_remaining_time() < 3000)
+        self.assertTrue(dt.remaining_time() < 3000)
         dt.cancel_all()
 
         # Testing counting reset
@@ -46,9 +46,9 @@ class TestDoubleTimer(unittest.TestCase):
         dt.enable_second_callback()
         dt.start()
         time.sleep(1)
-        self.assertTrue(dt.get_remaining_time() < 3000)
+        self.assertTrue(dt.remaining_time() < 3000)
         dt.disable_second_callback()
-        self.assertEqual(dt.get_remaining_time(), 3000)
+        self.assertEqual(dt.remaining_time(), 3000)
         dt.cancel_all()
 
         # Testing everything is called the right number of times

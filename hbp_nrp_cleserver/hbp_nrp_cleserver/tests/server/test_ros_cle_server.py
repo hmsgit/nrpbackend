@@ -5,8 +5,6 @@ ROSCLEServer unit test
 from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
 from cle_ros_msgs.msg import CSVRecordedFile, ExperimentPopulationInfo
 from hbp_nrp_cleserver.server import ROSCLEServer
-from hbp_nrp_cleserver.server.ROSCLEState import ROSCLEState, State, InitialState, RunningState, \
-    PausedState, StoppedState
 import logging
 from mock import patch, MagicMock, Mock, PropertyMock
 from testfixtures import log_capture
@@ -45,18 +43,6 @@ class TestROSCLEServer(unittest.TestCase):
 
     LOGGER_NAME = ROSCLEServer.__name__
 
-    def craft_ros_cle_server(self, mock_timeout=False):
-        with patch('hbp_nrp_cleserver.server.ROSCLEServer.threading') as threading_patch:
-            # Set up our object under test and get sure it calls rospy.init in its
-            # constructor.
-            threading_patch.Thread = lambda target: target()
-            self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0)
-            if mock_timeout:
-                self.__ros_cle_server.start_timeout = MagicMock()
-                self.__ros_cle_server.stop_timeout = MagicMock()
-            self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
-        self.__mocked_rospy.init_node.assert_called_with('ros_cle_simulation')
-
     def setUp(self):
         unittest.TestCase.setUp(self)
 
@@ -79,7 +65,12 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_cle.robotsim_elapsed_time = Mock(return_value=0)
         self.__mocked_rospy = rospy_patcher.start()
 
-        self.craft_ros_cle_server(True)
+        with patch('hbp_nrp_cleserver.server.ROSCLEServer.threading') as threading_patch:
+            # Set up our object under test and get sure it calls rospy.init in its
+            # constructor.
+            threading_patch.Thread = lambda target: target()
+            self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0)
+            self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
 
         # Be sure we create as many publishers as required.
         from hbp_nrp_cleserver.server import *
@@ -87,6 +78,8 @@ class TestROSCLEServer(unittest.TestCase):
         for var_name in vars().keys():
             if (var_name.startswith("TOPIC_")):
                 number_of_publishers += 1
+        # Lifecycle topic not published by ROSCLEServer
+        number_of_publishers -= 1
 
         self.assertEqual(number_of_publishers, self.__mocked_rospy.Publisher.call_count)
 
@@ -101,65 +94,18 @@ class TestROSCLEServer(unittest.TestCase):
         # remove all handlers after each test!
         logging.getLogger(self.LOGGER_NAME).handlers = []
 
-    def test_set_state(self):
-        self.craft_ros_cle_server()
-        st = InitialState(self.__ros_cle_server)
-        self.__ros_cle_server.set_state(st)
-        self.assertEquals(self.__ros_cle_server._ROSCLEServer__state, st)
-
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.DoubleTimer.enable_second_callback')
-    def test_start_timeout(self, mock_enable):
-        self.craft_ros_cle_server()
-        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.__ros_cle_server.start_timeout()
-        self.assertGreaterEqual(mock_enable.call_count, 1)
-
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.DoubleTimer')
-    def test_stop_timeout(self, mock_double_timer):
-        self.craft_ros_cle_server()
-        mock_double_timer.expiring = True
-        mock_double_timer.disable_second_callback = Mock()
-        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.__ros_cle_server._ROSCLEServer__double_timer = mock_double_timer
-        self.__ros_cle_server.stop_timeout()
-        self.assertGreaterEqual(mock_double_timer.disable_second_callback.call_count, 1)
-
-    @patch('hbp_nrp_cleserver.server.ROSCLEState.State')
-    def test_quit_by_timeout(self, mock_state):
-        self.craft_ros_cle_server()
-        mock_state.stop_simulation = Mock()
-        self.__ros_cle_server.set_state(mock_state)
-        self.__ros_cle_server.quit_by_timeout()
-        self.assertEquals(mock_state.stop_simulation.call_count, 1)
+    def test_ros_node_initialized_with_right_name(self):
+        self.__mocked_rospy.init_node.assert_called_with('ros_cle_simulation')
 
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.assertEqual(13, self.__mocked_rospy.Service.call_count)
-        self.assertEqual(1, self.__mocked_cle.initialize.call_count)
-        self.assertEqual(1, self.__ros_cle_server.start_timeout.call_count)
-
-    def test_reset_timeout(self):
-        self.__mocked_cle.is_initialized = False
-        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.__ros_cle_server.start_simulation()
-        self.__ros_cle_server.pause_simulation()
-        msg = ResetSimulation()
-        msg.reset_type = ResetSimulationRequest.RESET_OLD
-        self.__ros_cle_server.reset_simulation(msg)
-        # start_timeout has been called in prepare_simulation AND in reset_simulation
-        self.assertEqual(2, self.__ros_cle_server.start_timeout.call_count)
-        self.assertEqual(1, self.__ros_cle_server.stop_timeout.call_count)
-
-        msg.reset_type = ResetSimulationRequest.RESET_FULL
-        resp = self.__ros_cle_server.reset_simulation(msg)
-        self.assertFalse(resp[0])
+        self.assertEqual(9, self.__mocked_rospy.Service.call_count)
 
     def test_reset_simulation(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.__ros_cle_server.start_simulation()
-        self.__ros_cle_server.pause_simulation()
+        self.__ros_cle_server._ROSCLEServer__lifecycle.state = 'paused'
 
         # Reset robot pose without Collab
         msg = ResetSimulationRequest()
@@ -213,38 +159,28 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEqual(self.__mocked_cle.reset_world.call_args_list[0][0][0], msg.world_sdf)
         self.__mocked_cle.reset_mock()
 
+        # Reset Full
+        msg.reset_type = ResetSimulationRequest.RESET_FULL
+        msg.world_sdf = "<a valid sdf string>"
+        msg.brain_path = "/random/tmp/file.brain"
+        msg.populations = [ExperimentPopulationInfo(name="population1", type=ExperimentPopulationInfo.TYPE_POPULATION_SLICE,
+                                                    ids=[], start=0, stop=5, step=1),
+                           ExperimentPopulationInfo(name="population2", type=ExperimentPopulationInfo.TYPE_POPULATION_SLICE,
+                                                    ids=[], start=5, stop=10, step=1)]
+        response, message = self.__ros_cle_server.reset_simulation(msg)
+
     def __get_handlers_for_testing_main(self):
         self.__mocked_cle.is_initialized = True
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
 
         # Get the ROS Service handlers; this will always be the third argument.
-        arguments = self.__mocked_rospy.Service.call_args_list
-        start_handler = arguments[0][0][2]
-        pause_handler = arguments[1][0][2]
-        stop_handler = arguments[2][0][2]
-        reset_handler = arguments[3][0][2]
-        state_handler = arguments[4][0][2]
-        get_transfer_functions_handler = arguments[5][0][2]
-        set_transfer_function_handler = arguments[6][0][2]
-        delete_transfer_function_handler = arguments[7][0][2]
+        arguments = {
+            k.split('/')[-1]: v
+            for (k, _, v) in
+            [x[0] for x in self.__mocked_rospy.Service.call_args_list]
+        }
 
-        return start_handler, pause_handler, stop_handler, reset_handler, state_handler,\
-               get_transfer_functions_handler, set_transfer_function_handler, \
-               delete_transfer_function_handler
-
-    @timeout(10, "Main loop did not terminate")
-    def test_main_termination(self):
-        self.craft_ros_cle_server(True)
-        (start_handler, _, stop_handler, _, state_handler, _, _, _) = self.__get_handlers_for_testing_main()
-        start_handler(_)
-        # start a timer which calls the registered stop handler after 5 seconds
-        timer = threading.Timer(5, stop_handler, ['irrelevant_argument'])
-        timer.start()
-        # now start the "infinite loop"
-        self.assertEqual(str(state_handler(_)), ROSCLEState.STARTED)
-        self.__ros_cle_server.run()
-        self.assertEqual(str(state_handler(_)), ROSCLEState.STOPPED)
-        self.__mocked_cle.stop.assert_called_once_with()
+        return arguments
 
     def test_get_brain(self):
         with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
@@ -257,10 +193,10 @@ class TestROSCLEServer(unittest.TestCase):
               'list_1': [1, 2, 3]
             }
             mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
-            self.craft_ros_cle_server(True)
             self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
+            ros_callbacks = self.__get_handlers_for_testing_main()
             directory = path.split(__file__)[0]
-            get_brain_implementation = self.__mocked_rospy.Service.call_args_list[8][0][2]
+            get_brain_implementation = ros_callbacks['get_brain']
             brain = get_brain_implementation(Mock())
             self.assertEqual("py", brain[0])
             self.assertEqual("Some python code", brain[1])
@@ -271,11 +207,17 @@ class TestROSCLEServer(unittest.TestCase):
             self.assertEqual("h5", brain[0])
             self.assertEqual("base64", brain[2])
 
-    def test_set_brain(self):
-        self.craft_ros_cle_server(True)
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.SimulationServerLifecycle')
+    def test_set_brain(self, mock_tempfile, mock_lifecycle):
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
+        self.__ros_cle_server._ROSCLEServer__lifecycle.state = 'started'
+
+        mock_tempfile.name = 'random_name_tempfile'
+
+        ros_callbacks = self.__get_handlers_for_testing_main()
         self.__mocked_cle.network_file = PropertyMock()
-        set_brain_implementation = self.__mocked_rospy.Service.call_args_list[9][0][2]
+        set_brain_implementation = ros_callbacks['set_brain']
         populations = json.dumps({
             'index1': 1,
             'list1': [1, 2, 3],
@@ -287,6 +229,7 @@ class TestROSCLEServer(unittest.TestCase):
         request.brain_data = "Dummy = None"
         request.brain_populations = populations
         response = set_brain_implementation(request)
+        self.__ros_cle_server._ROSCLEServer__lifecycle.paused.assert_called()
         expected_populations_arg = json.dumps(
             self.__mocked_cle.load_network_from_file.call_args[1]
         )
@@ -320,10 +263,10 @@ class TestROSCLEServer(unittest.TestCase):
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_CSV_recorders_functions(self, mocked_tf_framework):
-        self.craft_ros_cle_server(True)
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        get_CSV_recorders_files_implementation = self.__mocked_rospy.Service.call_args_list[11][0][2]
-        clean_CSV_recorders_files_implementation = self.__mocked_rospy.Service.call_args_list[12][0][2]
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        get_CSV_recorders_files_implementation = ros_callbacks['get_CSV_recorders_files']
+        clean_CSV_recorders_files_implementation = ros_callbacks['clean_CSV_recorders_files']
         mocked_tf_framework.dump_csv_recorder_to_files = Mock()
         mocked_tf_framework.dump_csv_recorder_to_files.return_value = [('a','b'),('c','d')]
         result_value = get_CSV_recorders_files_implementation(None).files
@@ -337,23 +280,22 @@ class TestROSCLEServer(unittest.TestCase):
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_get_transfer_functions(self, mocked_tf_framework):
-        self.craft_ros_cle_server(True)
         tf = [MagicMock(), MagicMock()]
         tf[0].source = "tf_0 python code"
         tf[1].source = "tf_1 python code"
         mocked_tf_framework.get_transfer_functions = MagicMock(return_value=tf)
-        (_, _, _, _, _, get_transfer_functions_handler, _, _) = self.__get_handlers_for_testing_main()
-        transfer_functions_from_service = get_transfer_functions_handler(_)
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        transfer_functions_from_service = ros_callbacks['get_transfer_functions'](None)
         self.assertEqual(2, len(transfer_functions_from_service))
         self.assertEqual("tf_0 python code", transfer_functions_from_service[0])
         self.assertEqual("tf_1 python code", transfer_functions_from_service[1])
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_set_transfer_function(self, mocked_tf_framework):
-        self.craft_ros_cle_server(True)
         mocked_tf_framework.set_transfer_function = MagicMock(return_value=None)
         mocked_tf_framework.delete_transfer_function = MagicMock()
-        (_, _, _, _, _, _, set_transfer_function_handler, _) = self.__get_handlers_for_testing_main()
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        set_transfer_function_handler = ros_callbacks['set_transfer_function']
         request = MagicMock()
         request.transfer_function_name = "tf_0"
         request.transfer_function_source = "def tf0(): \n return 0"
@@ -392,6 +334,7 @@ class TestROSCLEServer(unittest.TestCase):
             self.assertEqual("foo", response)
 
         mocked_tf_framework.set_transfer_function.side_effect = Exception("bar")
+        self.__ros_cle_server._ROSCLEServer__lifecycle = Mock()
         response = set_transfer_function_handler(request)
         self.assertEqual("bar", response)
 
@@ -405,9 +348,9 @@ class TestROSCLEServer(unittest.TestCase):
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_delete_transfer_function(self, mocked_tf_framework):
-        self.craft_ros_cle_server(True)
         mocked_tf_framework.delete_transfer_function = MagicMock(return_value=True)
-        (_, _, _, _, _, _, _, delete_transfer_function_handler) = self.__get_handlers_for_testing_main()
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        delete_transfer_function_handler = ros_callbacks['delete_transfer_function']
         request = MagicMock()
         request.transfer_function_name = "tf_0"
         response = delete_transfer_function_handler(request)
@@ -418,7 +361,6 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEqual(1, self.__mocked_rospy.spin.call_count)
 
     def test_notify_start_task(self):
-        self.craft_ros_cle_server(True)
         task_name = 'test_name'
         subtask_name = 'test_subtaskname'
         number_of_subtasks = 1
@@ -434,98 +376,6 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_ros_status_pub.publish.assert_called_with(
             json.dumps(message))
 
-    def test_plain_state(self):
-        self.craft_ros_cle_server(True)
-        # Testing class State
-        state = State(None)
-        self.assertRaises(RuntimeError, state.start_simulation)
-        self.assertRaises(RuntimeError, state.pause_simulation)
-        self.assertRaises(RuntimeError, state.stop_simulation)
-        msg = ResetSimulation()
-        msg.reset_type = ResetSimulationRequest.RESET_OLD
-        self.assertRaises(RuntimeError, state.reset_simulation, msg)
-        self.assertFalse(state.is_final_state())
-
-    def test_initialized_state(self):
-        self.craft_ros_cle_server(True)
-        # Testing class InitialState
-        ctx = Mock()
-        ctx.start_simulation = Mock()
-        ctx.stop_simulation = Mock()
-
-        initialized = InitialState(ctx)
-        self.assertRaises(RuntimeError, initialized.pause_simulation)
-        msg = ResetSimulation()
-        msg.reset_type = ResetSimulationRequest.RESET_OLD
-        self.assertRaises(RuntimeError, initialized.reset_simulation, msg)
-        self.assertFalse(initialized.is_final_state())
-
-        initialized.start_simulation()
-        initialized.stop_simulation()
-        self.assertEqual(ctx.start_simulation.call_count, 1)
-        self.assertEqual(ctx.stop_simulation.call_count, 1)
-        self.assertEqual(str(initialized), ROSCLEState.INITIALIZED)
-
-
-    def test_running_state(self):
-        self.craft_ros_cle_server(True)
-        # Testing class RunningState
-        ctx = Mock()
-        ctx.start_simulation = Mock()
-        ctx.stop_simulation = Mock()
-        ctx.pause_simulation = Mock()
-
-        running = RunningState(ctx)
-        self.assertRaises(RuntimeError, running.start_simulation)
-        self.assertFalse(running.is_final_state())
-
-        msg = ResetSimulation()
-        msg.reset_type = ResetSimulationRequest.RESET_OLD
-        running.reset_simulation(msg)
-        running.stop_simulation()
-        running.pause_simulation()
-        self.assertEqual(ctx.reset_simulation.call_count, 1)
-        self.assertEqual(ctx.stop_simulation.call_count, 1)
-        self.assertEqual(ctx.pause_simulation.call_count, 1)
-        self.assertEqual(str(running), ROSCLEState.STARTED)
-
-    def test_paused_state(self):
-        self.craft_ros_cle_server(True)
-        # Testing class PausedState
-        ctx = Mock()
-        ctx.start_simulation = Mock()
-        ctx.stop_simulation = Mock()
-        ctx.reset_simulation = Mock()
-
-        paused = PausedState(ctx)
-        self.assertRaises(RuntimeError, paused.pause_simulation)
-        self.assertFalse(paused.is_final_state())
-
-        paused.start_simulation()
-        paused.stop_simulation()
-        msg = ResetSimulation()
-        msg.reset_robot_pose = False
-        msg.full_reset = False
-        paused.reset_simulation(msg)
-        self.assertEqual(ctx.start_simulation.call_count, 1)
-        self.assertEqual(ctx.stop_simulation.call_count, 1)
-        self.assertEqual(ctx.reset_simulation.call_count, 1)
-        self.assertEqual(str(paused), ROSCLEState.PAUSED)
-
-    def test_stopped_state(self):
-        self.craft_ros_cle_server(True)
-        # Testing class StoppedState
-        stopped = StoppedState(None)
-        self.assertRaises(RuntimeError, stopped.start_simulation)
-        self.assertRaises(RuntimeError, stopped.pause_simulation)
-        self.assertRaises(RuntimeError, stopped.stop_simulation)
-        msg = ResetSimulation()
-        msg.reset_robot_pose = False
-        msg.full_reset = False
-        self.assertRaises(RuntimeError, stopped.reset_simulation, msg)
-        self.assertTrue(stopped.is_final_state())
-        self.assertEqual(str(stopped), ROSCLEState.STOPPED)
-
     def test_task(self):
         mock_publisher = Mock()
         self.__ros_cle_server._ROSCLEServer__ros_status_pub = mock_publisher
@@ -537,33 +387,27 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEquals(mock_publisher.publish.call_count, 3)
 
     def test_shutdown(self):
-        self.craft_ros_cle_server()
-        a = self.__ros_cle_server._ROSCLEServer__double_timer = MagicMock()
-        b = self.__ros_cle_server._ROSCLEServer__service_start = MagicMock()
-        c = self.__ros_cle_server._ROSCLEServer__service_pause = MagicMock()
-        d = self.__ros_cle_server._ROSCLEServer__service_stop = MagicMock()
-        e = self.__ros_cle_server._ROSCLEServer__service_reset = MagicMock()
-        f = self.__ros_cle_server._ROSCLEServer__service_state = MagicMock()
-        g = self.__ros_cle_server._ROSCLEServer__current_task = None
-        h = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
-        i = self.__ros_cle_server._ROSCLEServer__cle = MagicMock()
-        j = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
-        k = self.__ros_cle_server._ROSCLEServer__service_set_transfer_function = MagicMock()
-        l = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
-        m = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
-        n = self.__ros_cle_server._ROSCLEServer__service_get_populations = MagicMock()
-        o = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files = MagicMock()
-        p = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
+
+        a = self.__ros_cle_server._ROSCLEServer__service_reset  = MagicMock()
+        b = self.__ros_cle_server._ROSCLEServer__current_task = None
+        c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
+        d = self.__ros_cle_server._ROSCLEServer__service_set_transfer_function = MagicMock()
+        e = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
+        f = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
+        g = self.__ros_cle_server._ROSCLEServer__service_get_populations = MagicMock()
+        h = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files = MagicMock()
+        i = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
+        l = self.__ros_cle_server._ROSCLEServer__ros_cle_error_pub = MagicMock()
+        m = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
 
         self.__ros_cle_server.shutdown()
-        for x in [b, c, d, e, f, i, j, k, l, m, n, o, p]:
+        for x in [a, c, d, e, f, g, h, i]:
             self.assertEquals(x.shutdown.call_count, 1)
-        self.assertEquals(a.join.call_count, 1)
-        self.assertEquals(h.unregister.call_count, 1)
+        self.assertEquals(l.unregister.call_count, 1)
+        self.assertEquals(m.unregister.call_count, 1)
 
     @log_capture(level=logging.WARNING)
     def test_notify_current_task(self, logcapture):
-        self.craft_ros_cle_server(True)
         self.__ros_cle_server.notify_current_task("new_subtask", True, True)
         logcapture.check(
             (self.LOGGER_NAME, 'WARNING', "Can't update a non existing task.")
@@ -571,7 +415,6 @@ class TestROSCLEServer(unittest.TestCase):
 
     @log_capture(level=logging.WARNING)
     def test_notify_finish_task_no_task(self, logcapture):
-        self.craft_ros_cle_server(True)
         self.__ros_cle_server.notify_finish_task()
         logcapture.check(
             (self.LOGGER_NAME, 'WARNING', "Can't finish a non existing task.")

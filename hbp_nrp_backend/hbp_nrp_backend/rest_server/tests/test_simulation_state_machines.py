@@ -46,7 +46,7 @@ class TestSimulationStateMachines(RestTest):
         self.mock_sm.return_value = self.mock_instance
         self.mock_instance.sm_id = "Control1"
         simulation = _get_simulation_or_abort(0)
-        simulation.state = "initialized"
+        simulation.state = "paused"
 
     def tearDown(self):
         del simulations[:]

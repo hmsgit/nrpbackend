@@ -80,6 +80,11 @@ class CLELauncher(object):
         self.__dependencies = compute_dependencies(bibi_conf)
         self.__gazebo_helper = None  # Will be instantiated after gazebo is started
 
+        self.cle_server = None
+        self.models_path = None
+        self.gzweb = None
+        self.gzserver = None
+
     def cle_function_init(self, world_file):
         """
         Initialize the Close Loop Engine. We still need the "world file" parameter
@@ -149,8 +154,8 @@ class CLELauncher(object):
         if gzserver is None:
             logger.error("No configuration found for gzserver_host: '{0}'"
                          "".format(self.__gzserver_host))
-            self.shutdown(cle_server, None, None, None)
-            return [None, None, None, None]
+            self.shutdown()
+            return
 
         os.environ['GAZEBO_MASTER_URI'] = gzserver.gazebo_master_uri
         # We do not know here in which state the previous user did let us gzweb.
@@ -199,8 +204,8 @@ class CLELauncher(object):
                 res = subprocess.call([robot_controller_filepath, 'start'])
                 if res > 0:
                     logger.error("The external robot controller could not be loaded")
-                    self.shutdown(cle_server, None, None, None)
-                    return [None, None, None, None]
+                    self.shutdown()
+                    return
 
         # Create interfaces to brain
         Notificator.notify("Loading neural Simulator NEST", True)  # subtask 4
@@ -270,51 +275,50 @@ class CLELauncher(object):
 
         logger.info("CLELauncher Finished.")
 
-        return [cle_server, models_path, gzweb, gzserver]
+        self.cle_server = cle_server
+        self.models_path = models_path
+        self.gzweb = gzweb
+        self.gzserver = gzserver
 
-    def shutdown(self, cle_server, models_path, gzweb, gzserver):
+        return
+
+    def shutdown(self):
         """
         Shutdown CLE
-
-        @param cle_server: the cle_server
-        @param models_path: the models path
-        @param gzweb: gzweb
-        @param gzserver: gzserver
         """
 
         # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
         # Clean up gazebo after ourselves
-        cle_server.notify_start_task("Stopping simulation",
-                                     "Emptying 3D world",
-                                     number_of_subtasks=2,
-                                     block_ui=False)
+        self.cle_server.notify_start_task("Stopping simulation",
+                                          "Emptying 3D world",
+                                          number_of_subtasks=2,
+                                          block_ui=False)
         self.__gazebo_helper.empty_gazebo_world()
 
-        if gzweb is not None:
-            gzweb.stop()
-        if gzserver is not None:
-            gzserver.stop()
+        if self.gzweb is not None:
+            self.gzweb.stop()
+        if self.gzserver is not None:
+            self.gzserver.stop()
 
         if self.__bibi_conf.extRobotController is not None:  # optionally stop all external robot
             # controllers
-            robot_controller_filepath = os.path.join(models_path,
+            robot_controller_filepath = os.path.join(self.models_path,
                                                      self.__bibi_conf.extRobotController)
             if os.path.isfile(robot_controller_filepath):
-                cle_server.notify_current_task("Stopping external robot controllers",
-                                               update_progress=True, block_ui=False)
+                self.cle_server.notify_current_task("Stopping external robot controllers",
+                                                    update_progress=True, block_ui=False)
                 subprocess.check_call([robot_controller_filepath, 'stop'])
 
         # Shutdown CLE
         Notificator.register_notification_function(
-            lambda subtask, update_progress: cle_server.notify_current_task(subtask,
-                                                                            update_progress, False)
+            lambda subtask, update_progress:
+                self.cle_server.notify_current_task(subtask, update_progress, False)
         )
-        cle_server.notify_current_task("Shutting down Closed Loop Engine",
-                                       update_progress=True, block_ui=False)
+        self.cle_server.notify_current_task("Shutting down Closed Loop Engine",
+                                            update_progress=True, block_ui=False)
 
-        # we could close the notify task here but it will be closed in any case by shutdown()
-        cle_server.shutdown()
-        # shutdown is complete
+        self.cle_server.notify_finish_task()
+        self.cle_server.shutdown()
 
 
 def get_experiment_basepath():

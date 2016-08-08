@@ -4,7 +4,6 @@ Advertise a ROS service to start new simulations.
 
 import logging
 import rospy
-import imp
 import threading
 import os
 import argparse
@@ -43,9 +42,7 @@ class ROSCLESimulationFactory(object):
         logger.debug("Creating new CLE server.")
         self.running_simulation_thread = None
         self.__is_running_simulation_terminating = False
-        self.simulation_initialized_event = threading.Event()
         self.simulation_terminate_event = threading.Event()
-        self.simulation_exception_during_init = None
         self.__simulation_count = 0
         self.__failed_simulation_count = 0
 
@@ -152,29 +149,50 @@ class ROSCLESimulationFactory(object):
 
             self.__simulation_count += 1
 
-            # In the future, it would be great to move the CLE script generation logic here.
-            # For the time beeing, we rely on the calling process to send us this thing.
-            self.simulation_initialized_event.clear()
+            environment_file = service_request.environment_file
+            gzserver_host = service_request.gzserver_host
+            sim_id = service_request.sim_id
+            exd_config_file = service_request.generated_cle_script_file
+
+            logger.info(
+                "Preparing new simulation with environment file: %s "
+                "and ExD config file: %s.",
+                environment_file, exd_config_file
+            )
+            logger.info("Starting the experiment closed loop engine.")
+
+            # Initializing the simulation
+            try:
+                logger.info("Read XML Files")
+                exd, bibi = get_experiment_data(exd_config_file)
+                logger.info("Create CLELauncher object")
+
+                # This import starts NEST. Don't move it to the imports at the top of the file,
+                # because NEST shall be started on the simulation thread.
+                from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
+                cle_launcher = CLELauncher(exd,
+                                           bibi,
+                                           get_experiment_basepath(exd_config_file),
+                                           gzserver_host, sim_id)
+                cle_launcher.cle_function_init(environment_file)
+                if cle_launcher.cle_server is None:
+                    raise Exception("Error in cle_function_init. Cannot start simulation.")
+
+            # pylint: disable=broad-except
+            except Exception:
+                logger.exception("Initialization failed")
+                print sys.exc_info()
+                raise
+
+            logger.info("Initialization done")
 
             self.running_simulation_thread = threading.Thread(
                 target=self.__simulation,
-                args=(service_request.environment_file,
-                      service_request.generated_cle_script_file,
-                      service_request.gzserver_host,
-                      service_request.sim_id)
+                args=(cle_launcher, )
             )
-
             self.running_simulation_thread.daemon = True
             logger.info("Spawning new thread that will manage the experiment execution.")
             self.running_simulation_thread.start()
-            self.simulation_initialized_event.wait()
-            # Raising the exception here will send it back through ROS to the ExDBackend.
-            if self.simulation_exception_during_init:
-                # Known pylint bug: goo.gl/WNg0TJ
-                # pylint: disable=raising-bad-type
-                self.__failed_simulation_count += 1
-                raise self.simulation_exception_during_init[1], None, \
-                    self.simulation_exception_during_init[2]
         else:
             error_message = "Trying to initialize a new simulation even though the " \
                             "previous one has not been terminated."
@@ -184,134 +202,21 @@ class ROSCLESimulationFactory(object):
         logger.debug("create_new_simulation return with status: " + str(result))
         return [result, error_message]
 
-    def __simulation(self, environment_file, generated_cle_or_exd_config, gzserver_host, sim_id):
+    def __simulation(self, cle_launcher):
         """
         Main simulation method. Start the simulation from the given script file.
 
-        :param: environment_file: Gazebo world file containing
-                                  the environment (without the robot)
-        :param: generated_cle_script_file: Generated CLE python script (main loop)
+        :param: cle_launcher: The instance of the CLELauncher to be run in a separated thread.
         """
 
-        # todo: remove print
-        print("create new simulation {0} with for {1}".format(sim_id, gzserver_host))
-
-        if generated_cle_or_exd_config.endswith('.py'):
-            return self.__simulation_py(environment_file, generated_cle_or_exd_config)
-        elif generated_cle_or_exd_config.endswith('.xml'):
-            return self.__simulation_xml(environment_file, generated_cle_or_exd_config,
-                                         gzserver_host, sim_id)
-        else:
-            raise Exception("given file was neither py nor xml.")
-
-    def __simulation_xml(self, environment_file, exd_config_file, gzserver_host, sim_id):
-        """
-        Main simulation method. Start the simulation from the given script file.
-
-        :param: environment_file: Gazebo world file containing
-                                  the environment (without the robot)
-        :param: exd_config_file: The ExD Configuration file
-        """
-        self.__is_running_simulation_terminating = False
         self.simulation_terminate_event.clear()
-        logger.info(
-            "Preparing new simulation with environment file: %s "
-            "and ExD config file: %s.",
-            environment_file, exd_config_file
-        )
-        logger.info("Starting the experiment closed loop engine.")
-        cle_server = models_path = gzweb = gzserver = None
-        self.simulation_exception_during_init = None
 
-        # We want any exception raised during initialization in this tread
-        # to be pass to the main thread so that it can be handled properly.
-        # noinspection PyBroadException
-        try:
-            logger.info("Read XML Files")
-            exd, bibi = get_experiment_data(exd_config_file)
-
-            logger.info("Create CLELauncher object")
-
-            # This import starts NEST. Don't move it to the imports at the top of the file,
-            # because NEST shall be started on the simulation thread.
-            from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
-
-            cle_launcher = CLELauncher(exd,
-                                       bibi,
-                                       get_experiment_basepath(exd_config_file),
-                                       gzserver_host, sim_id)
-            [cle_server, models_path, gzweb, gzserver] = \
-                cle_launcher.cle_function_init(environment_file)
-
-            if cle_server is None:
-                raise Exception("Error in cle_function_init. Cannot start simulation.")
-
-        # pylint: disable=broad-except
-        except Exception:
-            logger.exception("Initialization failed")
-            self.simulation_exception_during_init = sys.exc_info()
-            self.running_simulation_thread = None
-            self.__is_running_simulation_terminating = False
-            self.simulation_initialized_event.set()
-            return
-
-        logger.info("Initialization done")
-        self.simulation_initialized_event.set()
-
-        cle_server.run()  # This is a blocking call, not to be confused with threading.Thread.start
+        cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
+                                       # threading.Thread.start
         self.__is_running_simulation_terminating = True
         try:
             logger.info("Shutdown simulation")
-            cle_launcher.shutdown(cle_server, models_path, gzweb, gzserver)
-        finally:
-            self.running_simulation_thread = None
-            self.__is_running_simulation_terminating = False
-            self.simulation_terminate_event.set()
-
-    def __simulation_py(self, environment_file, generated_cle_script_file):
-        """
-        Main simulation method. Start the simulation from the given script file.
-
-        :param: environment_file: Gazebo world file containing
-                                  the environment (without the robot)
-        :param: generated_cle_script_file: Generated CLE python script (main loop)
-        """
-        self.__is_running_simulation_terminating = False
-        self.simulation_terminate_event.clear()
-        logger.info(
-            "Preparing new simulation with environment file: %s "
-            "and generated script file %s.",
-            environment_file, generated_cle_script_file
-        )
-        logger.info("Starting the experiment closed loop engine.")
-        cle_server = models_path = gzweb = gzserver = None
-        self.simulation_exception_during_init = None
-        experiment_generated_script = imp.load_source(
-            'experiment_generated_script', generated_cle_script_file)
-        logger.info("Executing script: " + generated_cle_script_file)
-        # We want any exception raised during initialization in this thread
-        # to be passed to the main thread so that it can be handled properly.
-        # noinspection PyBroadException
-        try:
-            [cle_server, models_path, gzweb, gzserver] = experiment_generated_script. \
-                cle_function_init(environment_file)
-        # pylint: disable=broad-except
-        except Exception:
-            logger.exception("Initialization failed")
-            self.simulation_exception_during_init = sys.exc_info()
-            self.running_simulation_thread = None
-            self.__is_running_simulation_terminating = False
-            self.simulation_initialized_event.set()
-            return
-
-        logger.info("Initialization done")
-        self.simulation_initialized_event.set()
-
-        cle_server.run()  # This is a blocking call, not to be confused with threading.Thread.start
-        self.__is_running_simulation_terminating = True
-        try:
-            logger.info("Shutdown simulation")
-            experiment_generated_script.shutdown(cle_server, models_path, gzweb, gzserver)
+            cle_launcher.shutdown()
         finally:
             self.running_simulation_thread = None
             self.__is_running_simulation_terminating = False

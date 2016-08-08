@@ -8,7 +8,7 @@ from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.simulation_control import InvalidStateTransitionException
+from transitions import MachineError
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server import NRPServicesStateException, \
     NRPServicesWrongUserException
@@ -136,7 +136,7 @@ class SimulationState(Resource):
         body = request.get_json(force=True)
         try:
             simulation.state = body['state']
-        except InvalidStateTransitionException:
+        except MachineError:
             raise NRPServicesStateException(
                 "Invalid transition (" + simulation.state + "->" + body['state'] + ")")
         return {'state': str(simulation.state)}, 200

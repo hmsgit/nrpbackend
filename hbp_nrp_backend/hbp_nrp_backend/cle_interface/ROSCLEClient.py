@@ -6,20 +6,15 @@ On the other side of ROS, the calls are handled by ROSCLEServer.py
 import logging
 import rospy
 import timeout_decorator
-from std_srvs.srv import Empty
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
-from cle_ros_msgs.msg import CLEError
-from std_msgs.msg import String
-from hbp_nrp_backend.cle_interface import SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
-    SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
+from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
-    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, TOPIC_CLE_ERROR, TOPIC_STATUS
+    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES
     # duplicated from CLE.__init__
 from cle_ros_msgs.srv import ResetSimulation
-from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState  # duplicated from CLE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -135,15 +130,8 @@ class ROSCLEClient(object):
         Create the wrapper client
         :param sim_id: The simulation id
         """
-
-        # Creates service proxies
-        self.__cle_start = ROSCLEServiceWrapper(SERVICE_SIM_START_ID(sim_id), Empty, self)
-        self.__cle_pause = ROSCLEServiceWrapper(SERVICE_SIM_PAUSE_ID(sim_id), Empty, self)
-        self.__cle_stop = ROSCLEServiceWrapper(SERVICE_SIM_STOP_ID(sim_id), Empty, self)
         self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), ResetSimulation,
                                                 self)
-        self.__cle_state = ROSCLEServiceWrapper(
-            SERVICE_SIM_STATE_ID(sim_id), srv.GetSimulationState, self)
         self.__cle_get_transfer_functions = ROSCLEServiceWrapper(
             SERVICE_GET_TRANSFER_FUNCTIONS(sim_id), srv.GetTransferFunctions, self)
 
@@ -162,59 +150,16 @@ class ROSCLEClient(object):
             SERVICE_GET_CSV_RECORDERS_FILES(sim_id),
             srv.GetCSVRecordersFiles, self
         )
-
-        self.__cle_error_listener = rospy.Subscriber(TOPIC_CLE_ERROR, CLEError,
-                                                     self.__cle_error_handler)
-        self.__cle_status_listener = rospy.Subscriber(TOPIC_STATUS, String,
-                                                      self.__cle_status_handler)
-        self.cle_handler = None
         self.__stop_reason = None
 
-    def __cle_error_handler(self, error):
+    def stop_communication(self, reason):
         """
-        Delegates error message to a handler function
+        Tells the client to stop all communication to the simulation server because of the given
+         reason
 
-        :param error: The error message
+        :param reason: The reason why no more communication should be performed
         """
-        self.__stop_reason = "Simulation failed"
-        if self.cle_handler is not None:
-            self.cle_handler.handle_error(error)
-
-    def __cle_status_handler(self, status):
-        """
-        Delegates status message to a handler function
-
-        :param status: The CLE status
-        """
-        if self.cle_handler is not None:
-            self.cle_handler.handle_status(status)
-
-    def start(self):
-        """
-        Start the simulation.
-        """
-        if self.__stop_reason is not None:
-            raise ROSCLEClientException(self.__stop_reason)
-        self.__cle_start()
-
-    def pause(self):
-        """
-        Pause the simulation.
-        """
-        if self.__stop_reason is not None:
-            raise ROSCLEClientException(self.__stop_reason)
-        self.__cle_pause()
-
-    def stop(self):
-        """
-        Stop the simulation.
-        """
-        if self.__stop_reason is not None:
-            raise ROSCLEClientException(self.__stop_reason)
-        self.__cle_stop()
-        self.__cle_error_listener.unregister()
-        self.__cle_status_listener.unregister()
-        self.__stop_reason = "Simulation stopped"
+        self.__stop_reason = reason
 
     def reset(self, reset_type, world_sdf=None, brain_path=None, populations=None):
         """
@@ -236,15 +181,6 @@ class ROSCLEClient(object):
                                 populations=populations if populations is not None else [])
         if not resp.success:
             raise ROSCLEClientException(resp.error_message)
-
-    # By default, we assume an experiment is in the stop state
-    # (whether it is really stop or if something bad did happen.)
-    @fallback_retval(ROSCLEState.STOPPED)
-    def get_simulation_state(self):
-        """
-        Get the simulation state.
-        """
-        return str(self.__cle_state().state)
 
     def get_simulation_brain(self):
         """

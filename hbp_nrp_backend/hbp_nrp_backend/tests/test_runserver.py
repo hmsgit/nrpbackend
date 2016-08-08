@@ -20,6 +20,7 @@ class TestScript(unittest.TestCase):
             pass
         self._app = MockApp()
         self._app.run = MagicMock()
+        runserver.rospy = MagicMock()
         db_patcher = patch('hbp_nrp_backend.runserver.db')
         db_create_and_check_patcher = patch('hbp_nrp_backend.runserver.db_create_and_check')
         self.addCleanup(db_patcher.stop)

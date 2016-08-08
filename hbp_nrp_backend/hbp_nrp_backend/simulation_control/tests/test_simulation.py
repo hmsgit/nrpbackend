@@ -33,7 +33,7 @@ class TestSimulation(unittest.TestCase):
         self.original_smi = sim_module.StateMachineInstance
         sim_module.StateMachineInstance = create_state_machine_mock
 
-        sim_id = 'some_sim_id'
+        sim_id = 2
         experiment_conf = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
@@ -51,7 +51,7 @@ class TestSimulation(unittest.TestCase):
         sim_module.StateMachineInstance = self.original_smi
 
     def test_simulation_constructor(self):
-        sim_id = 'some_sim_id'
+        sim_id = 2
         experiment_conf = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
@@ -62,7 +62,7 @@ class TestSimulation(unittest.TestCase):
         )
         self.__simulation = Simulation(
             sim_id, experiment_conf, None, owner,
-            sim_gzserver_host, 'view', 'initialized'
+            sim_gzserver_host, 'view', 'paused'
         )
 
     def test_simulation_get_state_machine_code(self):
@@ -85,7 +85,7 @@ class TestSimulation(unittest.TestCase):
             another_valid_code
         )
 
-        self.__simulation.state = 'initialized'
+        self.__simulation.state = 'paused'
         response = self.__simulation.set_state_machine_code('SM2', another_valid_code)
         sm2_updated_code = self.__simulation.get_state_machine_code('SM2')
         self.assertEqual(another_valid_code, sm2_updated_code)

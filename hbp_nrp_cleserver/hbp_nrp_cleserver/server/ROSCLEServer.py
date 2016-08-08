@@ -6,12 +6,10 @@ import json
 import logging
 import threading
 import rospy
-import math
 import numpy
 
 from std_msgs.msg import String
 from std_srvs.srv import Empty
-from threading import Thread, Event
 
 import textwrap
 import re
@@ -23,21 +21,20 @@ from RestrictedPython import compile_restricted
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
-from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_SIM_START_ID, \
-    TOPIC_STATUS, TOPIC_CLE_ERROR, \
-    SERVICE_SIM_PAUSE_ID, SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
+from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
+    TOPIC_STATUS, TOPIC_CLE_ERROR, SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES
-from hbp_nrp_cleserver.server.ROSCLEState import InitialState, PausedState
 from hbp_nrp_cleserver.server import ros_handler
 import hbp_nrp_cle.tf_framework as tf_framework
-from hbp_nrp_cle.tf_framework import TFLoadingException, TFException
+from hbp_nrp_cle.tf_framework import TFLoadingException
 import base64
 from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 import contextlib
+from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -49,95 +46,6 @@ logger = logging.getLogger(__name__)
 gazebo_logger = logging.getLogger('hbp_nrp_cle.user_notifications')
 gazebo_logger.setLevel(logging.INFO)
 notificator_handler = NotificatorHandler()
-
-
-# from http://stackoverflow.com/questions/12435211/
-#             python-threading-timer-repeat-function-every-n-seconds
-class DoubleTimer(Thread):
-    """
-    Timer that runs two functions, one every n1 seconds and the other
-    every n2 seconds, using only one thread
-    """
-
-    def __init__(self, interval1, callback1, interval2, callback2):
-        """
-        Construct the timer. To make it work properly, interval2 must be a
-        multiple of interval1.
-
-        :param interval1: the time interval of the first function
-        :param callback1: the first function to be called
-        :param interval2: the time interval of the second function
-        :param callback2: the second function to be called
-        """
-        Thread.__init__(self)
-        self.setDaemon(True)
-        if interval1 <= 0 or interval2 <= 0:
-            logger.error("interval1 or interval2 must be positive")
-            raise ValueError("interval1 or interval2 must be positive")
-        if math.fmod(interval2, interval1) > 1e-10:
-            logger.error("interval2 of Double timer is not a multiple \
-                          of interval1")
-            raise ValueError("interval2 is not a multiple of interval1")
-        self.interval1 = interval1
-        self.callback1 = callback1
-        self.interval2 = interval2
-        self.callback2 = callback2
-        self.stopped = Event()
-        self.stopped.clear()
-        self.counter = 0
-        self.expiring = False
-
-    def run(self):
-        """
-        Exec the function and restart the timer.
-        """
-        while not self.stopped.wait(self.interval1):
-            self.callback1()
-            if self.expiring:
-                self.counter += 1
-                if self.counter >= self.interval2 / self.interval1:
-                    self.counter = 0
-                    self.expiring = False
-                    self.callback2()
-
-    def is_expiring(self):
-        """
-        Return True if the second callback is active, False otherwise.
-        """
-        return self.expiring
-
-    def cancel_all(self):
-        """
-        Cancel the timer.
-        """
-        self.disable_second_callback()
-        self.stopped.set()
-
-    def enable_second_callback(self):
-        """
-        Enable calling of the second callback (one call only).
-        """
-        self.expiring = True
-
-    def disable_second_callback(self):
-        """
-        Disable calling of the second callback and reset its timer.
-        """
-        self.expiring = False
-        self.counter = 0
-
-    def get_remaining_time(self):
-        """
-        Get remaining time before the second callback is executed.
-        If the callback is disabled, the function will return the full
-        interval2.
-
-        :return: the remaining time before the callback
-        """
-        if not self.expiring:
-            return self.interval2
-        else:
-            return self.interval2 - self.counter * self.interval1
 
 
 # pylint: disable=R0902
@@ -159,17 +67,10 @@ class ROSCLEServer(object):
         # the arguments are the same.
         rospy.init_node(ROS_CLE_NODE_NAME)
 
-        self.__event_flag = threading.Event()
-        self.__event_flag.clear()
-        self.__done_flag = threading.Event()
-        self.__done_flag.clear()
-        self.__state = InitialState(self)
+        self.__lifecycle = None
+        self.__cle = None
 
-        self.__service_start = None
-        self.__service_pause = None
-        self.__service_stop = None
         self.__service_reset = None
-        self.__service_state = None
         self.__service_get_transfer_functions = None
         self.__service_set_transfer_function = None
         self.__service_delete_transfer_function = None
@@ -178,7 +79,6 @@ class ROSCLEServer(object):
         self.__service_get_populations = None
         self.__service_get_CSV_recorders_files = None
         self.__service_clean_CSV_recorders_files = None
-        self.__cle = None
 
         self.__simulation_id = sim_id
         self.__ros_status_pub = rospy.Publisher(
@@ -195,11 +95,6 @@ class ROSCLEServer(object):
         self.__current_task = None
         self.__current_subtask_count = 0
         self.__current_subtask_index = 0
-
-        # timeout stuff
-        self.__timeout = None
-        self.__double_timer = None
-        self.start_thread = None
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
 
@@ -233,18 +128,8 @@ class ROSCLEServer(object):
         self.__ros_cle_error_pub.publish(
             CLEError(severity, source_type, error_type, message,
                      function_name, line_number, offset, line_text, file_name))
-        if severity == CLEError.SEVERITY_CRITICAL:
-            self.__state.fail()
-            self.stop_timeout()
-            self.__double_timer.cancel_all()
-
-    def set_state(self, state):
-        """
-        Sets the current state of the ROSCLEServer. This is used from the State Pattern
-        implementation.
-        """
-        self.__state = state
-        self.__event_flag.set()
+        if severity == CLEError.SEVERITY_CRITICAL and self.__lifecycle is not None:
+            self.__lifecycle.failed()
 
     def __tf_except_hook(self, tf, tf_error):
         """
@@ -267,8 +152,7 @@ class ROSCLEServer(object):
             default is 5 minutes
         """
         self.__cle = cle
-        if not self.__cle.is_initialized:
-            self.__cle.initialize()
+        self.__lifecycle = SimulationServerLifecycle(self.__simulation_id, cle, timeout, self)
 
         logger.info("Registering ROS Service handlers")
 
@@ -280,29 +164,10 @@ class ROSCLEServer(object):
         # Even when there is no input argument for the service, rospy requires this.
 
         # pylint: disable=unnecessary-lambda
-        self.__service_start = rospy.Service(
-            SERVICE_SIM_START_ID(self.__simulation_id), Empty,
-            lambda x: self.__state.start_simulation()
-        )
-
-        self.__service_pause = rospy.Service(
-            SERVICE_SIM_PAUSE_ID(self.__simulation_id), Empty,
-            lambda x: self.__state.pause_simulation()
-        )
-
-        self.__service_stop = rospy.Service(
-            SERVICE_SIM_STOP_ID(self.__simulation_id), Empty,
-            lambda x: self.__state.stop_simulation()
-        )
 
         self.__service_reset = rospy.Service(
             SERVICE_SIM_RESET_ID(self.__simulation_id), srv.ResetSimulation,
-            lambda x: self.__state.reset_simulation(x)
-        )
-
-        self.__service_state = rospy.Service(
-            SERVICE_SIM_STATE_ID(self.__simulation_id), srv.GetSimulationState,
-            lambda x: str(self.__state)
+            lambda x: self.reset_simulation(x)
         )
 
         self.__service_get_transfer_functions = rospy.Service(
@@ -345,23 +210,13 @@ class ROSCLEServer(object):
             self.__clean_CSV_recorders_files
         )
 
-        self.__timeout = timeout
-        self.__double_timer = DoubleTimer(
-            self.STATUS_UPDATE_INTERVAL,
-            self.__publish_state_update,
-            self.__timeout,
-            self.quit_by_timeout
-        )
-        self.__double_timer.start()
-        self.start_timeout()
-
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
 
     def __get_remaining(self):
         """
         Get the remaining time of the simulation
         """
-        return self.__double_timer.get_remaining_time()
+        return self.__lifecycle.remaining_time()
 
     # pylint: disable=unused-argument
     def __get_populations(self, request):
@@ -439,9 +294,10 @@ class ROSCLEServer(object):
         :param request: The mandatory rospy request parameter
         """
         try:
-            if not isinstance(self.__state, InitialState) and \
-                    not isinstance(self.__state, PausedState):
-                self.__state.pause_simulation()
+            if self.__lifecycle.state != 'paused':
+                # Member added by transitions library
+                # pylint: disable=no-member
+                self.__lifecycle.paused()
             with NamedTemporaryFile(prefix='brain', suffix='.' + request.brain_type, delete=False) \
                     as tmp:
                 with tmp.file as brain_file:
@@ -558,34 +414,15 @@ class ROSCLEServer(object):
 
         return True
 
-    def start_timeout(self):
-        """
-        Start the timeout on the current simulation
-        """
-        self.__double_timer.enable_second_callback()
-        logger.info("Simulation will timeout in %f seconds", self.__timeout)
-
-    def stop_timeout(self):
-        """
-        Stop the timeout
-        """
-        if self.__double_timer.is_expiring:
-            self.__double_timer.disable_second_callback()
-            logger.info("Timeout stopped")
-
-    def quit_by_timeout(self):
-        """
-        Stops the simulation
-        """
-        self.__state.stop_simulation()
-        logger.info("Force quitting the simulation")
-
-    def __publish_state_update(self):
+    def publish_state_update(self):
         """
         Publish the state and the remaining timeout
         """
+        if self.__lifecycle is None:
+            logger.warn("Trying to publish state even though no simulation is active")
+            return
         message = {
-            'state': str(self.__state),
+            'state': str(self.__lifecycle.state),
             'timeout': self.__get_remaining(),
             'simulationTime': int(self.__cle.simulation_time),
             'realTime': int(self.__cle.real_time),
@@ -598,33 +435,19 @@ class ROSCLEServer(object):
 
     def run(self):
         """
-        This method implements the main logic of ROSCLEServer.
-        It loops, executing and consuming callbacks from a list, which is filled by ROS service
-        handlers, until the simulation is not stopped (i.e. its state is set to Stopped).
+        This method blocks the caller until the simulation is finished
         """
+        self.__lifecycle.done_event.wait()
 
-        while not self.__state.is_final_state():
-            self.__event_flag.wait()  # waits until an event is set
-            self.__event_flag.clear()
-
-        self.__publish_state_update()
+        self.publish_state_update()
         logger.info("Finished main loop")
 
     def shutdown(self):
         """
-        Unregister every ROS services and topics
+        Shutdown the cle server
         """
-        self.__double_timer.join()
-        logger.info("Shutting down start service")
-        self.__service_start.shutdown()
-        logger.info("Shutting down pause service")
-        self.__service_pause.shutdown()
-        logger.info("Shutting down stop service")
-        self.__service_stop.shutdown()
         logger.info("Shutting down reset service")
         self.__service_reset.shutdown()
-        logger.info("Shutting down state service")
-        self.__service_state.shutdown()
         logger.info("Shutting down get_transfer_functions service")
         self.__service_get_transfer_functions.shutdown()
         logger.info("Shutting down set_transfer_function service")
@@ -641,10 +464,9 @@ class ROSCLEServer(object):
         self.__service_clean_CSV_recorders_files.shutdown()
         logger.info("Unregister error/transfer_function topic")
         self.__ros_cle_error_pub.unregister()
-        self.__cle.shutdown()
-        self.notify_finish_task()
         logger.info("Unregister status topic")
         self.__ros_status_pub.unregister()
+        self.__lifecycle = None
 
     def notify_start_task(self, task_name, subtask_name, number_of_subtasks, block_ui):
         """
@@ -708,52 +530,6 @@ class ROSCLEServer(object):
         self.__current_subtask_index = 0
         self.__current_task = None
 
-    def __simulation(self):
-        """
-        Runs the Simulation and registers any exceptions
-        """
-        try:
-            self.__cle.start()
-        except TFException, e:
-            self.publish_error("Transfer Function", e.error_type, str(e),
-                               e.tf_name)
-        except Exception, e:
-            self.publish_error("CLE", "General Error", str(e))
-
-    @ros_handler
-    def start_simulation(self):
-        """
-        Handler for the CLE start() call, also used for resuming after pause().
-        """
-        # The start() is blocking so it has to be called on a separate thread
-        self.start_thread = threading.Thread(target=self.__simulation)
-        self.start_thread.setDaemon(True)
-        self.start_thread.start()
-
-    @ros_handler
-    def pause_simulation(self):
-        """
-        Handler for the CLE pause() call. Actually call to CLE stop(), as CLE has no real pause().
-        """
-        # CLE has no explicit pause command, use stop() instead
-        self.__cle.stop()
-
-    @ros_handler
-    def stop_simulation(self):
-        """
-        Handler for the CLE stop() call, includes waiting for the current simulation step to finish.
-        """
-        self.stop_timeout()
-        self.__double_timer.cancel_all()
-        self.__cle.stop()
-        if self.start_thread is not None:
-            self.start_thread.join(60)
-            if self.start_thread.isAlive():
-                logger.error(
-                    "Error while stopping the simulation, "
-                    "impossible to join the simulation thread"
-                )
-
     def _reset_world(self, request):
         """
         Helper function for reset() call, it handles the RESET_WORLD message.
@@ -811,10 +587,26 @@ class ROSCLEServer(object):
                 self.__cle.reset_world()
                 self.notify_current_task("Restoring the brain", False, True)
                 self.__cle.reset_brain()
-        self.__cle.stop()
-        self.stop_timeout()
-        self.__cle.reset()
-        self.start_timeout()
+
+        # Member added by transitions library
+        # pylint: disable=no-member
+        self.__lifecycle.initialized()
+
+    def start_fetching_gazebo_logs(self):
+        """
+        Starts to fetch the logs from gazebo and putting them as notifications
+        """
+        gazebo_logger.handlers.append(notificator_handler)
+        Notificator.register_notification_function(
+            lambda subtask, update_progress: self.notify_current_task(subtask, update_progress,
+                                                                      True)
+        )
+
+    def stop_fetching_gazebo_logs(self):
+        """
+        Stop fetching logs from gazebo and putting them as notifications
+        """
+        gazebo_logger.handlers.remove(notificator_handler)
 
     # pylint: disable=broad-except
     def reset_simulation(self, request):
@@ -827,37 +619,25 @@ class ROSCLEServer(object):
         rsr = srv.ResetSimulationRequest
         reset_type = request.reset_type
 
-        try:
-            gazebo_logger.handlers.append(notificator_handler)
-
-            Notificator.register_notification_function(
-                lambda subtask, update_progress: self.notify_current_task(subtask, update_progress,
-                                                                          True)
-            )
-
-            if reset_type == rsr.RESET_ROBOT_POSE:
-                self.__cle.reset_robot_pose()
-            elif reset_type == rsr.RESET_WORLD:
-                self._reset_world(request)
-            elif reset_type == rsr.RESET_BRAIN:
-                self._reset_brain(request)
-            elif reset_type == rsr.RESET_FULL:
-                self._reset_full(request)
-            elif reset_type == rsr.RESET_OLD:
-                # we have to call the stop function here, otherwise the main thread
-                # will not stop executing the simulation loop
-
-                # TODO (Alessandro): not sure if this is still needed, the comment below
-                # seems to imply that stop() is already done on reset()
-                self.__cle.stop()
-                self.stop_timeout()
-                # CLE reset() already includes stop() and wait_step()
-                self.__cle.reset()
-                self.start_timeout()
-        except Exception as e:
-            return False, str(e)
-        finally:
-            gazebo_logger.handlers.remove(notificator_handler)
+        if reset_type == rsr.RESET_OLD:
+            # Member added by transitions library
+            # pylint: disable=no-member
+            self.__lifecycle.initialized()
+        else:
+            try:
+                self.start_fetching_gazebo_logs()
+                if reset_type == rsr.RESET_ROBOT_POSE:
+                    self.__cle.reset_robot_pose()
+                elif reset_type == rsr.RESET_WORLD:
+                    self._reset_world(request)
+                elif reset_type == rsr.RESET_BRAIN:
+                    self._reset_brain(request)
+                elif reset_type == rsr.RESET_FULL:
+                    self._reset_full(request)
+            except Exception as e:
+                return False, str(e)
+            finally:
+                self.stop_fetching_gazebo_logs()
 
         return True, ""
 

@@ -39,8 +39,7 @@ class TestROSCLEClient(unittest.TestCase):
         client = ROSCLEClient.ROSCLEClient(0)
         listened_services = [x[0][0] for x in service_wrapper_mock.call_args_list]
         expected_services = [
-            SERVICE_SIM_START_ID(0), SERVICE_SIM_PAUSE_ID(0), SERVICE_SIM_STOP_ID(0),
-            SERVICE_SIM_RESET_ID(0), SERVICE_SIM_STATE_ID(0), SERVICE_GET_TRANSFER_FUNCTIONS(0),
+            SERVICE_SIM_RESET_ID(0), SERVICE_GET_TRANSFER_FUNCTIONS(0),
             SERVICE_SET_TRANSFER_FUNCTION(0), SERVICE_DELETE_TRANSFER_FUNCTION(0),
             SERVICE_GET_BRAIN(0), SERVICE_SET_BRAIN(0), SERVICE_GET_POPULATIONS(0),
             SERVICE_GET_CSV_RECORDERS_FILES(0)
@@ -85,58 +84,6 @@ class TestROSCLEClient(unittest.TestCase):
         service_wrapper = ROSCLEClient.ROSCLEServiceWrapper('service_name', Empty, client,
                                                             invalidate_on_failure=True)
         self.assertRaises(ROSCLEClient.ROSCLEClientException, service_wrapper)
-
-    def test_start_pause_reset(self):
-        client = ROSCLEClient.ROSCLEClient(0)
-        client.start()
-        self.serviceProxyMocks[0].assert_called_with() # make sure start is called
-        # make sure no other services have been called
-        self.assertEqual(len(self.serviceProxyMocks[1].mock_calls), 1) # pause
-        self.assertEqual(len(self.serviceProxyMocks[2].mock_calls), 1) # stop
-        self.assertEqual(len(self.serviceProxyMocks[3].mock_calls), 1) # reset
-        self.assertEqual(len(self.serviceProxyMocks[4].mock_calls), 1) # state
-        client.pause()
-        self.serviceProxyMocks[1].assert_called_with()
-        # make sure no other services have been called
-        self.assertEqual(len(self.serviceProxyMocks[0].mock_calls), 2) # start
-        self.assertEqual(len(self.serviceProxyMocks[2].mock_calls), 1) # stop
-        self.assertEqual(len(self.serviceProxyMocks[3].mock_calls), 1) # reset
-        self.assertEqual(len(self.serviceProxyMocks[4].mock_calls), 1) # state
-        client.reset(ResetSimulationRequest.RESET_ROBOT_POSE)
-        # make sure no other services have been called
-        self.serviceProxyMocks[3].assert_called_with(
-            reset_type=ResetSimulationRequest.RESET_ROBOT_POSE,
-            world_sdf="", brain_path="", populations=[])
-        self.assertEqual(len(self.serviceProxyMocks[0].mock_calls), 2) # start
-        self.assertEqual(len(self.serviceProxyMocks[1].mock_calls), 2) # pause
-        self.assertEqual(len(self.serviceProxyMocks[2].mock_calls), 1) # stop
-        self.assertEqual(len(self.serviceProxyMocks[4].mock_calls), 1) # state
-
-    def test_stop(self):
-        client = ROSCLEClient.ROSCLEClient(0)
-        client.start()
-        self.serviceProxyMocks[0].assert_called_with()
-        client.stop()
-        self.serviceProxyMocks[2].assert_called_with()
-        # After a stop, nothing else can be called:
-        with self.assertRaises(ROSCLEClient.ROSCLEClientException):
-            client.start()
-        with self.assertRaises(ROSCLEClient.ROSCLEClientException):
-            client.pause()
-        with self.assertRaises(ROSCLEClient.ROSCLEClientException):
-            client.stop()
-        with self.assertRaises(ROSCLEClient.ROSCLEClientException):
-            empty_payload = ''
-            client.reset(ResetSimulationRequest.RESET_ROBOT_POSE, empty_payload)
-
-    def test_get_simulation_state(self):
-        msg = GetSimulationState()
-        msg.state = ROSCLEState.INITIALIZED
-
-        client = ROSCLEClient.ROSCLEClient(0)
-
-        client._ROSCLEClient__cle_state = MagicMock(return_value=msg)
-        self.assertEquals(client.get_simulation_state(), str(msg.state))
 
     def test_get_simulation_transfer_functions(self):
         msg = GetTransferFunctions()
