@@ -162,8 +162,8 @@ class SimulationBrainFile(Resource):
         :<json string brain_type: Type of the brain file ('h5' or 'py')
         :<json string data_type: type of the data field ('text' or 'base64')
         :<json string data: Contents of the brain file. Encoding given in field data_type
-        :<json brain_populations:  A dictionary indexed by population names and
-        containing neuron indices. Neuron indices could be defined by individual integers,
+        :<json brain_populations:  A dictionary indexed by body['additional_populations'] names
+        and containing neuron indices. Neuron indices could be defined by individual integers,
         lists of integers or python slices. Python slices are defined by a
         dictionary containing the 'from', 'to' and 'step' values.
         :>json string error_message: Error Message if there is a syntax error in the code
@@ -184,13 +184,15 @@ class SimulationBrainFile(Resource):
         result = simulation.cle.set_simulation_brain(body['brain_type'],
                                                      body['data'],
                                                      body['data_type'],
-                                                     json.dumps(body['additional_populations']))
+                                                     json.dumps(body['additional_populations']),
+                                                     body['change_population'])
 
         if result.error_message is not "":
             # Error in given brain
             return {'error_message': result.error_message,
                     'error_line': result.error_line,
-                    'error_column': result.error_column}, 300
+                    'error_column': result.error_column,
+                    'handle_population_change': result.handle_population_change}, 300
 
         # Success
         return {'message': "Success"}, 200

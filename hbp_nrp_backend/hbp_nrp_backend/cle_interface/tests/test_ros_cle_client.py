@@ -18,6 +18,7 @@ from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, SetTransf
 from mock import patch, MagicMock
 import unittest
 
+from cle_ros_msgs import srv
 
 __author__ = 'HBP NRP software team'
 
@@ -130,11 +131,13 @@ class TestROSCLEClient(unittest.TestCase):
 
         client = ROSCLEClient.ROSCLEClient(0)
 
+        change_population = srv.SetBrainRequest.DO_RENAME_POPULATION
+
         client._ROSCLEClient__cle_set_brain = MagicMock(return_value=resp)
         self.assertEquals(client.set_simulation_brain(
-            'data', 'py', 'text', '{"population_1": 2}'), resp)
+            'data', 'py', 'text', '{"population_1": 2}', change_population), resp)
         client._ROSCLEClient__cle_set_brain.assert_called_once_with(
-            'data', 'py', 'text', '{"population_1": 2}')
+            'data', 'py', 'text', '{"population_1": 2}', change_population)
 
 if __name__ == '__main__':
     unittest.main()

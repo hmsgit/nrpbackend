@@ -192,7 +192,8 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_get_brain()
 
-    def set_simulation_brain(self, brain_type, data, data_type, brain_populations):
+    def set_simulation_brain(self, brain_type, data, data_type, brain_populations,
+                             change_population):
         """
         Set the brain of the running simulation (will pause the simulation)
 
@@ -203,11 +204,15 @@ class ROSCLEClient(object):
         containing neuron indices. Neuron indices could be defined by individual integers,
         lists of integers or python slices. Python slices are defined by a
         dictionary containing the 'from', 'to' and 'step' values.
+        :param change_population: a flag to select an action on population name change,
+        currently possible values are: 0 ask user for permission to replace;
+        1 (permission granted) replace old name with a new one; 2 proceed with no replace action
         :return: response of the cle
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_set_brain(brain_type, data, data_type, brain_populations)
+        return self.__cle_set_brain(brain_type, data, data_type, brain_populations,
+                                    change_population)
 
     @fallback_retval([])
     def get_simulation_transfer_functions(self):

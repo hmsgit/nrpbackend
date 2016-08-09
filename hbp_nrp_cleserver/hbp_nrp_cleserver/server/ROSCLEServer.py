@@ -287,6 +287,87 @@ class ROSCLEServer(object):
             json.dumps(tf_framework.get_brain_populations())
         ]
 
+    @staticmethod
+    def findChangedStrings(list_a, list_b):
+        """
+        Returns a list that contains changed population names,
+        i.e. stings from list_a are searched in list_b, not found strings are
+        returned
+
+        :param list_a: looked up strings to be found in list_b
+        :param list_b: looked up strings are compared against strings in list_b
+        :return: a list of strings
+        """
+        changed = []
+        for element_a in list_a:
+            element_a = str(element_a)
+            found = False
+            for element_b in list_b:
+                element_b = str(element_b)
+                if element_a == element_b:
+                    found = True
+                    break
+            if not found:
+                changed.append(element_a)
+        return changed
+
+    def check_population_names(self, request):
+        """
+        Extracts and returns population names that were changed,
+        plus new population names from request
+        :return: tuple with first existing names list,
+        then new names list, i.e. [old_changed, new_added]
+        """
+        old_popls = []
+        existingPopls = tf_framework.get_brain_populations()
+        for p in existingPopls:
+            old_popls.append(str(p))
+
+        new_popls = []
+        for popl in json.loads(request.brain_populations):
+            new_popls.append(str(popl))
+
+        old_changed = self.findChangedStrings(old_popls, new_popls)
+        new_added = self.findChangedStrings(new_popls, old_popls)
+
+        return [old_changed, new_added]
+
+    @staticmethod
+    def change_transfer_functions(request, old_changed, new_added, transferFunctions):
+        """
+        Modifies population names. Returns a value if needs user input.
+        """
+        pattern = re.compile(r'(?:(?<=\W)|^)(' + str(old_changed[0]) + r')(?:(?=\W)|$)')
+        for tf in transferFunctions:
+
+            tfHasChanged = False
+
+            for i in range(1, len(tf.params)):
+                if hasattr(tf.params[i], 'spec'):
+                    spec = tf.params[i].spec
+
+                    if hasattr(spec, 'neurons'):
+                        mapping = spec.neurons
+
+                        if mapping is not None:
+                            parent_node = mapping.parent
+                            if str(parent_node.name) == str(old_changed[0]):
+                                if request.change_population == \
+                                        srv.SetBrainRequest.ASK_RENAME_POPULATION:
+                                    #here we send a reply to the frontend to ask
+                                    #the user a permission to change TFs
+                                    return ["we ask the user if we change TFs", 0, 0, 1]
+                                elif request.change_population == \
+                                        srv.SetBrainRequest.DO_RENAME_POPULATION:
+                                    #premission granted, so we change TFs
+                                    parent_node.name = new_added[0]
+                                    tfHasChanged = True
+            if tfHasChanged:
+                source = tf.source
+                modified_source = pattern.sub(str(new_added[0]), source)
+                if not modified_source == source:
+                    tf.source = modified_source
+
     def __set_brain(self, request):
         """
         Sets the neuronal network according to the given request
@@ -294,12 +375,26 @@ class ROSCLEServer(object):
         :param request: The mandatory rospy request parameter
         """
         try:
+            [old_changed, new_added] = self.check_population_names(request)
+            returnValue = ["", 0, 0, 0]
+
+            if (len(old_changed) == 1) and (len(new_added) == 1):
+                transferFunctions = tf_framework.get_transfer_functions()
+                checkVarNameRe = re.compile(r'^([a-zA-Z_]+\w*)$')
+                match = checkVarNameRe.match(str(new_added[0]))
+                if not match:
+                    return ["Provided name \"" + str(new_added[0]) +
+                            "\" is not a valid population name", 0, 0, 0]
+                r = self.change_transfer_functions(request, old_changed, new_added,
+                                                   transferFunctions)
+                if r is not None:
+                    return r
             if self.__lifecycle.state != 'paused':
                 # Member added by transitions library
                 # pylint: disable=no-member
                 self.__lifecycle.paused()
-            with NamedTemporaryFile(prefix='brain', suffix='.' + request.brain_type, delete=False) \
-                    as tmp:
+            with NamedTemporaryFile(prefix='brain', suffix='.' +
+                                    request.brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
                     if request.data_type == "text":
                         brain_file.write(request.brain_data)
@@ -307,15 +402,17 @@ class ROSCLEServer(object):
                         brain_file.write(base64.decodestring(request.brain_data))
                     else:
                         tmp.delete = True
-                        return ["Data type {0} is invalid".format(request.data_type), 0, 0]
-                self.__cle.load_network_from_file(tmp.name, **json.loads(request.brain_populations))
-            return ["", 0, 0]
+                        return ["Data type {0} is invalid".format(request.data_type), 0, 0, 0]
+                self.__cle.load_network_from_file(
+                    tmp.name, **json.loads(request.brain_populations))
         except ValueError, e:
-            return ["Population format is invalid: " + str(e), 0, 0]
+            returnValue = ["Population format is invalid: " + str(e), 0, 0, 0]
         except SyntaxError, e:
-            return ["The new brain could not be parsed: " + str(e), e.lineno, e.offset]
+            returnValue = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
         except Exception, e:
-            return ["Error changing neuronal network: " + str(e), 0, 0]
+            returnValue = ["Error changing neuronal network: " + str(e), 0, 0, 0]
+
+        return returnValue
 
     # pylint: disable=unused-argument
     @staticmethod
