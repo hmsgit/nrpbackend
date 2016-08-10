@@ -117,7 +117,6 @@ class SimulationResetCollab(Resource):
 
         world_sdf, brain_file, populations = SimulationResetCollab\
             ._compute_payload(reset_type, context_id)
-
         try:
             sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
                           populations=populations)
@@ -163,10 +162,13 @@ class SimulationResetCollab(Resource):
         client = NeuroroboticsCollabClient(header_token, context_id)
 
         brain_collab_path = client.get_first_file_path_with_mimetype(
-            NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE, "brain.py")
+            NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE,
+            NeuroroboticsCollabClient.BRAIN_PYNN_FILE_NAME,
+            "brain.py")
 
         bibi_collab_path = client.get_first_file_path_with_mimetype(
             NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE,
+            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
             NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
         )
 
@@ -223,8 +225,9 @@ class SimulationResetCollab(Resource):
         client = NeuroroboticsCollabClient(header_token, context_id)
 
         file_path_world_sdf = client.get_first_file_path_with_mimetype(
-            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE, "recovered_world.sdf")
-
+            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
+            NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME,
+            "recovered_world.sdf")
         world_sdf_string = client.download_file_from_collab(file_path_world_sdf)
 
         return world_sdf_string

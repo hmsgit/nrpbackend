@@ -7,7 +7,7 @@ import os
 import tempfile
 import shutil
 import re
-
+from threading import Thread
 from bbp_client.oidc.client import BBPOIDCClient
 from bbp_client.collab_service.client import Client as CollabClient
 from hbp_nrp_backend.collab_interface import NRPServicesUploadException
@@ -30,8 +30,12 @@ class NeuroroboticsCollabClient(object):
     EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.xml"
     EXPERIMENT_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics+xml"
     SDF_WORLD_MIMETYPE = "application/hbp-neurorobotics.sdf.world+xml"
+    # potential file name of sdf world
+    SDF_WORLD_FILE_NAME = "virtual_room.sdf"
     SDF_ROBOT_MIMETYPE = "application/hbp-neurorobotics.sdf.robot+xml"
     BRAIN_PYNN_MIMETYPE = "application/hbp-neurorobotics.brain+python"
+    # potential file name of the brain
+    BRAIN_PYNN_FILE_NAME = "braitenberg.py"
     # BIBI stands for Brain Interface and Body Integration.
     # It encompasses brain model and transfer functions
     # while it holds a reference to the body model.
@@ -57,11 +61,18 @@ class NeuroroboticsCollabClient(object):
         self.__collab_client.set_collab_id_by_context(context_id)
 
         self.__document_client = DocumentClient(cfg['document_server'], oidc)
-        self.__project = self.__document_client.get_project_by_collab_id(
-            self.__collab_client.collab_id
-        )
-
         self.__collab_context = get_or_raise_collab_context(self.__context_id)
+        self.__project = None
+
+        def thread_project():
+            """
+            Function to call get_project_by_collab_id and set the variable __project
+            """
+            self.__project = self.__document_client.get_project_by_collab_id(
+                self.__collab_client.collab_id)
+        self._project_thread = Thread(target=thread_project)
+        self._project_thread.start()
+        self.collab_folder_path = {}
 
     def get_mimetype(self, file_path):
         """
@@ -126,11 +137,20 @@ class NeuroroboticsCollabClient(object):
         original_base_name = base_name
 
         existing_folders = self.__document_client.listdir(
-            self.__document_client.get_path_by_id(self.__project['_uuid']))
+            self._get_path_by_id(self._get_project()['_uuid']))
         while base_name in existing_folders:
             base_name = original_base_name + "_" + str(suffix)
             suffix += 1
         return base_name
+
+    def _get_project(self):
+        """
+        Returns the self.__project variable once it's ready
+        :return: self.__project
+        """
+        if not self.__project:
+            self._project_thread.join()
+        return self.__project
 
     def clone_experiment_template_to_collab(self, folder_name, exp_configuration):
         """
@@ -144,7 +164,7 @@ class NeuroroboticsCollabClient(object):
             exp_configuration +
             " to collab folder " + folder_name
         )
-        self.__document_client.chdir(self.__document_client.get_path_by_id(self.__project['_uuid']))
+        self.__document_client.chdir(self._get_path_by_id(self._get_project()['_uuid']))
         created_folder_uuid = self.__document_client.mkdir(folder_name)
 
         logger.debug("Creating a temporary directory where flattened files will go")
@@ -188,14 +208,16 @@ class NeuroroboticsCollabClient(object):
             collab_folder_uuid +
             " to local folder " + temp_directory
         )
-        collab_folder_path = self.__document_client.get_path_by_id(collab_folder_uuid)
+        threads = []
+        collab_folder_path = self._get_path_by_id(collab_folder_uuid)
         for filename in self.__document_client.listdir(collab_folder_path):
             filepath = collab_folder_path + '/' + filename
             attr = self.__document_client.get_standard_attr(filepath)
             if (attr['_entityType'] == 'file'):
                 localpath = os.path.join(temp_directory, filename)
-                self.__document_client.download_file(
-                    filepath, localpath)
+                t = Thread(target=self.__document_client.download_file, args=(filepath, localpath))
+                t.start()
+                threads.append(t)
                 if '_contentType' in attr:
                     if attr['_contentType'] == self.EXPERIMENT_CONFIGURATION_MIMETYPE:
                         experiment_path['experiment_conf'] = localpath
@@ -203,6 +225,8 @@ class NeuroroboticsCollabClient(object):
                         experiment_path['environment_conf'] = localpath
                     elif attr['_contentType'] == self.SDF_ROBOT_MIMETYPE:
                         experiment_path['robot_model'] = localpath
+        for t in threads:
+            t.join()
         return experiment_path
 
     def clone_experiment_template_from_collab_context(self):
@@ -215,7 +239,7 @@ class NeuroroboticsCollabClient(object):
             self.__collab_context.experiment_folder_uuid
         )
 
-    def clone_file_from_collab(self, collab_folder_uuid, mimetype):
+    def clone_file_from_collab(self, collab_folder_uuid, mimetype, potential_filename):
         """
         Takes a collab folder and clones a file according to a given mimetype in a
         temporary folder.
@@ -224,6 +248,7 @@ class NeuroroboticsCollabClient(object):
         :param collab_folder_uuid: The UUID of the document service folder where the experiment is
             saved
         :param mimetype: The mimetype of the file to clone
+        :param potential_filename: The potential file name of the file that wants to be cloned
         :return: A string containing the path of the cloned bibi configuration file.
         """
         temp_directory = tempfile.mkdtemp()
@@ -232,42 +257,87 @@ class NeuroroboticsCollabClient(object):
             collab_folder_uuid +
             " to local folder " + temp_directory
         )
-        collab_folder_path = self.__document_client.get_path_by_id(collab_folder_uuid)
-        for filename in self.__document_client.listdir(collab_folder_path):
-            filepath = collab_folder_path + '/' + filename
-            attr = self.__document_client.get_standard_attr(filepath)
+        collab_folder_path = self._get_path_by_id(collab_folder_uuid)
+
+        def download_file(attr, localpath, filepath):
+            """
+            Download a file if it is the correct mimetype
+            :param localpath: where to save the file
+            :param filepath: where to download the file from
+            :return True/False depending on if the file was downloaded
+            """
             if (
                 (attr['_entityType'] == 'file') and ('_contentType' in attr) and
                 (attr['_contentType'] == mimetype)
             ):
-                localpath = os.path.join(temp_directory, filename)
                 self.__document_client.download_file(filepath, localpath)
+                return True
+            return False
+
+        try:
+            filepath = collab_folder_path + '/' + potential_filename
+            attr = self.__document_client.get_standard_attr(filepath)
+            localpath = os.path.join(temp_directory, potential_filename)
+            if download_file(attr, localpath, filepath):
+                return localpath
+        except DocException:
+            # file doesn't exist
+            pass
+
+        # either file did not exist or it wasn't the correct mimetype
+        # search in collab
+        for filename in self.__document_client.listdir(collab_folder_path):
+            filepath = collab_folder_path + '/' + filename
+            attr = self.__document_client.get_standard_attr(filepath)
+            localpath = os.path.join(temp_directory, filename)
+            if download_file(attr, localpath, filepath):
                 return localpath
 
-        return None
+    def _get_path_by_id(self, uuid):
+        """
+        Returns the folder path from an id
+        :param uuid: the uuid of the folder wanted
+        :return folder path
+        """
+        if uuid not in self.collab_folder_path:
+            self.collab_folder_path[uuid] = self.__document_client.get_path_by_id(uuid)
+        return self.collab_folder_path[uuid]
 
-    def clone_file_from_collab_context(self, mimetype):
+    def clone_file_from_collab_context(self, mimetype, filename):
         """
         Takes a collab folder and clones a file according to a given mimetype in a
         temporary folder.
         The caller has then the responsability of managing the created folder.
 
         :param mimetype: The mimetype of the file to clone
+        :param filename: The possible name of the file to be cloned
         :return: A string containing the path of the cloned bibi configuration file.
         """
-        return self.clone_file_from_collab(self.__collab_context.experiment_folder_uuid, mimetype)
+        return self.clone_file_from_collab(self.__collab_context.experiment_folder_uuid,
+                                           mimetype,
+                                           filename)
 
-    def get_first_file_path_with_mimetype(self, mimetype, default_filename):
+    def get_first_file_path_with_mimetype(self, mimetype, potential_filename, default_filename):
         """
         Return the full path (on the collab) of the first file found with a
         given mimetype. If nothing is found, a path with a given
         "default_filename" will be returned.
         :param mimetype: The mimetype to find
+        :param potential_filename: the potential name of the file
         :param default_filename: A default filename to return along with the
         collab path when nothing is found.
         """
-        collab_folder_path = \
-            self.__document_client.get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        collab_folder_path = self._get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        # check if this file exists
+        try:
+            filepath = collab_folder_path + '/' + potential_filename
+            attr = self.__document_client.get_standard_attr(filepath)
+            if '_contentType' in attr and attr['_contentType'] == mimetype:
+                return filepath
+        except DocException:
+            # file did not exist
+            pass
+        # either the file did not exist or it wasn't the correct mimetype
         for filename in self.__document_client.listdir(collab_folder_path):
             filepath = collab_folder_path + '/' + filename
             attr = self.__document_client.get_standard_attr(filepath)
@@ -277,19 +347,26 @@ class NeuroroboticsCollabClient(object):
         default_filepath = os.path.join(collab_folder_path, default_filename)
         return default_filepath
 
-    def replace_file_content_in_collab(self, content, mimetype, default_filename):
+    def replace_file_content_in_collab(self, content, mimetype, potential_filename,
+                                       default_filename):
         """
         Replace the content of the first file found with a given mimetype by some
         new content
 
         :param content: new content (in UTF-8)
         :param mimetype: mimetype of the file to search for
+        :param potential_filename: the potential name of the file
         :param default_filename: if no file with the given mimetype is found, create
         a new file with this default filename.
         """
-        filepath = self.get_first_file_path_with_mimetype(mimetype, default_filename)
-        if self.__document_client.exists(filepath):
+        filepath = self.get_first_file_path_with_mimetype(mimetype,
+                                                          potential_filename,
+                                                          default_filename)
+        try:
             self.__document_client.remove(filepath)
+        except DocException:
+            # it doesn't exist
+            pass
         self.__document_client.upload_string(content, filepath, mimetype)
 
     def write_file_with_content_in_collab(self, content, mimetype, filename):
@@ -300,11 +377,13 @@ class NeuroroboticsCollabClient(object):
         :param mimetype: mimetype of the file.
         :param filename: self explaining.
         """
-        collab_folder_path = \
-            self.__document_client.get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        collab_folder_path = self._get_path_by_id(self.__collab_context.experiment_folder_uuid)
         filepath = os.path.join(collab_folder_path, filename)
-        if self.__document_client.exists(filepath):
+        try:
             self.__document_client.remove(filepath)
+        except DocException:
+            # it doesn't exist
+            pass
         self.__document_client.upload_string(content, filepath, mimetype)
 
     def populate_subfolder_in_collab(self, foldername, files, mimetype=None):
@@ -317,12 +396,15 @@ class NeuroroboticsCollabClient(object):
         :param mimetype: mimetype common to all files
         :return the created folder uuid
         """
-        collab_experiment_folderpath = \
-            self.__document_client.get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        collab_experiment_folderpath = self._get_path_by_id(
+            self.__collab_context.experiment_folder_uuid
+        )
         self.__document_client.chdir(collab_experiment_folderpath)
-        folderpath = os.path.join(collab_experiment_folderpath, foldername)
-        if self.__document_client.exists(folderpath):
+        try:
             self.__document_client.rmdir(foldername)
+        except DocException:
+            # it doesn't exist
+            pass
         created_folder_uuid = self.__document_client.mkdir(foldername)
         try:
             for f in files:
