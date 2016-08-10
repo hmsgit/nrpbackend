@@ -26,4 +26,4 @@ def clean_simulations():  # pragma: no cover
         for sim in simulations:
             if sim.kill_datetime is not None and sim.kill_datetime < current_time:
                 logger.info("Stopping expired simulation " + str(sim.sim_id))
-                sim.state = 'failed'
+                sim.state = 'stopped'
