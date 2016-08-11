@@ -5,7 +5,7 @@ hbp-nrp-cleserver==1.0.1.dev6
 hbp-nrp-excontrol==1.0.1.dev6
 
 # other requirements
-lxml==3.3.3
+lxml==3.4.0
 Jinja2==2.7.1
 PyYAML==3.11
 rospkg==1.0.38
