@@ -80,14 +80,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
 
                 collab_client().clone_experiment_template_from_collab_context.return_value = collab_paths
 
-                with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.shutil") as shutil:
-                    with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.tempfile") as tempfile:
-
-                        tempfile.gettempdir.return_value = directory
-
-                        self.lifecycle.initialize(Mock())
-
-                        shutil.rmtree.assert_called_once_with(directory)
+                self.lifecycle.initialize(Mock())
 
                 self.assertTrue(user_auth.get_header_token.called)
                 self.assertEqual("Foobar", collab_client.call_args[0][1])

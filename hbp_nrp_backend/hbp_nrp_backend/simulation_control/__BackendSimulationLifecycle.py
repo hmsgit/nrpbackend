@@ -38,6 +38,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         super(BackendSimulationLifecycle, self).__init__(TOPIC_LIFECYCLE(simulation.sim_id),
                                                          initial_state)
         self.__simulation = simulation
+        self.__experiment_path = ""
         self.models_path = os.environ.get('NRP_MODELS_DIRECTORY')
 
     @property
@@ -100,28 +101,22 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 client = NeuroroboticsCollabClient(
                     UserAuthentication.get_header_token(request), simulation.context_id)
                 collab_paths = client.clone_experiment_template_from_collab_context()
-                experiment_path = collab_paths['experiment_conf']
+                self.__experiment_path = collab_paths['experiment_conf']
                 environment_path = collab_paths['environment_conf']
             else:
-                experiment_path = os.path.join(self.models_path, simulation.experiment_conf)
+                self.__experiment_path = os.path.join(self.models_path, simulation.experiment_conf)
                 environment_path = simulation.environment_conf
 
             experiment, environment_path = \
-                self._parse_exp_and_initialize_paths(experiment_path, environment_path)
+                self._parse_exp_and_initialize_paths(self.__experiment_path, environment_path)
 
             simulation_factory_client = ROSCLESimulationFactoryClient()
             simulation_factory_client.create_new_simulation(
-                environment_path, experiment_path, simulation.gzserver_host, simulation.sim_id)
+                environment_path, self.__experiment_path,
+                simulation.gzserver_host, simulation.sim_id)
+
             simulation.cle = ROSCLEClient(simulation.sim_id)
             logger.info("simulation initialized")
-            if using_collab_storage:
-                path_to_cloned_configuration_folder = os.path.split(experiment_path)[0]
-                if tempfile.gettempdir() in path_to_cloned_configuration_folder:
-                    logger.debug(
-                        "removing the temporary configuration folder %s",
-                        path_to_cloned_configuration_folder
-                    )
-                    shutil.rmtree(path_to_cloned_configuration_folder)
 
             simulation.kill_datetime = datetime.datetime.now(timezone) \
                 + datetime.timedelta(seconds=experiment.timeout + 1200)
@@ -163,6 +158,17 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         self.simulation.state_machine_manager.terminate_all()
         self.simulation.kill_datetime = None
+
+        using_collab_storage = self.simulation.context_id is not None
+
+        if using_collab_storage:
+            path_to_cloned_configuration_folder = os.path.split(self.__experiment_path)[0]
+            if tempfile.gettempdir() in path_to_cloned_configuration_folder:
+                logger.debug(
+                    "removing the temporary configuration folder %s",
+                    path_to_cloned_configuration_folder
+                )
+                shutil.rmtree(path_to_cloned_configuration_folder)
 
     def pause(self, state_change):
         """
