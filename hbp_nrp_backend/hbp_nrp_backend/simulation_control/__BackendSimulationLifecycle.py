@@ -148,7 +148,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         except Exception, e:
             logger.error("Starting State Machines Failed")
             logger.exception(e)
-            # TODO: how to report this error to the front-end?
+            # The frontend will be notified of any state machine issues directly
+            # over the cle_error topic
 
     def stop(self, state_change):
         """
