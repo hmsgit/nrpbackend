@@ -13,6 +13,7 @@ class RestTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
+        app.before_first_request_funcs = []
         self.mock_environment = mock.patch.dict('os.environ', {'APP_SETTINGS': 'config.TestConfig'})
         self.mock_environment.start()
 

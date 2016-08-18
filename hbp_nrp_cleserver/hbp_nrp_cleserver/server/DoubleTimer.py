@@ -35,7 +35,8 @@ class DoubleTimer(Thread):
         if interval1 <= 0 or interval2 <= 0:
             logger.error("interval1 or interval2 must be positive")
             raise ValueError("interval1 or interval2 must be positive")
-        if math.fmod(interval2, interval1) > 1e-10:
+        remainder = math.fmod(interval2, interval1)
+        if remainder > 1e-10 and interval1 - remainder > 1e-10:
             logger.error("interval2 of Double timer is not a multiple \
                           of interval1")
             raise ValueError("interval2 is not a multiple of interval1")
