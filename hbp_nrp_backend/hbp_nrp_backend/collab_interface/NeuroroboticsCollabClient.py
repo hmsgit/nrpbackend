@@ -428,6 +428,22 @@ class NeuroroboticsCollabClient(object):
         """
         return self.__document_client.download_file(file_path, dst_path)
 
+    def add_app_to_nav_menu(self):
+        """
+        Adds a new app to the navigation menu.
+        Will add the same type app as the last one created or if this is the first
+        it will add the app titled: Neurorobotics Experiments
+
+        :return json indicating if adding the app was successful
+        """
+        tree = self.__collab_client.get_current_tree()
+        try:
+            app_id = tree['children'][-1]["app_id"]
+        except KeyError:
+            app_id = self.__collab_client.get_app_id("Neurorobotics Experiments")
+        return self.__collab_client.add_item(tree['id'], {"app_id": app_id,
+                                                          "name": "New Experiment"})
+
 
 class _FlattenedExperimentDirectory(object):
     """

@@ -59,6 +59,7 @@ class TestCollabHandler(RestTest):
         }
         self.mock_get_or_raise_collab_context.return_value=None
         self.mock_collabClient_instance.clone_experiment_template_to_collab.return_value = self.experiment_folder_uuId
+        self.mock_collabClient_instance.add_app_to_nav_menu = MagicMock()
         response = self.client.put('/collab/configuration/' + self.uuId, data=json.dumps(rqdata))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.strip(), json.dumps(self.mock_response_value))
@@ -84,5 +85,6 @@ class TestCollabHandler(RestTest):
 
         # The template should have been cloned
         self.mock_collabClient_instance.clone_experiment_template_to_collab.assert_called()
+        self.mock_collabClient_instance.add_app_to_nav_menu.assert_called()
 if __name__ == '__main__':
     unittest.main()

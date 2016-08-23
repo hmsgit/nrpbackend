@@ -346,6 +346,20 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
 
         self.mock_document_client_instance.download_file.assert_called_with(fake_filepath, None)
 
+    def test_add_app_to_nav_menu(self):
+
+        neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
+        self.mock_collab_client_instance.get_current_tree = MagicMock(return_value={"id":"parent_id"})
+        self.mock_collab_client_instance.get_app_id = MagicMock(return_value="app_id")
+        self.mock_collab_client_instance.add_item = MagicMock()
+
+        neurorobotic_collab_client.add_app_to_nav_menu()
+        self.mock_collab_client_instance.add_item.assert_called_with("parent_id", {"app_id": "app_id", "name": "New Experiment"})
+
+        self.mock_collab_client_instance.get_current_tree = MagicMock(return_value={"id":"parent_id", "children": [{"app_id": "previous_app_id"}]})
+        neurorobotic_collab_client.add_app_to_nav_menu()
+        self.mock_collab_client_instance.add_item.assert_called_with("parent_id", {"app_id": "previous_app_id", "name": "New Experiment"})
+
     def test_get_mimetype(self):
         ncc = NeuroroboticsCollabClient("token", 'aaa')
         self.assertIsNotNone(ncc.get_mimetype(ncc.EXPERIMENT_CONFIGURATION_FILE_NAME))

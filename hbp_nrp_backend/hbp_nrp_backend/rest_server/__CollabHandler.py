@@ -160,6 +160,8 @@ class CollabHandler(Resource):
         db.session.add(CollabContext(context_id, experiment_id, experiment_folder_uuid))
         db.session.commit()
 
+        client.add_app_to_nav_menu()
+
         return {'experimentID': experiment_id,
                 'contextID': context_id,
                 'experimentFolderUUID': experiment_folder_uuid}, 200
