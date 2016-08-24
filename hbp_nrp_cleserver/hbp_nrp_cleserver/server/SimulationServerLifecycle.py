@@ -125,19 +125,16 @@ class SimulationServerLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to stop
         """
-        try:
-            self.stop_timeout()
-            self.__double_timer.cancel_all()
-            self.__cle.stop()
-            if self.__start_thread is not None:
-                self.__start_thread.join(60)
-                if self.__start_thread.isAlive():
-                    logger.error(
-                        "Error while stopping the simulation, "
-                        "impossible to join the simulation thread"
-                    )
-        finally:
-            self.__double_timer.join()
+        self.stop_timeout()
+        self.__double_timer.cancel_all()
+        self.__cle.stop()
+        if self.__start_thread is not None:
+            self.__start_thread.join(60)
+            if self.__start_thread.isAlive():
+                logger.error(
+                    "Error while stopping the simulation, "
+                    "impossible to join the simulation thread"
+                )
 
     def fail(self, state_change):
         """
