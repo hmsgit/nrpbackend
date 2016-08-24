@@ -1,7 +1,7 @@
 # HBP requirements
 hbp-flask-restful-swagger==0.15.2.dev1
 hbp-nrp-cle==1.0.1.dev7
-hbp-nrp-cleserver==1.0.1.dev7
+hbp-nrp-cleserver==1.0.1.dev8
 hbp-nrp-excontrol==1.0.1.dev7
 
 # other requirements
