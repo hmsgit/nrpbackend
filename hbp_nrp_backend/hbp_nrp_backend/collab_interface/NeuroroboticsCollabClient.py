@@ -437,10 +437,9 @@ class NeuroroboticsCollabClient(object):
         :return json indicating if adding the app was successful
         """
         tree = self.__collab_client.get_current_tree()
-        try:
-            app_id = tree['children'][-1]["app_id"]
-        except KeyError:
-            app_id = self.__collab_client.get_app_id("Neurorobotics Experiments")
+        for child in tree["children"]:
+            if child['context'] == self.__context_id:
+                app_id = child["app_id"]
         return self.__collab_client.add_item(tree['id'], {"app_id": app_id,
                                                           "name": "New Experiment"})
 
