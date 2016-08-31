@@ -15,5 +15,5 @@ Flask-SQLAlchemy==2.1
 Flask-Script==2.0.5
 Flask-Migrate==1.6.0
 psycopg2==2.6.1
-bbp-client==0.3.11
+bbp-client==0.3.19
 timeout-decorator==0.3.2
