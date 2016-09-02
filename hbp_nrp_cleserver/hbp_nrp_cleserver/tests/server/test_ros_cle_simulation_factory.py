@@ -16,17 +16,24 @@ import os
 import time
 from testfixtures import log_capture
 import sys
+PATH = os.getcwd()
+if not os.path.exists("ExDConf"):
+    PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
+
 
 __author__ = 'Georg Hinkel, Bernd Eckstein'
 
 
+@patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
+    new=Mock(return_value=PATH)
+)
 class TestROSCLESimulationFactory(unittest.TestCase):
 
     LOGGER_NAME = 'hbp_nrp_cleserver'
 
     class MockedServiceRequest(object):
         environment_file = "environment_file.sdf"
-        exd_config_file = "path/to/the/exd/config/file"
+        exd_config_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
         gzserver_host = "local"
         sim_id = 0
 
@@ -99,10 +106,6 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         self.assertEqual(self.__mocked_rospy.Service.call_count, 4)
         self.__mocked_rospy.spin.assert_called_once_with()
 
-    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_data',
-        MagicMock(return_value=('john', 'doe')))
-    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath',
-        MagicMock(return_value=('john')))
     @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
     def test_is_simulation_running(self):
         self.assertFalse(
@@ -124,14 +127,9 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         )
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
-    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.os')
     @patch('hbp_nrp_cle.robotsim.LocalGazebo.os')
     @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
-    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_data',
-        MagicMock(return_value=('john', 'doe')))
-    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath',
-        MagicMock(return_value=('john')))
-    def test_create_new_simulation_dead_thread(self, mocked_os, mocked_cle_os, mocked_logger):
+    def test_create_new_simulation_dead_thread(self, mocked_os, mocked_logger):
         print "test_create_new_simulation_dead_thread"
         self.mockThreading()
         self.__ros_cle_simulation_factory.\
@@ -144,7 +142,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                 self.mocked_service_request
             )
 
-        self.assertEqual(mocked_logger.info.call_count, 8)
+        self.assertEqual(mocked_logger.info.call_count, 10)
         self.assertEqual(mocked_logger.error.call_count, 0)
 
         self.assertEqual(self.__mocked_threading.Thread.call_count, 1)

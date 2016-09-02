@@ -58,11 +58,12 @@ class ExperimentObject(object):
         "maturity": fields.String(),
         "cameraPose": fields.List(fields.Float),
         "visualModel": fields.String(),
-        "visualModelParams": fields.List(fields.Float)
+        "visualModelParams": fields.List(fields.Float),
+        "brainProcesses": fields.Integer()
     }
     required = ['name', 'experimentConfiguration', 'description',
                 'timeout', 'maturity', 'cameraPose',
-                'visualModel', 'visualModelParams']
+                'visualModel', 'visualModelParams', 'brainProcesses']
 
 
 @swagger.model
@@ -177,6 +178,7 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
     _visualModelObj = experiment.visualModel
     _visualModel = None
     _visualModelParams = None
+    _brainProcesses = experiment.bibiConf.processes
 
     if _timeout is None:
         _timeout = 600
@@ -205,7 +207,8 @@ def _make_experiment(experiment_file, experiment, experiment_dir):
                        maturity=_maturity,
                        cameraPose=_cameraPose,
                        visualModel=_visualModel,
-                       visualModelParams=_visualModelParams)
+                       visualModelParams=_visualModelParams,
+                       brainProcesses=_brainProcesses)
     return current_exp
 
 
