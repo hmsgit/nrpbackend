@@ -26,7 +26,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
 
     class MockedServiceRequest(object):
         environment_file = "environment_file.sdf"
-        generated_cle_script_file = "path/to/the/generated/server/script/file"
+        exd_config_file = "path/to/the/exd/config/file"
         gzserver_host = "local"
         sim_id = 0
 

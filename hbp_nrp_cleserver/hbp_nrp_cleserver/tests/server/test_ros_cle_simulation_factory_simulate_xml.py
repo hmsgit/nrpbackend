@@ -19,7 +19,7 @@ if not os.path.exists("ExDConf"):
 
 class MockedServiceRequest(object):
     environment_file = "environment_file.sdf"
-    generated_cle_script_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
+    exd_config_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
     gzserver_host = "local"
     sim_id = 0
 

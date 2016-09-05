@@ -152,7 +152,7 @@ class ROSCLESimulationFactory(object):
             environment_file = service_request.environment_file
             gzserver_host = service_request.gzserver_host
             sim_id = service_request.sim_id
-            exd_config_file = service_request.generated_cle_script_file
+            exd_config_file = service_request.exd_config_file
 
             logger.info(
                 "Preparing new simulation with environment file: %s "
