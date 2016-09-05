@@ -446,6 +446,8 @@ class ROSCLEServer(object):
         """
         Shutdown the cle server
         """
+        logger.info("Shutting down the closed loop service")
+        self.__cle.shutdown()
         logger.info("Shutting down reset service")
         self.__service_reset.shutdown()
         logger.info("Shutting down get_transfer_functions service")

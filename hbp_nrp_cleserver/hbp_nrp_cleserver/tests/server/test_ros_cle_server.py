@@ -387,7 +387,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEquals(mock_publisher.publish.call_count, 3)
 
     def test_shutdown(self):
-
+        z = self.__ros_cle_server._ROSCLEServer__cle = MagicMock()
         a = self.__ros_cle_server._ROSCLEServer__service_reset  = MagicMock()
         b = self.__ros_cle_server._ROSCLEServer__current_task = None
         c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
@@ -401,7 +401,7 @@ class TestROSCLEServer(unittest.TestCase):
         m = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
 
         self.__ros_cle_server.shutdown()
-        for x in [a, c, d, e, f, g, h, i]:
+        for x in [a, c, d, e, f, g, h, i, z]:
             self.assertEquals(x.shutdown.call_count, 1)
         self.assertEquals(l.unregister.call_count, 1)
         self.assertEquals(m.unregister.call_count, 1)
