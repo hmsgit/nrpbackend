@@ -165,10 +165,16 @@ class ROSCLESimulationFactory(object):
             try:
                 logger.info("Read XML Files")
                 exd, bibi = get_experiment_data(exd_config_file)
-                logger.info("Create CLELauncher object")
+
+                # TODO: temporary check to prevent launching multi process brain simulations
+                if exd.bibiConf.processes > 1:
+                    raise Exception("Support for multiple brain processes is currently "
+                                    "unavailable, please restrict your simulations to a "
+                                    "single brain process.")
 
                 # This import starts NEST. Don't move it to the imports at the top of the file,
                 # because NEST shall be started on the simulation thread.
+                logger.info("Create CLELauncher object")
                 from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
                 cle_launcher = CLELauncher(exd,
                                            bibi,
