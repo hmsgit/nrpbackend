@@ -19,7 +19,7 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMUL
 
 from hbp_nrp_commons.generated import bibi_api_gen
 from hbp_nrp_commons.generated import exp_conf_api_gen
-from pyxb import ValidationError
+from pyxb import ValidationError, NamespaceError
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
@@ -262,7 +262,7 @@ def get_experiment_data(experiment_file_path):
             experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         except ValidationError, ve:
             raise Exception("Could not parse experiment configuration {0:s} due to validation "
-                            "error: {0:s}".format(experiment_file_path, str(ve)))
+                            "error: {1:s}".format(experiment_file_path, str(ve)))
 
     bibi_file = experiment.bibiConf.src
     logger.info("Bibi: " + bibi_file)
@@ -272,8 +272,22 @@ def get_experiment_data(experiment_file_path):
         try:
             bibi = bibi_api_gen.CreateFromDocument(b_file.read())
         except ValidationError, ve:
-            raise Exception("Could not parse experiment configuration {0:s} due to validation "
-                            "error: {0:s}".format(bibi_file_abs, str(ve)))
+            raise Exception("Could not parse brain configuration {0:s} due to validation "
+                            "error: {1:s}".format(bibi_file_abs, str(ve)))
+        except NamespaceError, ne:
+            # first check to see if the BIBI file appears to have a valid namespace
+            namespace = str(ne).split(" ", 1)[0]
+            if not namespace.startswith("http://schemas.humanbrainproject.eu/SP10") or \
+               not namespace.endswith("BIBI"):
+                raise Exception("Unknown brain configuration file format for: {0:s} with "
+                                "namespace: {1:s}".format(bibi_file_abs, namespace))
+
+            # notify the user that their file is out of date
+            raise Exception("The BIBI file for the requested experiment is out of date and no "
+                            "longer supported. Please contact neurorobotics@humanbrainproject.eu "
+                            "with the following information for assistance in updating this file."
+                            "\n\nExperiment Configuration:\n\tName: {0:s}\n\tBIBI: {1:s}"
+                            "\n\tVersion: {2:s}".format(experiment.name, bibi_file, namespace))
 
     return experiment, bibi
 
@@ -357,7 +371,7 @@ def main():
                         nargs='+')
     args = parser.parse_args()
 
-    if (args.pycharm):
+    if args.pycharm:
         # pylint: disable=import-error
         import pydevd
 
