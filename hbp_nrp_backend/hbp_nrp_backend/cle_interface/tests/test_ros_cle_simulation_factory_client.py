@@ -17,7 +17,7 @@ class TestROSCLESimulationFactoryClient(unittest.TestCase):
         m.success = True
         m.status_message = ''
         roscle._ROSCLESimulationFactoryClient__create_new_simulation_service = Mock(return_value=m)
-        self.assertIsNone(roscle.create_new_simulation(None, None, None, None))
+        self.assertIsNone(roscle.create_new_simulation(None, None, None, None, None))
         m.success = False
         self.assertRaises(roscle.create_new_simulation)
 

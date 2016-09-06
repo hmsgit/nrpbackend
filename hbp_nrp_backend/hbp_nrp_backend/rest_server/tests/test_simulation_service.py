@@ -38,7 +38,8 @@ class TestSimulationService(RestTest):
             'experimentConfiguration': "MyExample.xml",
             'environmentConfiguration': None,
             'gzserverHost': 'local',
-            "contextID": None
+            'contextID': None,
+            'brainProcesses': 1,
         }
         erd = json.dumps(expected_response_data)
         self.assertEqual(response.data.strip(), erd)

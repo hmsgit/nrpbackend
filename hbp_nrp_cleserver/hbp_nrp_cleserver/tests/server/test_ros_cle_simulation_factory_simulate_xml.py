@@ -21,6 +21,7 @@ class MockedServiceRequest(object):
     environment_file = "environment_file.sdf"
     exd_config_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
     gzserver_host = "local"
+    brain_processes = 1
     sim_id = 0
 
 

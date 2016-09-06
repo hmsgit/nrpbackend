@@ -166,6 +166,13 @@ class ROSCLESimulationFactory(object):
                 logger.info("Read XML Files")
                 exd, bibi = get_experiment_data(exd_config_file)
 
+                # user override for number of brain processes
+                if exd.bibiConf.processes != service_request.brain_processes:
+                    logger.info("User overrode number of brain processes, launching with {0:d} "
+                                "brain processes instead of {1:d} specified in ExD conf!"
+                                .format(service_request.brain_processes, exd.bibiConf.processes))
+                    exd.bibiConf.processes = service_request.brain_processes
+
                 # TODO: temporary check to prevent launching multi process brain simulations
                 if exd.bibiConf.processes > 1:
                     raise Exception("Support for multiple brain processes is currently "

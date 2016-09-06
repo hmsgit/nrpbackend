@@ -35,6 +35,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         environment_file = "environment_file.sdf"
         exd_config_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
         gzserver_host = "local"
+        brain_processes = 1
         sim_id = 0
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')

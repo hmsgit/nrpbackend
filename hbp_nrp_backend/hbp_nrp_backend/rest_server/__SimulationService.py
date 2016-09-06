@@ -82,6 +82,8 @@ class SimulationService(Resource):
         :>json string creationDate: Date of creation of this simulation
         :>json string gzserverHost: The host where gzserver will be run: local for using the \
         same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
+        :>json integer brainProcesses: Number of brain processes for simulation, overrides the \
+        number specified in the experiment configuration file
         :status 400: Experiment configuration is not valid
         :status 401: gzserverHost is not valid
         :status 402: Another simulation is already running on the server
@@ -101,12 +103,17 @@ class SimulationService(Resource):
             raise NRPServicesClientErrorException(
                 'Another simulation is already running on the server.', error_code=409)
 
+        if 'brainProcesses' in body and \
+           (not isinstance(body.get('brainProcesses'), int) or body.get('brainProcesses') < 1):
+            raise NRPServicesClientErrorException('Invalid number of brain processes.')
+
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_context_id = body.get('contextID', None)
         sim_owner = UserAuthentication.get_x_user_name_header(request)
+        sim_brain_processes = body.get('brainProcesses', 1)
         simulations.append(Simulation(sim_id, body['experimentConfiguration'],
                                       body.get('environmentConfiguration', None), sim_owner,
-                                      sim_gzserver_host, sim_context_id))
+                                      sim_gzserver_host, sim_brain_processes, sim_context_id))
 
         return marshal(simulations[sim_id], Simulation.resource_fields), 201, {
             'location': api.url_for(SimulationControl, sim_id=sim_id),

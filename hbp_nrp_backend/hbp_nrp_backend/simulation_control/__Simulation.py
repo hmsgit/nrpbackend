@@ -25,7 +25,7 @@ class Simulation(object):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 context_id=None, state='created'):
+                 sim_brain_processes=1, context_id=None, state='created'):
         """
         Creates a new simulation
 
@@ -34,6 +34,7 @@ class Simulation(object):
         :param environment_conf: The environment configuration (Path to environment configuration)
         :param owner: The name of the user owning the simulation
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
+        :param sim_brain_processes: Number of brain processes to use (overrides ExD configuration)
         'local' for localhost and 'lugano' for a dedicated machine on the Lugano viz cluster.
         :param context_id: The context ID if the experiment is declared in the collab portal
         :param state: The initial state (created by default)
@@ -44,6 +45,7 @@ class Simulation(object):
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__context_id = context_id
+        self.__brain_processes = sim_brain_processes
         self.__creation_datetime = datetime.datetime.now(tz=timezone)
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
@@ -277,6 +279,14 @@ class Simulation(object):
         """
         return self.__gzserver_host
 
+    @property
+    def brain_processes(self):
+        """
+        Gets the number of brain processes used for this simulation, overrides value in experiment
+        configuration file
+        """
+        return self.__brain_processes
+
     resource_fields = {
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
@@ -285,7 +295,8 @@ class Simulation(object):
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),
-        'contextID': fields.String(attribute='context_id')
+        'contextID': fields.String(attribute='context_id'),
+        'brainProcesses': fields.Integer(attribute='brain_processes')
     }
     required = [
         'state', 'simulationID', 'experimentConfiguration', 'gzserverHost'
