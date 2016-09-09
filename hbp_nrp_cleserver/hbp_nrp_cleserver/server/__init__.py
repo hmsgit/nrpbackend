@@ -27,6 +27,10 @@ SERVICE_GET_TRANSFER_FUNCTIONS = lambda sim_id: \
     '/%s/%d/get_transfer_functions' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SET_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/set_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS = lambda sim_id: \
+    '/%s/%d/get_structured_transfer_functions' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION = lambda sim_id: \
+    '/%s/%d/set_structured_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_DELETE_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/delete_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_BRAIN = lambda sim_id: '/%s/%d/get_brain' % (ROS_CLE_NODE_NAME, sim_id)

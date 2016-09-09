@@ -92,7 +92,7 @@ class SimulationStateMachines(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. The state machines where returned"
+                "message": "Success. The state machines were returned"
             }
         ]
     )

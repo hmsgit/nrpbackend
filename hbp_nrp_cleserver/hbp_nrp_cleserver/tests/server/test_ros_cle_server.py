@@ -102,7 +102,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.assertEqual(10, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(12, self.__mocked_rospy.Service.call_count)
 
     def test_reset_simulation(self):
         self.__mocked_cle.is_initialized = False
@@ -419,6 +419,8 @@ class TestROSCLEServer(unittest.TestCase):
         i = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
         l = self.__ros_cle_server._ROSCLEServer__ros_cle_error_pub = MagicMock()
         m = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
+        n = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = MagicMock()
+        o = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = MagicMock()
 
         self.__ros_cle_server.shutdown()
         for x in [a, c, d, e, f, g, h, i, z]:
