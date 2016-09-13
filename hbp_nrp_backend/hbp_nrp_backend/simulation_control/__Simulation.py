@@ -51,14 +51,13 @@ class Simulation(object):
         self.__state_machines_manager = StateMachineManager()
         self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
         self.__lifecycle = BackendSimulationLifecycle(self, state)
-        self.__errors = 0  # We use that for monitoring
 
     @property
     def errors(self):
         """
         :return: the number of errors for the current simulation
         """
-        return self.__errors
+        return 1 if self.state in ['failed', 'halted'] else 0
 
     @property
     def kill_datetime(self):

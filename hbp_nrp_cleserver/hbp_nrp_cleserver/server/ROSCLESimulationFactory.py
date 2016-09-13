@@ -15,7 +15,7 @@ import signal
 # in the GazeboRosPackage folder at the root of this CLE repository.
 from cle_ros_msgs import srv
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMULATION, \
-    SERVICE_VERSION, SERVICE_HEALTH, SERVICE_IS_SIMULATION_RUNNING
+    SERVICE_VERSION, SERVICE_IS_SIMULATION_RUNNING
 
 from hbp_nrp_commons.generated import bibi_api_gen
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -43,22 +43,6 @@ class ROSCLESimulationFactory(object):
         self.running_simulation_thread = None
         self.__is_running_simulation_terminating = False
         self.simulation_terminate_event = threading.Event()
-        self.__simulation_count = 0
-        self.__failed_simulation_count = 0
-
-    @property
-    def simulation_count(self):
-        """
-        Gets the total number of simulations ran on this server yet
-        """
-        return self.__simulation_count
-
-    @property
-    def failed_simulation_count(self):
-        """
-        Gets the number of failed simulations on this server so far
-        """
-        return self.__failed_simulation_count
 
     def initialize(self):
         """
@@ -72,7 +56,6 @@ class ROSCLESimulationFactory(object):
             SERVICE_IS_SIMULATION_RUNNING, srv.IsSimulationRunning, self.is_simulation_running
         )
         rospy.Service(SERVICE_VERSION, srv.GetVersion, self.get_version)
-        rospy.Service(SERVICE_HEALTH, srv.Health, self.health)
 
     @staticmethod
     def run():
@@ -92,29 +75,6 @@ class ROSCLESimulationFactory(object):
         :param: service_request: ROS service message (defined in hbp ROS packages)
         """
         return str(hbp_nrp_cle.__version__)
-
-    # service_request is an unused but mandatory argument
-    # pylint: disable=unused-argument
-    def health(self, service_request):
-        """
-        Handler for the ROS service that returns the health of the whole program.
-        This health is made of two part:
-        - A status string containing OK, WARNING or CRITICAL
-        - A explanation about why the status has been set to a particular value
-
-        :param service_request: ROS service message (defined in hbp ROS packages)
-        :return: an array containing the status and the explanation
-        """
-        status = ''
-        if self.__failed_simulation_count == 0:
-            status = 'OK'
-        elif self.__failed_simulation_count <= self.__simulation_count / 2:
-            status = 'WARNING'
-        else:
-            status = 'CRITICAL'
-        info = "%d error(s) in %d simulations" % \
-               (self.__failed_simulation_count, self.__simulation_count)
-        return [status, info]
 
     # service_request is an unused but mandatory argument
     # pylint: disable=unused-argument
@@ -146,8 +106,6 @@ class ROSCLESimulationFactory(object):
         if (self.running_simulation_thread is None) or \
                 (not self.running_simulation_thread.is_alive()):
             logger.info("No simulation running, starting a new simulation.")
-
-            self.__simulation_count += 1
 
             environment_file = service_request.environment_file
             gzserver_host = service_request.gzserver_host
