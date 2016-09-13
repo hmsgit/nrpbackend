@@ -16,6 +16,8 @@ import threading
 from functools import wraps
 from multiprocessing import Process
 
+from cle_ros_msgs import srv
+
 __author__ = 'HBP NRP software team'
 
 
@@ -215,25 +217,47 @@ class TestROSCLEServer(unittest.TestCase):
 
         mock_tempfile.name = 'random_name_tempfile'
 
-        ros_callbacks = self.__get_handlers_for_testing_main()
-        self.__mocked_cle.network_file = PropertyMock()
-        set_brain_implementation = ros_callbacks['set_brain']
-        populations = json.dumps({
-            'index1': 1,
-            'list1': [1, 2, 3],
-            'slice1': {'from': 1, 'to': 2, 'step': 1}
-        })
-        request = Mock()
-        request.data_type = "text"
-        request.brain_type = "py"
-        request.brain_data = "Dummy = None"
-        request.brain_populations = populations
-        response = set_brain_implementation(request)
+        with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
+            slice1 = { 'from': 1, 'to': 2, 'step': 1}
+            populations_json_slice = {
+              'index1': 1,
+              'slice_1': slice1,
+              'list1': [1, 2, 3]
+            }
+            mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
+
+            ros_callbacks = self.__get_handlers_for_testing_main()
+            self.__mocked_cle.network_file = PropertyMock()
+            set_brain_implementation = ros_callbacks['set_brain']
+            populations_erroneous = json.dumps({
+                'index1': 1,
+                'list1': [1, 2, 3],
+                'slice1 new': {'from': 1, 'to': 2, 'step': 1}
+            })
+            request = Mock()
+            request.data_type = "text"
+            request.brain_type = "py"
+            request.brain_data = "Dummy = None"
+            request.brain_populations = populations_erroneous
+            request.change_population = srv.SetBrainRequest.ASK_RENAME_POPULATION
+            response = set_brain_implementation(request)
+            self.assertNotEqual(response[0], "")
+
+            populations_new = json.dumps({
+                'index1': 1,
+                'list1': [1, 2, 3],
+                'slice1_new': {'from': 1, 'to': 2, 'step': 1}
+            })
+            request.change_population = srv.SetBrainRequest.DO_RENAME_POPULATION
+            request.brain_populations = populations_new
+            response = set_brain_implementation(request)
+            self.assertEqual(response[0], "")
+
         self.__ros_cle_server._ROSCLEServer__lifecycle.paused.assert_called()
         expected_populations_arg = json.dumps(
             self.__mocked_cle.load_network_from_file.call_args[1]
         )
-        self.assertEqual(populations, expected_populations_arg)
+        self.assertEqual(populations_new, expected_populations_arg)
         self.__mocked_cle.load_network_from_file.reset_mock()
         request.data_type = "base64"
         request.brain_data = base64.encodestring(request.brain_data)
@@ -241,12 +265,12 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_cle.load_network_from_file.assert_called()
         request.data_type = "not_supported"
         response = set_brain_implementation(request)
-        self.assertEqual("Data type not_supported is invalid", response[0])
+        self.assertNotEqual("", response[0])
 
         request.brain_populations = "invalid JSON"
         response = set_brain_implementation(request)
-        self.assertEqual("Data type not_supported is invalid", response[0])
-        request.brain_populations = populations
+        self.assertNotEqual("", response[0])
+        request.brain_populations = populations_new
 
         def raise_syntax_error(foo):
             exec "Foo Bar"
@@ -255,8 +279,6 @@ class TestROSCLEServer(unittest.TestCase):
             mock_b64.side_effect = raise_syntax_error
             response = set_brain_implementation(request)
             self.assertNotEqual("", response[0])
-            self.assertEqual(1, response[1])
-            self.assertEqual(7, response[2])
             mock_b64.side_effect = Exception
             response = set_brain_implementation(request)
             self.assertNotEqual("", response[0])
