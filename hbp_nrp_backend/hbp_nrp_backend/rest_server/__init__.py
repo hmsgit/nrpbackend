@@ -55,7 +55,7 @@ class NRPServicesExtendedApi(Api):
         return original_handler(e)
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='')
 api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -66,10 +66,9 @@ import hbp_nrp_backend.rest_server.__ErrorHandlers
 
 from hbp_nrp_backend import hbp_nrp_backend_config
 from hbp_nrp_backend.rest_server.__CollabHandler import CollabHandler
-from hbp_nrp_backend.rest_server.__ExperimentBibi import ExperimentBibi
+from hbp_nrp_backend.rest_server.__SimulationResources import SimulationResources
 from hbp_nrp_backend.rest_server.__ExperimentBibiTransferFunctions import \
     ExperimentBibiTransferFunctions
-from hbp_nrp_backend.rest_server.__ExperimentConf import ExperimentConf
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
@@ -100,11 +99,9 @@ api.add_resource(MaterialControl, '/simulation/<int:sim_id>/interaction/material
 
 # Register /experiment
 api.add_resource(Experiment, '/experiment')
-api.add_resource(ExperimentBibi, '/experiment/<string:exp_id>/bibi')
 api.add_resource(ExperimentBibiTransferFunctions,
                  '/experiment/<string:exp_id>/bibi-transfer-functions')
 api.add_resource(ExperimentBrainFile, '/experiment/<string:context_id>/brain')
-api.add_resource(ExperimentConf, '/experiment/<string:exp_id>/conf')
 api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-machines')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
 api.add_resource(ExperimentPutStateMachine,
@@ -117,6 +114,7 @@ api.add_resource(ExperimentWorldSDF, '/experiment/<string:context_id>/sdf_world'
 # Register /simulation
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
 api.add_resource(SimulationBrainFile, '/simulation/<int:sim_id>/brain')
+api.add_resource(SimulationResources, '/simulation/<int:sim_id>/resources')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
 api.add_resource(SimulationPopulations, '/simulation/<int:sim_id>/populations')
 api.add_resource(SimulationReset, '/simulation/<int:sim_id>/reset')

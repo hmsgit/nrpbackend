@@ -30,7 +30,7 @@ root_logger = logging.getLogger('hbp_nrp_backend')
 # This happens within the app process and so it works both in the command line
 # and the uWSGI case
 @app.before_first_request
-def start_ros():
+def start_ros(): # pragma: no cover
     """
     Starts ROS utilities and cleanup thread in the app process.
     """
@@ -47,7 +47,7 @@ def start_ros():
     cleanup_thread.start()
 
 
-def __process_args():
+def __process_args(): # pragma: no cover
     """
     Processes the arguments to the server.
     """
@@ -72,7 +72,7 @@ def __process_args():
     return args
 
 
-def __init_console_logging():
+def __init_console_logging(): # pragma: no cover
     """
     Initialize the logging to stdout.
     """
@@ -85,7 +85,7 @@ def __init_console_logging():
     assert os.environ.get('NRP_MODELS_DIRECTORY') is not None
 
 
-def init_logging(args):
+def init_logging(args): # pragma: no cover
     """
     Initialize the logging.
     """
@@ -116,6 +116,7 @@ except NRPServicesDatabaseTimeoutException as e:
                      " ). You are probably in the local mode. ")
 
 init()
+
 
 if __name__ == '__main__':  # pragma: no cover
     _args = __process_args()

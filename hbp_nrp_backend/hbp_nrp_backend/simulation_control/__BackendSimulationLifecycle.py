@@ -39,6 +39,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                                                          initial_state)
         self.__simulation = simulation
         self.__experiment_path = ""
+        self.__simulation_root_folder = ""
         self.models_path = os.environ.get('NRP_MODELS_DIRECTORY')
 
     @property
@@ -104,8 +105,10 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 collab_paths = client.clone_experiment_template_from_collab_context()
                 self.__experiment_path = collab_paths['experiment_conf']
                 sm_base_path = os.path.dirname(self.__experiment_path)
+                self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
                 environment_path = collab_paths['environment_conf']
             else:
+                self.__simulation_root_folder = self.models_path
                 self.__experiment_path = os.path.join(self.models_path, simulation.experiment_conf)
                 environment_path = simulation.environment_conf
                 sm_base_path = self.models_path
@@ -210,3 +213,21 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             logger.exception(e)
             # TODO: how to report this error to the front-end?
         logger.info("simulation reset")
+
+    @property
+    def experiment_path(self):
+        """
+        Gets the experiment_path
+
+        :return: The experiment_path
+        """
+        return self.__experiment_path
+
+    @property
+    def simulation_root_folder(self):
+        """
+        Gets the simulation root folder
+
+        :return: The __simulation_root_folder
+        """
+        return self.__simulation_root_folder

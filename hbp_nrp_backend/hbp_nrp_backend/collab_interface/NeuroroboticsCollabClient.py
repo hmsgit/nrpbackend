@@ -500,6 +500,10 @@ class _FlattenedExperimentDirectory(object):
         with open(flattened_exp_configuration_file, "w") as f:
             f.write(experiment_dom.toDOM().toprettyxml())
 
+        # copy experiment configuration file
+        for conf in experiment_dom.configuration:
+            self.__copy_config_file(conf.src)
+
         # flatten bibi configuration file and save
         self.__flatten_bibi_configuration(bibi_configuration_file)
         return self.__temp_directory
