@@ -5,16 +5,22 @@ for loading and saving experiment state machine files
 
 
 __author__ = 'Bernd Eckstein'
-
+import os
+import tempfile
+import shutil
+import logging
+from threading import Thread
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
 from hbp_nrp_backend.rest_server.__ExperimentService import save_file, \
     ErrorMessages, get_control_state_machine_files, get_evaluation_state_machine_files
 
-import os
+from hbp_nrp_commons.generated import exp_conf_api_gen
+logger = logging.getLogger(__name__)
 
 # pylint: disable=no-self-use
 
@@ -97,7 +103,6 @@ class ExperimentGetStateMachines(Resource):
         :status 404: The experiment with the given ID was not found
         :status 200: Success. The experiment state machine files where retrieved
         """
-
         # Get ID, absolute path of state machine files
         ctrl_file_names = get_control_state_machine_files(exp_id)
         eval_file_names = get_evaluation_state_machine_files(exp_id)
@@ -200,3 +205,108 @@ class ExperimentPutStateMachine(Resource):
 
         filename = save_file(None, filename, state_machine_source)
         return {'message': "Success. File written: {0}".format(filename)}, 200
+
+
+class ExperimentCollabStateMachine(Resource):
+    """
+    The resource to save experiment state machine files
+    """
+    @swagger.operation(
+        notes='Saves state machines of an experiment to the collab',
+        parameters=[
+            {
+                "name": "context_id",
+                "required": True,
+                "description": "The context_id of the collab.",
+                "paramType": "path",
+                "dataType": basestring.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 500,
+                "message": ErrorMessages.ERROR_SAVING_FILE_500
+            },
+            {
+                "code": 400,
+                "message": "State machine code should be sent in"
+                           "the body under the 'state_machines' key"
+            },
+            {
+                "code": 200
+            }
+        ]
+    )
+    def put(self, context_id):
+        """
+        Save state machines to collab
+
+        :param path context_id: The context id of the collab
+        :param body source_code: Source code of the state machine as string.
+        :status 500: The experiment xml either could not be found or read
+        :status 200: Success. File written.
+        """
+        # Done here in order to avoid circular dependencies introduced by the
+        # way we __init__ the rest_server module.
+        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
+            import NeuroroboticsCollabClient
+
+        body = request.get_json(force=True)
+        if (not 'state_machines' in body):
+            raise NRPServicesClientErrorException(
+                "State machine code should be sent in "
+                "the body under the 'state_machines' key"
+            )
+
+        client = NeuroroboticsCollabClient(
+            UserAuthentication.get_header_token(request),
+            context_id
+        )
+        exp_xml_file_path = client.clone_file_from_collab_context(
+            client.EXPERIMENT_CONFIGURATION_MIMETYPE,
+            client.EXPERIMENT_CONFIGURATION_FILE_NAME
+        )
+
+        if not exp_xml_file_path:
+            raise NRPServicesGeneralException(
+                "Experiment configuration file not found in the Collab storage",
+                "Experiment xml not found"
+            )
+        with open(exp_xml_file_path) as exp_xml:
+            exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
+            if not isinstance(exp, exp_conf_api_gen.ExD_):
+                raise NRPServicesGeneralException(
+                    "Experiment configuration file is not valid.",
+                    "Experiment xml not valid"
+                )
+        threads = []
+        for sm_name in body['state_machines']:
+            sm_node = exp_conf_api_gen.SMACHStateMachine()
+            sm_node.id = os.path.splitext(sm_name)[0]
+            sm_node.src = sm_name if sm_name.endswith(".py") else sm_name + ".py"
+            exp_control = exp_conf_api_gen.ExperimentControl()
+            exp_control.stateMachine.append(sm_node)
+            exp.experimentControl = exp_control
+            t = Thread(target=client.write_file_with_content_in_collab,
+                       args=(body['state_machines'][sm_name],
+                             client.STATE_MACHINE_PY_MIMETYPE,
+                             sm_node.src))
+            t.start()
+            threads.append(t)
+
+        if tempfile.gettempdir() in exp_xml_file_path:
+            logger.debug(
+                "removing the temporary experiment xml file %s",
+                exp_xml_file_path
+            )
+            shutil.rmtree(os.path.dirname(exp_xml_file_path))
+        t = Thread(target=client.replace_file_content_in_collab,
+                   args=(exp.toxml("utf-8"),
+                         client.EXPERIMENT_CONFIGURATION_MIMETYPE,
+                         client.EXPERIMENT_CONFIGURATION_FILE_NAME,
+                         "recovered_experiment_configuration.xml"))
+        t.start()
+        threads.append(t)
+        for thread in threads:
+            thread.join()
+        return {"message": "Success. Files written to collab"}, 200

@@ -74,7 +74,7 @@ from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFil
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
-    ExperimentPutStateMachine
+    ExperimentPutStateMachine, ExperimentCollabStateMachine
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
 from hbp_nrp_backend.rest_server.__ExperimentWorldSDF import ExperimentWorldSDF
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
@@ -109,6 +109,8 @@ api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
 api.add_resource(ExperimentPutStateMachine,
                  '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')
+api.add_resource(ExperimentCollabStateMachine,
+                 '/experiment/<string:context_id>/state-machines')
 api.add_resource(ExperimentTransferfunctions, '/experiment/<string:context_id>/transfer-functions')
 api.add_resource(ExperimentWorldSDF, '/experiment/<string:context_id>/sdf_world')
 

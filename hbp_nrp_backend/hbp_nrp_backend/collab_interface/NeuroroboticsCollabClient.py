@@ -44,6 +44,7 @@ class NeuroroboticsCollabClient(object):
     TRANSFER_FUNCTIONS_FILE_NAME = "transfer_functions.py"
     TRANSFER_FUNCTIONS_PY_MIMETYPE = "application/hbp-neurorobotics.tfs+python"
     PNG_IMAGE_MIMETYPE = "image/png"
+    STATE_MACHINE_PY_MIMETYPE = "application/hbp-neurorobotics.sm+python"
 
     def __init__(self, token, context_id):
         """
@@ -280,7 +281,7 @@ class NeuroroboticsCollabClient(object):
             localpath = os.path.join(temp_directory, potential_filename)
             if download_file(attr, localpath, filepath):
                 return localpath
-        except DocException:
+        except (DocException, OSError):
             # file doesn't exist
             pass
 
@@ -334,7 +335,7 @@ class NeuroroboticsCollabClient(object):
             attr = self.__document_client.get_standard_attr(filepath)
             if '_contentType' in attr and attr['_contentType'] == mimetype:
                 return filepath
-        except DocException:
+        except (DocException, OSError):
             # file did not exist
             pass
         # either the file did not exist or it wasn't the correct mimetype
@@ -364,7 +365,7 @@ class NeuroroboticsCollabClient(object):
                                                           default_filename)
         try:
             self.__document_client.remove(filepath)
-        except DocException:
+        except (DocException, OSError):
             # it doesn't exist
             pass
         self.__document_client.upload_string(content, filepath, mimetype)
@@ -381,7 +382,7 @@ class NeuroroboticsCollabClient(object):
         filepath = os.path.join(collab_folder_path, filename)
         try:
             self.__document_client.remove(filepath)
-        except DocException:
+        except (DocException, OSError):
             # it doesn't exist
             pass
         self.__document_client.upload_string(content, filepath, mimetype)
@@ -402,7 +403,7 @@ class NeuroroboticsCollabClient(object):
         self.__document_client.chdir(collab_experiment_folderpath)
         try:
             self.__document_client.rmdir(foldername)
-        except DocException:
+        except (DocException, OSError):
             # it doesn't exist
             pass
         created_folder_uuid = self.__document_client.mkdir(foldername)

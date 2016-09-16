@@ -31,6 +31,10 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.factory_mock = factory_client.start()
         self.addCleanup(factory_client.stop)
 
+        cle_factory_client = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.ROSCLEClient")
+        self.cle_factory_mock = cle_factory_client.start()
+        self.addCleanup(cle_factory_client.stop)
+
         rospy_patch = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.rospy")
         self.rospy_mock = rospy_patch.start()
         self.addCleanup(rospy_patch.stop)
@@ -69,12 +73,11 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.simulation.context_id = "Foobar"
         self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
         directory = path.split(__file__)[0]
-
         with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient") as collab_client:
             with patch("hbp_nrp_backend.rest_server.__UserAuthentication.UserAuthentication") as user_auth:
 
                 collab_paths = {
-                    'experiment_conf': path.join(directory, "ExDXMLExample.xml"),
+                    'experiment_conf': path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
                     'environment_conf': "Neverland.sdf"
                 }
 
@@ -86,9 +89,9 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 self.assertEqual("Foobar", collab_client.call_args[0][1])
                 self.assertTrue(collab_client().clone_experiment_template_from_collab_context)
 
-        # Assert that indeed not the state machine experiment has been called
+        # Assert that the state machine experiment has been called
         state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]
-        self.assertEqual(0, len(state_machines))
+        self.assertEqual(2, len(state_machines))
 
     def test_backend_initialize_nonexisting_experiment(self):
         self.simulation.experiment_conf = "DoesNotExist.xml"

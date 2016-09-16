@@ -49,7 +49,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         return self.__simulation
 
-    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path):
+    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path, sm_base_path):
         """
         Parses the experiment configuration, loads state machines and updates the environment path
         with the one in the configuration file if none is passed as an argument, for supporting
@@ -57,6 +57,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param experiment_path: Path the experiment configuration.
         :param environment_path: Path to the environment configuration.
+        :param sm_base_path: The directory where the state machine files will be found.
         """
         # parse experiment
         with open(experiment_path) as exd_file:
@@ -64,13 +65,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         state_machine_paths = {}
         if experiment.experimentControl is not None:
-            state_machine_paths.update({sm.id: os.path.join(self.models_path, sm.src)
+            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
                                         for sm in
                                         experiment.experimentControl.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
         if experiment.experimentEvaluation is not None:
-            state_machine_paths.update({sm.id: os.path.join(self.models_path, sm.src)
+            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
                                         for sm in
                                         experiment.experimentEvaluation.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
@@ -102,19 +103,20 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                     UserAuthentication.get_header_token(request), simulation.context_id)
                 collab_paths = client.clone_experiment_template_from_collab_context()
                 self.__experiment_path = collab_paths['experiment_conf']
+                sm_base_path = os.path.dirname(self.__experiment_path)
                 environment_path = collab_paths['environment_conf']
             else:
                 self.__experiment_path = os.path.join(self.models_path, simulation.experiment_conf)
                 environment_path = simulation.environment_conf
-
+                sm_base_path = self.models_path
             experiment, environment_path = \
-                self._parse_exp_and_initialize_paths(self.__experiment_path, environment_path)
-
+                self._parse_exp_and_initialize_paths(self.__experiment_path,
+                                                     environment_path,
+                                                     sm_base_path)
             simulation_factory_client = ROSCLESimulationFactoryClient()
             simulation_factory_client.create_new_simulation(
                 environment_path, self.__experiment_path,
                 simulation.gzserver_host, simulation.brain_processes, simulation.sim_id)
-
             simulation.cle = ROSCLEClient(simulation.sim_id)
             logger.info("simulation initialized")
 
