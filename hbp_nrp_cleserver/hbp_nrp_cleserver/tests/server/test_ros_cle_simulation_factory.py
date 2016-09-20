@@ -99,12 +99,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
             srv.GetVersion,
             self.__ros_cle_simulation_factory.get_version
         )
-        self.__mocked_rospy.Service.assert_any_call(
-            SERVICE_HEALTH,
-            srv.Health,
-            self.__ros_cle_simulation_factory.health
-        )
-        self.assertEqual(self.__mocked_rospy.Service.call_count, 4)
+        self.assertEqual(self.__mocked_rospy.Service.call_count, 3)
         self.__mocked_rospy.spin.assert_called_once_with()
 
     @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
@@ -234,18 +229,6 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                              'WARNING', 'File: "dummy_file", line 42, in dummy_name'),
                             (self.LOGGER_NAME, 'WARNING', '  dummy_line'),
                             (self.LOGGER_NAME, 'WARNING', '*** STACKTRACE - END ***'))
-
-    def test_health(self):
-        health = self.__ros_cle_simulation_factory.health(None)
-        self.assertEqual(health, ['OK', '0 error(s) in 0 simulations'])
-        self.__ros_cle_simulation_factory._ROSCLESimulationFactory__failed_simulation_count = 1
-        self.__ros_cle_simulation_factory._ROSCLESimulationFactory__simulation_count = 3
-        health = self.__ros_cle_simulation_factory.health(None)
-        self.assertEqual(health, ['WARNING', '1 error(s) in 3 simulations'])
-        self.__ros_cle_simulation_factory._ROSCLESimulationFactory__failed_simulation_count = 3
-        self.__ros_cle_simulation_factory._ROSCLESimulationFactory__simulation_count = 3
-        health = self.__ros_cle_simulation_factory.health(None)
-        self.assertEqual(health, ['CRITICAL', '3 error(s) in 3 simulations'])
 
 if __name__ == '__main__':
     unittest.main()
