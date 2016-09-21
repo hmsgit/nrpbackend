@@ -16,6 +16,11 @@
         <robotPose x="0.0" y="0.0" z="0.0" ux="0.0" uy="0.0" uz="1.0" theta="0.0"/>
     </environmentModel>
     <bibiConf src="BIBI/milestone2_python_tf.xml"/>
+    <experimentControl>
+      <stateMachine xsi:type="SMACHStateMachine"
+        id="TestSM"
+        src="StateMachines/test_sm.py"/>
+    </experimentControl>
     <cameraPose>
         <cameraPosition x="4.5" y="0" z="1.8"/>
         <cameraLookAt x="0" y="0" z="0.6"/>

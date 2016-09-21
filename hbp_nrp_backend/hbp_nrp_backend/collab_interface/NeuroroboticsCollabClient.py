@@ -478,6 +478,12 @@ class _FlattenedExperimentDirectory(object):
         with open(self.__exp_configuration) as e:
             experiment_dom = exp_conf_api_gen.CreateFromDocument(e.read())
 
+        # copy statemachines
+        if experiment_dom.experimentControl and experiment_dom.experimentControl.stateMachine:
+            for sm in experiment_dom.experimentControl.stateMachine:
+                sm_file = os.path.join(self.__models_folder, sm.src)
+                sm.src = os.path.basename(sm.src)
+                shutil.copyfile(sm_file, os.path.join(self.__temp_directory, sm.src))
         # Get the experiment image and copy it into the flattened experiment directory
         exd_split = os.path.split(self.__exp_configuration)
         img_file = os.path.join(exd_split[0], exd_split[-1].split('.')[0]) + '.png'

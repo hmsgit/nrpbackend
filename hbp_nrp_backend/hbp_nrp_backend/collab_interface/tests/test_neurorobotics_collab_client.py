@@ -386,7 +386,8 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             'model.sdf',
             'ExDXMLExample.png',
             NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
-            'my_brain.py'
+            'my_brain.py',
+            'test_sm.py'
         ]
 
         with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
@@ -400,6 +401,18 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                 temporary_folder,
                 NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
             )
+            flattened_exp_configuration_file = os.path.join(
+                temporary_folder,
+                NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME
+            )
+            with open(flattened_exp_configuration_file) as e:
+                exp_configuration_dom = exp_conf_api_gen.CreateFromDocument(e.read())
+
+            for sm in exp_configuration_dom.experimentControl.stateMachine:
+                self.assertEqual(sm.src, os.path.basename(sm.src))
+                path = os.path.join(temporary_folder, sm.src)
+                self.assertEqual(os.path.exists(path), True)
+
             with open(flattened_bibi_configuration_file) as b:
                 bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
 
