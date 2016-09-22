@@ -1,3 +1,7 @@
+##
+## Target All Components in Package by Default (e.g. make verify)
+##
+
 #modules that have tests
 TEST_MODULES=hbp_nrp_commons/hbp_nrp_commons/ hbp_nrp_cleserver/hbp_nrp_cleserver/ hbp_nrp_backend/hbp_nrp_backend/
 
@@ -9,6 +13,27 @@ COVER_PACKAGES=hbp_nrp_commons hbp_nrp_cleserver hbp_nrp_backend
 
 #documentation to build
 DOC_MODULES=hbp_nrp_commons/doc hbp_nrp_cleserver/doc hbp_nrp_backend/doc
+
+##
+## Individual Component Release Targets
+##
+verify-hbp_nrp_commons:
+	$(MAKE) verify TEST_MODULES=hbp_nrp_commons/hbp_nrp_commons/\
+                       INSTALL_MODULES=hbp_nrp_commons\
+                       COVER_PACKAGES=hbp_nrp_commons\
+                       DOC_MODULES=hbp_nrp_commons/doc/
+
+verify-hbp_nrp_cleserver:
+	$(MAKE) verify TEST_MODULES=hbp_nrp_cleserver/hbp_nrp_cleserver/\
+                       INSTALL_MODULES=hbp_nrp_cleserver\
+                       COVER_PACKAGES=hbp_nrp_cleserver\
+                       DOC_MODULES=hbp_nrp_cleserver/doc/
+
+verify-hbp_nrp_backend:
+	$(MAKE) verify TEST_MODULES=hbp_nrp_backend/hbp_nrp_backend/\
+                       INSTALL_MODULES=hbp-flask-restful-swagger-master hbp_nrp_backend\
+                       COVER_PACKAGES=hbp_nrp_backend\
+                       DOC_MODULES=hbp_nrp_backend/doc/
 
 ##### DO NOT MODIFY BELOW #####################
 
