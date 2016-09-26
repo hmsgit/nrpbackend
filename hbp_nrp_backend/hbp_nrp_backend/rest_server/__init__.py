@@ -71,7 +71,7 @@ from hbp_nrp_backend.rest_server.__ExperimentBibiTransferFunctions import \
     ExperimentBibiTransferFunctions
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
-from hbp_nrp_backend.rest_server.__ExperimentService import Experiment
+from hbp_nrp_backend.rest_server.__ExperimentService import Experiment, CollabExperiment
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
     ExperimentPutStateMachine, ExperimentCollabStateMachine
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
@@ -99,6 +99,7 @@ api.add_resource(MaterialControl, '/simulation/<int:sim_id>/interaction/material
 
 # Register /experiment
 api.add_resource(Experiment, '/experiment')
+api.add_resource(CollabExperiment, '/experiment/<string:context_id>')
 api.add_resource(ExperimentBibiTransferFunctions,
                  '/experiment/<string:exp_id>/bibi-transfer-functions')
 api.add_resource(ExperimentBrainFile, '/experiment/<string:context_id>/brain')

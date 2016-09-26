@@ -9,6 +9,8 @@ __author__ = "Bernd Eckstein"
 import os
 import base64
 import logging
+import tempfile
+import shutil
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
@@ -123,9 +125,39 @@ class Experiment(Resource):
         :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
         :status 200: Success. The dictionary was returned
         """
-
         experiments = dict(data=get_experiments())
         return experiments, 200
+
+
+class CollabExperiment(Resource):
+    """
+    Implements the REST service for retrieving a collab experiment
+    as a dictionary
+    """
+
+    @swagger.operation(
+        notes="Gets dictionary of experiment",
+        responseClass=ExperimentData.__name__,
+        responseMessages=[
+            {
+                "code": 500,
+                "message": "Error on server: collab experiment not found."
+            },
+            {
+                "code": 200,
+                "message": "Success. The experiment list was sent."
+            }
+        ]
+    )
+    def get(self, context_id):
+        """
+        Gets dictionary of the experiment stored on the collab
+
+        :return: Dictionary with experiment
+        :status 500: Error on server: collab experiment file not found
+        :status 200: Success. The dictionary was returned
+        """
+        return dict(data=get_collab_experiment(context_id)), 200
 
 
 def get_experiments():
@@ -144,23 +176,64 @@ def get_experiments():
         if current.lower().endswith('.xml'):
             # Parse Experiment
             experiment_conf = os.path.join(get_experiment_basepath(), experiment_dir, current)
-            ex = None
-            with open(experiment_conf) as exd_file:
-                try:
-                    ex = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-                except ValidationError, ve:
-                    LOG.warn("Could not parse experiment configuration %s due to validation "
-                             "error: %s", experiment_conf, str(ve))
-                    continue
-
+            ex = parse_exp(experiment_conf)
             if isinstance(ex, exp_conf_api_gen.ExD_):
-                current_exp = _make_experiment(current, ex, experiment_dir)
+                current_exp = _make_experiment(ex, current, experiment_dir)
                 experiment_dict[os.path.splitext(current)[0]] = current_exp
 
     return experiment_dict
 
 
-def _make_experiment(experiment_file, experiment, experiment_dir):
+def parse_exp(experiment_conf):
+    """
+    Parse an experiment xml file.
+    :param experiment_conf: the experiment configuration file to parse
+    :return the parsed xml
+    """
+    with open(experiment_conf) as exd_file:
+        try:
+            return exp_conf_api_gen.CreateFromDocument(exd_file.read())
+        except ValidationError, ve:
+            LOG.warn("Could not parse experiment configuration %s due to validation "
+                     "error: %s", experiment_conf, str(ve))
+
+
+def get_collab_experiment(context_id):
+    """
+    Retrieve the collab experiment from the collab, and add to dictionary
+    :param context_id: The context id of the collab
+    :return dictionary: with string: ID, string: ExDConfig File
+    """
+    from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
+        import NeuroroboticsCollabClient
+    client = NeuroroboticsCollabClient(
+        UserAuthentication.get_header_token(request),
+        context_id
+    )
+    exp_xml_file_path = client.clone_file_from_collab_context(
+        client.EXPERIMENT_CONFIGURATION_MIMETYPE,
+        client.EXPERIMENT_CONFIGURATION_FILE_NAME
+    )
+    if not exp_xml_file_path:
+        raise NRPServicesGeneralException(
+            ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+            "Experiment xml not found in collab storage"
+        )
+    ex = parse_exp(exp_xml_file_path)
+    result = None
+    if isinstance(ex, exp_conf_api_gen.ExD_):
+        current_exp = _make_experiment(ex)
+        result = {os.path.splitext(os.path.split(exp_xml_file_path)[-1])[0]: current_exp}
+    if tempfile.gettempdir() in exp_xml_file_path:
+        LOG.debug(
+            "removing the temporary experiment xml file %s",
+             exp_xml_file_path
+        )
+        shutil.rmtree(os.path.dirname(exp_xml_file_path))
+    return result
+
+
+def _make_experiment(experiment, experiment_file='', experiment_dir=''):
     """
     Creates and returns an dictionary with the experiment data
     :param experiment_file: filename of the XML containing the experiment
