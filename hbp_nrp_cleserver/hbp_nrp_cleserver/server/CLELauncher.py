@@ -27,7 +27,7 @@ from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
 from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
 from hbp_nrp_cle.robotsim.LocalGazebo import LocalGazeboBridgeInstance, LocalGazeboServerInstance
-from hbp_nrp_cle.robotsim.LuganoVizClusterGazebo import LuganoVizClusterGazebo
+from hbp_nrp_cle.robotsim.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
 from hbp_nrp_cle.robotsim.GazeboHelper import GazeboHelper
 
 # These imports start NEST.
@@ -147,7 +147,13 @@ class CLELauncher(object):
             gzserver.start(ros_master_uri)
         elif self.__gzserver_host == 'lugano':
             gzserver = LuganoVizClusterGazebo()
-            gzserver.start(ros_master_uri)
+            try:
+                gzserver.start(ros_master_uri)
+            except XvfbXvnError as exception:
+                logger.error(exception)
+                error = "Recoverable error occurred. Please try again. Reason: {0}".format(
+                        exception)
+                raise(Exception(error))
 
         self.__gazebo_helper = GazeboHelper()
 
