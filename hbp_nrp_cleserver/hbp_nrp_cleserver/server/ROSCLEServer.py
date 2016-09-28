@@ -139,7 +139,7 @@ class ROSCLEServer(object):
         :param tf_error: The exception that was thrown
         """
         if tf.updated:
-            self.publish_error("Transfer Functions", "Runtime", str(tf_error),
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Runtime", str(tf_error),
                                severity=CLEError.SEVERITY_ERROR, function_name=tf.name)
 
     def prepare_simulation(self, cle, timeout=600):
@@ -459,7 +459,8 @@ class ROSCLEServer(object):
             else:
                 error_msg += " has multiple definition names."
             error_msg += " Compilation aborted"
-            self.publish_error("Transfer Function", "NoOrMultipleNames", error_msg,
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "NoOrMultipleNames",
+                               error_msg,
                                severity=CLEError.SEVERITY_ERROR, function_name=original_name)
             return error_msg
 
@@ -473,13 +474,13 @@ class ROSCLEServer(object):
                 + " transfer function named " + new_name \
                 + " in restricted mode.\n" \
                 + str(e)
-            self.publish_error("Transfer Function", "Compile", str(e),
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Compile", str(e),
                                severity=CLEError.SEVERITY_ERROR, function_name=new_name,
                                line_number=e.lineno, offset=e.offset, line_text=e.text,
                                file_name=e.filename)
             return message
         except Exception as e:
-            self.publish_error("Transfer Function", "Compile", str(e),
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Compile", str(e),
                                severity=CLEError.SEVERITY_ERROR, function_name=new_name)
             return e.message
 
@@ -489,11 +490,11 @@ class ROSCLEServer(object):
         try:
             tf_framework.set_transfer_function(new_source, new_code, new_name)
         except TFLoadingException as e:
-            self.publish_error("Transfer Function", "Loading", e.message,
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_ERROR, function_name=e.tf_name)
             return e.message
         except Exception as e:
-            self.publish_error("Transfer Function", "Loading", e.message,
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_CRITICAL, function_name=new_name)
             return e.message
         return ""
