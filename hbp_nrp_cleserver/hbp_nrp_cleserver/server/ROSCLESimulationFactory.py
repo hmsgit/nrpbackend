@@ -48,7 +48,7 @@ class ROSCLESimulationFactory(object):
         """
         Initializes the Simulation factory
         """
-        rospy.init_node(ROS_CLE_NODE_NAME)
+        rospy.init_node(ROS_CLE_NODE_NAME, anonymous=True)
         rospy.Service(
             SERVICE_CREATE_NEW_SIMULATION, srv.CreateNewSimulation, self.create_new_simulation
         )
@@ -131,23 +131,34 @@ class ROSCLESimulationFactory(object):
                                 .format(service_request.brain_processes, exd.bibiConf.processes))
                     exd.bibiConf.processes = service_request.brain_processes
 
-                # TODO: temporary check to prevent launching multi process brain simulations
-                if exd.bibiConf.processes > 1:
-                    raise Exception("Support for multiple brain processes is currently "
-                                    "unavailable, please restrict your simulations to a "
-                                    "single brain process.")
+                # single brain process launch
+                if exd.bibiConf.processes == 1:
+                    # This import starts NEST. Don't move it to the imports at the top of the file,
+                    # because NEST shall be started on the simulation thread.
+                    logger.info("Creating local CLELauncher object")
+                    from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
+                    cle_launcher = CLELauncher(exd,
+                                               bibi,
+                                               get_experiment_basepath(exd_config_file),
+                                               gzserver_host, sim_id)
+                    cle_launcher.cle_function_init(environment_file)
+                    if cle_launcher.cle_server is None:
+                        raise Exception("Error in cle_function_init. Cannot start simulation.")
 
-                # This import starts NEST. Don't move it to the imports at the top of the file,
-                # because NEST shall be started on the simulation thread.
-                logger.info("Create CLELauncher object")
-                from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
-                cle_launcher = CLELauncher(exd,
-                                           bibi,
-                                           get_experiment_basepath(exd_config_file),
-                                           gzserver_host, sim_id)
-                cle_launcher.cle_function_init(environment_file)
-                if cle_launcher.cle_server is None:
-                    raise Exception("Error in cle_function_init. Cannot start simulation.")
+                # distributed, multi-process launch
+                else:
+                    logger.info("Creating distributed MUSICLauncher object")
+                    from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
+
+                    experiment_base_path = get_experiment_basepath(exd_config_file)
+                    bibi_file = os.path.join(experiment_base_path, exd.bibiConf.src)
+
+                    cle_launcher = MUSICLauncher(exd_config_file,
+                                                 bibi_file,
+                                                 environment_file,
+                                                 experiment_base_path,
+                                                 gzserver_host, sim_id)
+                    cle_launcher.init(bibi, exd.bibiConf.processes)
 
             # pylint: disable=broad-except
             except Exception:
@@ -182,16 +193,20 @@ class ROSCLESimulationFactory(object):
 
         self.simulation_terminate_event.clear()
 
-        cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
-                                       # threading.Thread.start
-        self.__is_running_simulation_terminating = True
         try:
-            logger.info("Shutdown simulation")
-            cle_launcher.shutdown()
+            cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
+                                           # threading.Thread.start
+
+        # always attempt to shutdown cleanly before raising Exception
         finally:
-            self.running_simulation_thread = None
-            self.__is_running_simulation_terminating = False
-            self.simulation_terminate_event.set()
+            self.__is_running_simulation_terminating = True
+            try:
+                logger.info("Shutdown simulation")
+                cle_launcher.shutdown()
+            finally:
+                self.running_simulation_thread = None
+                self.__is_running_simulation_terminating = False
+                self.simulation_terminate_event.set()
 
 
 def get_experiment_basepath(experiment_file_path=None):

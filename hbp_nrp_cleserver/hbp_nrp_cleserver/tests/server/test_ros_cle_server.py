@@ -97,7 +97,7 @@ class TestROSCLEServer(unittest.TestCase):
         logging.getLogger(self.LOGGER_NAME).handlers = []
 
     def test_ros_node_initialized_with_right_name(self):
-        self.__mocked_rospy.init_node.assert_called_with('ros_cle_simulation')
+        self.__mocked_rospy.init_node.assert_called_with('ros_cle_simulation', anonymous=True)
 
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False

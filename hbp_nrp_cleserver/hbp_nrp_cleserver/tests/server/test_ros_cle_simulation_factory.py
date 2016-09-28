@@ -88,7 +88,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
     def test_run(self):
         self.__ros_cle_simulation_factory.initialize()
         self.__ros_cle_simulation_factory.run()
-        self.__mocked_rospy.init_node.assert_called_once_with(ROS_CLE_NODE_NAME)
+        self.__mocked_rospy.init_node.assert_called_once_with(ROS_CLE_NODE_NAME, anonymous=True)
         self.__mocked_rospy.Service.assert_any_call(
             SERVICE_CREATE_NEW_SIMULATION,
             srv.CreateNewSimulation,

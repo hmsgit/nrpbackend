@@ -9,6 +9,7 @@ import netifaces
 import subprocess
 import logging
 import importlib
+import argparse
 
 from RestrictedPython import compile_restricted
 
@@ -66,7 +67,6 @@ class CLELauncher(object):
         @type gzserver_host: str
         @param sim_id: simulation id
         @type sim_id: int
-        @return: [cle_server, models_path, gzweb, gzserver]
         """
 
         assert isinstance(exd_conf, exp_conf_api_gen.ExD_)
@@ -92,7 +92,6 @@ class CLELauncher(object):
         with the "Upload custom environment" button
 
         @param world_file: The environment (SDF) world file.
-        @return: [cle_server, models_path, gzweb, gzserver] (all the initialized sub-components)
         """
 
         logger.info("Path is " + self.__experiment_path)
@@ -280,8 +279,6 @@ class CLELauncher(object):
         self.gzweb = gzweb
         self.gzserver = gzserver
 
-        return
-
     def shutdown(self):
         """
         Shutdown CLE
@@ -331,3 +328,98 @@ def get_experiment_basepath():
         raise Exception("Server Error. NRP_MODELS_DIRECTORY not defined.")
 
     return path
+
+
+if __name__ == '__main__':
+
+    try:
+        if os.environ["ROS_MASTER_URI"] == "":
+            raise Exception("You should run ROS first.")
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--exdconf', dest='exd_file',
+                            help='specify the ExDConfiguration file', required=True)
+        parser.add_argument('--environment', dest='environment_file',
+                            help='specify the environment file', required=True)
+        parser.add_argument('--experiment-path', dest='path',
+                            help='specify the base experiment path', required=True)
+        parser.add_argument('--gzserver-host', dest='gzserver_host',
+                            help='the gzserver target host', required=True)
+        parser.add_argument('--sim-id', dest='sim_id', type=int,
+                            help='the simulation id to use', required=True)
+
+        music_parser = parser.add_mutually_exclusive_group(required=False)
+        music_parser.add_argument('--music', dest='music', action='store_true',
+                                   help='enable music support')
+        music_parser.add_argument('--no-music', dest='music', action='store_false',
+                                   help='explicitly disable music support (default)')
+        parser.set_defaults(music=False)
+
+        args = parser.parse_args()
+
+        # music specific configuration for CLE
+        if args.music:
+            logger.info('Using MUSIC configuration and adapters for CLE')
+            import music
+
+            import hbp_nrp_cle.brainsim.config
+            from hbp_nrp_music_interface.cle.MUSICPyNNCommunicationAdapter\
+                import MUSICPyNNCommunicationAdapter
+            from hbp_nrp_music_interface.cle.MUSICPyNNControlAdapter\
+                import MUSICPyNNControlAdapter
+
+            # write pid to lock file so launcher can always terminate us (failsafe)
+            pid = os.getpid()
+            with open('{}.lock'.format(pid), 'w') as pf:
+                pf.write('{}'.format(pid))
+
+            # initialize music and set the CLE to use MUSIC adapters
+            music_setup = music.Setup()
+
+            # TODO: the above calls to instantiate_{control/communication}_adapter
+            #       should be generalized to allow us to specify the adapters and this
+            #       backdoor specification should no longer be required
+            hbp_nrp_cle.brainsim.config.communication_adapter_type = MUSICPyNNCommunicationAdapter
+            hbp_nrp_cle.brainsim.config.control_adapter_type = MUSICPyNNControlAdapter
+
+        # simplified launch process below from ROSCLESimulationFactory.py, avoid circular depdency
+        # by importing here
+        from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
+        from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_basepath\
+                                                                     as rcsf_get_experiment_basepath
+
+        exd, bibi = get_experiment_data(args.exd_file)
+
+        cle_launcher = CLELauncher(exd,
+                                   bibi,
+                                   rcsf_get_experiment_basepath(args.exd_file),
+                                   args.gzserver_host, args.sim_id)
+        cle_launcher.cle_function_init(args.environment_file)
+        if cle_launcher.cle_server is None:
+            raise Exception("Error in cle_function_init. Cannot start simulation.")
+
+        logger.info('Starting CLE.')
+        cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
+                                       # threading.Thread.start
+
+        logger.info('Shutting down CLE.')
+        cle_launcher.shutdown()
+        logger.info('Shutdown complete, terminating.')
+
+    except Exception as e: # pylint: disable=broad-except
+
+        # if running through MPI, catch Exception and terminate below to ensure brain processes
+        # are also killed
+        if args.music:
+            logger.error('CLE aborted with message {}, terminating.'.format(e.message))
+            print 'CLE aborted with message {}, terminating.'.format(e.message) # if no logger
+
+        # standalone non-music launch, propagate error
+        else:
+            raise
+
+    # terminate the MUSIC spawned brain processes, exit code does not matter as this is not
+    # propagated, this exits forcefully and ungracefully, but nothing we launch needs more notice
+    if args.music:
+        from mpi4py import MPI
+        MPI.COMM_WORLD.Abort(MPI.SUCCESS)

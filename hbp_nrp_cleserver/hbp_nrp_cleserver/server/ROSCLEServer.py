@@ -63,9 +63,9 @@ class ROSCLEServer(object):
         :param sim_id: The simulation id
         """
 
-        # ROS allows multiple calls to init_node, as long as
-        # the arguments are the same.
-        rospy.init_node(ROS_CLE_NODE_NAME)
+        # ROS allows multiple calls to init_node, as long as the arguments are the same.
+        # Allow multiple distributed processes to spawn nodes of the same name.
+        rospy.init_node(ROS_CLE_NODE_NAME, anonymous=True)
 
         self.__lifecycle = None
         self.__cle = None
