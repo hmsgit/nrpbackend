@@ -202,3 +202,13 @@ class TestLifecycle(unittest.TestCase):
         self.assertEqual(1, self.publisher_mock.publish.call_count)
         # We still know that an error happened
         self.assertEqual("failed", self.lifecycle.state)
+
+    def test_invalid_lifecycle(self):
+        invalid = SimulationLifecycle('foo')
+        self.assertRaises(Exception, invalid.accept_command, 'bar')
+        self.assertRaises(Exception, invalid.initialize, 'bar')
+        self.assertRaises(Exception, invalid.start, 'bar')
+        self.assertRaises(Exception, invalid.pause, 'bar')
+        self.assertRaises(Exception, invalid.stop, 'bar')
+        self.assertRaises(Exception, invalid.fail, 'bar')
+        self.assertRaises(Exception, invalid.reset, 'bar')

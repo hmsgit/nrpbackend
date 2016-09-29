@@ -21,6 +21,7 @@ class TestScript(unittest.TestCase):
         self.assertEqual(4, get_neuron_count(api.Range(population="pop", from_=3, to=7)))
         self.assertEqual(2, get_neuron_count(api.Range(population="pop", from_=0, to=5, step=2)))
         self.assertEqual(42, get_neuron_count(api.Population(population="pop", count=42)))
+        self.assertRaises(Exception, get_neuron_count, 'foo')
 
     def test_get_device_name(self):
         __device_types = {'ACSource': 'ac_source', 'DCSource': 'dc_source',
@@ -42,6 +43,48 @@ class TestScript(unittest.TestCase):
         x = None
         self.assertRaises(Exception, print_expression, x)
         self.assertRaises(Exception, get_neurons_index, x)
+
+    def test_print_expression(self):
+        s = api.Scale(factor=5.0, inner=api.Constant(value_=0.0))
+        self.assertEqual(print_expression(s), '5.0 * 0.0')
+        c = api.Call(type="foo", argument=[api.Argument(name="bar", value_=api.Constant(value_=0))])
+        self.assertEqual(print_expression(c), 'foo(bar=0.0)')
+        c = api.Call(type="foo", argument=[api.Argument(name="bar", value_=api.Constant(value_=0)),
+                                           api.Argument(name="foobar", value_=api.Constant(value_=1))])
+        self.assertEqual(print_expression(c), 'foo(bar=0.0, foobar=1.0)')
+        o = api.Add(operand=[api.Constant(value_=1.0), api.Constant(value_=2.0)])
+        self.assertEqual(print_expression(o), '(1.0 + 2.0)')
+        ar = api.ArgumentReference(name="foo", property_="bar")
+        self.assertEqual(print_expression(ar), 'foo.bar')
+        c = api.Constant(value_=1.2)
+        self.assertEqual(print_expression(c), '1.2')
+        s = api.SimulationStep()
+        self.assertEqual(print_expression(s), 't')
+
+    def test_print_operator(self):
+        o = api.Subtract(operand=[api.Constant(value_=1.2), api.Constant(value_=3.4)])
+        self.assertEqual(print_operator(o), '(1.2 - 3.4)')
+        o = api.Add(operand=[api.Constant(value_=1.2), api.Constant(value_=3.4)])
+        self.assertEqual(print_operator(o), '(1.2 + 3.4)')
+        o = api.Multiply(operand=[api.Constant(value_=1.2), api.Constant(value_=3.4)])
+        self.assertEqual(print_operator(o), '1.2 * 3.4')
+        o = api.Divide(operand=[api.Constant(value_=1.2), api.Constant(value_=3.4)])
+        self.assertEqual(print_operator(o), '1.2 / 3.4')
+        o = api.Min(operand=[api.Constant(value_=1.2), api.Constant(value_=3.4)])
+        self.assertEqual(print_operator(o), 'min(1.2, 3.4)')
+        o = api.Max(operand=[api.Constant(value_=1.2), api.Constant(value_=3.4)])
+        self.assertEqual(print_operator(o), 'max(1.2, 3.4)')
+
+    def test_get_default_property(self):
+        self.assertEqual(get_default_property('ACSource'), 'amplitude')
+        self.assertEqual(get_default_property('DCSource'), 'amplitude')
+        self.assertEqual(get_default_property('FixedFrequency'), 'rate')
+        self.assertEqual(get_default_property('LeakyIntegratorAlpha'), 'voltage')
+        self.assertEqual(get_default_property('LeakyIntegratorExp'), 'voltage')
+        self.assertEqual(get_default_property('NCSource'), 'mean')
+        self.assertEqual(get_default_property('Poisson'), 'rate')
+        self.assertEqual(get_default_property('PopulationRate'), 'rate')
+        self.assertEqual(get_default_property('SpikeRecorder'), 'times')
 
     def test_print_neurons_index(self):
         idx = api.Index()
@@ -112,6 +155,15 @@ class TestScript(unittest.TestCase):
     def test_print_template_raises(self):
         self.assertRaises(Exception, get_neuron_template, None)
 
+    def test_get_all_neurons_as_dict_range(self):
+        populations = [api.Range(population='foo', from_=0, to=2)]
+        self.assertEqual(get_all_neurons_as_dict(populations), {'foo':slice(0,2)})
+        populations = [api.List(population='foo', element=[1,3])]
+        self.assertEqual(get_all_neurons_as_dict(populations), {'foo':[1,3]})
+        populations = [api.Population(population='foo', count=5)]
+        self.assertEqual(get_all_neurons_as_dict(populations), {'foo':None})
+        self.assertRaises(Exception, get_all_neurons_as_dict, ['foo'])
+
     def test_get_collection_source_range(self):
         rng = api.Range()
         rng.population = "Foo"
@@ -145,6 +197,9 @@ class TestScript(unittest.TestCase):
 
     def test_print_neuron_group_chain(self):
         chain = api.ChainSelector()
+        chain.connectors.append(api.ChainSelector())
+        self.assertEqual(print_neuron_group(chain), "nrp.chain_neurons(nrp.chain_neurons())")
+        chain = api.ChainSelector()
         chain.neurons.append(api.Population(population="Foo", count=42))
         self.assertEqual(print_neuron_group(chain), "nrp.chain_neurons(nrp.brain.Foo)")
         chain.neurons.append(api.Population(population="Bar", count=23))
@@ -161,6 +216,9 @@ class TestScript(unittest.TestCase):
         self.assertEqual(print_neuron_group(map),
                          "nrp.map_neurons(range(0, 42), lambda i: nrp.brain.Foo[i])")
 
+    def test_print_neuron_group_invalid(self):
+        self.assertRaises(Exception, print_neuron_group, 'foo')
+
     def test_print_synapse_dynamic(self):
         syn = api.TsodyksMarkramMechanism(u=1.0, tau_rec=0.0, tau_facil=0.0)
         self.assertEqual(print_synapse_dynamics(syn),
@@ -171,6 +229,12 @@ class TestScript(unittest.TestCase):
         con = api.OneToOneConnector(delays=0.8, weights=42.0)
         self.assertEqual(print_connector(con),
                          "{'mode':'OneToOne', 'weights':42.0, 'delays':0.8}")
+        con = api.AllToAllConnector(delays=0.8, weights=42.0)
+        self.assertEqual(print_connector(con),
+                         "{'mode':'AllToAll', 'weights':42.0, 'delays':0.8}")
+        con = api.FixedNumberPreConnector(delays=0.8, weights=42.0, count=5)
+        self.assertEqual(print_connector(con),
+                         "{'mode':'Fixed', 'n':5, 'weights':42.0, 'delays':0.8}")
         self.assertRaises(Exception, print_connector, None)
 
     def test_print_device_config(self):
@@ -180,6 +244,11 @@ class TestScript(unittest.TestCase):
         dev.connectorRef = api.NeuronConnectorRef(ref="Bar")
         dev.target = 'Inhibitory'
         self.assertEqual(print_device_config(dev), ", synapse_dynamics=Foo, connector=Bar, target='inhibitory'")
+        dev.synapseDynamics = api.TsodyksMarkramMechanism(u=1.0, tau_rec=2.0, tau_facil=3.0)
+        dev.connector = api.OneToOneConnector(delays=0.8, weights=42.0)
+        self.assertEqual(print_device_config(dev),
+                         ", synapse_dynamics={'type':'TsodyksMarkram', 'U':1.0, 'tau_rec':2.0, 'tau_facil':3.0}, " +
+                         "connector={'mode':'OneToOne', 'weights':42.0, 'delays':0.8}, target='inhibitory'")
 
 if __name__ == '__main__':
     unittest.main()
