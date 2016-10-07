@@ -296,7 +296,7 @@ class CLELauncher(object):
                                           "Emptying 3D world",
                                           number_of_subtasks=2,
                                           block_ui=False)
-        self.__gazebo_helper.empty_gazebo_world()
+        # Do not empty Gazebo since Gazebo will be restarted anyhow
 
         if self.gzweb is not None:
             self.gzweb.stop()

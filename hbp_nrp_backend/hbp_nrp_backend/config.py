@@ -21,6 +21,8 @@ class Config(object):
     """
     SQLALCHEMY_DATABASE_URI = 'postgresql://bbpdbsrv03.epfl.ch:5432/neurorobotics_collab'
 
+    RESTART_SIMULATION_SERVER_COMMAND = ''
+
 
 class TestConfig(Config):
     """

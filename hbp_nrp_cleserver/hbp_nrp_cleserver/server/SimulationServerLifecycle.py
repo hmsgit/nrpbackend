@@ -127,7 +127,7 @@ class SimulationServerLifecycle(SimulationLifecycle):
         """
         self.stop_timeout()
         self.__double_timer.cancel_all()
-        self.__cle.stop()
+        self.__cle.stop(forced=True)
         if self.__start_thread is not None:
             self.__start_thread.join(60)
             if self.__start_thread.isAlive():
