@@ -143,7 +143,7 @@ class CLELauncher(object):
         gzserver = None
         if self.__gzserver_host == 'local':
             gzserver = LocalGazeboServerInstance()
-            gzserver.start(ros_master_uri)
+            gzserver.restart(ros_master_uri)
         elif self.__gzserver_host == 'lugano':
             gzserver = LuganoVizClusterGazebo()
             try:
