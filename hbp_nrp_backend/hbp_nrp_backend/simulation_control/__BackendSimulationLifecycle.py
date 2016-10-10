@@ -205,13 +205,6 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                           for sm in self.simulation.state_machines))
         self.simulation.state_machine_manager.terminate_all()
 
-        try:
-            self.simulation.state_machine_manager.start_all()
-        # pylint: disable=broad-except
-        except Exception, e:
-            logger.error("Starting State Machines Failed")
-            logger.exception(e)
-            # TODO: how to report this error to the front-end?
         logger.info("simulation reset")
 
     @property

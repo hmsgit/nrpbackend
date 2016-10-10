@@ -142,19 +142,13 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
 
         # Assert state machines have been terminated
         self.assertTrue(self.simulation.state_machine_manager.terminate_all.called)
-        # Assert state machines have been started
-        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_reset_ros_exception(self):
         self.rospy_mock.ServiceException = rospy.ServiceException
         self.rospy_mock.ServiceProxy.side_effect = rospy.ServiceException
         # Failing to reset the screens will not fail the simulation
         self.lifecycle.reset(Mock())
-        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_reset_fail_start_state_machines(self):
         self.simulation.state_machine_manager.start_all.side_effect = IOError
         self.lifecycle.reset(Mock())
-
-        # Assert no exception, but state machine manager was still called
-        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
