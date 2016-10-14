@@ -1,4 +1,4 @@
-hbp-nrp-cle==1.0.2.dev7
-hbp-nrp-commons==1.0.2.dev7
-hbp-nrp-music-interface==1.0.2.dev7
+hbp-nrp-cle==1.1.0
+hbp-nrp-commons==1.1.0
+hbp-nrp-music-interface==1.1.1
 pyxb==1.2.4
