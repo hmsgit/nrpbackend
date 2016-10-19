@@ -37,6 +37,48 @@ The MonitorState allows to monitor any available ROS topic. Thus, monitoring a p
 
 In this example a neuron monitor, set up in the according BIBI configuration file, is used to monitor brain activity and use it as condition for an event.
 
+Client Logging
+--------------
+
+'Client logs' is a logging mechanism that aims at helping the users develop and debug their state machines and transfer functions.
+All triggered client log will be visible by the user in a specific window from within the running simulation.
+
+Triggering client logs
+""""""""""""""""""""""
+
+The clientLogger allows the user to trigger client logs to help debugging  his state machines.
+
+.. literalinclude:: sm_examples/client_logger.py
+   :language: python
+
+In this example, we are interested in having a state machine that will change state when the robot is at the right or left limit of the scene.
+We know that the RobotPoseMonitorState allows us to have a condition on the robot coordinates (x,y,z), but we don't know exactly what values correspond to positions we want to watch for.
+By using the clientLogger in that function watching the robot position, we can log the (x,y,z) values as we drive the robot in the scene to the target positions.
+We can then collect the values at the target position and use them in the state condition.
+
+
+State client logger
+"""""""""""""""""""
+
+The ClientLogState is a state that trigger a client log.
+
+.. literalinclude:: sm_examples/state_client_logger.py
+   :language: python
+
+In this example, we are using the positions we collected in the section above and we expect the state machine to change state as the robot position alternates from left to right.
+To test the validity of our parameters, we've added the ClientLogState("Husky is at the LEFT/RIGHT!") states that will log messages as the state machines transitions from one state to the other.
+By moving the robot around and observing the log messages ("Husky is at the LEFT/RIGHT!") appear in the simulation, the user can verify that the transitions occur at the expected robot position.
+
+Trigger an action based on a monitored client log
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+The WaitForClientLogState allows to monitor for a specific client log.
+The action is triggered when a log message contains the given string. The check is case sensitive. 
+
+.. literalinclude:: sm_examples/client_logger_watcher.py
+   :language: python
+
+In this example, we want the state machine to change its state when a specific client log containing the keywords 'left_tv_red' or 'left_tv_blue' is observed.
 
 Combined events
 ---------------
