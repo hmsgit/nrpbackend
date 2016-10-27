@@ -8,11 +8,20 @@ from hbp_nrp_cleserver.server.DoubleTimer import DoubleTimer
 from hbp_nrp_cle.tf_framework import TFException
 import threading
 import logging
+import sys
 
 __author__ = 'Georg Hinkel'
 
 
 logger = logging.getLogger(__name__)
+# Sometimes previous handlers are cleared, make sure they are set
+stdout_hdlr = logging.StreamHandler(sys.stdout)
+stderr_hdlr = logging.StreamHandler(sys.stderr)
+log_format = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
+stdout_hdlr.setFormatter(logging.Formatter(log_format))
+stderr_hdlr.setFormatter(logging.Formatter(log_format))
+logger.handlers.append(stdout_hdlr)
+logger.handlers.append(stderr_hdlr)
 
 
 class SimulationServerLifecycle(SimulationLifecycle):
@@ -38,9 +47,6 @@ class SimulationServerLifecycle(SimulationLifecycle):
         self.__double_timer.start()
         self.start_timeout()
         self.__done_event = threading.Event()
-        import sys
-        logger.handlers.append(logging.StreamHandler(sys.stdout))
-        logger.handlers.append(logging.StreamHandler(sys.stderr))
 
     @property
     def done_event(self):
