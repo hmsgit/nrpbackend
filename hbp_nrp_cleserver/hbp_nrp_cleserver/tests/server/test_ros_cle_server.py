@@ -195,7 +195,6 @@ class TestROSCLEServer(unittest.TestCase):
               'list_1': [1, 2, 3]
             }
             mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
-            self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
             ros_callbacks = self.__get_handlers_for_testing_main()
             directory = path.split(__file__)[0]
             get_brain_implementation = ros_callbacks['get_brain']
@@ -212,8 +211,6 @@ class TestROSCLEServer(unittest.TestCase):
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.SimulationServerLifecycle')
     def test_set_brain(self, mock_tempfile, mock_lifecycle):
-        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.__ros_cle_server._ROSCLEServer__lifecycle.state = 'started'
 
         mock_tempfile.name = 'random_name_tempfile'
 
@@ -227,6 +224,7 @@ class TestROSCLEServer(unittest.TestCase):
             mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
 
             ros_callbacks = self.__get_handlers_for_testing_main()
+            self.__ros_cle_server._ROSCLEServer__lifecycle.state = 'started'
             self.__mocked_cle.network_file = PropertyMock()
             set_brain_implementation = ros_callbacks['set_brain']
             populations_erroneous = json.dumps({
@@ -285,7 +283,6 @@ class TestROSCLEServer(unittest.TestCase):
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_CSV_recorders_functions(self, mocked_tf_framework):
-        self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
         ros_callbacks = self.__get_handlers_for_testing_main()
         get_CSV_recorders_files_implementation = ros_callbacks['get_CSV_recorders_files']
         clean_CSV_recorders_files_implementation = ros_callbacks['clean_CSV_recorders_files']

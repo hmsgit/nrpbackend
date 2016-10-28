@@ -11,6 +11,7 @@ import sys
 import hbp_nrp_cle
 import traceback
 import signal
+import dateutil.parser as datetime_parser
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackage folder at the root of this CLE repository.
 from cle_ros_msgs import srv
@@ -20,6 +21,7 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMUL
 from hbp_nrp_commons.generated import bibi_api_gen
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from pyxb import ValidationError, NamespaceError
+
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
@@ -96,8 +98,6 @@ class ROSCLESimulationFactory(object):
         :param: service_request: ROS service message (defined in hbp ROS packages)
         """
         logger.info("Create new simulation request")
-        error_message = ""
-        result = True
 
         if self.__is_running_simulation_terminating:
             logger.info("Waiting for previous simulation to terminate")
@@ -111,6 +111,7 @@ class ROSCLESimulationFactory(object):
             gzserver_host = service_request.gzserver_host
             sim_id = service_request.sim_id
             exd_config_file = service_request.exd_config_file
+            timeout = self.__get_timeout(service_request)
 
             logger.info(
                 "Preparing new simulation with environment file: %s "
@@ -141,7 +142,7 @@ class ROSCLESimulationFactory(object):
                                                bibi,
                                                get_experiment_basepath(exd_config_file),
                                                gzserver_host, sim_id)
-                    cle_launcher.cle_function_init(environment_file)
+                    cle_launcher.cle_function_init(environment_file, timeout)
                     if cle_launcher.cle_server is None:
                         raise Exception("Error in cle_function_init. Cannot start simulation.")
 
@@ -179,10 +180,22 @@ class ROSCLESimulationFactory(object):
             error_message = "Trying to initialize a new simulation even though the " \
                             "previous one has not been terminated."
             logger.error(error_message)
-            result = False
+            raise Exception(error_message)
+        return []
 
-        logger.debug("create_new_simulation return with status: " + str(result))
-        return [result, error_message]
+    @staticmethod
+    def __get_timeout(service_request):
+        """
+        Gets the timeout for the simulation based on the given request
+
+        :param service_request: The service request
+        :return: The time when the simulation will end or None, if no timeout was specified
+        """
+        if service_request.timeout == "":
+            timeout = None
+        else:
+            timeout = datetime_parser.parse(service_request.timeout)
+        return timeout
 
     def __simulation(self, cle_launcher):
         """

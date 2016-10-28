@@ -7,6 +7,7 @@ import logging
 import threading
 import rospy
 import numpy
+import datetime
 
 from std_msgs.msg import String
 from std_srvs.srv import Empty
@@ -27,7 +28,7 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES
-from hbp_nrp_cleserver.server import ros_handler
+from hbp_nrp_cleserver.server import ros_handler, Timer
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException
 import base64
@@ -56,11 +57,12 @@ class ROSCLEServer(object):
     """
     STATUS_UPDATE_INTERVAL = 1.0
 
-    def __init__(self, sim_id):
+    def __init__(self, sim_id, timeout=None):
         """
         Create the wrapper server
 
         :param sim_id: The simulation id
+        :param timeout: The datetime when the simulation runs into a timeout
         """
 
         # ROS allows multiple calls to init_node, as long as the arguments are the same.
@@ -79,6 +81,10 @@ class ROSCLEServer(object):
         self.__service_get_populations = None
         self.__service_get_CSV_recorders_files = None
         self.__service_clean_CSV_recorders_files = None
+
+        self.__timer = Timer.Timer(ROSCLEServer.STATUS_UPDATE_INTERVAL,
+                                   self.__publish_state_update)
+        self.__timeout = timeout
 
         self.__simulation_id = sim_id
         self.__ros_status_pub = rospy.Publisher(
@@ -142,17 +148,15 @@ class ROSCLEServer(object):
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Runtime", str(tf_error),
                                severity=CLEError.SEVERITY_ERROR, function_name=tf.name)
 
-    def prepare_simulation(self, cle, timeout=600):
+    def prepare_simulation(self, cle):
         """
         The CLE will be initialized within this method and ROS services for
         starting, pausing, stopping and resetting are setup here.
 
         :param cle: the closed loop engine
-        :param timeout: the timeout time of the simulation,
-            default is 5 minutes
         """
         self.__cle = cle
-        self.__lifecycle = SimulationServerLifecycle(self.__simulation_id, cle, timeout, self)
+        self.__lifecycle = SimulationServerLifecycle(self.__simulation_id, cle, self)
 
         logger.info("Registering ROS Service handlers")
 
@@ -211,12 +215,20 @@ class ROSCLEServer(object):
         )
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
+        self.__timer.start()
 
     def __get_remaining(self):
         """
         Get the remaining time of the simulation
         """
-        return self.__lifecycle.remaining_time()
+        if self.__timeout is not None:
+            remaining = (self.__timeout - datetime.datetime.now(self.__timeout.tzinfo)) \
+                .total_seconds()
+            if remaining < 0:
+                self.__lifecycle.stopped()
+            return max(0, int(remaining))
+        else:
+            return 0
 
     # pylint: disable=unused-argument
     def __get_populations(self, request):
@@ -512,24 +524,28 @@ class ROSCLEServer(object):
 
         return True
 
-    def publish_state_update(self):
+    def __publish_state_update(self):
         """
         Publish the state and the remaining timeout
         """
-        if self.__lifecycle is None:
-            logger.warn("Trying to publish state even though no simulation is active")
-            return
-        message = {
-            'state': str(self.__lifecycle.state),
-            'timeout': self.__get_remaining(),
-            'simulationTime': int(self.__cle.simulation_time),
-            'realTime': int(self.__cle.real_time),
-            'transferFunctionsElapsedTime': self.__cle.tf_elapsed_time(),
-            'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),
-            'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
-        }
-        logger.info(json.dumps(message))
-        self.__ros_status_pub.publish(json.dumps(message))
+        try:
+            if self.__lifecycle is None:
+                logger.warn("Trying to publish state even though no simulation is active")
+                return
+            message = {
+                'state': str(self.__lifecycle.state),
+                'timeout': self.__get_remaining(),
+                'simulationTime': int(self.__cle.simulation_time),
+                'realTime': int(self.__cle.real_time),
+                'transferFunctionsElapsedTime': self.__cle.tf_elapsed_time(),
+                'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),
+                'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
+            }
+            logger.info(json.dumps(message))
+            self.__ros_status_pub.publish(json.dumps(message))
+        # pylint: disable=broad-except
+        except Exception as e:
+            logger.exception(e)
 
     def run(self):
         """
@@ -537,7 +553,7 @@ class ROSCLEServer(object):
         """
         self.__lifecycle.done_event.wait()
 
-        self.publish_state_update()
+        self.__publish_state_update()
         logger.info("Finished main loop")
 
     def shutdown(self):
@@ -567,6 +583,7 @@ class ROSCLEServer(object):
         logger.info("Unregister status topic")
         self.__ros_status_pub.unregister()
         self.__lifecycle = None
+        self.__timer.cancel_all()
 
     def notify_start_task(self, task_name, subtask_name, number_of_subtasks, block_ui):
         """
