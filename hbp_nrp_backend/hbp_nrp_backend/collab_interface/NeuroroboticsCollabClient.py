@@ -8,6 +8,11 @@ import tempfile
 import shutil
 import re
 from threading import Thread
+from pyxb import ValidationError
+from xml.sax import SAXParseException
+from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+from hbp_nrp_backend.rest_server.__ExperimentService import \
+    ErrorMessages
 from bbp_client.oidc.client import BBPOIDCClient
 from bbp_client.collab_service.client import Client as CollabClient
 from hbp_nrp_backend.collab_interface import NRPServicesUploadException
@@ -320,6 +325,65 @@ class NeuroroboticsCollabClient(object):
         return self.clone_file_from_collab(self.__collab_context.experiment_folder_uuid,
                                            mimetype,
                                            filename)
+
+    def clone_bibi_file_from_collab_context(self):
+        """
+        Clones the bibi file from the collab storage
+        :return: A BIBIConfiguration object and the path of the cloned file as a string
+        """
+        bibi_file = self.clone_file_from_collab_context(self.BIBI_CONFIGURATION_MIMETYPE,
+                                                        self.BIBI_CONFIGURATION_FILE_NAME)
+        if bibi_file is None:
+            raise NRPServicesGeneralException(
+                ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404,
+                "Experiment bibi file was not found in the collab storage"
+            )
+        return (self._parse_and_check_file_is_valid(bibi_file,
+                                                    bibi_api_gen.CreateFromDocument,
+                                                    bibi_api_gen.BIBIConfiguration),
+                bibi_file)
+
+    def clone_exp_file_from_collab_context(self):
+        """
+        Clones the experiment file from the collab storage
+        :return: A ExD_ object and the path of the cloned file as a string
+        """
+        exp_file = self.clone_file_from_collab_context(self.EXPERIMENT_CONFIGURATION_MIMETYPE,
+                                                       self.EXPERIMENT_CONFIGURATION_FILE_NAME)
+        if exp_file is None:
+            raise NRPServicesGeneralException(
+                ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+                "Experiment xml not found in the collab storage"
+            )
+        return (self._parse_and_check_file_is_valid(exp_file,
+                                                    exp_conf_api_gen.CreateFromDocument,
+                                                    exp_conf_api_gen.ExD_),
+                exp_file)
+
+    @staticmethod
+    def _parse_and_check_file_is_valid(filepath, create_obj_function, instance_type):
+        """
+        Parses a file and checks if it corresponds to its instance type and
+        can be created into its object
+        :param filepath: The path of the file
+        :param create_obj_function: The function to create the object
+        :param instance_type: The required instance type of the file
+        :return: An object containing the file content
+        """
+        with open(filepath) as file_content:
+            try:
+                file_obj = create_obj_function(file_content.read())
+                if not isinstance(file_obj, instance_type):
+                    raise NRPServicesGeneralException(
+                        "%s configuration file content is not valid." % (filepath),
+                        "File not valid"
+                    )
+            except (ValidationError, SAXParseException) as ve:
+                raise NRPServicesGeneralException(
+                    "Could not parse file %s due to validation error: %s" % (filepath, str(ve)),
+                    "File not valid"
+                )
+        return file_obj
 
     def get_first_file_path_with_mimetype(self, mimetype, potential_filename, default_filename):
         """

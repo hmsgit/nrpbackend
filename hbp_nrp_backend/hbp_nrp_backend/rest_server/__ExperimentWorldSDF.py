@@ -19,10 +19,9 @@ from flask_restful import Resource
 from flask_restful_swagger import swagger
 from gazebo_msgs.srv import ExportWorldSDF
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesUnavailableROSService, NRPServicesGeneralException
+    NRPServicesUnavailableROSService
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
-from hbp_nrp_commons.generated import exp_conf_api_gen
 
 logger = logging.getLogger(__name__)
 
@@ -103,25 +102,8 @@ class ExperimentWorldSDF(Resource):
 
         # Save the robot position in the ExDConf file
         if (len(robot_pose) is 6):  # We need 6 elements (from Gazebo)
-            experiment_configuration_file_path = client.clone_file_from_collab_context(
-                client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-                client.EXPERIMENT_CONFIGURATION_FILE_NAME)
-            if experiment_configuration_file_path is None:
-                raise NRPServicesGeneralException(
-                    "Experiment configuration file not found in the Collab storage",
-                    "Experiment configuration not found"
-                )
-
-            experiment_configuration = None
-            with open(experiment_configuration_file_path) as experiment_configuration_xml:
-                experiment_configuration = exp_conf_api_gen.CreateFromDocument(
-                    experiment_configuration_xml.read())
-                if not isinstance(experiment_configuration, exp_conf_api_gen.ExD_):
-                    raise NRPServicesGeneralException(
-                        "Experiment configuration "
-                        "file content is not valid.",
-                        "Experiment configuration not valid"
-                    )
+            experiment_configuration, \
+                experiment_configuration_file_path = client.clone_exp_file_from_collab_context()
 
             experiment_configuration.environmentModel.robotPose.x = robot_pose[0]
             experiment_configuration.environmentModel.robotPose.y = robot_pose[1]

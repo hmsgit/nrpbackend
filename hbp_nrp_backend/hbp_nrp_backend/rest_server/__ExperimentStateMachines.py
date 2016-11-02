@@ -15,7 +15,7 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__ExperimentService import save_file, \
     ErrorMessages, get_control_state_machine_files, get_evaluation_state_machine_files
 
@@ -262,23 +262,7 @@ class ExperimentCollabStateMachine(Resource):
             UserAuthentication.get_header_token(request),
             context_id
         )
-        exp_xml_file_path = client.clone_file_from_collab_context(
-            client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-            client.EXPERIMENT_CONFIGURATION_FILE_NAME
-        )
-
-        if not exp_xml_file_path:
-            raise NRPServicesGeneralException(
-                "Experiment configuration file not found in the Collab storage",
-                "Experiment xml not found"
-            )
-        with open(exp_xml_file_path) as exp_xml:
-            exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
-            if not isinstance(exp, exp_conf_api_gen.ExD_):
-                raise NRPServicesGeneralException(
-                    "Experiment configuration file is not valid.",
-                    "Experiment xml not valid"
-                )
+        exp, exp_xml_file_path = client.clone_exp_file_from_collab_context()
         threads = []
         for sm_name in body['state_machines']:
             sm_node = exp_conf_api_gen.SMACHStateMachine()

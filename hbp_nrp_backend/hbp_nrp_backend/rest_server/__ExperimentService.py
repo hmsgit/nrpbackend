@@ -210,20 +210,9 @@ def get_collab_experiment(context_id):
         UserAuthentication.get_header_token(request),
         context_id
     )
-    exp_xml_file_path = client.clone_file_from_collab_context(
-        client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-        client.EXPERIMENT_CONFIGURATION_FILE_NAME
-    )
-    if not exp_xml_file_path:
-        raise NRPServicesGeneralException(
-            ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
-            "Experiment xml not found in collab storage"
-        )
-    ex = parse_exp(exp_xml_file_path)
-    result = None
-    if isinstance(ex, exp_conf_api_gen.ExD_):
-        current_exp = _make_experiment(ex)
-        result = {os.path.splitext(os.path.split(exp_xml_file_path)[-1])[0]: current_exp}
+    ex, exp_xml_file_path = client.clone_exp_file_from_collab_context()
+    current_exp = _make_experiment(ex)
+    result = {os.path.splitext(os.path.split(exp_xml_file_path)[-1])[0]: current_exp}
     if tempfile.gettempdir() in exp_xml_file_path:
         LOG.debug(
             "removing the temporary experiment xml file %s",

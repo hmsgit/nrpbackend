@@ -15,6 +15,7 @@ from hbp_nrp_backend.rest_server.__ExperimentService import \
     ErrorMessages, get_experiment_basepath, save_file, \
     get_control_state_machine_files, get_evaluation_state_machine_files
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+from hbp_nrp_commons.generated import exp_conf_api_gen
 
 
 PATH = os.path.split(__file__)[0]
@@ -60,7 +61,11 @@ class TestExperimentService(RestTest):
     @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
     def test_collab_experiment_get_ok(self, collab_mock, mock_bp0):
         client_mock = MagicMock()
-        client_mock.clone_file_from_collab_context.return_value = os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml")
+        exp_temp_path = os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml")
+        with open(exp_temp_path) as exp_xml:
+            exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
+        client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path
+
         collab_mock.return_value = client_mock
         mock_bp0.return_value = PATH
 
@@ -73,7 +78,11 @@ class TestExperimentService(RestTest):
     @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
     def test_collab_experiment_get_not_ok(self, collab_mock, mock_bp0):
         client_mock = MagicMock()
-        client_mock.clone_file_from_collab_context.return_value = ""
+        client_mock.clone_exp_file_from_collab_context.side_effect = NRPServicesGeneralException(
+            ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+            "Experiment xml not found in the collab storage"
+        )
+
         collab_mock.return_value = client_mock
         mock_bp0.return_value = PATH
 

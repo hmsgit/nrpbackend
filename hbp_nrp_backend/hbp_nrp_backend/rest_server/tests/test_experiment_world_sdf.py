@@ -60,7 +60,9 @@ class TestExperimentWorldSDF(RestTest):
         exd_conf_original_path = os.path.join(self.test_directory, "ExDConf","test_1.xml")
         exd_conf_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(exd_conf_original_path, exd_conf_temp_path)
-        self.mock_collabClient_instance.clone_file_from_collab_context.return_value = exd_conf_temp_path
+        with open(exd_conf_temp_path) as exp_xml:
+            exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
+        self.mock_collabClient_instance.clone_exp_file_from_collab_context.return_value = exp, exd_conf_temp_path
 
         response = self.client.put('/experiment/' + context_id + '/sdf_world')
         self.assertEqual(response.status_code, 200)

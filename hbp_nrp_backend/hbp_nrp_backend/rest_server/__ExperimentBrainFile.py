@@ -15,8 +15,7 @@ from threading import Thread
 from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__ExperimentService import \
     ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
@@ -116,24 +115,7 @@ class ExperimentBrainFile(Resource):
                                      client.BRAIN_PYNN_FILE_NAME,
                                      "recovered_pynn_brain_model.py"))
         replace_brain.start()
-        bibi_file_path = client.clone_file_from_collab_context(
-            client.BIBI_CONFIGURATION_MIMETYPE,
-            client.BIBI_CONFIGURATION_FILE_NAME
-        )
-        if bibi_file_path is None:
-            raise NRPServicesGeneralException(
-                "BIBI configuration file not found in the Collab storage",
-                "BIBI not found"
-            )
-
-        with open(bibi_file_path) as bibi_xml:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-            if not isinstance(bibi, bibi_api_gen.BIBIConfiguration):
-                raise NRPServicesGeneralException(
-                    "BIBI configuration file content is not valid.",
-                    "BIBI not valid"
-                )
-
+        bibi, bibi_file_path = client.clone_bibi_file_from_collab_context()
         # Remove all populations from BIBI.
         del bibi.brainModel.populations[:]
 

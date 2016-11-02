@@ -6,14 +6,14 @@ import inspect
 import unittest
 import shutil
 import os
-from mock import patch, MagicMock
+from mock import patch, MagicMock, mock_open
 from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
     import NeuroroboticsCollabClient, _FlattenedExperimentDirectory
 from hbp_nrp_backend.collab_interface import NRPServicesUploadException
 from bbp_client.document_service.exceptions import DocException
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
-from hbp_nrp_backend.rest_server import app
+from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
 
 
 class TestNeuroroboticsCollabClient(unittest.TestCase):
@@ -291,6 +291,53 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         neurorobotic_collab_client.clone_file_from_collab_context(neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
         self.assertEqual(neurorobotic_collab_client.clone_file_from_collab.call_count, 1)
         neurorobotic_collab_client.clone_file_from_collab.assert_called_with(uuid, neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
+
+    def test_clone_bibi_file_from_collab_context(self):
+        # check that it calls clone_file_from_collab correctly
+         client = NeuroroboticsCollabClient("token", 'aaa')
+         with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab_context") as collab_context_mock:
+             with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient._parse_and_check_file_is_valid") as check_file_is_valid_mock:
+                 collab_context_mock.return_value = "bibi file path"
+                 check_file_is_valid_mock.return_value = "bibi obj"
+                 bibi, bibi_filepath = client.clone_bibi_file_from_collab_context()
+                 self.assertEqual(bibi, "bibi obj")
+                 self.assertEqual(bibi_filepath, "bibi file path")
+                 self.assertEqual(collab_context_mock.call_count, 1)
+                 collab_context_mock.assert_called_with(client.BIBI_CONFIGURATION_MIMETYPE, client.BIBI_CONFIGURATION_FILE_NAME)
+                 self.assertEqual(check_file_is_valid_mock.call_count, 1)
+                 check_file_is_valid_mock.assert_called_with("bibi file path", bibi_api_gen.CreateFromDocument, bibi_api_gen.BIBIConfiguration)
+                 # check exception is raised when file could not be cloned.
+                 collab_context_mock.return_value = None
+                 self.assertRaises(NRPServicesGeneralException, client.clone_bibi_file_from_collab_context)
+
+    def test_clone_exp_file_from_collab_context(self):
+        # check that it calls clone_file_from_collab correctly
+         client = NeuroroboticsCollabClient("token", 'aaa')
+         with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab_context") as collab_context_mock:
+             with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient._parse_and_check_file_is_valid") as check_file_is_valid_mock:
+                 collab_context_mock.return_value = "exp file path"
+                 check_file_is_valid_mock.return_value = "exp obj"
+                 exp, exp_filepath = client.clone_exp_file_from_collab_context()
+                 self.assertEqual(exp, "exp obj")
+                 self.assertEqual(exp_filepath, "exp file path")
+                 self.assertEqual(collab_context_mock.call_count, 1)
+                 collab_context_mock.assert_called_with(client.EXPERIMENT_CONFIGURATION_MIMETYPE, client.EXPERIMENT_CONFIGURATION_FILE_NAME)
+                 self.assertEqual(check_file_is_valid_mock.call_count, 1)
+                 check_file_is_valid_mock.assert_called_with("exp file path", exp_conf_api_gen.CreateFromDocument, exp_conf_api_gen.ExD_)
+                 # check exception is raised when file could not be cloned.
+                 collab_context_mock.return_value = None
+                 self.assertRaises(NRPServicesGeneralException, client.clone_exp_file_from_collab_context)
+
+    def test_parse_and_check_file_is_valid(self):
+        client = NeuroroboticsCollabClient("token", 'aaa')
+        with patch("__builtin__.open", mock_open(read_data="file data")) as mock_file:
+            # check exception is raised when the resulting object has the wrong instance type
+            self.assertRaises(NRPServicesGeneralException, client._parse_and_check_file_is_valid, "filepath", str, int)
+            # check an exception is raised when the xml is not parsed correctly
+            self.assertRaises(NRPServicesGeneralException, client._parse_and_check_file_is_valid, "im not valid", exp_conf_api_gen.CreateFromDocument, exp_conf_api_gen.ExD_)
+            # check everything works as expected with normal input
+            file_content = client._parse_and_check_file_is_valid("filepath", str, str)
+            self.assertEqual(file_content, "file data")
 
     def test_get_first_file_path_with_mimetype(self):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
