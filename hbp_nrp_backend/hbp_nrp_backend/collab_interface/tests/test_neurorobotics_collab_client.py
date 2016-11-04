@@ -375,7 +375,16 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             ncc.get_mimetype(brain_file_path),
             ncc.BRAIN_PYNN_MIMETYPE
         )
-
+        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain_3.py')
+        self.assertEqual(
+            ncc.get_mimetype(brain_file_path),
+            ncc.BRAIN_PYNN_MIMETYPE
+        )
+        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain_4.py')
+        self.assertEqual(
+            ncc.get_mimetype(brain_file_path),
+            ncc.BRAIN_PYNN_MIMETYPE
+        )
     def test_flatten_bibi_configuration(self):
         exp_configuration = os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml')
         expected_list = [

@@ -93,7 +93,10 @@ class NeuroroboticsCollabClient(object):
         elif (os.path.splitext(file_name)[1] == '.sdf') and\
              (self.find_regexp(file_path, r'<model', re.I)):
             mimetype = self.SDF_ROBOT_MIMETYPE
-        elif (self.find_regexp(file_path, r'import\s+pyNN|from\s+PyNN\s+import')):
+        elif (self.find_regexp(file_path, r'import\s+pyNN|from\s+PyNN\s+import') or
+              self.find_regexp(
+                  file_path,
+                  r'import\s+hbp_nrp_cle\.brainsim|from\s+hbp_nrp_cle\.brainsim\s+import')):
             mimetype = self.BRAIN_PYNN_MIMETYPE
         elif (os.path.splitext(file_name)[1] == '.py'):
             mimetype = self.TRANSFER_FUNCTIONS_PY_MIMETYPE
