@@ -5,6 +5,7 @@ This module contains the simulation server implementation of the simulation life
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_cleserver.server import TOPIC_LIFECYCLE
 from hbp_nrp_cle.tf_framework import TFException
+from cle_ros_msgs.msg import CLEError
 import threading
 import logging
 import sys
@@ -28,12 +29,13 @@ class SimulationServerLifecycle(SimulationLifecycle):
     Implements the simulation server lifecycle of a simulation
     """
 
-    def __init__(self, sim_id, cle, server):
+    def __init__(self, sim_id, cle, server, except_hook=None):
         self.stopped = lambda: None
         super(SimulationServerLifecycle, self).__init__(TOPIC_LIFECYCLE(sim_id))
         self.__start_thread = None
         self.__cle = cle
         self.__server = server
+        self.__except_hook = except_hook or logger.exception
         self.__done_event = threading.Event()
 
     @property
@@ -52,10 +54,12 @@ class SimulationServerLifecycle(SimulationLifecycle):
         try:
             self.__cle.start()
         except TFException, e:
-            self.__server.publish_error("Transfer Function", e.error_type, str(e), e.tf_name)
+            self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, e.error_type,
+                                        str(e), e.tf_name)
         except Exception, e:
-            self.__server.publish_error("CLE", "General Error", str(e))
-            raise
+            self.__server.publish_error("CLE", "General Error", str(e),
+                                        severity=CLEError.SEVERITY_CRITICAL)
+            self.failed()
 
     def shutdown(self, shutdown_event):
         """
@@ -91,7 +95,11 @@ class SimulationServerLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to stop
         """
-        self.__cle.stop(forced=True)
+        try:
+            self.__cle.stop(forced=True)
+        # pylint: disable=broad-except
+        except Exception as e:
+            self.__except_hook(e)
         if self.__start_thread is not None:
             self.__start_thread.join(60)
             if self.__start_thread.isAlive():

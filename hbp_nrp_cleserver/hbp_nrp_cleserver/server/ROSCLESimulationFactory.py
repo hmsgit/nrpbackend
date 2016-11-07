@@ -18,8 +18,7 @@ from cle_ros_msgs import srv
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMULATION, \
     SERVICE_VERSION, SERVICE_IS_SIMULATION_RUNNING
 
-from hbp_nrp_commons.generated import bibi_api_gen
-from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from pyxb import ValidationError, NamespaceError
 
 
@@ -46,18 +45,30 @@ class ROSCLESimulationFactory(object):
         self.__is_running_simulation_terminating = False
         self.simulation_terminate_event = threading.Event()
 
+        self.__create_simulation_service = None
+
     def initialize(self):
         """
         Initializes the Simulation factory
         """
         rospy.init_node(ROS_CLE_NODE_NAME, anonymous=True)
-        rospy.Service(
+        self.__create_simulation_service = rospy.Service(
             SERVICE_CREATE_NEW_SIMULATION, srv.CreateNewSimulation, self.create_new_simulation
         )
         rospy.Service(
             SERVICE_IS_SIMULATION_RUNNING, srv.IsSimulationRunning, self.is_simulation_running
         )
         rospy.Service(SERVICE_VERSION, srv.GetVersion, self.get_version)
+
+    def except_hook(self, e):
+        """
+        Gets called when the simulation server has to shut down due to an exception
+
+        :param e: The exception that caused the simulation server to give up
+        """
+        logger.exception(e)
+        logger.info("Giving up the simulation server")
+        self.__create_simulation_service.shutdown()
 
     @staticmethod
     def run():
@@ -142,7 +153,7 @@ class ROSCLESimulationFactory(object):
                                                bibi,
                                                get_experiment_basepath(exd_config_file),
                                                gzserver_host, sim_id)
-                    cle_launcher.cle_function_init(environment_file, timeout)
+                    cle_launcher.cle_function_init(environment_file, timeout, self.except_hook)
                     if cle_launcher.cle_server is None:
                         raise Exception("Error in cle_function_init. Cannot start simulation.")
 

@@ -12,7 +12,7 @@ import pytz
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFactory
 from mock import Mock, patch
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
-from hbp_nrp_cle.robotsim.LocalGazebo import LocalGazeboServerInstance
+from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance
 PATH = os.getcwd()
 tz = pytz.timezone("Europe/Zurich")
 if not os.path.exists("ExDConf"):
@@ -28,10 +28,6 @@ class MockedServiceRequest(object):
     timeout = str(datetime.now(tz) + timedelta(minutes=5))
 
 
-LocalGazeboServerInstance.start = LocalGazeboServerInstance.stop = \
-    LocalGazeboServerInstance.restart = Mock()
-
-
 class MockedGazeboHelper(object):
 
     def load_gazebo_world_file(self, world):
@@ -40,6 +36,14 @@ class MockedGazeboHelper(object):
     def __getattr__(self, x):
         return Mock()
 
+
+class MockOs(object):
+    environ = os.environ
+    system = Mock()
+
+
+@patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
+@patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLEServer", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)

@@ -27,8 +27,9 @@ from hbp_nrp_commons.generated import exp_conf_api_gen
 
 from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
 from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
-from hbp_nrp_cle.robotsim.LocalGazebo import LocalGazeboBridgeInstance, LocalGazeboServerInstance
-from hbp_nrp_cle.robotsim.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
+from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboBridgeInstance, \
+    LocalGazeboServerInstance
+from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
 from hbp_nrp_cle.robotsim.GazeboHelper import GazeboHelper
 
 # These imports start NEST.
@@ -85,7 +86,20 @@ class CLELauncher(object):
         self.gzweb = None
         self.gzserver = None
 
-    def cle_function_init(self, world_file, timeout=None):
+    def __handle_gazebo_shutdown(self):
+        """
+        Handles the case that Gazebo was shut down
+
+        :param close_error: Any exception happened while closing Gazebo
+        """
+        logger.exception("Gazebo died unexpectedly")
+        if self.cle_server is not None:
+            # Set the simulation to halted
+            self.cle_server.lifecycle.failed()
+            # If not already stopped, free simulation resources
+            self.cle_server.lifecycle.stopped()
+
+    def cle_function_init(self, world_file, timeout=None, except_hook=None):
         """
         Initialize the Close Loop Engine. We still need the "world file" parameter
         in case the user is starting the experiment from the old web interface
@@ -93,6 +107,7 @@ class CLELauncher(object):
 
         :param world_file: The environment (SDF) world file.
         :param timeout: The datetime object when the simulation timeouts or None
+        :param except_hook: A handler method for critical exceptions
         """
 
         logger.info("Path is " + self.__experiment_path)
@@ -144,16 +159,17 @@ class CLELauncher(object):
         gzserver = None
         if self.__gzserver_host == 'local':
             gzserver = LocalGazeboServerInstance()
-            gzserver.restart(ros_master_uri)
         elif self.__gzserver_host == 'lugano':
             gzserver = LuganoVizClusterGazebo()
-            try:
-                gzserver.start(ros_master_uri)
-            except XvfbXvnError as exception:
-                logger.error(exception)
-                error = "Recoverable error occurred. Please try again. Reason: {0}".format(
-                        exception)
-                raise(Exception(error))
+        gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
+
+        try:
+            gzserver.start(ros_master_uri)
+        except XvfbXvnError as exception:
+            logger.error(exception)
+            error = "Recoverable error occurred. Please try again. Reason: {0}".format(
+                    exception)
+            raise(Exception(error))
 
         self.__gazebo_helper = GazeboHelper()
 
@@ -253,7 +269,7 @@ class CLELauncher(object):
         cle.initial_lights = w_lights
 
         # Now that we have everything ready, we could prepare the simulation
-        cle_server.prepare_simulation(cle)
+        cle_server.prepare_simulation(cle, except_hook)
 
         Notificator.notify("Injecting Transfer Functions", True)  # subtask 8
 

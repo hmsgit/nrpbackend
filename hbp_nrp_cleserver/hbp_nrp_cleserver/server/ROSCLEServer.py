@@ -148,15 +148,16 @@ class ROSCLEServer(object):
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Runtime", str(tf_error),
                                severity=CLEError.SEVERITY_ERROR, function_name=tf.name)
 
-    def prepare_simulation(self, cle):
+    def prepare_simulation(self, cle, except_hook=None):
         """
         The CLE will be initialized within this method and ROS services for
         starting, pausing, stopping and resetting are setup here.
 
         :param cle: the closed loop engine
+        :param except_hook: A handler method for critical exceptions
         """
         self.__cle = cle
-        self.__lifecycle = SimulationServerLifecycle(self.__simulation_id, cle, self)
+        self.__lifecycle = SimulationServerLifecycle(self.__simulation_id, cle, self, except_hook)
 
         logger.info("Registering ROS Service handlers")
 
@@ -216,6 +217,13 @@ class ROSCLEServer(object):
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
         self.__timer.start()
+
+    @property
+    def lifecycle(self):
+        """
+        Gets the lifecycle instance representing the current ROSCLEServer
+        """
+        return self.__lifecycle
 
     def __get_remaining(self):
         """
