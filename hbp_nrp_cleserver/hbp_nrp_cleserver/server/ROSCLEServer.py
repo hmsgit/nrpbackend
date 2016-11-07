@@ -362,17 +362,22 @@ class ROSCLEServer(object):
                         mapping = spec.neurons
 
                         if mapping is not None:
-                            parent_node = mapping.parent
-                            if str(parent_node.name) == str(old_changed[0]):
+                            node = None
+                            # required item is either neurons or its parent
+                            if str(mapping.name) == str(old_changed[0]):
+                                node = mapping
+                            elif str(mapping.parent.name) == str(old_changed[0]):
+                                node = mapping.parent
+                            if node:
                                 if request.change_population == \
                                         srv.SetBrainRequest.ASK_RENAME_POPULATION:
-                                    #here we send a reply to the frontend to ask
-                                    #the user a permission to change TFs
+                                    # here we send a reply to the frontend to ask
+                                    # the user a permission to change TFs
                                     return ["we ask the user if we change TFs", 0, 0, 1]
                                 elif request.change_population == \
                                         srv.SetBrainRequest.DO_RENAME_POPULATION:
-                                    #premission granted, so we change TFs
-                                    parent_node.name = new_added[0]
+                                    # permission granted, so we change TFs
+                                    node.name = new_added[0]
                                     tfHasChanged = True
             if tfHasChanged:
                 source = tf.source
