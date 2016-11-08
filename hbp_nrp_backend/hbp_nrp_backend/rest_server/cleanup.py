@@ -20,7 +20,7 @@ def clean_simulations():  # pragma: no cover
     This function is not unit-tested as it contains an endless loop
     """
     while True:
-        time.sleep(600)
+        time.sleep(300)
         logger.info("Start cleanup")
         current_time = datetime.datetime.now(timezone)
         for sim in simulations:

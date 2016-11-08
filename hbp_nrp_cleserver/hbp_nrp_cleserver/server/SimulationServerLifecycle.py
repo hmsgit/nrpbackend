@@ -4,7 +4,6 @@ This module contains the simulation server implementation of the simulation life
 
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_cleserver.server import TOPIC_LIFECYCLE
-from hbp_nrp_cleserver.server.DoubleTimer import DoubleTimer
 from hbp_nrp_cle.tf_framework import TFException
 import threading
 import logging
@@ -29,23 +28,12 @@ class SimulationServerLifecycle(SimulationLifecycle):
     Implements the simulation server lifecycle of a simulation
     """
 
-    STATUS_UPDATE_INTERVAL = 1.0
-
-    def __init__(self, sim_id, cle, timeout, server):
+    def __init__(self, sim_id, cle, server):
         self.stopped = lambda: None
         super(SimulationServerLifecycle, self).__init__(TOPIC_LIFECYCLE(sim_id))
         self.__start_thread = None
         self.__cle = cle
-        self.__timeout = timeout
         self.__server = server
-        self.__double_timer = DoubleTimer(
-            self.STATUS_UPDATE_INTERVAL,
-            server.publish_state_update,
-            self.__timeout,
-            self.quit_by_timeout
-        )
-        self.__double_timer.start()
-        self.start_timeout()
         self.__done_event = threading.Event()
 
     @property
@@ -56,34 +44,6 @@ class SimulationServerLifecycle(SimulationLifecycle):
         :return: An event that will be set as soon as the lifecycle is done
         """
         return self.__done_event
-
-    def start_timeout(self):
-        """
-        Start the timeout on the current simulation
-        """
-        self.__double_timer.enable_second_callback()
-        logger.info("Simulation will timeout in %f seconds", self.__timeout)
-
-    def stop_timeout(self):
-        """
-        Stop the timeout
-        """
-        if self.__double_timer.is_expiring:
-            self.__double_timer.disable_second_callback()
-            logger.info("Timeout stopped")
-
-    def quit_by_timeout(self):
-        """
-        Stops the simulation
-        """
-        self.stopped()
-        logger.info("Force quitting the simulation")
-
-    def remaining_time(self):
-        """
-        Gets the remaining time for the simulation
-        """
-        return self.__double_timer.remaining_time()
 
     def __simulation(self):
         """
@@ -131,8 +91,6 @@ class SimulationServerLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to stop
         """
-        self.stop_timeout()
-        self.__double_timer.cancel_all()
         self.__cle.stop(forced=True)
         if self.__start_thread is not None:
             self.__start_thread.join(60)
@@ -148,9 +106,7 @@ class SimulationServerLifecycle(SimulationLifecycle):
 
         :param state_change: The state change according to the failure
         """
-        self.stop_timeout()
-        self.__double_timer.cancel_all()
-        self.__cle.stop()
+        self.__cle.stop(forced=True)
         self.__server.publish_state_update()
 
     def pause(self, state_change):

@@ -4,19 +4,20 @@ ROSCLESimulationFactory unit test
 
 import hbp_nrp_cle
 from hbp_nrp_cleserver.server import ROSCLESimulationFactory, ROS_CLE_NODE_NAME, SERVICE_VERSION,\
-    SERVICE_CREATE_NEW_SIMULATION, SERVICE_HEALTH
+    SERVICE_CREATE_NEW_SIMULATION
 import logging
 from mock import patch, MagicMock, Mock
 from testfixtures import log_capture, LogCapture
 import unittest
-import json
+from datetime import datetime, timedelta
+import pytz
 import threading
 from cle_ros_msgs import srv
 import os
 import time
-from testfixtures import log_capture
 import sys
 PATH = os.getcwd()
+tz = pytz.timezone("Europe/Zurich")
 if not os.path.exists("ExDConf"):
     PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
 
@@ -37,6 +38,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         gzserver_host = "local"
         brain_processes = 1
         sim_id = 0
+        timeout = str(datetime.now(tz) + timedelta(minutes=5))
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     def setUp(self, mocked_logger):
@@ -134,7 +136,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         with patch('hbp_nrp_cle.robotsim.LocalGazebo.LocalGazeboServerInstance.gazebo_master_uri')\
             as mock_gazebo_master_uri:
             mock_gazebo_master_uri.__get__ = Mock(return_value=None)
-            messages = self.__ros_cle_simulation_factory.create_new_simulation(
+            self.__ros_cle_simulation_factory.create_new_simulation(
                 self.mocked_service_request
             )
 
@@ -148,12 +150,6 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         )
         self.assertTrue(self.__mocked_thread.daemon)
         self.assertTrue(self.__mocked_thread.start.called)
-        self.assertEqual(len(messages), 2)
-        result = messages[0]
-        error_message = messages[1]
-
-        self.assertTrue(result)
-        self.assertEqual(error_message, "")
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     def test_create_new_simulation_living_thread(self, mocked_logger):
@@ -162,7 +158,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
             return_value=True
         )
 
-        messages = self.__ros_cle_simulation_factory.create_new_simulation(
+        self.assertRaises(Exception, self.__ros_cle_simulation_factory.create_new_simulation,
             self.mocked_service_request
         )
 
@@ -173,13 +169,6 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                             self.__mocked_thread)
         self.__ros_cle_simulation_factory.running_simulation_thread.is_alive.\
             assert_called_once_with()
-
-        self.assertEqual(len(messages), 2)
-        result = messages[0]
-        error_message = messages[1]
-
-        self.assertFalse(result)
-        self.assertNotEqual(error_message, "")
 
     @log_capture(level=logging.WARNING)
     def test_set_up_logger(self, logcapture):

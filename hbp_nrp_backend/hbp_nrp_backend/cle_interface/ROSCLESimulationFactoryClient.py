@@ -31,19 +31,9 @@ class ROSCLESimulationFactoryClient(object):
         self.__create_new_simulation_service.wait_for_service(timeout=10)
 
     def create_new_simulation(self, environment_file, experiment_conf, gzserver_host,
-                              brain_processes, sim_id):
+                              brain_processes, sim_id, timeout):
         """
         Start the simulation.
         """
-        response = self.__create_new_simulation_service(environment_file, experiment_conf,
-                                                        gzserver_host, brain_processes, sim_id)
-        success, status_message = response.success, response.status_message
-        if not success:
-            raise SimulationStartingFailureException(status_message)
-
-
-class SimulationStartingFailureException(Exception):
-    """
-    Exception raised when the create_new_simulation fails.
-    """
-    pass
+        self.__create_new_simulation_service(environment_file, experiment_conf,
+                                             gzserver_host, brain_processes, sim_id, timeout)

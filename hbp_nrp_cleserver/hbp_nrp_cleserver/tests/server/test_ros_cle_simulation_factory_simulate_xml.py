@@ -7,12 +7,14 @@ __author__ = 'Bernd Eckstein'
 
 import unittest
 import os
-
+from datetime import datetime, timedelta
+import pytz
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFactory
 from mock import Mock, patch
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_cle.robotsim.LocalGazebo import LocalGazeboServerInstance
 PATH = os.getcwd()
+tz = pytz.timezone("Europe/Zurich")
 if not os.path.exists("ExDConf"):
     PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
 
@@ -23,6 +25,7 @@ class MockedServiceRequest(object):
     gzserver_host = "local"
     brain_processes = 1
     sim_id = 0
+    timeout = str(datetime.now(tz) + timedelta(minutes=5))
 
 
 LocalGazeboServerInstance.start = LocalGazeboServerInstance.stop = \

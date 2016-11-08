@@ -85,13 +85,14 @@ class CLELauncher(object):
         self.gzweb = None
         self.gzserver = None
 
-    def cle_function_init(self, world_file):
+    def cle_function_init(self, world_file, timeout=None):
         """
         Initialize the Close Loop Engine. We still need the "world file" parameter
         in case the user is starting the experiment from the old web interface
         with the "Upload custom environment" button
 
-        @param world_file: The environment (SDF) world file.
+        :param world_file: The environment (SDF) world file.
+        :param timeout: The datetime object when the simulation timeouts or None
         """
 
         logger.info("Path is " + self.__experiment_path)
@@ -99,7 +100,7 @@ class CLELauncher(object):
 
         # Create ROS server
         logger.info("Creating ROSCLEServer")
-        cle_server = ROSCLEServer(self.__sim_id)
+        cle_server = ROSCLEServer(self.__sim_id, timeout)
         logger.info("Setting up backend Notificator")
         Notificator.register_notification_function(
             lambda subtask, update_progress:
@@ -252,7 +253,7 @@ class CLELauncher(object):
         cle.initial_lights = w_lights
 
         # Now that we have everything ready, we could prepare the simulation
-        cle_server.prepare_simulation(cle, self.__exd_conf.timeout)
+        cle_server.prepare_simulation(cle)
 
         Notificator.notify("Injecting Transfer Functions", True)  # subtask 8
 

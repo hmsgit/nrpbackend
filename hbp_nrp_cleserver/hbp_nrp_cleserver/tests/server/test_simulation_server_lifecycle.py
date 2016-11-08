@@ -29,31 +29,12 @@ class TestSimulationServerLifecycle(unittest.TestCase):
         self.mock_threading.Event.return_value = self.mock_event_instance
         self.mock_threading.Thread.return_value = self.mock_thread_instance
 
-        self.ssl = SimulationServerLifecycle(0, self.mock_cle, 15, self.mock_server)
+        self.ssl = SimulationServerLifecycle(0, self.mock_cle, self.mock_server)
 
     def test_init(self):
         self.mock_double_timer_instance.start.assert_called()
         self.mock_double_timer_instance.enable_second_callback.assert_called()
         self.mock_threading.Event.assert_called()
-
-    def test_timeout(self):
-        # Initializing the new object
-        self.mock_double_timer_instance.enable_second_callback.assert_called()
-        # Trying to stop the timeout when not expiring
-        self.mock_double_timer_instance.is_expiring = False
-        self.ssl.stop_timeout()
-        self.assertFalse(self.mock_double_timer_instance.disable_second_callback.called)
-        # Trying to stop the timeout when expiring
-        self.mock_double_timer_instance.is_expiring = True
-        self.ssl.stop_timeout()
-        self.mock_double_timer_instance.disable_second_callback.assert_called()
-        # Checking if quit_by_timeout calls the right transition
-        self.ssl.stopped = MagicMock()
-        self.ssl.quit_by_timeout()
-        self.ssl.stopped.assert_called()
-        # Checking if the remaining time is retrieved from DoubleTimer
-        self.ssl.remaining_time()
-        self.mock_double_timer_instance.remaining_time.assert_called()
 
     def test_initialize(self):
         # Trying to initialize with initialized CLE
