@@ -337,8 +337,8 @@ def get_experiment_basepath():
     return path
 
 
-if __name__ == '__main__':
-
+if __name__ == '__main__': # pragma: no cover
+    # TODO: This should be separated into its own method such that we can unit test this code
     try:
         if os.environ["ROS_MASTER_URI"] == "":
             raise Exception("You should run ROS first.")

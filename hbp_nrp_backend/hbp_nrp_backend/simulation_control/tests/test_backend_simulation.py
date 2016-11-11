@@ -44,6 +44,9 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 self.lifecycle = BackendSimulationLifecycle(self.simulation)
                 self.lifecycle.models_path = path.split(__file__)[0]
 
+        self.assertEqual("", self.lifecycle.experiment_path)
+        self.assertEqual("", self.lifecycle.simulation_root_folder)
+
     def test_backend_initialize_non_collab(self):
         self.lifecycle.initialize(Mock())
 
@@ -56,6 +59,9 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
 
         # Assert the simulation will be killed eventually
         self.assertIsInstance(self.simulation.kill_datetime, datetime.datetime)
+
+        self.assertEqual(self.lifecycle.simulation_root_folder, self.lifecycle.models_path)
+        self.assertIsNotNone(self.lifecycle.experiment_path)
 
     def test_backend_initialize_state_machines(self):
         self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
@@ -92,6 +98,9 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         # Assert that the state machine experiment has been called
         state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]
         self.assertEqual(2, len(state_machines))
+
+        self.assertIsNotNone(self.lifecycle.experiment_path)
+        self.assertIsNotNone(self.lifecycle.simulation_root_folder)
 
     def test_backend_initialize_nonexisting_experiment(self):
         self.simulation.experiment_conf = "DoesNotExist.xml"

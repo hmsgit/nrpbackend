@@ -39,6 +39,13 @@ class TestSimulation(unittest.TestCase):
         sim_gzserver_host = 'some_gzserver_host'
         self.__simulation = Simulation(sim_id, experiment_conf, None, owner, sim_gzserver_host)
         sm_path = path.join(path.split(__file__)[0], "sm_mock.py")
+
+        self.assertIsNotNone(self.__simulation.kill_datetime)
+        self.assertIsNotNone(self.__simulation.lifecycle)
+        self.assertIsNotNone(self.__simulation.creation_datetime)
+
+        self.assertGreater(self.__simulation.kill_datetime, self.__simulation.creation_datetime)
+
         self.create_sm_mock('SM1', 0, sm_path)
         self.create_sm_mock('SM2', 0)
         self.create_sm_mock('SM3', 0, sm_path)
@@ -49,6 +56,10 @@ class TestSimulation(unittest.TestCase):
     def tearDown(self):
         self.mock_state = self.patch_state.stop()
         sim_module.StateMachineInstance = self.original_smi
+
+    def test_set_killtime_early(self):
+        self.__simulation.kill_datetime = self.__simulation.creation_datetime
+        self.assertEqual(self.__simulation.kill_datetime, self.__simulation.creation_datetime)
 
     def test_simulation_constructor(self):
         sim_id = 2

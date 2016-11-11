@@ -219,5 +219,23 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                             (self.LOGGER_NAME, 'WARNING', '  dummy_line'),
                             (self.LOGGER_NAME, 'WARNING', '*** STACKTRACE - END ***'))
 
+class Args(object):
+    logfile = None
+    pycharm = False
+    verbose = False
+
+class TestSimulationFactoryMain(unittest.TestCase):
+    @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.argparse.ArgumentParser.parse_args")
+    @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.signal")
+    @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.ROSCLESimulationFactory")
+    def test_main(self, factory, signal, argparse):
+        argparse.return_value = Args
+        ROSCLESimulationFactory.main()
+        self.assertTrue(signal.signal.called)
+        factory.assert_called_once_with()
+        factory().initialize.assert_called_once_with()
+        factory().run.assert_called_once_with()
+        argparse.assert_called_with()
+
 if __name__ == '__main__':
     unittest.main()

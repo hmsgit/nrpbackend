@@ -2,7 +2,7 @@
 This module contains the REST implementation for the control of the simulation state
 """
 
-__author__ = 'GeorgHinkel'
+__author__ = 'Georg Hinkel'
 
 from flask import request
 from flask_restful import Resource, fields

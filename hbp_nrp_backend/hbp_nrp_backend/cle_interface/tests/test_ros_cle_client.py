@@ -15,12 +15,14 @@ from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation, ResetSimul
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, SetTransferFunction, \
     DeleteTransferFunction, GetBrain, SetBrain
-from mock import patch, MagicMock
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
+from mock import patch, MagicMock, Mock
+from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 import unittest
 
 from cle_ros_msgs import srv
 
-__author__ = 'HBP NRP software team'
+__author__ = 'Lorenzo Vannucci, Daniel peppicelli, Georg Hinkel'
 
 
 class TestROSCLEClient(unittest.TestCase):
@@ -67,6 +69,7 @@ class TestROSCLEClient(unittest.TestCase):
 
         # When everything is fine, the service should just be called
         service_wrapper = ROSCLEClient.ROSCLEServiceWrapper('service_name', Empty, client)
+        self.assertEqual(client, service_wrapper.ros_cle_client)
         service_wrapper()
         self.assertEquals(service_wrapper.handler.call_count, 1)
 
@@ -95,6 +98,9 @@ class TestROSCLEClient(unittest.TestCase):
         client._ROSCLEClient__cle_get_transfer_functions = MagicMock(return_value=msg)
         self.assertEquals(client.get_simulation_transfer_functions(), msg.transfer_functions)
 
+        client.stop_communication("Test stop")
+        self.assertEqual([], client.get_simulation_transfer_functions())
+
     def test_set_simulation_transfer_function(self):
         msg = SetTransferFunction()
         resp = msg._response_class(error_message="Some error message")
@@ -106,6 +112,10 @@ class TestROSCLEClient(unittest.TestCase):
             client.set_simulation_transfer_function("tf_1", "def tf_1(): \n return 1"),
             resp.error_message)
 
+        client.stop_communication("Test stop")
+        with self.assertRaises(ROSCLEClientException):
+            client.set_simulation_transfer_function("tf_1", "def tf_1(): \n return 1")
+
     def test_delete_simulation_transfer_function(self):
         msg = DeleteTransferFunction()
         resp = msg._response_class(success=True)
@@ -114,6 +124,9 @@ class TestROSCLEClient(unittest.TestCase):
 
         client._ROSCLEClient__cle_delete_transfer_function = MagicMock(return_value=resp)
         self.assertEquals(client.delete_simulation_transfer_function("tf_1"), resp.success)
+
+        client.stop_communication("Test stop")
+        self.assertFalse(client.delete_simulation_transfer_function("tf_1"))
 
     def test_get_brain(self):
         msg = GetBrain()
@@ -124,6 +137,10 @@ class TestROSCLEClient(unittest.TestCase):
 
         client._ROSCLEClient__cle_get_brain = MagicMock(return_value=resp)
         self.assertEquals(client.get_simulation_brain(), resp)
+
+        client.stop_communication("Test stop")
+        with self.assertRaises(ROSCLEClientException):
+            client.get_simulation_brain()
 
     def test_set_brain(self):
         msg = SetBrain()
@@ -138,6 +155,44 @@ class TestROSCLEClient(unittest.TestCase):
             'data', 'py', 'text', '{"population_1": 2}', change_population), resp)
         client._ROSCLEClient__cle_set_brain.assert_called_once_with(
             'data', 'py', 'text', '{"population_1": 2}', change_population)
+
+        client.stop_communication("Test stop")
+        with self.assertRaises(ROSCLEClientException):
+            client.set_simulation_brain('data', 'py', 'text', '{"population_1": 2}', change_population)
+
+    def test_get_populations(self):
+        client = ROSCLEClient.ROSCLEClient(0)
+
+        populations = Mock()
+        populations.neurons = [
+            PopulationInfo("foo", "bar", [ NeuronParameter("p", 42.0) ], [0, 8, 15])
+        ]
+
+        client._ROSCLEClient__cle_get_populations = Mock(return_value=populations)
+        self.assertEqual(client.get_populations(), {
+            'populations': [
+                {
+                    'name': 'foo',
+                    'neuron_model': 'bar',
+                    'parameters': [{ 'parameterName': 'p', 'value': 42.0}],
+                    'gids': [0,8,15]
+                }
+            ]
+        })
+
+    def test_get_csv_files(self):
+        client = ROSCLEClient.ROSCLEClient(0)
+
+        files = Mock()
+        files.files = [
+            CSVRecordedFile("foo", "foo.csv"), CSVRecordedFile("bar", "bar.csv")
+        ]
+
+        client._ROSCLEClient__cle_get_CSV_recorders_files = Mock(return_value=files)
+        self.assertEqual(client.get_simulation_CSV_recorders_files(), files.files)
+
+        client.stop_communication("Test stop")
+        self.assertEqual(client.get_simulation_CSV_recorders_files(), files.files)
 
 if __name__ == '__main__':
     unittest.main()

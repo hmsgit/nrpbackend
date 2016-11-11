@@ -364,7 +364,7 @@ def main():
                         nargs='+')
     args = parser.parse_args()
 
-    if args.pycharm:
+    if args.pycharm:  # pragma: no cover
         # pylint: disable=import-error
         import pydevd
 
