@@ -2,7 +2,7 @@
 This module contains a small python program that checks the availability of a local program
 """
 
-from hbp_nrp_cleserver.server.Timer import Timer
+from hbp_nrp_watchdog.Timer import Timer
 import psutil
 import logging
 

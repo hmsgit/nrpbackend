@@ -50,7 +50,7 @@ function subVersion() {
     version=$1
     file=$2
     echo " ... "$file
-    list="hbp-nrp-commons hbp-nrp-cleserver hbp-nrp-backend"
+    list="hbp-nrp-commons hbp-nrp-cleserver hbp-nrp-backend hbp-nrp-watchdog"
     for i in $list; do
         sed -i "/$i/c\\$i==$version" $file
     done
@@ -90,10 +90,12 @@ echo "Setting versions to '"$version"'" in ...
 setVersion $version hbp_nrp_commons/hbp_nrp_commons/version.py
 setVersion $version hbp_nrp_cleserver/hbp_nrp_cleserver/version.py
 setVersion $version hbp_nrp_backend/hbp_nrp_backend/version.py
+setVersion $version hbp_nrp_watchdog/hbp_nrp_watchdog/version.py
 
 subVersion $version hbp_nrp_commons/requirements.txt
 subVersion $version hbp_nrp_cleserver/requirements.txt
 subVersion $version hbp_nrp_backend/requirements.txt
+subVersion $version hbp_nrp_watchdog/requirements.txt
 
 echo done.
 echo

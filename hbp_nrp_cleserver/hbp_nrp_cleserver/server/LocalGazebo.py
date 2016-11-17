@@ -3,7 +3,7 @@ This module contains the classes needed to have all gazebo services running loca
 """
 
 from hbp_nrp_cleserver.server.GazeboInterface import IGazeboServerInstance, IGazeboBridgeInstance
-from hbp_nrp_cleserver.server.Watchdog import Watchdog
+from hbp_nrp_watchdog.Watchdog import Watchdog
 import os
 from hbp_nrp_cle import config
 import logging
