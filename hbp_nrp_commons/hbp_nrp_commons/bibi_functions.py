@@ -242,7 +242,10 @@ def get_all_neurons_as_dict(populations):
     pop = dict()
     for neurons in populations:
         if isinstance(neurons, bibi_api_gen.Range):
-            pop[neurons.population] = slice(neurons.from_, neurons.to)
+            if hasattr(neurons, 'step'):
+                pop[neurons.population] = slice(neurons.from_, neurons.to, neurons.step)
+            else:
+                pop[neurons.population] = slice(neurons.from_, neurons.to)
         elif isinstance(neurons, bibi_api_gen.List):
             n_list = []
             for element in neurons.element:

@@ -2,6 +2,8 @@
 Takes care of making the appropriate ROS call(s) to control a simulation.
 On the other side of ROS, the calls are handled by ROSCLEServer.py
 """
+import sys
+python3 = True if sys.hexversion > 0x03000000 else False
 
 import logging
 import rospy
@@ -175,6 +177,18 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
+
+        if populations is not None:
+            for pop in populations:
+                _x = pop.name
+                if python3 or type(_x) == unicode:
+                    _x = _x.encode('utf-8')
+                else:
+                    _x = str(_x)
+                pop.name = _x
+                if pop.step <= 0:
+                    pop.step = 1
+
         resp = self.__cle_reset(reset_type=reset_type,
                                 world_sdf=world_sdf if world_sdf is not None else "",
                                 brain_path=brain_path if brain_path is not None else "",
