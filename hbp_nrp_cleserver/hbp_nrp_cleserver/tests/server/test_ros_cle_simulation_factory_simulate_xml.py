@@ -53,7 +53,7 @@ class MockOs(object):
 )
 @patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=PATH))
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
-       new=LocalGazeboServerInstance)
+       new=lambda x: LocalGazeboServerInstance())
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)

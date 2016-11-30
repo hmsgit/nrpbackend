@@ -59,6 +59,14 @@ class LocalGazeboServerInstance(IGazeboServerInstance):
         os.system(config.config.get('gazebo', 'restart-cmd'))
         self.__ensure_watchdog_running()
 
+    # pylint: disable=R0201
+    def try_extend(self, new_timeout): # pylint: disable=unused-argument
+        """
+        Always accept new simulation timeout
+        """
+
+        return True
+
     @property
     def gazebo_master_uri(self):
         """

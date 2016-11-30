@@ -113,9 +113,14 @@ class CLELauncher(object):
         logger.info("Path is " + self.__experiment_path)
         os.chdir(self.__experiment_path)
 
+        if self.__gzserver_host == 'local':
+            gzserver = LocalGazeboServerInstance()
+        elif self.__gzserver_host == 'lugano':
+            gzserver = LuganoVizClusterGazebo(timeout.tzinfo if timeout is not None else None)
+
         # Create ROS server
         logger.info("Creating ROSCLEServer")
-        cle_server = ROSCLEServer(self.__sim_id, timeout)
+        cle_server = ROSCLEServer(self.__sim_id, timeout, gzserver)
         logger.info("Setting up backend Notificator")
         Notificator.register_notification_function(
             lambda subtask, update_progress:
@@ -156,11 +161,6 @@ class CLELauncher(object):
 
         gzweb = LocalGazeboBridgeInstance()
 
-        gzserver = None
-        if self.__gzserver_host == 'local':
-            gzserver = LocalGazeboServerInstance()
-        elif self.__gzserver_host == 'lugano':
-            gzserver = LuganoVizClusterGazebo()
         gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
 
         try:

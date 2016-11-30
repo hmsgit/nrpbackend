@@ -53,6 +53,12 @@ class IGazeboServerInstance(object):
         """
         raise NotImplementedError("This method was not implemented in the concrete implementation")
 
+    def try_extend(self, new_timeout):  # pragma: no cover
+        """"
+        Verifies that the gazebo can accept the new simulation timeout
+        """
+        raise NotImplementedError("This method was not implemented in the concrete implementation")
+
     @property
     def gazebo_master_uri(self):   # pragma: no cover
         """

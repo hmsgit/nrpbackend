@@ -14,7 +14,7 @@ from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
-    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES
+    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID
     # duplicated from CLE.__init__
 from cle_ros_msgs.srv import ResetSimulation
 
@@ -134,6 +134,10 @@ class ROSCLEClient(object):
         """
         self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), ResetSimulation,
                                                 self)
+
+        self.__cle_extend_timeout = ROSCLEServiceWrapper(
+            SERVICE_SIM_EXTEND_TIMEOUT_ID(sim_id), srv.ExtendTimeout, self)
+
         self.__cle_get_transfer_functions = ROSCLEServiceWrapper(
             SERVICE_GET_TRANSFER_FUNCTIONS(sim_id), srv.GetTransferFunctions, self)
 
@@ -309,3 +313,12 @@ class ROSCLEClient(object):
         {name: 'my_recorder_file.csv', temporary_path: 'my_recorder_file_path'}
         """
         return self.__cle_get_CSV_recorders_files().files
+
+    def extend_simulation_timeout(self, timeout):
+        """
+        Extend the simulation timeout
+
+        :param timeout: new new simulation timeout
+        :returns: "" if the call to ROS is successful
+        """
+        return self.__cle_extend_timeout(str(timeout)).success

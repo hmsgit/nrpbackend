@@ -11,6 +11,7 @@ import logging
 import os
 import sys
 import netifaces
+import datetime
 from hbp_nrp_cleserver.server.GazeboInterface import IGazeboServerInstance
 # We will monitor the remote Gazebo via a remote watchdog, but this implementation is not yet ready
 # pylint: disable=unused-import
@@ -111,8 +112,9 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
     # -A, --account=<account>
     # Charge resources used by this job to specified account.The account is an arbitrary string.
     # The account name maybe changed after job submission using the scontrolcommand.
-    ALLOCATION_COMMAND = ("salloc --immediate=25 --time=0:45:00 -p interactive"
-                          " -c 4 --account=proj30 --gres=gpu:1")
+    ALLOCATION_TIME = datetime.timedelta(hours=10)
+    ALLOCATION_COMMAND = ("salloc --immediate=25 --time=" + str(ALLOCATION_TIME) +
+                          " -p interactive -c 4 --account=proj30 --gres=gpu:1")
     DEALLOCATION_COMMAND = 'scancel %s'
     NODE_DOMAIN = '.cscs.ch'
     # Timeout used for pexpect ssh connection calls.
@@ -122,7 +124,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
     SMALL_TIMEOUT = 2
     DEFAULT_GZSERVER_PORT = 11345
 
-    def __init__(self):
+    def __init__(self, timezone=None):
         super(LuganoVizClusterGazebo, self).__init__()
         self.__allocation_process = None
         self.__x_server_process = None
@@ -134,6 +136,11 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # Holds the state of the SLURM job. The states are defined in SLURM.
         self.__state = "UNDEFINED"
         self.__node = None
+
+        self.__allocation_time = None
+        if timezone is not None:
+            self.__allocation_time = datetime.datetime.now(
+                timezone) + LuganoVizClusterGazebo.ALLOCATION_TIME
 
     def __spawn_ssh_SLURM_frontend(self):
         """
@@ -436,6 +443,13 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
                 pass
 
             raise
+
+    def try_extend(self, new_timeout):
+        """"
+        Verifies that the gazebo can accept the new simulation timeout
+        Returns whether the timeout is accepted
+        """
+        return self.__allocation_time is None or new_timeout <= self.__allocation_time
 
     @property
     def gazebo_master_uri(self):

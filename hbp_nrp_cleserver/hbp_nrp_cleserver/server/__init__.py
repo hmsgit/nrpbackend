@@ -21,6 +21,7 @@ SERVICE_SIM_START_ID = lambda sim_id: '/%s/%d/start' % (ROS_CLE_NODE_NAME, sim_i
 SERVICE_SIM_STOP_ID = lambda sim_id: '/%s/%d/stop' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SIM_PAUSE_ID = lambda sim_id: '/%s/%d/pause' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SIM_RESET_ID = lambda sim_id: '/%s/%d/reset' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_SIM_EXTEND_TIMEOUT_ID = lambda sim_id: '/%s/%d/extend_timeout' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SIM_STATE_ID = lambda sim_id: '/%s/%d/state' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_TRANSFER_FUNCTIONS = lambda sim_id: \
     '/%s/%d/get_transfer_functions' % (ROS_CLE_NODE_NAME, sim_id)

@@ -92,6 +92,7 @@ from hbp_nrp_backend.rest_server.__SimulationCSVRecorders import SimulationCSVRe
 from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__SimulationPopulations import SimulationPopulations
+from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 
 # Register /collab
 api.add_resource(CollabHandler, '/collab/configuration/<string:context_id>')
@@ -122,6 +123,7 @@ api.add_resource(SimulationReset, '/simulation/<int:sim_id>/reset')
 api.add_resource(SimulationResetCollab, '/simulation/<int:sim_id>/<string:context_id>/reset')
 api.add_resource(SimulationService, '/simulation')
 api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
+api.add_resource(SimulationTimeout, '/simulation/<int:sim_id>/extend_timeout')
 api.add_resource(SimulationStateMachine,
                  '/simulation/<int:sim_id>/state-machines/<string:state_machine_name>')
 api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machines')

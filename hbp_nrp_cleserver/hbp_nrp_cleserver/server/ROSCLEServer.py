@@ -27,7 +27,7 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES
+    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID
 from hbp_nrp_cleserver.server import ros_handler, Timer
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException
@@ -36,6 +36,7 @@ from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 import contextlib
 from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
+import dateutil.parser as datetime_parser
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ class ROSCLEServer(object):
     """
     STATUS_UPDATE_INTERVAL = 1.0
 
-    def __init__(self, sim_id, timeout=None):
+    def __init__(self, sim_id, timeout=None, gzserver=None):
         """
         Create the wrapper server
 
@@ -73,6 +74,7 @@ class ROSCLEServer(object):
         self.__cle = None
 
         self.__service_reset = None
+        self.__service_extend_timeout = None
         self.__service_get_transfer_functions = None
         self.__service_set_transfer_function = None
         self.__service_delete_transfer_function = None
@@ -85,6 +87,7 @@ class ROSCLEServer(object):
         self.__timer = Timer.Timer(ROSCLEServer.STATUS_UPDATE_INTERVAL,
                                    self.__publish_state_update)
         self.__timeout = timeout
+        self.__gzserver = gzserver
 
         self.__simulation_id = sim_id
         self.__ros_status_pub = rospy.Publisher(
@@ -175,6 +178,11 @@ class ROSCLEServer(object):
             lambda x: self.reset_simulation(x)
         )
 
+        self.__service_extend_timeout = rospy.Service(
+            SERVICE_SIM_EXTEND_TIMEOUT_ID(self.__simulation_id), srv.ExtendTimeout,
+            self.__extend_timeout
+        )
+
         self.__service_get_transfer_functions = rospy.Service(
             SERVICE_GET_TRANSFER_FUNCTIONS(self.__simulation_id), srv.GetTransferFunctions,
             self.__get_transfer_function_sources
@@ -230,8 +238,11 @@ class ROSCLEServer(object):
         Get the remaining time of the simulation
         """
         if self.__timeout is not None:
+            #pylint: disable=E1103
+            #false positive
             remaining = (self.__timeout - datetime.datetime.now(self.__timeout.tzinfo)) \
                 .total_seconds()
+            # pylint: enable=E1103
             if remaining < 0:
                 self.__lifecycle.stopped()
             return max(0, int(remaining))
@@ -524,6 +535,22 @@ class ROSCLEServer(object):
             return e.message
         return ""
 
+    def __extend_timeout(self, request):
+        """
+        Extend the simulation timeout
+
+        :param request: The new timeout
+        :return: whether it could extend the timeout
+        """
+        new_timeout = datetime_parser.parse(request.timeout)
+
+        if self.__gzserver is not None and not self.__gzserver.try_extend(new_timeout):
+            return False
+
+        self.__timeout = new_timeout
+
+        return True
+
     def __delete_transfer_function(self, request):
         """
         Delete an existing transfer function
@@ -577,6 +604,8 @@ class ROSCLEServer(object):
         self.__cle.shutdown()
         logger.info("Shutting down reset service")
         self.__service_reset.shutdown()
+        logger.info("Shutting extend timeout service")
+        self.__service_extend_timeout.shutdown()
         logger.info("Shutting down get_transfer_functions service")
         self.__service_get_transfer_functions.shutdown()
         logger.info("Shutting down set_transfer_function service")

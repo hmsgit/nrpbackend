@@ -102,7 +102,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.assertEqual(9, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(10, self.__mocked_rospy.Service.call_count)
 
     def test_reset_simulation(self):
         self.__mocked_cle.is_initialized = False
@@ -410,6 +410,7 @@ class TestROSCLEServer(unittest.TestCase):
         a = self.__ros_cle_server._ROSCLEServer__service_reset  = MagicMock()
         b = self.__ros_cle_server._ROSCLEServer__current_task = None
         c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
+        c = self.__ros_cle_server._ROSCLEServer__service_extend_timeout = MagicMock()
         d = self.__ros_cle_server._ROSCLEServer__service_set_transfer_function = MagicMock()
         e = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
         f = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
