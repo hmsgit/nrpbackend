@@ -110,12 +110,11 @@ def init_logging(args): # pragma: no cover
 
 # Populate the data base object
 try:
+    init()
     db_create_and_check(db) # 1 s timeout
 except NRPServicesDatabaseTimeoutException as e:
     root_logger.warn("Database connection timeout ( " + str(e) +
                      " ). You are probably in the local mode. ")
-
-init()
 
 
 if __name__ == '__main__':  # pragma: no cover
