@@ -3,6 +3,7 @@
      xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
      xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig ExDConfFile.xsd">
     <name>Distributed Husky Braitenberg experiment</name>
+    <thumbnail>ExDConf/test_1.png</thumbnail>
     <description>This experiment is a distributed version of the Husky Braitenberg experiment that
         utilizes multiple brain processes.
     </description>

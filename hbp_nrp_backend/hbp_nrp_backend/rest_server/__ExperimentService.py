@@ -41,6 +41,8 @@ class ErrorMessages(object):
     EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
     EXPERIMENT_CONF_FILE_NOT_FOUND_404 = "The experiment configuration file was not found"
     EXPERIMENT_BRAIN_FILE_NOT_FOUND_500 = "The experiment brain file was not found"
+    EXPERIMENT_CONF_FILE_INVALID_500 = "The experiment configuration file is not valid"
+    EXPERIMENT_PREVIEW_INVALID_500 = "The experiment preview image is not valid"
     VARIABLE_ERROR = "Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty"
     ERROR_SAVING_FILE_500 = "Error saving file"
     ERROR_IN_BASE64_400 = "Error in base64: {0}"

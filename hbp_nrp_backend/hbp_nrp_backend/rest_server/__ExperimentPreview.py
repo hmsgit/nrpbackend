@@ -13,6 +13,10 @@ from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_rel, \
     get_experiment_basepath, ErrorMessages
 
+from hbp_nrp_commons.generated import exp_conf_api_gen
+from pyxb import ValidationError
+
+import mimetypes
 import base64
 import os
 
@@ -80,14 +84,29 @@ class ExperimentPreview(Resource):
         """
 
         # Check experiment
-        experiment_file = get_experiment_rel(exp_id)
+        experiment_file_path = os.path.join(get_experiment_basepath(), get_experiment_rel(exp_id))
+        if not os.path.isfile(experiment_file_path):
+            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+                                                  error_code=404)
 
-        preview_file = os.path.join(get_experiment_basepath(), os.path.splitext(
-            experiment_file)[0] + ".png")
+        # Parse the experiment XML and get the thumbnail path
+        with open(experiment_file_path) as exd_file:
+            try:
+                experiment_file = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+                preview_file = os.path.join(get_experiment_basepath(), experiment_file.thumbnail)
+            except ValidationError:
+                raise NRPServicesClientErrorException(
+                                                    ErrorMessages.EXPERIMENT_CONF_FILE_INVALID_500,
+                                                    error_code=500)
 
+        # Check thumbnail
         if not os.path.isfile(preview_file):
             raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_PREVIEW_NOT_FOUND_404,
                                                   error_code=404)
+        mime_type = mimetypes.guess_type(preview_file)[0] # returns tuple (type, encoding)
+        if not mime_type or not mime_type.startswith('image'):
+            raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_PREVIEW_INVALID_500,
+                                                  error_code=500)
 
         with open(preview_file, "rb") as _file:
             data = _file.read()

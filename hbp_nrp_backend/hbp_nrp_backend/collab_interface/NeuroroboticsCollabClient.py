@@ -552,9 +552,10 @@ class _FlattenedExperimentDirectory(object):
                 sm.src = os.path.basename(sm.src)
                 shutil.copyfile(sm_file, os.path.join(self.__temp_directory, sm.src))
         # Get the experiment image and copy it into the flattened experiment directory
-        exd_split = os.path.split(self.__exp_configuration)
-        img_file = os.path.join(exd_split[0], exd_split[-1].split('.')[0]) + '.png'
+        img_file = os.path.join(self.__models_folder, experiment_dom.thumbnail)
         shutil.copyfile(img_file, os.path.join(self.__temp_directory, os.path.basename(img_file)))
+        # Update the experiment thumbnail file with the new path
+        experiment_dom.thumbnail = os.path.basename(img_file)
         # Get the SDF file path and copy it into the flattened experiment directory
         sdf_file = os.path.join(self.__models_folder, experiment_dom.environmentModel.src)
         shutil.copyfile(sdf_file, os.path.join(self.__temp_directory, os.path.basename(sdf_file)))
