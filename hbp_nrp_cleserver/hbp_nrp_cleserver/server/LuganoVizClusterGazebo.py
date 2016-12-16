@@ -401,6 +401,9 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         self.__gazebo_remote_process.sendline('source $ROS_THIRDPARTY_PACKAGES_SETUP_FILE')
         self.__gazebo_remote_process.sendline('source $ROS_HBP_PACKAGES_SETUP_FILE')
 
+        # disable online (unreachable) model searching, only use local NRP models
+        self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_DATABASE_URI=')
+
         # launch Gazebo with virtualgl, use -nodl to redirect native opengl calls to virtualgl
         self.__gazebo_remote_process.sendline(
             'vglrun -nodl $GAZEBO_BIN_DIR/gzserver ' +
