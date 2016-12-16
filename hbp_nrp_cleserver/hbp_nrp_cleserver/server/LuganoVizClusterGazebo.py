@@ -12,6 +12,7 @@ import os
 import sys
 import netifaces
 import datetime
+from hbp_nrp_cleserver.version import VERSION
 from hbp_nrp_cleserver.server.GazeboInterface import IGazeboServerInstance
 # We will monitor the remote Gazebo via a remote watchdog, but this implementation is not yet ready
 # pylint: disable=unused-import
@@ -130,7 +131,6 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         self.__x_server_process = None
         self.__remote_xvnc_process = None
         self.__gazebo_remote_process = None
-        self.__remote_working_directory = None
         self.__remote_display_port = -1
         self.__job_ID = None
         # Holds the state of the SLURM job. The states are defined in SLURM.
@@ -261,27 +261,12 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
 
         return vglconnect_process  # This object has to live until the end.
 
-    def __create_remote_working_directory(self):
-        """
-        Create a temporary working directory on the allocated viz cluster node.
-        """
-        if self.__node is None or self.__allocation_process is None:
-            raise(Exception("Cannot connect to a cluster node without a proper Job allocation."))
-        create_temporary_folder_process = self.__spawn_vglconnect()
-        create_temporary_folder_process.sendline('mktemp -d')
-        create_temporary_folder_process.expect(r'\/tmp\/[a-zA-Z0-9\.]+')
-        self.__remote_working_directory = create_temporary_folder_process.after
-        create_temporary_folder_process.terminate()
-
     def __clean_remote_files(self):
         """
-        Remove the temporary remote working directory
+        Remove the temporary remote working files
         """
-        if (self.__node is not None and
-                self.__allocation_process is not None and
-                self.__remote_working_directory is not None):
+        if (self.__node is not None and self.__allocation_process is not None):
             clean_process = self.__spawn_vglconnect()
-            clean_process.sendline('rm -rf ' + self.__remote_working_directory)
             # Clean all old Xvnc lock files.
             clean_process.sendline('rm -rf /tmp/.X*')
             clean_process.terminate()
@@ -323,21 +308,6 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # unable to find an open Xvnc port (very unlikely), abort
         raise(XvfbXvnError("Cannot start Xvnc, no open display ports."))
 
-    def __sync_models(self):
-        """
-        Copy the local models (assumed to be in $HOME/.gazebo/models) to the remote
-        viz cluster node
-        """
-        if self.__node is None or self.__allocation_process is None:
-            raise(Exception("Cannot connect to a cluster node without a proper Job allocation."))
-        if self.__remote_working_directory is None:
-            raise(Exception("Syncing the models cannot work without a remote working directory"))
-        os.system(
-            "scp -r $HOME/.gazebo/models bbpnrsoa@" +
-            self.__node + self.NODE_DOMAIN +
-            ":" +
-            self.__remote_working_directory)
-
     def __start_gazebo(self, ros_master_uri):
         """
         Start gazebo on the remote server
@@ -346,32 +316,18 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             raise(Exception("Cannot connect to a cluster node without a proper Job allocation."))
         if self.__remote_display_port == -1:
             raise(Exception("Gazebo needs a remote X Server running"))
-        if self.__remote_working_directory is None:
-            raise(Exception("Gazebo needs a remote working directory"))
 
         self.__gazebo_remote_process = self.__spawn_vglconnect()
 
         # Prevently kill all gzservers.
         self.__gazebo_remote_process.sendline('killall -9 gzserver')
-        self.__gazebo_remote_process.sendline('source /opt/rh/python27/enable')
-        self.__gazebo_remote_process.sendline('export DISPLAY=:' + str(self.__remote_display_port))
-        self.__gazebo_remote_process.sendline('export ROS_MASTER_URI=' + ros_master_uri)
-        # Looks like it is better to set this variable. The awk part takes the first IP (we
-        # have several of them on Lugano servers).
-        self.__gazebo_remote_process.sendline('export ROS_IP=`hostname -I | awk \'{print $1}\'`')
-        self.__gazebo_remote_process.sendline(
-            'export GAZEBO_MODEL_PATH=' + self.__remote_working_directory + '/models')
-
-        # When a dae is used for collision, Gazebo 4 (it may be solved in Gazebo 6) looks at the
-        # models in $HOME/.gazebo/models
-        self.__gazebo_remote_process.sendline(
-            'ln -sf $GAZEBO_MODEL_PATH $HOME/.gazebo/models')
 
         # loading the environment modules configuration files
         self.__gazebo_remote_process.sendline(
             'export MODULEPATH=$MODULEPATH:/gpfs/bbp.cscs.ch/apps/viz/neurorobotics/modulefiles')
 
         # source environment modules init file
+        self.__gazebo_remote_process.sendline('source /opt/rh/python27/enable')
         self.__gazebo_remote_process.sendline('source /usr/share/Modules/init/bash 2> /dev/null')
 
         # load the modules
@@ -401,6 +357,26 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         self.__gazebo_remote_process.sendline('source $ROS_THIRDPARTY_PACKAGES_SETUP_FILE')
         self.__gazebo_remote_process.sendline('source $ROS_HBP_PACKAGES_SETUP_FILE')
 
+        # configure variables after all module loads (that could overwrite values)
+        self.__gazebo_remote_process.sendline('export DISPLAY=:' + str(self.__remote_display_port))
+        self.__gazebo_remote_process.sendline('export ROS_MASTER_URI=' + ros_master_uri)
+        # Looks like it is better to set this variable. The awk part takes the first IP (we
+        # have several of them on Lugano servers).
+        self.__gazebo_remote_process.sendline('export ROS_IP=`hostname -I | awk \'{print $1}\'`')
+
+        # Use the appropriate dev or staging models based on this backend version
+        models_path = '/gpfs/bbp.cscs.ch/project/proj30/neurorobotics/%s/models' % \
+                      ('dev' if 'dev' in VERSION else 'staging')
+        self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_PATH=' + models_path)
+
+        # Make sure the models directory exists and is readable (otherwise no assets will be found)
+        self.__gazebo_remote_process.sendline('[ -d ' + models_path + ' ] && ' +
+                                              'echo "ok" || echo "fail"')
+        result = self.__gazebo_remote_process.expect(['ok', 'fail', pexpect.TIMEOUT])
+        if result != 0:
+            raise(Exception('Gazebo models directory does not exist or is currently unreachable!' +
+                            ' Invalid path:' + models_path))
+
         # disable online (unreachable) model searching, only use local NRP models
         self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_DATABASE_URI=')
 
@@ -427,9 +403,6 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             self.__allocate_job()
             notificator.info('Start an XServer without attached screen')
             self.__start_fake_X()
-            notificator.info('Sync models on the remote node')
-            self.__create_remote_working_directory()
-            self.__sync_models()
             notificator.info('Start Xvnc on the remote node')
             self.__start_xvnc()
             notificator.info('Start gzserver on the remote node')
@@ -484,17 +457,15 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
                 notificator.info('Stopping Xvnc on the remote node')
                 self.__remote_xvnc_process.terminate()
 
-            # delete remote directory and models
-            if self.__remote_working_directory:
-                notificator.info('Deleting models on the remote node')
-                self.__clean_remote_files()
+            # delete remote locks and any files
+            notificator.info('Cleaning up remote files')
+            self.__clean_remote_files()
 
         # pylint: disable=broad-except
         except Exception:
             logger.exception('Error cleaning up remote node.')
         finally:
             self.__gazebo_remote_process = None
-            self.__remote_working_directory = None
             self.__remote_xvnc_process = None
             self.__remote_display_port = -1
 
