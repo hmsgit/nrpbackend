@@ -124,8 +124,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             simulation_factory_client = ROSCLESimulationFactoryClient()
             simulation_factory_client.create_new_simulation(
                 environment_path, self.__experiment_path,
-                simulation.gzserver_host, simulation.brain_processes, simulation.sim_id,
-                str(simulation.kill_datetime)
+                simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
+                simulation.sim_id, str(simulation.kill_datetime)
             )
             simulation.cle = ROSCLEClient(simulation.sim_id)
             logger.info("simulation initialized")

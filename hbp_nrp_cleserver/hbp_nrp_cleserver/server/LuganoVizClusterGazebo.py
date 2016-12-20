@@ -113,9 +113,11 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
     # -A, --account=<account>
     # Charge resources used by this job to specified account.The account is an arbitrary string.
     # The account name maybe changed after job submission using the scontrolcommand.
+    #
+    # --reservation=<name>
+    # Allocate resources for the job from the named reservation.
+
     ALLOCATION_TIME = datetime.timedelta(hours=10)
-    ALLOCATION_COMMAND = ("salloc --immediate=25 --time=" + str(ALLOCATION_TIME) +
-                          " -p interactive -c 4 --account=proj30 --gres=gpu:1")
     DEALLOCATION_COMMAND = 'scancel %s'
     CURRENT_NODES_COMMAND = 'squeue -u bbpnrsoa -t PENDING,RUNNING -h -o "%N"'
     NODE_DOMAIN = '.cscs.ch'
@@ -126,8 +128,9 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
     SMALL_TIMEOUT = 2
     DEFAULT_GZSERVER_PORT = 11345
 
-    def __init__(self, timezone=None):
+    def __init__(self, timezone=None, reservation=None):
         super(LuganoVizClusterGazebo, self).__init__()
+
         self.__allocation_process = None
         self.__x_server_process = None
         self.__remote_xvnc_process = None
@@ -142,6 +145,17 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         if timezone is not None:
             self.__allocation_time = datetime.datetime.now(
                 timezone) + LuganoVizClusterGazebo.ALLOCATION_TIME
+
+        if (reservation is not None):
+            reservation = str(reservation)
+        else:
+            reservation = ''
+        LuganoVizClusterGazebo.ALLOCATION_COMMAND = (
+            "salloc --immediate=25" +
+            " --time=" + str(LuganoVizClusterGazebo.ALLOCATION_TIME) +
+            " --reservation=" + reservation +
+            " -p interactive -c 4 --account=proj30 --gres=gpu:1"
+        )
 
     def __spawn_ssh_SLURM_frontend(self):
         """
@@ -188,7 +202,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             raise(Exception("Cannot retrieve list of currently allocated SLURM nodes."))
 
         # get the list of current nodes between our command and the new prompt
-        used_nodes = self.__allocation_process.before.replace('\r', '') # replace all ^M
+        used_nodes = self.__allocation_process.before.replace('\r', '')  # replace all ^M
         used_nodes = used_nodes.rsplit(self.CURRENT_NODES_COMMAND, 1)[1]
         used_nodes = used_nodes.split('[bbpnrsoa@bbpviz1 ~]$', 1)[0].strip()
         used_nodes = used_nodes.replace('\n', ',')
@@ -251,11 +265,15 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         - failure to launch (EOF when process reports failure, invalid so abort)
         """
         self.__x_server_process = pexpect.spawn('Xvfb :1', logfile=logger)
-        result = self.__x_server_process.expect(['Server is already active for display',
-                                                 'Initializing built-in extension',
-                                                 pexpect.TIMEOUT,    # no output (expected)
-                                                 pexpect.EOF],       # crash/failed launch
-                                                 self.SMALL_TIMEOUT)
+        result = self.__x_server_process.expect(
+            [
+                'Server is already active for display',
+                'Initializing built-in extension',
+                pexpect.TIMEOUT,    # no output (expected)
+                pexpect.EOF
+            ],       # crash/failed launch
+            self.SMALL_TIMEOUT
+        )
 
         if result == 3:
             raise(XvfbXvnError("Cannot start Xvfb"))
@@ -285,7 +303,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
 
         # Always load virtualgl on vgl connections to be able to use a 3D display
         vglconnect_process.sendline('module load virtualgl')
-        vglconnect_process.sendline('export VGL_FORCEALPHA=1') # force 32-bit buffers
+        vglconnect_process.sendline('export VGL_FORCEALPHA=1')  # force 32-bit buffers
 
         return vglconnect_process  # This object has to live until the end.
 
@@ -319,10 +337,12 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # sessions. Ohter users may also spawn instances arbitrarily, this ensures a valid session.
         for p in xrange(10, 100):
             self.__remote_xvnc_process.sendline('Xvnc :' + str(p))
-            result = self.__remote_xvnc_process.expect(['created VNC server for screen 0',
-                                                        'Server is already active for display',
-                                                        'server already running',
-                                                         pexpect.TIMEOUT], self.TIMEOUT)
+            result = self.__remote_xvnc_process.expect([
+                'created VNC server for screen 0',
+                'Server is already active for display',
+                'server already running',
+                pexpect.TIMEOUT], self.TIMEOUT
+            )
 
             # valid Xvnc session spawned on port, stop searching
             if result == 0:

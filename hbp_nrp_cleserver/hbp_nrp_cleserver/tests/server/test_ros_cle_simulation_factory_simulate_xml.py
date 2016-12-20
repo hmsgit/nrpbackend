@@ -26,6 +26,7 @@ class MockedServiceRequest(object):
     brain_processes = 1
     sim_id = 0
     timeout = str(datetime.now(tz) + timedelta(minutes=5))
+    reservation = 'user_workshop'
 
 
 class MockedGazeboHelper(object):
@@ -53,7 +54,7 @@ class MockOs(object):
 )
 @patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=PATH))
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
-       new=lambda x: LocalGazeboServerInstance())
+       new=lambda x, y: LocalGazeboServerInstance())
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)

@@ -52,7 +52,7 @@ class CLELauncher(object):
     CLELauncher substitutes generated cle
     """
 
-    def __init__(self, exd_conf, bibi_conf, experiment_path, gzserver_host, sim_id):
+    def __init__(self, exd_conf, bibi_conf, experiment_path, gzserver_host, reservation, sim_id):
         """
         Constructor of CLELauncher
 
@@ -77,6 +77,7 @@ class CLELauncher(object):
         self.__bibi_conf = bibi_conf
         self.__experiment_path = experiment_path
         self.__gzserver_host = gzserver_host
+        self.__reservation = reservation
         self.__sim_id = sim_id
         self.__dependencies = compute_dependencies(bibi_conf)
         self.__gazebo_helper = None  # Will be instantiated after gazebo is started
@@ -116,7 +117,9 @@ class CLELauncher(object):
         if self.__gzserver_host == 'local':
             self.gzserver = LocalGazeboServerInstance()
         elif self.__gzserver_host == 'lugano':
-            self.gzserver = LuganoVizClusterGazebo(timeout.tzinfo if timeout is not None else None)
+            self.gzserver = LuganoVizClusterGazebo(
+                timeout.tzinfo if timeout is not None else None, self.__reservation
+            )
         else:
             raise Exception("The gzserver location '{0}' is not supported.", self.__gzserver_host)
 
@@ -408,7 +411,7 @@ if __name__ == '__main__': # pragma: no cover
 
         exd, bibi = get_experiment_data(args.exd_file)
 
-        # prase the timeout string command line argument into a valid datetime
+        # parse the timeout string command line argument into a valid datetime
         import dateutil.parser as datetime_parser
         timeout_parsed = datetime_parser.parse(args.timeout.replace('_', ' '))
 

@@ -31,9 +31,10 @@ class ROSCLESimulationFactoryClient(object):
         self.__create_new_simulation_service.wait_for_service(timeout=10)
 
     def create_new_simulation(self, environment_file, experiment_conf, gzserver_host,
-                              brain_processes, sim_id, timeout):
+                              reservation, brain_processes, sim_id, timeout):
         """
         Start the simulation.
         """
         self.__create_new_simulation_service(environment_file, experiment_conf,
-                                             gzserver_host, brain_processes, sim_id, timeout)
+                                             gzserver_host, reservation,
+                                             brain_processes, sim_id, timeout)
