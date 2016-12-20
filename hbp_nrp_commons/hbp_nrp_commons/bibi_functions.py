@@ -377,7 +377,7 @@ def print_device_config(dev):
     elif dev.connectorRef is not None:
         res += ", connector=" + dev.connectorRef.ref
     if dev.target is not None:
-        res += ", target='" + dev.target.lower() + "'"
+        res += ", receptor_type='" + dev.target.lower() + "'"
     return res
 
 
