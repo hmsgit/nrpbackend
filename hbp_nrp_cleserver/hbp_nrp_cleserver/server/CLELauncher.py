@@ -370,6 +370,8 @@ if __name__ == '__main__': # pragma: no cover
                             help='the gzserver target host', required=True)
         parser.add_argument('--sim-id', dest='sim_id', type=int,
                             help='the simulation id to use', required=True)
+        parser.add_argument('--timeout', dest='timeout',
+                            help='the simulation default time allocated', required=True)
 
         music_parser = parser.add_mutually_exclusive_group(required=False)
         music_parser.add_argument('--music', dest='music', action='store_true',
@@ -413,11 +415,15 @@ if __name__ == '__main__': # pragma: no cover
 
         exd, bibi = get_experiment_data(args.exd_file)
 
+        # prase the timeout string command line argument into a valid datetime
+        import dateutil.parser as datetime_parser
+        timeout_parsed = datetime_parser.parse(args.timeout.replace('_', ' '))
+
         cle_launcher = CLELauncher(exd,
                                    bibi,
                                    rcsf_get_experiment_basepath(args.exd_file),
                                    args.gzserver_host, args.sim_id)
-        cle_launcher.cle_function_init(args.environment_file)
+        cle_launcher.cle_function_init(args.environment_file, timeout_parsed)
         if cle_launcher.cle_server is None:
             raise Exception("Error in cle_function_init. Cannot start simulation.")
 

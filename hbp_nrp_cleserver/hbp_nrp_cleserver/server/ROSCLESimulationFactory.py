@@ -169,7 +169,9 @@ class ROSCLESimulationFactory(object):
                                                  bibi_file,
                                                  environment_file,
                                                  experiment_base_path,
-                                                 gzserver_host, sim_id)
+                                                 gzserver_host,
+                                                 sim_id,
+                                                 timeout)
                     cle_launcher.init(bibi, exd.bibiConf.processes)
 
             # pylint: disable=broad-except
