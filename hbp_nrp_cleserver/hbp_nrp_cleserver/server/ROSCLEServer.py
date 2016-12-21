@@ -27,8 +27,10 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID
+    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
+    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
 from hbp_nrp_cleserver.server import ros_handler, Timer
+from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException
 import base64
@@ -77,6 +79,8 @@ class ROSCLEServer(object):
         self.__service_extend_timeout = None
         self.__service_get_transfer_functions = None
         self.__service_set_transfer_function = None
+        self.__service_get_structured_transfer_functions = None
+        self.__service_set_structured_transfer_function = None
         self.__service_delete_transfer_function = None
         self.__service_get_brain = None
         self.__service_set_brain = None
@@ -191,6 +195,18 @@ class ROSCLEServer(object):
         self.__service_set_transfer_function = rospy.Service(
             SERVICE_SET_TRANSFER_FUNCTION(self.__simulation_id), srv.SetTransferFunction,
             self.__set_transfer_function
+        )
+
+        self.__service_get_structured_transfer_functions = rospy.Service(
+            SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(self.__simulation_id),
+            srv.GetStructuredTransferFunctions,
+            self.__get_structured_transfer_functions
+        )
+
+        self.__service_set_structured_transfer_function = rospy.Service(
+            SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(self.__simulation_id),
+            srv.SetStructuredTransferFunction,
+            self.__set_structured_transfer_function
         )
 
         self.__service_delete_transfer_function = rospy.Service(
@@ -551,6 +567,35 @@ class ROSCLEServer(object):
 
         return True
 
+    # pylint: disable=unused-argument
+    @staticmethod
+    def __get_structured_transfer_functions(request):
+        """
+        Return the source code of the transfer functions
+
+        :param request: The mandatory rospy request parameter
+        """
+        tfs = tf_framework.get_transfer_functions()
+        return srv.GetStructuredTransferFunctionsResponse(
+            [tf for tf in map(StructuredTransferFunction.extract_structure, tfs) if tf is not None]
+        )
+
+    def __set_structured_transfer_function(self, request):
+        """
+        Patch a transfer function
+
+        :param request: The mandatory rospy request parameter
+        :return: empty string for a successful compilation in restricted mode
+                (executed synchronously),
+                 an error message otherwise.
+        """
+        set_tf_request = srv.SetTransferFunctionRequest(
+            transfer_function_name=request.transfer_function.name,
+            transfer_function_source=StructuredTransferFunction
+                .generate_code_from_structured_tf(request.transfer_function)
+        )
+        return self.__set_transfer_function(set_tf_request)
+
     def __delete_transfer_function(self, request):
         """
         Delete an existing transfer function
@@ -608,8 +653,10 @@ class ROSCLEServer(object):
         self.__service_extend_timeout.shutdown()
         logger.info("Shutting down get_transfer_functions service")
         self.__service_get_transfer_functions.shutdown()
-        logger.info("Shutting down set_transfer_function service")
+        self.__service_get_structured_transfer_functions.shutdown()
+        logger.info("Shutting down set_transfer_function services")
         self.__service_set_transfer_function.shutdown()
+        self.__service_set_structured_transfer_function.shutdown()
         logger.info("Shutting down get_brain service")
         self.__service_get_brain.shutdown()
         logger.info("Shutting down set_brain service")

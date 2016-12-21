@@ -57,6 +57,8 @@ class MockOs(object):
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
+@patch("hbp_nrp_cleserver.server.CLELauncher.ClosedLoopEngine", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLELauncher.nrp", new=Mock())
 class SimulationTestCase(unittest.TestCase):
 
     def test_simulation_local(self):

@@ -14,7 +14,8 @@ from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
-    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID
+    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
+    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
     # duplicated from CLE.__init__
 from cle_ros_msgs.srv import ResetSimulation
 
@@ -143,7 +144,12 @@ class ROSCLEClient(object):
 
         self.__cle_set_transfer_function = ROSCLEServiceWrapper(
             SERVICE_SET_TRANSFER_FUNCTION(sim_id), srv.SetTransferFunction, self)
-
+        self.__cle_get_structured_transfer_functions = ROSCLEServiceWrapper(
+            SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(sim_id),
+            srv.GetStructuredTransferFunctions, self)
+        self.__cle_set_structured_transfer_function = ROSCLEServiceWrapper(
+            SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(sim_id),
+            srv.SetStructuredTransferFunction, self)
         self.__cle_delete_transfer_function = ROSCLEServiceWrapper(
             SERVICE_DELETE_TRANSFER_FUNCTION(sim_id), srv.DeleteTransferFunction, self)
 
@@ -151,7 +157,6 @@ class ROSCLEClient(object):
         self.__cle_set_brain = ROSCLEServiceWrapper(SERVICE_SET_BRAIN(sim_id), srv.SetBrain, self)
         self.__cle_get_populations = ROSCLEServiceWrapper(SERVICE_GET_POPULATIONS(sim_id),
                                                           srv.GetPopulations, self)
-
         self.__cle_get_CSV_recorders_files = ROSCLEServiceWrapper(
             SERVICE_GET_CSV_RECORDERS_FILES(sim_id),
             srv.GetCSVRecordersFiles, self
@@ -269,6 +274,24 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_set_transfer_function(transfer_function_name, transfer_function_source) \
                    .error_message
+
+    def get_structured_transfer_functions(self):
+        """
+        Gets the transfer functions in a structured format
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        return self.__cle_get_structured_transfer_functions().transfer_functions
+
+    def set_structured_transfer_function(self, transfer_function):
+        """
+        Sets the given structured transfer function
+
+        :param transfer_function: The new transfer function in a structured format
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        return self.__cle_set_structured_transfer_function(transfer_function)
 
     def get_populations(self):
         """
