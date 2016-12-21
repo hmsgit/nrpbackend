@@ -114,17 +114,19 @@ class CLELauncher(object):
         os.chdir(self.__experiment_path)
 
         if self.__gzserver_host == 'local':
-            gzserver = LocalGazeboServerInstance()
+            self.gzserver = LocalGazeboServerInstance()
         elif self.__gzserver_host == 'lugano':
-            gzserver = LuganoVizClusterGazebo(timeout.tzinfo if timeout is not None else None)
+            self.gzserver = LuganoVizClusterGazebo(timeout.tzinfo if timeout is not None else None)
+        else:
+            raise Exception("The gzserver location '{0}' is not supported.", self.__gzserver_host)
 
         # Create ROS server
         logger.info("Creating ROSCLEServer")
-        cle_server = ROSCLEServer(self.__sim_id, timeout, gzserver)
+        self.cle_server = ROSCLEServer(self.__sim_id, timeout, self.gzserver)
         logger.info("Setting up backend Notificator")
         Notificator.register_notification_function(
             lambda subtask, update_progress:
-            cle_server.notify_current_task(subtask, update_progress, True)
+            self.cle_server.notify_current_task(subtask, update_progress, True)
         )
 
         # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
@@ -139,10 +141,10 @@ class CLELauncher(object):
         if self.__bibi_conf.extRobotController is not None:
             number_of_subtasks = 10
 
-        cle_server.notify_start_task("Initializing the Neurorobotic Closed Loop Engine",
-                                     "Importing needed packages",
-                                     number_of_subtasks=number_of_subtasks,
-                                     block_ui=True)
+        self.cle_server.notify_start_task("Initializing the Neurorobotic Closed Loop Engine",
+                                          "Importing needed packages",
+                                          number_of_subtasks=number_of_subtasks,
+                                          block_ui=True)
 
         # Needed in order to cleanup global static variables
         nrp.start_new_tf_manager()
@@ -159,12 +161,12 @@ class CLELauncher(object):
         local_ip = ifaddress[netifaces.AF_INET][0]['addr']
         ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
 
-        gzweb = LocalGazeboBridgeInstance()
+        self.gzweb = LocalGazeboBridgeInstance()
 
-        gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
+        self.gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
 
         try:
-            gzserver.start(ros_master_uri)
+            self.gzserver.start(ros_master_uri)
         except XvfbXvnError as exception:
             logger.error(exception)
             error = "Recoverable error occurred. Please try again. Reason: {0}".format(
@@ -173,15 +175,9 @@ class CLELauncher(object):
 
         self.__gazebo_helper = GazeboHelper()
 
-        if gzserver is None:
-            logger.error("No configuration found for gzserver_host: '{0}'"
-                         "".format(self.__gzserver_host))
-            self.shutdown()
-            return
-
-        os.environ['GAZEBO_MASTER_URI'] = gzserver.gazebo_master_uri
+        os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
         # We do not know here in which state the previous user did let us gzweb.
-        gzweb.restart()
+        self.gzweb.restart()
 
         self.__gazebo_helper.empty_gazebo_world()
 
@@ -269,7 +265,7 @@ class CLELauncher(object):
         cle.initial_lights = w_lights
 
         # Now that we have everything ready, we could prepare the simulation
-        cle_server.prepare_simulation(cle, except_hook)
+        self.cle_server.prepare_simulation(cle, except_hook)
 
         Notificator.notify("Injecting Transfer Functions", True)  # subtask 8
 
@@ -293,14 +289,11 @@ class CLELauncher(object):
 
         # Loading is completed.
         Notificator.notify("Finished", True)  # subtask 9
-        cle_server.notify_finish_task()
+        self.cle_server.notify_finish_task()
 
         logger.info("CLELauncher Finished.")
 
-        self.cle_server = cle_server
         self.models_path = models_path
-        self.gzweb = gzweb
-        self.gzserver = gzserver
 
     def shutdown(self):
         """

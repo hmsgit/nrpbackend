@@ -243,12 +243,12 @@ class TestScript(unittest.TestCase):
         dev.synapseDynamicsRef = api.SynapseDynamicsRef(ref="Foo")
         dev.connectorRef = api.NeuronConnectorRef(ref="Bar")
         dev.target = 'Inhibitory'
-        self.assertEqual(print_device_config(dev), ", synapse_dynamics=Foo, connector=Bar, target='inhibitory'")
+        self.assertEqual(print_device_config(dev), ", synapse_dynamics=Foo, connector=Bar, receptor_type='inhibitory'")
         dev.synapseDynamics = api.TsodyksMarkramMechanism(u=1.0, tau_rec=2.0, tau_facil=3.0)
         dev.connector = api.OneToOneConnector(delays=0.8, weights=42.0)
         self.assertEqual(print_device_config(dev),
                          ", synapse_dynamics={'type':'TsodyksMarkram', 'U':1.0, 'tau_rec':2.0, 'tau_facil':3.0}, " +
-                         "connector={'mode':'OneToOne', 'weights':42.0, 'delays':0.8}, target='inhibitory'")
+                         "connector={'mode':'OneToOne', 'weights':42.0, 'delays':0.8}, receptor_type='inhibitory'")
 
 if __name__ == '__main__':
     unittest.main()
