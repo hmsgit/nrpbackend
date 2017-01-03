@@ -33,6 +33,41 @@ class ExperimentBrainFile(Resource):
     The resource to save experiment brain files to the collab
     """
 
+    def parsePopulations(self, brain_populations, bibi):
+        """
+        Parse a population from the received brain_populations object and add it to bibi.
+
+        """
+
+        if isinstance(brain_populations, list):
+            for value in brain_populations:
+                population_node = None
+                if isinstance(value, dict):
+                    population_node = bibi_api_gen.Range()
+                    population_node.from_ = value['from']
+                    population_node.to = value['to']
+                    population_node.step = value.get('step')
+                    if population_node.step <= 0:
+                        population_node.step = 1
+                    population_node.population = value['name']
+                    bibi.brainModel.populations.append(population_node)
+        else:
+            for key, value in brain_populations.iteritems():
+                population_node = None
+                if isinstance(value, list):
+                    population_node = bibi_api_gen.List()
+                    for index in value:
+                        population_node.append(index)
+                if isinstance(value, dict):
+                    population_node = bibi_api_gen.Range()
+                    population_node.from_ = value['from']
+                    population_node.to = value['to']
+                    population_node.step = value.get('step')
+                    if population_node.step <= 0:
+                        population_node.step = 1
+                population_node.population = key
+                bibi.brainModel.populations.append(population_node)
+
     @swagger.model
     class _Brain(object):
         """
@@ -120,19 +155,7 @@ class ExperimentBrainFile(Resource):
         del bibi.brainModel.populations[:]
 
         if brain_populations is not None:
-            for key, value in brain_populations.iteritems():
-                population_node = None
-                if isinstance(value, list):
-                    population_node = bibi_api_gen.List()
-                    for index in value:
-                        population_node.append(index)
-                if isinstance(value, dict):
-                    population_node = bibi_api_gen.Range()
-                    population_node.from_ = value['from']
-                    population_node.to = value['to']
-                    population_node.step = value.get('step')
-                population_node.population = key
-                bibi.brainModel.populations.append(population_node)
+            self.parsePopulations(brain_populations, bibi)
 
         if tempfile.gettempdir() in bibi_file_path:
             logger.debug(
