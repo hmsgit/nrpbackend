@@ -77,6 +77,42 @@ def create_brain():
         self.test_directory = os.path.split(__file__)[0]
         self.temp_directory = tempfile.mkdtemp()
 
+
+    def test_experiment_brain_put_withpoplist(self):
+
+        bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
+        bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
+        shutil.copyfile(bibi_original_path, bibi_temp_path)
+        with open(bibi_temp_path) as bibi_xml:
+            bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
+        self.mock_collabClient_instance.clone_bibi_file_from_collab_context.return_value = bibi, bibi_temp_path
+
+        context_id = '123456'
+        brain_populations = [{'to': 4, 'step': 1, 'from': 0, 'name': 'record'}]
+        body = {'data': self.brain_model, 'additional_populations': brain_populations}
+        response = self.client.put(
+            '/experiment/' + context_id + '/brain',
+            data=json.dumps(body)
+        )
+        self.assertEqual(response.status_code, 200)
+
+        save_string_to_file = self.mock_collabClient_instance.replace_file_content_in_collab
+
+        arg1, arg2, arg3, arg4 = save_string_to_file.call_args_list[0][0]
+        self.assertEqual(arg1, self.brain_model)
+        self.assertEqual(arg4, "recovered_pynn_brain_model.py")
+
+        arg1, arg2, arg3, arg4 = save_string_to_file.call_args_list[1][0]
+        bibi = bibi_api_gen.CreateFromDocument(arg1)
+        for population in bibi.brainModel.populations:
+            if population.population == 'record':
+                self.assertEqual(population.from_, 0)
+                self.assertEqual(population.to, 4)
+                self.assertEqual(population.step, 1)
+            else:
+                self.fail("Unexpected identifier: " + population.population)
+        self.assertEqual(arg4, "recovered_bibi_configuration.xml")
+
     def test_experiment_brain_put(self):
 
         bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
