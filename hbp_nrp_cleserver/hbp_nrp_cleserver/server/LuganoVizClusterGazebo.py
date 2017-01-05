@@ -172,6 +172,13 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         self.__allocation_process = self.__spawn_ssh_SLURM_frontend()
         notificator.info("Requesting resources on the cluster.")
 
+        # clear the buffer before issuing the commands, otherwise parsing the final
+        # list may fail with ssh banner header info filling the buffer
+        result = self.__allocation_process.expect([pexpect.TIMEOUT,
+                                                   '[bbpnrsoa@bbpviz1 ~]$'], self.TIMEOUT)
+        if result == 0:
+            raise(Exception("Cannot connect to the SLURM front-end node."))
+
         # determine which nodes are already in use, we can't currently support
         # running multiple gzserver instances on the same backend (yet)
         self.__allocation_process.sendline(self.CURRENT_NODES_COMMAND)
