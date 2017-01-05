@@ -117,6 +117,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
     ALLOCATION_COMMAND = ("salloc --immediate=25 --time=" + str(ALLOCATION_TIME) +
                           " -p interactive -c 4 --account=proj30 --gres=gpu:1")
     DEALLOCATION_COMMAND = 'scancel %s'
+    CURRENT_NODES_COMMAND = 'squeue -u bbpnrsoa -t PENDING,RUNNING -h -o "%N"'
     NODE_DOMAIN = '.cscs.ch'
     # Timeout used for pexpect ssh connection calls.
     TIMEOUT = 20
@@ -170,7 +171,27 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         """
         self.__allocation_process = self.__spawn_ssh_SLURM_frontend()
         notificator.info("Requesting resources on the cluster.")
-        self.__allocation_process.sendline(self.ALLOCATION_COMMAND)
+
+        # determine which nodes are already in use, we can't currently support
+        # running multiple gzserver instances on the same backend (yet)
+        self.__allocation_process.sendline(self.CURRENT_NODES_COMMAND)
+        result = self.__allocation_process.expect([pexpect.TIMEOUT,
+                                                   '[bbpnrsoa@bbpviz1 ~]$'], self.TIMEOUT)
+        if result == 0:
+            raise(Exception("Cannot retrieve list of currently allocated SLURM nodes."))
+
+        # get the list of current nodes between our command and the new prompt
+        used_nodes = self.__allocation_process.before.replace('\r', '') # replace all ^M
+        used_nodes = used_nodes.rsplit(self.CURRENT_NODES_COMMAND, 1)[1]
+        used_nodes = used_nodes.split('[bbpnrsoa@bbpviz1 ~]$', 1)[0].strip()
+        used_nodes = used_nodes.replace('\n', ',')
+
+        # exclude any currently used nodes, otherwise allow any
+        if used_nodes:
+            logger.info('Currently allocated bbpnrsoa nodes: %s' % used_nodes)
+            self.__allocation_process.sendline(self.ALLOCATION_COMMAND + (' -x %s' % used_nodes))
+        else:
+            self.__allocation_process.sendline(self.ALLOCATION_COMMAND)
         result = self.__allocation_process.expect(['Granted job allocation ([0-9]+)',
                                                    'Submitted batch job [0-9]+',
                                                    'error: spank-auks: cred forwarding failed',
