@@ -39,6 +39,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         brain_processes = 1
         sim_id = 0
         timeout = str(datetime.now(tz) + timedelta(minutes=5))
+        reservation = 'user_workshop'
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     def setUp(self, mocked_logger):

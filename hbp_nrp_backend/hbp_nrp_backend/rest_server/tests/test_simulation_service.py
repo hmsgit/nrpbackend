@@ -26,7 +26,7 @@ class TestSimulationService(RestTest):
 
         response = self.client.post('/simulation',
                                     data=json.dumps({"experimentConfiguration": "MyExample.xml",
-                                                     "gzserverHost": "local"}))
+                                                     "gzserverHost": "local", "reservation": "user_workshop"}))
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/0')
@@ -40,6 +40,7 @@ class TestSimulationService(RestTest):
             'gzserverHost': 'local',
             'contextID': None,
             'brainProcesses': 1,
+            'reservation': 'user_workshop'
         }
         erd = json.dumps(expected_response_data)
         self.assertEqual(response.data.strip(), erd)
@@ -59,7 +60,8 @@ class TestSimulationService(RestTest):
         param = json.dumps({
             'experimentConfiguration': 'MyExample.xml',
             'gzserverHost': 'local',
-            'contextID': ctx_id
+            'contextID': ctx_id,
+            'reservation': 'user_workshop'
         })
         response = self.client.post('/simulation', data=param)
         self.assertEqual(response.status_code, 201)
@@ -72,6 +74,7 @@ class TestSimulationService(RestTest):
         self.assertEqual(simulation.experiment_conf, 'MyExample.xml')
         self.assertEqual(simulation.gzserver_host, 'local')
         self.assertEqual(simulation.context_id, ctx_id)
+        self.assertEqual(simulation.reservation, 'user_workshop')
 
     def test_simulation_service_no_experiment_conf(self):
         rqdata = {

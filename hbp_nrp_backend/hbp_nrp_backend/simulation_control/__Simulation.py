@@ -25,7 +25,7 @@ class Simulation(object):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 sim_brain_processes=1, context_id=None, state='created'):
+                 reservation=None, sim_brain_processes=1, context_id=None, state='created'):
         """
         Creates a new simulation
 
@@ -45,6 +45,7 @@ class Simulation(object):
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__context_id = context_id
+        self.__reservation = reservation
         self.__brain_processes = sim_brain_processes
         self.__creation_datetime = datetime.datetime.now(tz=timezone)
         self.__cle = None
@@ -279,6 +280,14 @@ class Simulation(object):
         return self.__gzserver_host
 
     @property
+    def reservation(self):
+        """
+        Gets the cluster reservation that will be used to allocate a job running Gazebo.
+        If the self.__reservation is None, the allocation request will not refer to any reservation.
+        """
+        return self.__reservation
+
+    @property
     def brain_processes(self):
         """
         Gets the number of brain processes used for this simulation, overrides value in experiment
@@ -294,6 +303,7 @@ class Simulation(object):
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),
+        'reservation': fields.String(attribute='reservation'),
         'contextID': fields.String(attribute='context_id'),
         'brainProcesses': fields.Integer(attribute='brain_processes')
     }
