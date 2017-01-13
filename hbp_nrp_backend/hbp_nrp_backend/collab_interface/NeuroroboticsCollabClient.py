@@ -220,20 +220,22 @@ class NeuroroboticsCollabClient(object):
         threads = []
         collab_folder_path = self._get_path_by_id(collab_folder_uuid)
         for filename in self.__document_client.listdir(collab_folder_path):
-            filepath = collab_folder_path + '/' + filename
-            attr = self.__document_client.get_standard_attr(filepath)
-            if (attr['_entityType'] == 'file'):
-                localpath = os.path.join(temp_directory, filename)
-                t = Thread(target=self.__document_client.download_file, args=(filepath, localpath))
-                t.start()
-                threads.append(t)
-                if '_contentType' in attr:
-                    if attr['_contentType'] == self.EXPERIMENT_CONFIGURATION_MIMETYPE:
-                        experiment_path['experiment_conf'] = localpath
-                    elif attr['_contentType'] == self.SDF_WORLD_MIMETYPE:
-                        experiment_path['environment_conf'] = localpath
-                    elif attr['_contentType'] == self.SDF_ROBOT_MIMETYPE:
-                        experiment_path['robot_model'] = localpath
+            if (filename != 'edit.lock'):
+                filepath = collab_folder_path + '/' + filename
+                attr = self.__document_client.get_standard_attr(filepath)
+                if (attr['_entityType'] == 'file'):
+                    localpath = os.path.join(temp_directory, filename)
+                    t = Thread(target=self.__document_client.download_file,
+                                args=(filepath, localpath))
+                    t.start()
+                    threads.append(t)
+                    if '_contentType' in attr:
+                        if attr['_contentType'] == self.EXPERIMENT_CONFIGURATION_MIMETYPE:
+                            experiment_path['experiment_conf'] = localpath
+                        elif attr['_contentType'] == self.SDF_WORLD_MIMETYPE:
+                            experiment_path['environment_conf'] = localpath
+                        elif attr['_contentType'] == self.SDF_ROBOT_MIMETYPE:
+                            experiment_path['robot_model'] = localpath
         for t in threads:
             t.join()
         return experiment_path

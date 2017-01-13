@@ -7,11 +7,16 @@ __author__ = "Alessandro Ambrosano, Ugo Albanese, Georg Hinkel"
 
 import os
 import tempfile
+import shutil
+import logging
 
 from cle_ros_msgs import srv, msg
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
+
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
+    generate_tf, import_referenced_python_tfs, correct_indentation
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
@@ -21,6 +26,13 @@ from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_a
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_commons.generated import bibi_api_gen
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
+
+from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
+from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException
+from hbp_nrp_commons.generated import exp_conf_api_gen
+from distutils.dir_util import copy_tree  # pylint: disable=F0401,E0611
+
+logger = logging.getLogger(__name__)
 
 # pylint: disable=no-self-use
 
@@ -118,12 +130,97 @@ class SimulationResetCollab(Resource):
         world_sdf, brain_file, populations = SimulationResetCollab\
             ._compute_payload(reset_type, context_id)
         try:
+            rsr = srv.ResetSimulationRequest
+            if reset_type == rsr.RESET_FULL:
+                SimulationResetCollab.resetFromCollabSMandTF(sim)
+
             sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
                           populations=populations)
+
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
         return {}, 200
+
+    @staticmethod
+    def resetFromCollabSMandTF(simulation):
+        """
+        Reset states machines and transfer functions
+        """
+
+        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import \
+            NeuroroboticsCollabClient
+
+        client = NeuroroboticsCollabClient(
+            UserAuthentication.get_header_token(request), simulation.context_id)
+
+        collab_paths = client.clone_experiment_template_from_collab_context()
+        cloned_base_path = os.path.dirname(collab_paths['experiment_conf'])
+
+        current_experiment_path = simulation.lifecycle.experiment_path
+        current_base_path = os.path.dirname(current_experiment_path)
+
+        copy_tree(cloned_base_path, current_base_path)
+        if tempfile.gettempdir() in cloned_base_path:
+            shutil.rmtree(cloned_base_path)
+
+        exp_conf, bibi_conf = get_experiment_data(current_experiment_path)
+
+        SimulationResetCollab.resetTransferFunctions(simulation,
+                                                     bibi_conf,
+                                                     current_base_path)
+        SimulationResetCollab.resetStateMachines(simulation, exp_conf, current_base_path)
+
+    @staticmethod
+    def resetStateMachines(sim, experiment, sm_base_path):
+        """
+        Reset states machines
+        """
+
+        sim.delete_all_state_machines()
+
+        state_machine_paths = {}
+        if experiment.experimentControl is not None:
+            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
+                                        for sm in
+                                        experiment.experimentControl.stateMachine
+                                        if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
+
+        if experiment.experimentEvaluation is not None:
+            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
+                                        for sm in
+                                        experiment.experimentEvaluation.stateMachine
+                                        if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
+
+        sim.state_machine_manager.add_all(state_machine_paths, sim.sim_id)
+        sim.state_machine_manager.initialize_all()
+
+    @staticmethod
+    def resetTransferFunctions(simulation, bibi_conf, base_path):
+        """
+        Reset transfer functions
+        :param simulation: simulation object
+        """
+
+        import_referenced_python_tfs(bibi_conf, base_path)
+
+        for tf in bibi_conf.transferFunction:
+            tf_code = generate_tf(tf, bibi_conf)
+            tf_code = correct_indentation(tf_code, 0)
+            tf_code = tf_code.strip() + "\n"
+            logger.info(" RESET TF: " + tf.name + "\n" + tf_code + '\n')
+
+            error_message = simulation.cle.set_simulation_transfer_function(
+                str(tf.name),
+                str(tf_code)
+            )
+            if (error_message):
+                raise NRPServicesTransferFunctionException(
+                    "Transfer function patch failed: "
+                    + str(error_message) + "\n"
+                    + "Updated source:\n"
+                    + str(tf_code)
+                )
 
     @staticmethod
     def _compute_payload(reset_type, context_id):

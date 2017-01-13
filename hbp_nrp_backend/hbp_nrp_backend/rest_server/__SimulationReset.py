@@ -4,6 +4,9 @@ This module contains REST services for handling simulations reset.
 
 __author__ = "Alessandro Ambrosano"
 
+import os
+import logging
+
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
@@ -14,6 +17,18 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+from cle_ros_msgs.srv import ResetSimulationRequest
+from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
+from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
+
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
+    generate_tf, import_referenced_python_tfs, correct_indentation
+
+from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException
+from hbp_nrp_commons.generated import exp_conf_api_gen
+
+logger = logging.getLogger(__name__)
 
 # pylint: disable=no-self-use
 
@@ -106,8 +121,75 @@ class SimulationReset(Resource):
                 raise NRPServicesClientErrorException('Invalid parameter %s' % (par, ))
 
         try:
-            sim.cle.reset(body.get('resetType'))
+            resetType = body.get('resetType')
+            if resetType == ResetSimulationRequest.RESET_FULL:
+                SimulationReset.resetTransferFunctions(sim)
+                SimulationReset.resetStateMachines(sim)
+
+            sim.cle.reset(resetType)
+
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
         return {}, 200
+
+    @staticmethod
+    def resetStateMachines(sim):
+        """
+        Reset states machines
+        """
+
+        sim.delete_all_state_machines()
+
+        sm_base_path = get_experiment_basepath()
+        basepath = os.path.join(sm_base_path, sim.experiment_conf)
+        experiment, _ = get_experiment_data(str(basepath))
+        if experiment is None:
+            return
+
+        state_machine_paths = {}
+        if experiment.experimentControl is not None:
+            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
+                                        for sm in
+                                        experiment.experimentControl.stateMachine
+                                        if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
+
+        if experiment.experimentEvaluation is not None:
+            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
+                                        for sm in
+                                        experiment.experimentEvaluation.stateMachine
+                                        if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
+
+        sim.state_machine_manager.add_all(state_machine_paths, sim.sim_id)
+        sim.state_machine_manager.initialize_all()
+
+    @staticmethod
+    def resetTransferFunctions(sim):
+        """
+        Reset transfer functions
+        """
+
+        basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        _, bibi_conf = get_experiment_data(str(basepath))
+        if bibi_conf is None:
+            return
+
+        # Reset Transfer functions
+        import_referenced_python_tfs(bibi_conf, get_experiment_basepath())
+
+        for tf in bibi_conf.transferFunction:
+            tf_code = generate_tf(tf, bibi_conf)
+            tf_code = correct_indentation(tf_code, 0)
+            tf_code = tf_code.strip() + "\n"
+
+            error_message = sim.cle.set_simulation_transfer_function(
+                str(tf.name),
+                str(tf_code)
+            )
+            if (error_message):
+                raise NRPServicesTransferFunctionException(
+                    "Transfer function patch failed: "
+                    + str(error_message) + "\n"
+                    + "Updated source:\n"
+                    + str(tf_code)
+                )

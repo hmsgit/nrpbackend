@@ -8,6 +8,7 @@ import unittest
 import mock
 import json
 from mock import patch, ANY
+import os
 
 from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import NeuroroboticsCollabClient
 from hbp_nrp_backend.rest_server.__SimulationResetCollab import SimulationResetCollab
@@ -15,7 +16,11 @@ from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from cle_ros_msgs.srv import ResetSimulationRequest
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
+from pyxb import ValidationError, NamespaceError
 
+
+PATH = os.path.split(__file__)[0]
 
 class TestSimulationResetCollab(RestTest):
 
@@ -27,8 +32,8 @@ class TestSimulationResetCollab(RestTest):
         self.mock_collabClient_instance = self.mock_CollabClient.return_value
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
-        simulations.append(Simulation(1, 'experiment2', None, 'im-not-the-owner', 'created'))
+        simulations.append(Simulation(0, 'ExDConf/test_1.xml', None, 'default-owner', 'created'))
+        simulations.append(Simulation(1, 'ExDConf/test_1.xml', None, 'im-not-the-owner', 'created'))
 
         self.context_id = "0000-0000"
         # Correct request
@@ -69,8 +74,31 @@ class TestSimulationResetCollab(RestTest):
         }))
         self.assertEqual(500, response.status_code)
 
-    def test_reset_is_called_properly(self):
+    @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.copy_tree")
+    @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.get_experiment_data")
+    def test_reset_is_called_properly(self, mock_get_experiment_data, mock_copy_tree):
         simulations[0].cle = mock.MagicMock()
+        simulations[0].cle.set_simulation_transfer_function.return_value = None
+
+        experiment_file_path = os.path.join(PATH, 'ExDConf/test_1.xml')
+
+        with open(experiment_file_path) as exd_file:
+            try:
+                experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+            except ValidationError, ve:
+                raise Exception("Could not parse experiment configuration {0:s} due to validation "
+                                "error: {1:s}".format(experiment_file_path, str(ve)))
+
+            bibi_file = experiment.bibiConf.src
+            bibi_file_abs = os.path.join(PATH, bibi_file)
+            with open(bibi_file_abs) as b_file:
+                try:
+                    bibi = bibi_api_gen.CreateFromDocument(b_file.read())
+                except ValidationError, ve:
+                    raise Exception("Could not parse brain configuration {0:s} due to validation "
+                                    "error: {1:s}".format(bibi_file_abs, str(ve)))
+
+        mock_get_experiment_data.return_value = experiment, bibi
 
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
