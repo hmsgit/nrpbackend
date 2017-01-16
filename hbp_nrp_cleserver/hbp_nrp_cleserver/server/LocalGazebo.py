@@ -90,19 +90,19 @@ class LocalGazeboBridgeInstance(IGazeboBridgeInstance):
         """
         Starts the gzbridge instance represented by the object.
         """
-        logger.info("Starting gzbridge")
+        logger.info("Starting Gazebo web client communication adapter")
         os.system(config.config.get('gzbridge', 'start-cmd'))
 
     def stop(self):
         """
         Stops the gzbridge instance represented by the object.
         """
-        logger.info("Stopping gzbridge")
+        logger.info("Stopping Gazebo web client communication adapter")
         os.system(config.config.get('gzbridge', 'stop-cmd'))
 
     def restart(self): # pylint: disable=unused-argument
         """
         Restarts the gzbridge instance represented by the object.
         """
-        logger.info("Restarting gzbridge")
+        logger.info("Restarting Gazebo web client communication adapter")
         os.system(config.config.get('gzbridge', 'restart-cmd'))

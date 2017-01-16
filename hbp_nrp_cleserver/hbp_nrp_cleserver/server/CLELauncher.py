@@ -139,16 +139,6 @@ class CLELauncher(object):
         gazebo_logger.setLevel(logging.INFO)
         gazebo_logger.handlers.append(NotificatorHandler())
 
-        # Only for Frontend progress bar logic
-        number_of_subtasks = 9
-        if self.__bibi_conf.extRobotController is not None:
-            number_of_subtasks = 10
-
-        self.cle_server.notify_start_task("Initializing the Neurorobotic Closed Loop Engine",
-                                          "Importing needed packages",
-                                          number_of_subtasks=number_of_subtasks,
-                                          block_ui=True)
-
         # Needed in order to cleanup global static variables
         nrp.start_new_tf_manager()
 
@@ -158,13 +148,21 @@ class CLELauncher(object):
         # set models path variable
         models_path = get_experiment_basepath()
 
-        Notificator.notify("Resetting Gazebo robotic simulator", True)  # subtask 1
+        # Only for Frontend progress bar logic
+        number_of_subtasks = 11
+        if self.__bibi_conf.extRobotController is not None:
+            number_of_subtasks = number_of_subtasks + 1
+        if self.__bibi_conf.transferFunction is not None:
+            number_of_subtasks = number_of_subtasks + 2 * len(self.__bibi_conf.transferFunction)
+
+        self.cle_server.notify_start_task("Neurorobotics Closed Loop Engine",
+                                          "Starting Gazebo robotic simulator", # subtask 1
+                                          number_of_subtasks=number_of_subtasks,
+                                          block_ui=True)
 
         ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
         local_ip = ifaddress[netifaces.AF_INET][0]['addr']
         ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
-
-        self.gzweb = LocalGazeboBridgeInstance()
 
         self.gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
 
@@ -176,20 +174,21 @@ class CLELauncher(object):
                     exception)
             raise(Exception(error))
 
+        Notificator.notify("Connecting to Gazebo robotic simulator", True)  # subtask 2
         self.__gazebo_helper = GazeboHelper()
 
+        Notificator.notify("Starting Gazebo web client", True)  # subtask 3
         os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
         # We do not know here in which state the previous user did let us gzweb.
+        self.gzweb = LocalGazeboBridgeInstance()
         self.gzweb.restart()
 
+        Notificator.notify("Loading experiment environment", True)  # subtask 4
         self.__gazebo_helper.empty_gazebo_world()
-
-        Notificator.notify("Loading experiment environment", True)  # subtask 2
-
         w_models, w_lights = self.__gazebo_helper.load_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
-        Notificator.notify("Loading neuRobot", True)  # subtask 3
+        Notificator.notify("Loading robot", True)  # subtask 5
 
         robot_initial_pose = self.__exd_conf.environmentModel.robotPose
         if robot_initial_pose is not None:
@@ -229,13 +228,13 @@ class CLELauncher(object):
                     return
 
         # Create interfaces to brain
-        Notificator.notify("Loading neural Simulator NEST", True)  # subtask 4
+        Notificator.notify("Loading Nest brain simulator", True)  # subtask 6
         # control adapter
         braincontrol = instantiate_control_adapter()
         # communication adapter
         braincomm = instantiate_communication_adapter()
         # Create transfer functions manager
-        Notificator.notify("Connecting neural simulator to neurobot", True)  # subtask 5
+        Notificator.notify("Connecting brain simulator to robot", True)  # subtask 7
         # tf manager
         tfmanager = nrp.config.active_node
 
@@ -247,18 +246,16 @@ class CLELauncher(object):
         for dep in self.__dependencies:
             importlib.import_module(dep[:dep.rfind('.')])
 
-        # Create CLE
-        cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, TIMESTEP)
-
-        Notificator.notify("Loading Brain", True)  # subtask 6
+        Notificator.notify("Loading brain and population configuration", True)  # subtask 8
         # load brain
         brainfilepath = self.__bibi_conf.brainModel.file
         if self.__experiment_path is not None:
             brainfilepath = os.path.join(self.__experiment_path, brainfilepath)
-
-        # initialize everything
-        Notificator.notify("Initializing CLE", True)  # subtask 7
         neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
+
+        # initialize CLE
+        Notificator.notify("Initializing CLE", True)  # subtask 9
+        cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, TIMESTEP)
         cle.initialize(brainfilepath, **neurons_config)
 
         # Set initial pose
@@ -270,13 +267,15 @@ class CLELauncher(object):
         # Now that we have everything ready, we could prepare the simulation
         self.cle_server.prepare_simulation(cle, except_hook)
 
-        Notificator.notify("Injecting Transfer Functions", True)  # subtask 8
+        Notificator.notify("Loading transfer functions", True)  # subtask 10
 
         # Create transfer functions
         import_referenced_python_tfs(self.__bibi_conf, self.__experiment_path)
 
-        for tf in self.__bibi_conf.transferFunction:
+        for i, tf in enumerate(self.__bibi_conf.transferFunction):
+            Notificator.notify("Generating transfer function: %i" % (i + 1), True)  # subtask +1
             tf_code = generate_tf(tf, self.__bibi_conf)
+            Notificator.notify("Loading transfer function: %s" % tf.name, True)  # named subtask +2
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
             logger.info("TF: " + tf.name + "\n" + tf_code + '\n')
@@ -291,7 +290,7 @@ class CLELauncher(object):
                 raise
 
         # Loading is completed.
-        Notificator.notify("Finished", True)  # subtask 9
+        Notificator.notify("Finished", True)  # subtask 11
         self.cle_server.notify_finish_task()
 
         logger.info("CLELauncher Finished.")
@@ -305,19 +304,23 @@ class CLELauncher(object):
 
         # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
         # Clean up gazebo after ourselves
-        self.cle_server.notify_start_task("Stopping simulation",
-                                          "Emptying 3D world",
-                                          number_of_subtasks=2,
-                                          block_ui=False)
-        # Do not empty Gazebo since Gazebo will be restarted anyhow
+        number_of_subtasks = 2
+        if self.__bibi_conf.extRobotController is not None:
+            number_of_subtasks = number_of_subtasks + 1
 
+        self.cle_server.notify_start_task("Stopping simulation",
+                                          "Shutting down Gazebo robotic simulator",
+                                          number_of_subtasks=number_of_subtasks,
+                                          block_ui=False)
+
+        # Do not empty Gazebo since Gazebo will be restarted anyhow
         if self.gzweb is not None:
             self.gzweb.stop()
         if self.gzserver is not None:
             self.gzserver.stop()
 
-        if self.__bibi_conf.extRobotController is not None:  # optionally stop all external robot
-            # controllers
+         # Stop any external robot controllers
+        if self.__bibi_conf.extRobotController is not None:
             robot_controller_filepath = os.path.join(self.models_path,
                                                      self.__bibi_conf.extRobotController)
             if os.path.isfile(robot_controller_filepath):

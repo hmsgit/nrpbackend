@@ -174,7 +174,6 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         if result == 2:
             raise(Exception("Cannot connect to the SLURM front-end node."))
 
-        notificator.info("Connected to the SLURM front-end node.")
         return ssh_SLURM_frontend_process
 
     def __allocate_job(self):
@@ -183,8 +182,8 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         connection to the allocated node. If once call exit on this object, the
         allocation will be cancelled.
         """
+        notificator.info("Requesting resources on the cluster")
         self.__allocation_process = self.__spawn_ssh_SLURM_frontend()
-        notificator.info("Requesting resources on the cluster.")
 
         # clear the buffer before issuing the commands, otherwise parsing the final
         # list may fail with ssh banner header info filling the buffer
@@ -264,6 +263,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         - no output (expected, handled by short timeout with no output)
         - failure to launch (EOF when process reports failure, invalid so abort)
         """
+        notificator.info('Starting backend graphics server')
         self.__x_server_process = pexpect.spawn('Xvfb :1', logfile=logger)
         result = self.__x_server_process.expect(
             [
@@ -325,6 +325,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         if self.__node is None or self.__allocation_process is None:
             raise(Exception("Cannot connect to a cluster node without a proper Job allocation."))
 
+        notificator.info('Starting cluster node graphics server')
         self.__remote_xvnc_process = self.__spawn_vglconnect()
 
         # Cleanup any leftover Xvnc sessions from our user on this cluster node from failed
@@ -365,9 +366,10 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         if self.__remote_display_port == -1:
             raise(Exception("Gazebo needs a remote X Server running"))
 
+        notificator.info('Configuring the cluster node environment')
         self.__gazebo_remote_process = self.__spawn_vglconnect()
 
-        # Prevently kill all gzservers.
+        # Kill any active gzservers (this should never happen).
         self.__gazebo_remote_process.sendline('killall -9 gzserver')
 
         # loading the environment modules configuration files
@@ -429,6 +431,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_DATABASE_URI=')
 
         # launch Gazebo with virtualgl, use -nodl to redirect native opengl calls to virtualgl
+        notificator.info('Starting Gazebo server on the cluster node')
         self.__gazebo_remote_process.sendline(
             'vglrun -nodl $GAZEBO_BIN_DIR/gzserver ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_api_plugin.so ' +
@@ -447,13 +450,9 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         Start gzserver on the Lugano viz cluster
         """
         try:
-            notificator.info('Allocating one job on the vizualization cluster')
             self.__allocate_job()
-            notificator.info('Start an XServer without attached screen')
             self.__start_fake_X()
-            notificator.info('Start Xvnc on the remote node')
             self.__start_xvnc()
-            notificator.info('Start gzserver on the remote node')
             self.__start_gazebo(ros_master_uri)
         # pylint: disable=broad-except
         except Exception:
@@ -495,23 +494,26 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         try:
             # terminate running gzserver and invoking bash shell
             if self.__gazebo_remote_process:
-                notificator.info('Stopping gzserver on the remote node')
+                notificator.info('Stopping Gazebo server on the cluster node')
                 self.__gazebo_remote_process.sendcontrol('z')
-                self.__gazebo_remote_process.sendline('killall -9 gzserver')
+                self.__gazebo_remote_process.sendline('killall -v -9 gzserver')
+                self.__gazebo_remote_process.expect([pexpect.TIMEOUT,
+                                                     'Killed',
+                                                     'gzserver: no process killed'], self.TIMEOUT)
                 self.__gazebo_remote_process.terminate()
 
             # directly terminate Xvnc process (not invoked via bash)
             if self.__remote_xvnc_process:
-                notificator.info('Stopping Xvnc on the remote node')
+                notificator.info('Stopping cluster node graphics server')
                 self.__remote_xvnc_process.terminate()
 
             # delete remote locks and any files
-            notificator.info('Cleaning up remote files')
+            notificator.info('Cleaning up temporary files on the cluster node')
             self.__clean_remote_files()
 
         # pylint: disable=broad-except
         except Exception:
-            logger.exception('Error cleaning up remote node.')
+            logger.exception('Error cleaning up cluster node.')
         finally:
             self.__gazebo_remote_process = None
             self.__remote_xvnc_process = None
@@ -519,17 +521,17 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
 
         # SLURM cleanup (not on the cluster node), always try even if cluster cleanup fails
         if self.__allocation_process:
-            notificator.info('Deallocating one job on the vizualization cluster')
+            notificator.info('Releasing resources on the cluster')
             self.__deallocate_job()
 
         # cleserver cleanup Xvfb, this is not critical
         if self.__x_server_process:
-            notificator.info('Stopping XServer without attached screen')
+            notificator.info('Stopping backend graphics server')
             self.__x_server_process.terminate()
             self.__x_server_process = None
 
     def restart(self, ros_master_uri):
-        notificator.info("Restarting gzserver")
+        notificator.info("Restarting Gazebo server on the cluster")
         self.stop()
         self.start(ros_master_uri)
 
