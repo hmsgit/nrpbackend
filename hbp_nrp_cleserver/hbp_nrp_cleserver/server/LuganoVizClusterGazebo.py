@@ -372,60 +372,33 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # Kill any active gzservers (this should never happen).
         self.__gazebo_remote_process.sendline('killall -9 gzserver')
 
-        # loading the environment modules configuration files
-        self.__gazebo_remote_process.sendline(
-            'export MODULEPATH=$MODULEPATH:/gpfs/bbp.cscs.ch/apps/viz/neurorobotics/modulefiles')
-
         # source environment modules init file
         self.__gazebo_remote_process.sendline('source /opt/rh/python27/enable')
         self.__gazebo_remote_process.sendline('source /usr/share/Modules/init/bash 2> /dev/null')
 
-        # load the modules
-        self.__gazebo_remote_process.sendline(
-            'module load ros/indigo-numpy-1.11-rhel6-x86_64-gcc4.8.2')
-        self.__gazebo_remote_process.sendline('module load gazebo/last-build')
-        self.__gazebo_remote_process.sendline('module load sdf/last-build')
-        self.__gazebo_remote_process.sendline('module load ogre/1.9.0-rhel6-x86_64-gcc-4.8.2')
-        self.__gazebo_remote_process.sendline('module load boost/1.55zlib-rhel6-x86_64-gcc4.4')
-        self.__gazebo_remote_process.sendline(
-            'module load opencv/2.4.9-numpy-1.11-rhel6-x86_64-gcc-4.4.7')
-        self.__gazebo_remote_process.sendline('module load tbb/4.0.5-rhel6-x86_64-gcc4.4')
-        self.__gazebo_remote_process.sendline(
-            'module load console_bridge/0.2.7-rhel6-x86_64-gcc-4.8.2')
-        self.__gazebo_remote_process.sendline(
-            'module load urdf/0.3.0-rhel6-x86_64-gcc-4.8.2')
-        self.__gazebo_remote_process.sendline(
-            'module load collada-dom/2.3.0-rhel6-x86_64-gcc-4.8.2')
-        self.__gazebo_remote_process.sendline('module load ros-hbp-packages/last-build')
-        self.__gazebo_remote_process.sendline(
-            'module load ros-thirdparty/indigo-numpy-1.11-rhel6-x86_64-gcc4.8.2')
+        # determine if we should access the dev or staging project resources
+        proj_path = '/gpfs/bbp.cscs.ch/project/proj30/neurorobotics/%s/' % \
+                       ('dev' if 'dev' in VERSION else 'staging')
 
-        # source ROS, Gazebo and our plugins
+        # loading the environment modules configuration files
+        modules_path = proj_path + 'server-scripts/nrp-services-modules.sh'
+        self.__gazebo_remote_process.sendline('source %s' % modules_path)
+        result = self.__gazebo_remote_process.expect(['NRP modules loaded.',
+                                                      pexpect.TIMEOUT])
+
+        if result == 1:
+            raise(Exception("Error while configuring cluster node, gpfs may not be mounted." +
+                            str(self.__gazebo_remote_process.after)))
+
+        # activate ROS python venv
         self.__gazebo_remote_process.sendline('source $ROS_PYTHON_VENV/bin/activate')
-        self.__gazebo_remote_process.sendline('source $ROS_SETUP_FILE')
-        self.__gazebo_remote_process.sendline('source $GAZEBO_RESOURCE_PATH/setup.sh')
-        self.__gazebo_remote_process.sendline('source $ROS_THIRDPARTY_PACKAGES_SETUP_FILE')
-        self.__gazebo_remote_process.sendline('source $ROS_HBP_PACKAGES_SETUP_FILE')
 
         # configure variables after all module loads (that could overwrite values)
         self.__gazebo_remote_process.sendline('export DISPLAY=:' + str(self.__remote_display_port))
         self.__gazebo_remote_process.sendline('export ROS_MASTER_URI=' + ros_master_uri)
-        # Looks like it is better to set this variable. The awk part takes the first IP (we
-        # have several of them on Lugano servers).
-        self.__gazebo_remote_process.sendline('export ROS_IP=`hostname -I | awk \'{print $1}\'`')
 
         # Use the appropriate dev or staging models based on this backend version
-        models_path = '/gpfs/bbp.cscs.ch/project/proj30/neurorobotics/%s/models' % \
-                      ('dev' if 'dev' in VERSION else 'staging')
-        self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_PATH=' + models_path)
-
-        # Make sure the models directory exists and is readable (otherwise no assets will be found)
-        self.__gazebo_remote_process.sendline('[ -d ' + models_path + ' ] && ' +
-                                              'echo "ok" || echo "fail"')
-        result = self.__gazebo_remote_process.expect(['ok', 'fail', pexpect.TIMEOUT])
-        if result != 0:
-            raise(Exception('Gazebo models directory does not exist or is currently unreachable!' +
-                            ' Invalid path:' + models_path))
+        self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_PATH=%s/models' % proj_path)
 
         # disable online (unreachable) model searching, only use local NRP models
         self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_DATABASE_URI=')
