@@ -7,6 +7,7 @@ __author__ = 'Alessandro Ambrosano'
 import unittest
 import mock
 import json
+import os
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
@@ -14,12 +15,16 @@ from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from cle_ros_msgs.srv import ResetSimulationRequest
 
+from mock import patch, MagicMock, Mock
+
+PATH = os.path.split(__file__)[0]
+
 class TestSimulationReset(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
-        simulations.append(Simulation(1, 'experiment2', None, 'im-not-the-owner', 'created'))
+        simulations.append(Simulation(0, 'ExDConf/test_1.xml', None, 'default-owner', 'created'))
+        simulations.append(Simulation(1, 'ExDConf/test_1.xml', None, 'im-not-the-owner', 'created'))
 
     def test_put_reset(self):
         simulations[0].cle = mock.MagicMock()
@@ -57,8 +62,12 @@ class TestSimulationReset(RestTest):
         }))
         self.assertEqual(500, response.status_code)
 
-    def test_reset_is_called_properly(self):
+    @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
+    def test_reset_is_called_properly(self, mock_get_experiment_path):
         simulations[0].cle = mock.MagicMock()
+        simulations[0].cle.set_simulation_transfer_function.return_value = None
+
+        mock_get_experiment_path.return_value = PATH
 
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE

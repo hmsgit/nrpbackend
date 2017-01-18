@@ -271,6 +271,15 @@ class Simulation(object):
 
         return False, "State machine '{0}' not found.".format(name)
 
+    def delete_all_state_machines(self):
+        """
+        Delete all state machines.
+        """
+
+        allsm = list(self.state_machines)
+        for sm in allsm:
+            self.delete_state_machine(sm.sm_id)
+
     @property
     def gzserver_host(self):
         """
