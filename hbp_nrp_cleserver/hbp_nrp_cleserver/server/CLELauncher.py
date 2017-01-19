@@ -339,6 +339,11 @@ class CLELauncher(object):
         self.cle_server.notify_finish_task()
         self.cle_server.shutdown()
 
+        # Cleanup ROS core nodes, services, and topics (the command should be almost
+        # instant and exit, but wrap it in a timeout since it's semi-officially supported)
+        logger.info("Cleaning up ROS nodes and services")
+        os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup")
+
 
 def get_experiment_basepath():
     """

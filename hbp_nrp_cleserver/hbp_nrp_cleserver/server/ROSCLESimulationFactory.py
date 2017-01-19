@@ -101,7 +101,7 @@ class ROSCLESimulationFactory(object):
         return self.running_simulation_thread is not None and \
             self.running_simulation_thread.is_alive()
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-statements
     def create_new_simulation(self, service_request):
         """
         Handler for the ROS service. Spawn a new simulation.
@@ -155,7 +155,13 @@ class ROSCLESimulationFactory(object):
                                                bibi,
                                                get_experiment_basepath(exd_config_file),
                                                gzserver_host, reservation, sim_id)
-                    cle_launcher.cle_function_init(environment_file, timeout, self.except_hook)
+                    try:
+                        cle_launcher.cle_function_init(environment_file, timeout, self.except_hook)
+                    # pylint: disable=broad-except
+                    except Exception:
+                        cle_launcher.shutdown()
+                        raise
+
                     if cle_launcher.cle_server is None:
                         raise Exception("Error in cle_function_init. Cannot start simulation.")
 
