@@ -22,6 +22,7 @@ from hbp_nrp_commons.generated import bibi_api_gen
 from flask import request
 from pyxb import ValidationError
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 
 # pylint: disable=no-self-use
 # because pylint detects experiment.get_bibiConf() as no member:
@@ -119,6 +120,7 @@ class Experiment(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     def get(self):
         """
         Gets dictionary of experiments stored on the server.

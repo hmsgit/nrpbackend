@@ -9,6 +9,7 @@ import argparse
 from hbp_nrp_backend.rest_server import init, app, db
 from hbp_nrp_backend.rest_server.cleanup import clean_simulations
 from hbp_nrp_backend.rest_server import db_create_and_check, NRPServicesDatabaseTimeoutException
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 import logging
 import sys
 import rospy
@@ -29,7 +30,6 @@ root_logger = logging.getLogger('hbp_nrp_backend')
 
 # This happens within the app process and so it works both in the command line
 # and the uWSGI case
-@app.before_first_request
 def start_ros(): # pragma: no cover
     """
     Starts ROS utilities and cleanup thread in the app process.
@@ -116,8 +116,11 @@ except NRPServicesDatabaseTimeoutException as e:
     root_logger.warn("Database connection timeout ( " + str(e) +
                      " ). You are probably in the local mode. ")
 
-
 if __name__ == '__main__':  # pragma: no cover
+
+    start_ros()
+    app.wsgi_app = RestSyncMiddleware(app.wsgi_app, app)
+
     _args = __process_args()
     init_logging(_args)
     port = DEFAULT_PORT
@@ -126,6 +129,6 @@ if __name__ == '__main__':  # pragma: no cover
     except (TypeError, ValueError) as _:
         root_logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
     root_logger.info("Starting the REST backend server now ...")
-    app.run(port=port, host=DEFAULT_HOST)
+    app.run(port=port, host=DEFAULT_HOST, threaded=True)
     root_logger.info("REST backend server terminated.")
     rospy.signal_shutdown("Backend terminates")

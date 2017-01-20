@@ -10,6 +10,7 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_rel, \
     get_experiment_basepath, ErrorMessages
 
@@ -71,6 +72,7 @@ class ExperimentPreview(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     def get(self, exp_id):
         """
         Get preview image of the experiment specified with experiment ID.

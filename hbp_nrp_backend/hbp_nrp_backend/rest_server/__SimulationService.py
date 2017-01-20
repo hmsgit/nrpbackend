@@ -6,6 +6,7 @@ __author__ = 'GeorgHinkel'
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import api, NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from hbp_nrp_backend.rest_server.__SimulationControl import \
     SimulationControl
 from hbp_nrp_backend.rest_server.__UserAuthentication import \
@@ -136,6 +137,7 @@ class SimulationService(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     @marshal_with(Simulation.resource_fields)
     def get(self):
         """

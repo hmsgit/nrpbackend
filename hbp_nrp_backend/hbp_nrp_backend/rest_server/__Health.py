@@ -8,6 +8,7 @@ import string
 from flask_restful_swagger import swagger
 from datetime import datetime, timedelta
 from hbp_nrp_backend.simulation_control import simulations
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from flask_restful import Resource
 from pytz import timezone
 
@@ -44,6 +45,7 @@ class Last24HoursErrorCheck(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     def get(self):
         """
         Get a nagios status regarding the number of errors that happened in the last
@@ -76,6 +78,7 @@ class TotalErrorCheck(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     def get(self):
         """
         Get a nagios status regarding the number of errors that happened since
