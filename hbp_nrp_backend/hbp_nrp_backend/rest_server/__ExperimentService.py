@@ -212,7 +212,7 @@ def get_collab_experiment(context_id):
         UserAuthentication.get_header_token(request),
         context_id
     )
-    ex, exp_xml_file_path = client.clone_exp_file_from_collab_context()
+    ex, exp_xml_file_path = client.clone_exp_file_from_collab_context()[:-1]
     current_exp = _make_experiment(ex)
     result = {os.path.splitext(os.path.split(exp_xml_file_path)[-1])[0]: current_exp}
     if tempfile.gettempdir() in exp_xml_file_path:

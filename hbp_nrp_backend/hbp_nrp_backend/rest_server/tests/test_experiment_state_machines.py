@@ -123,10 +123,11 @@ class TestExperimentStateMachines(RestTest):
         client_mock = MagicMock()
         temp_directory = tempfile.mkdtemp()
         exp_temp_path = os.path.join(temp_directory, "exp_test.xml")
+        exp_remote_path = os.path.join("collab_path", "exp_test.xml")
         shutil.copyfile(os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml"), exp_temp_path)
         with open(exp_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
-        client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path
+        client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path, exp_remote_path
 
         collab_mock.return_value = client_mock
         mock_bp0.return_value = PATH
@@ -135,10 +136,9 @@ class TestExperimentStateMachines(RestTest):
         data = {"state_machines":{"test_sm": sm}}
 
         response = self.client.put('/experiment/context_id/state-machines', data=json.dumps(data))
-
         self.assertEqual(response.status_code, 200)
-        client_mock.write_file_with_content_in_collab.assert_called_with(sm, mock.ANY, 'test_sm.py')
-        new_exp = client_mock.replace_file_content_in_collab.call_args_list[0][0][0]
+        client_mock.replace_file_content_in_collab.assert_any_call(sm, client_mock.STATE_MACHINE_PY_MIMETYPE, "test_sm.py")
+        new_exp = client_mock.replace_file_content_in_collab.call_args_list[-1][0][0]
         e = exp_conf_api_gen.CreateFromDocument(new_exp)
         self.assertEqual(len(e.experimentControl.stateMachine), 1)
         for sm in e.experimentControl.stateMachine:

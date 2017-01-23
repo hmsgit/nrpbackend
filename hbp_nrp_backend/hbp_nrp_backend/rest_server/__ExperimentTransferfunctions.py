@@ -138,7 +138,7 @@ class ExperimentTransferfunctions(Resource):
             UserAuthentication.get_header_token(request),
             context_id
         )
-        bibi, bibi_file_path = client.clone_bibi_file_from_collab_context()
+        bibi, bibi_file_path, bibi_remote_path = client.clone_bibi_file_from_collab_context()
         # Remove all transfer functions from BIBI. Then we save them in a separate python file.
         del bibi.transferFunction[:]
         threads = []
@@ -150,7 +150,7 @@ class ExperimentTransferfunctions(Resource):
                 transfer_function_node.src = transfer_function_filename
                 bibi.transferFunction.append(transfer_function_node)
 
-                t = Thread(target=client.write_file_with_content_in_collab,
+                t = Thread(target=client.replace_file_content_in_collab,
                            args=(transfer_function,
                                  client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
                                  transfer_function_filename))
@@ -166,8 +166,7 @@ class ExperimentTransferfunctions(Resource):
         t = Thread(target=client.replace_file_content_in_collab, args=(
             bibi.toxml("utf-8"),
             client.BIBI_CONFIGURATION_MIMETYPE,
-            client.BIBI_CONFIGURATION_FILE_NAME,
-            "recovered_bibi_configuration.xml"
+            bibi_remote_path
         ))
         t.start()
         threads.append(t)

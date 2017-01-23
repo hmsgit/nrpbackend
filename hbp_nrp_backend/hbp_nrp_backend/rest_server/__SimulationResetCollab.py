@@ -24,7 +24,6 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_commons.generated import bibi_api_gen
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
@@ -258,23 +257,11 @@ class SimulationResetCollab(Resource):
         header_token = UserAuthentication.get_header_token(request)
         client = NeuroroboticsCollabClient(header_token, context_id)
 
-        brain_collab_path = client.get_first_file_path_with_mimetype(
+        brain_dst_path = client.clone_file_from_collab_context(
             NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE,
-            NeuroroboticsCollabClient.BRAIN_PYNN_FILE_NAME,
-            "brain.py")
+            "brain.py")[0]
 
-        bibi_collab_path = client.get_first_file_path_with_mimetype(
-            NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE,
-            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
-            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
-        )
-
-        temp_directory = tempfile.mkdtemp()
-        brain_dst_path = os.path.join(temp_directory, 'brain.py')
-
-        client.download_file_from_collab(brain_collab_path, brain_dst_path)
-
-        bibi = bibi_api_gen.CreateFromDocument(client.download_file_from_collab(bibi_collab_path))
+        bibi = client.clone_bibi_file_from_collab_context()[0]
         neurons_config = get_all_neurons_as_dict(bibi.brainModel.populations)
 
         neurons_config_clean = [
@@ -321,10 +308,8 @@ class SimulationResetCollab(Resource):
 
         client = NeuroroboticsCollabClient(header_token, context_id)
 
-        file_path_world_sdf = client.get_first_file_path_with_mimetype(
+        file_path_world_sdf = client.clone_file_from_collab_context(
             NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
-            NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME,
-            "recovered_world.sdf")
-        world_sdf_string = client.download_file_from_collab(file_path_world_sdf)
-
-        return world_sdf_string
+            NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME)[0]
+        with open(file_path_world_sdf) as f:
+            return f.read()

@@ -225,8 +225,8 @@ class NeuroroboticsCollabClient(object):
                 attr = self.__document_client.get_standard_attr(filepath)
                 if (attr['_entityType'] == 'file'):
                     localpath = os.path.join(temp_directory, filename)
-                    t = Thread(target=self.__document_client.download_file,
-                                args=(filepath, localpath))
+                    t = Thread(target=self.__document_client.download_file_by_id,
+                               args=(attr['_uuid'], localpath))
                     t.start()
                     threads.append(t)
                     if '_contentType' in attr:
@@ -260,7 +260,9 @@ class NeuroroboticsCollabClient(object):
             saved
         :param mimetype: The mimetype of the file to clone
         :param potential_filename: The potential file name of the file that wants to be cloned
-        :return: A string containing the path of the cloned bibi configuration file.
+        :return: A tuple containing:
+                     The local path of the cloned file,
+                     the remote path of the file.
         """
         temp_directory = tempfile.mkdtemp()
         logger.debug(
@@ -270,18 +272,17 @@ class NeuroroboticsCollabClient(object):
         )
         collab_folder_path = self._get_path_by_id(collab_folder_uuid)
 
-        def download_file(attr, localpath, filepath):
+        def download_file(attr, localpath):
             """
             Download a file if it is the correct mimetype
             :param localpath: where to save the file
-            :param filepath: where to download the file from
             :return True/False depending on if the file was downloaded
             """
             if (
                 (attr['_entityType'] == 'file') and ('_contentType' in attr) and
                 (attr['_contentType'] == mimetype)
             ):
-                self.__document_client.download_file(filepath, localpath)
+                self.__document_client.download_file_by_id(attr['_uuid'], localpath)
                 return True
             return False
 
@@ -289,8 +290,8 @@ class NeuroroboticsCollabClient(object):
             filepath = collab_folder_path + '/' + potential_filename
             attr = self.__document_client.get_standard_attr(filepath)
             localpath = os.path.join(temp_directory, potential_filename)
-            if download_file(attr, localpath, filepath):
-                return localpath
+            if download_file(attr, localpath):
+                return localpath, filepath
         except (DocException, OSError):
             # file doesn't exist
             pass
@@ -301,8 +302,8 @@ class NeuroroboticsCollabClient(object):
             filepath = collab_folder_path + '/' + filename
             attr = self.__document_client.get_standard_attr(filepath)
             localpath = os.path.join(temp_directory, filename)
-            if download_file(attr, localpath, filepath):
-                return localpath
+            if download_file(attr, localpath):
+                return localpath, filepath
 
     def _get_path_by_id(self, uuid):
         """
@@ -322,7 +323,9 @@ class NeuroroboticsCollabClient(object):
 
         :param mimetype: The mimetype of the file to clone
         :param filename: The possible name of the file to be cloned
-        :return: A string containing the path of the cloned bibi configuration file.
+        :param content: Boolean, true if the file contents should be returned
+        :return: A string containing the path of the cloned file,
+                 the path the cloned file was found and the content
         """
         return self.clone_file_from_collab(self.__collab_context.experiment_folder_uuid,
                                            mimetype,
@@ -331,36 +334,40 @@ class NeuroroboticsCollabClient(object):
     def clone_bibi_file_from_collab_context(self):
         """
         Clones the bibi file from the collab storage
-        :return: A BIBIConfiguration object and the path of the cloned file as a string
+        :return: A BIBIConfiguration object, the path of the cloned file as a string and
+                 the remote path where the file was downloaded from.
         """
-        bibi_file = self.clone_file_from_collab_context(self.BIBI_CONFIGURATION_MIMETYPE,
-                                                        self.BIBI_CONFIGURATION_FILE_NAME)
-        if bibi_file is None:
+        clone_return = self.clone_file_from_collab_context(self.BIBI_CONFIGURATION_MIMETYPE,
+                                                           self.BIBI_CONFIGURATION_FILE_NAME)
+        if clone_return is None:
             raise NRPServicesGeneralException(
                 ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404,
                 "Experiment bibi file was not found in the collab storage"
             )
-        return (self._parse_and_check_file_is_valid(bibi_file,
+        local_filepath, remote_path = clone_return
+        return (self._parse_and_check_file_is_valid(local_filepath,
                                                     bibi_api_gen.CreateFromDocument,
                                                     bibi_api_gen.BIBIConfiguration),
-                bibi_file)
+                local_filepath, remote_path)
 
     def clone_exp_file_from_collab_context(self):
         """
         Clones the experiment file from the collab storage
-        :return: A ExD_ object and the path of the cloned file as a string
+        :return: A ExD_ object and the path of the cloned file as a string and
+                 the remote path where the file was downloaded from.
         """
-        exp_file = self.clone_file_from_collab_context(self.EXPERIMENT_CONFIGURATION_MIMETYPE,
-                                                       self.EXPERIMENT_CONFIGURATION_FILE_NAME)
-        if exp_file is None:
+        clone_return = self.clone_file_from_collab_context(self.EXPERIMENT_CONFIGURATION_MIMETYPE,
+                                                           self.EXPERIMENT_CONFIGURATION_FILE_NAME)
+        if clone_return is None:
             raise NRPServicesGeneralException(
                 ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
                 "Experiment xml not found in the collab storage"
             )
-        return (self._parse_and_check_file_is_valid(exp_file,
+        local_filepath, remote_path = clone_return
+        return (self._parse_and_check_file_is_valid(local_filepath,
                                                     exp_conf_api_gen.CreateFromDocument,
                                                     exp_conf_api_gen.ExD_),
-                exp_file)
+                local_filepath, remote_path)
 
     @staticmethod
     def _parse_and_check_file_is_valid(filepath, create_obj_function, instance_type):
@@ -387,74 +394,45 @@ class NeuroroboticsCollabClient(object):
                 )
         return file_obj
 
-    def get_first_file_path_with_mimetype(self, mimetype, potential_filename, default_filename):
+    def replace_file_content_in_collab(self, content, mimetype, filename):
         """
-        Return the full path (on the collab) of the first file found with a
-        given mimetype. If nothing is found, a path with a given
-        "default_filename" will be returned.
-        :param mimetype: The mimetype to find
-        :param potential_filename: the potential name of the file
-        :param default_filename: A default filename to return along with the
-        collab path when nothing is found.
+        Replace the content of a file or if the file does not exist, creates a new file.
+
+        :param content: content (in UTF-8)
+        :param mimetype: mimetype of the file
+        :param filename: the name or path of the file
         """
         collab_folder_path = self._get_path_by_id(self.__collab_context.experiment_folder_uuid)
-        # check if this file exists
+        if collab_folder_path not in filename:
+            filepath = os.path.join(collab_folder_path, filename)
+        else:
+            filepath = filename
         try:
-            filepath = collab_folder_path + '/' + potential_filename
-            attr = self.__document_client.get_standard_attr(filepath)
-            if '_contentType' in attr and attr['_contentType'] == mimetype:
-                return filepath
+            self.__document_client.remove(filepath)
         except (DocException, OSError):
-            # file did not exist
+            # it doesn't exist
             pass
-        # either the file did not exist or it wasn't the correct mimetype
+        self.__document_client.upload_string(content, filepath, mimetype)
+
+    def find_and_replace_file_in_collab(self, content, mimetype, default_name):
+        """
+        Finds a file with a given mimetype and overwrites it with new content.
+        :param content: content (in UTF-8)
+        :param mimetype: the mimetype of the file
+        :param default_name: if a file with this mimetype is not found, use this name instead
+        """
+        collab_folder_path = self._get_path_by_id(self.__collab_context.experiment_folder_uuid)
+        found = False
         for filename in self.__document_client.listdir(collab_folder_path):
-            filepath = collab_folder_path + '/' + filename
+            filepath = os.path.join(collab_folder_path, filename)
             attr = self.__document_client.get_standard_attr(filepath)
             if '_contentType' in attr and attr['_contentType'] == mimetype:
-                return filepath
-
-        default_filepath = os.path.join(collab_folder_path, default_filename)
-        return default_filepath
-
-    def replace_file_content_in_collab(self, content, mimetype, potential_filename,
-                                       default_filename):
-        """
-        Replace the content of the first file found with a given mimetype by some
-        new content
-
-        :param content: new content (in UTF-8)
-        :param mimetype: mimetype of the file to search for
-        :param potential_filename: the potential name of the file
-        :param default_filename: if no file with the given mimetype is found, create
-        a new file with this default filename.
-        """
-        filepath = self.get_first_file_path_with_mimetype(mimetype,
-                                                          potential_filename,
-                                                          default_filename)
-        try:
-            self.__document_client.remove(filepath)
-        except (DocException, OSError):
-            # it doesn't exist
-            pass
-        self.__document_client.upload_string(content, filepath, mimetype)
-
-    def write_file_with_content_in_collab(self, content, mimetype, filename):
-        """
-        Create or override a file in the collab with a given content, mimetype and filename
-
-        :param content: content of the file (in UTF-8).
-        :param mimetype: mimetype of the file.
-        :param filename: self explaining.
-        """
-        collab_folder_path = self._get_path_by_id(self.__collab_context.experiment_folder_uuid)
-        filepath = os.path.join(collab_folder_path, filename)
-        try:
-            self.__document_client.remove(filepath)
-        except (DocException, OSError):
-            # it doesn't exist
-            pass
-        self.__document_client.upload_string(content, filepath, mimetype)
+                # found the correct file
+                found = True
+                break
+        if not found:
+            filepath = os.path.join(collab_folder_path, default_name)
+        self.replace_file_content_in_collab(content, mimetype, filepath)
 
     def populate_subfolder_in_collab(self, foldername, files, mimetype=None):
         """
@@ -487,16 +465,6 @@ class NeuroroboticsCollabClient(object):
             raise NRPServicesUploadException(e.message)
 
         return created_folder_uuid
-
-    def download_file_from_collab(self, file_path, dst_path=None):
-        """
-        Downloads the file with filepath from the collab.
-
-        :param file_path: the collab path of the file to download
-        :param dst_path: the destination where the file has to be saved (optional)
-        :return the contents of the file as a string or the path if dst_path is provided
-        """
-        return self.__document_client.download_file(file_path, dst_path)
 
     def add_app_to_nav_menu(self):
         """

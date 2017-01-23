@@ -43,21 +43,22 @@ class TestExperimentTransferFunctions(RestTest):
         context_id = '123456'
         data = {'transfer_functions': [self.tf1, self.tf2]}
         bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
+        bibi_remote_path = os.path.join("/collab_remote_path", "bibi_1.xml")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
         with open(bibi_temp_path) as bibi_xml:
             bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-        self.mock_collabClient_instance.clone_bibi_file_from_collab_context.return_value = bibi, bibi_temp_path
+        self.mock_collabClient_instance.clone_bibi_file_from_collab_context.return_value = bibi, bibi_temp_path, bibi_remote_path
         response = self.client.put('/experiment/' + context_id + '/transfer-functions', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
 
-        replace_file_argslist = [x[0] for x in self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list]
-        replace_file_arg1, replace_file_arg2, replace_file_arg3, replace_file_arg4  = replace_file_argslist[0]
+        replace_file_argslist = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[-1]
+        replace_file_arg1, replace_file_arg2, replace_file_arg3 = replace_file_argslist[0]
+        print replace_file_argslist[0]
         bibi = bibi_api_gen.CreateFromDocument(replace_file_arg1)
         tfs_names = [name + ".py" for name in self.tf1_name,self.tf2_name]
         for tf in bibi.transferFunction:
             self.assertTrue(tf.src in tfs_names)
-        self.assertEqual(replace_file_arg4, "recovered_bibi_configuration.xml")
 
         write_file_argslist  = [x[0] for x in self.mock_collabClient_instance.replace_file_content_in_collab.write_file_with_content_in_collab]
         for write_file_arg1, write_file_arg2, write_file_arg3, write_file_arg4 in write_file_argslist:

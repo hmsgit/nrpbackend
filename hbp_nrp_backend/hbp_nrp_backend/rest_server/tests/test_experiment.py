@@ -64,7 +64,7 @@ class TestExperimentService(RestTest):
         exp_temp_path = os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml")
         with open(exp_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
-        client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path
+        client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path, "remote_path"
 
         collab_mock.return_value = client_mock
         mock_bp0.return_value = PATH

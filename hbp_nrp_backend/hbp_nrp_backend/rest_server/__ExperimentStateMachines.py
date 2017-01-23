@@ -262,7 +262,7 @@ class ExperimentCollabStateMachine(Resource):
             UserAuthentication.get_header_token(request),
             context_id
         )
-        exp, exp_xml_file_path = client.clone_exp_file_from_collab_context()
+        exp, exp_xml_file_path, exp_remote_path = client.clone_exp_file_from_collab_context()
         threads = []
         for sm_name in body['state_machines']:
             sm_node = exp_conf_api_gen.SMACHStateMachine()
@@ -271,7 +271,7 @@ class ExperimentCollabStateMachine(Resource):
             exp_control = exp_conf_api_gen.ExperimentControl()
             exp_control.stateMachine.append(sm_node)
             exp.experimentControl = exp_control
-            t = Thread(target=client.write_file_with_content_in_collab,
+            t = Thread(target=client.replace_file_content_in_collab,
                        args=(body['state_machines'][sm_name],
                              client.STATE_MACHINE_PY_MIMETYPE,
                              sm_node.src))
@@ -287,8 +287,7 @@ class ExperimentCollabStateMachine(Resource):
         t = Thread(target=client.replace_file_content_in_collab,
                    args=(exp.toxml("utf-8"),
                          client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-                         client.EXPERIMENT_CONFIGURATION_FILE_NAME,
-                         "recovered_experiment_configuration.xml"))
+                         exp_remote_path))
         t.start()
         threads.append(t)
         for thread in threads:

@@ -6,6 +6,7 @@ __author__ = 'Alessandro Ambrosano, Ugo Albanese, Georg Hinkel'
 
 import unittest
 import mock
+from mock import mock_open
 import json
 from mock import patch, ANY
 import os
@@ -172,42 +173,37 @@ class TestSimulationResetCollab(RestTest):
     def test_get_sdf_world_from_collab(self, mock_get_header_token):
 
         fake_filepath = '/abc/cde'
-        self.mock_collabClient_instance.get_first_file_path_with_mimetype.return_value = fake_filepath
-
+        self.mock_collabClient_instance.get_path_by_id.return_value = fake_filepath
         fake_world_sdf_string = '<sdf></sdf>'
+
         self.mock_collabClient_instance.download_file_from_collab.return_value = fake_world_sdf_string
 
         # restore constant field
         self.mock_CollabClient.SDF_WORLD_MIMETYPE = NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE
-
-        # call target function
-        world_sdf_string = SimulationResetCollab._get_sdf_world_from_collab(self.context_id)
+        self.mock_CollabClient.SDF_WORLD_FILE_NAME = NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME
+        with patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.open', mock_open(read_data=fake_world_sdf_string), create=True) as m:
+            # call target function
+            world_sdf_string = SimulationResetCollab._get_sdf_world_from_collab(self.context_id)
 
         # assertions
         mock_get_header_token.assert_called()
 
-        self.mock_collabClient_instance.get_first_file_path_with_mimetype.assert_called_with(
-            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE, ANY, ANY)
-
-        self.mock_collabClient_instance.download_file_from_collab.assert_called_with(fake_filepath)
+        self.mock_collabClient_instance.clone_file_from_collab_context.assert_called_with(
+            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE, NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME)
 
         self.assertEqual(world_sdf_string, fake_world_sdf_string)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.tempfile')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.get_all_neurons_as_dict')
-    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.bibi_api_gen.CreateFromDocument')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
-    def test_get_brain_info_from_collab(self, mock_get_brain_info, mock_create_from_document,
+    def test_get_brain_info_from_collab(self, mock_get_brain_info,
         mock_get_all_neurons_as_dict, mock_tempfile):
         import os
 
         dummy_dir = "/my/temp/dir"
         mock_tempfile.mkdtemp.return_value = dummy_dir
 
-        dummy_path = "/path/to/a/file/that/won't/be/used/because/of/mocks"
-
-        self.mock_collabClient_instance.get_first_file_path_with_mimetype.return_value = dummy_path
-
+        self.mock_collabClient_instance.clone_file_from_collab_context.return_value = os.path.join(dummy_dir, "brain.py"), None
         # restore constant field
         self.mock_CollabClient.BRAIN_PYNN_MIMETYPE = NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE
         self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE

@@ -96,14 +96,14 @@ class ExperimentWorldSDF(Resource):
         replace_sdf = Thread(target=client.replace_file_content_in_collab,
                              args=(sdf_string,
                                    NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
-                                   NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME,
-                                   "recovered_world.sdf"))
+                                   NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME))
         replace_sdf.start()
 
         # Save the robot position in the ExDConf file
         if (len(robot_pose) is 6):  # We need 6 elements (from Gazebo)
             experiment_configuration, \
-                experiment_configuration_file_path = client.clone_exp_file_from_collab_context()
+                experiment_configuration_file_path, \
+                    exp_remote_file_path = client.clone_exp_file_from_collab_context()
 
             experiment_configuration.environmentModel.robotPose.x = robot_pose[0]
             experiment_configuration.environmentModel.robotPose.y = robot_pose[1]
@@ -125,8 +125,7 @@ class ExperimentWorldSDF(Resource):
             client.replace_file_content_in_collab(
                 experiment_configuration.toxml("utf-8"),
                 client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-                client.EXPERIMENT_CONFIGURATION_FILE_NAME,
-                "recovered_experiment_configuration.xml"
+                exp_remote_file_path
             )
 
         else:
