@@ -9,6 +9,7 @@ import os
 import tempfile
 import shutil
 import logging
+import json
 
 from cle_ros_msgs import srv, msg
 from flask import request
@@ -132,10 +133,14 @@ class SimulationResetCollab(Resource):
         try:
             rsr = srv.ResetSimulationRequest
             if reset_type == rsr.RESET_FULL:
-                SimulationResetCollab.resetFromCollabSMandTF(sim)
-
-            sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
-                          populations=populations)
+                SimulationResetCollab.resetFromCollabAll(sim)
+                sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
+                              populations=populations)
+            elif reset_type == rsr.RESET_BRAIN:
+                SimulationResetCollab.resetBrain(sim)
+            else:
+                sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
+                              populations=populations)
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
@@ -143,7 +148,7 @@ class SimulationResetCollab(Resource):
         return {}, 200
 
     @staticmethod
-    def resetFromCollabSMandTF(simulation):
+    def resetFromCollabAll(simulation):
         """
         Reset states machines and transfer functions
         """
@@ -166,15 +171,58 @@ class SimulationResetCollab(Resource):
 
         exp_conf, bibi_conf = get_experiment_data(current_experiment_path)
 
+        SimulationResetCollab.resetBrain(simulation)
+
         SimulationResetCollab.resetTransferFunctions(simulation,
                                                      bibi_conf,
                                                      current_base_path)
         SimulationResetCollab.resetStateMachines(simulation, exp_conf, current_base_path)
 
     @staticmethod
+    def resetBrain(simulation):
+        """
+        Reset brain
+        :param simulation: simulation object
+        :param bibi_conf: BIBI conf
+        :param base_path: base path of the experiment
+        """
+
+        brainPath, _, neurons_config = \
+                        SimulationResetCollab._get_brain_info_from_collab(simulation.context_id)
+
+      # Convert the populations to a JSON dictionary
+
+        for (name, s) in neurons_config.iteritems():
+            v = {}
+            v['from'] = s.start
+            v['to'] = s.stop
+            if s.step <= 0:
+                v['step'] = 1
+            else:
+                v['step'] = s.step
+
+            neurons_config[name] = v
+
+        neurons_config = json.dumps(neurons_config)
+
+        with open(brainPath, 'r') as myfile:
+            data = myfile.read()
+            NOT_CHANGE_POPULATION = 2
+            result = simulation.cle.set_simulation_brain('py', data, "text", neurons_config,
+                                                         NOT_CHANGE_POPULATION)
+            if result.error_message is not "":
+                # Error in given brain
+                return {'error_message': result.error_message,
+                        'error_line': result.error_line,
+                        'error_column': result.error_column,
+                        'handle_population_change': result.handle_population_change}, 300
+
+    @staticmethod
     def resetStateMachines(sim, experiment, sm_base_path):
         """
         Reset states machines
+        :param experiment: experiment conf
+        :param sm_base_path: base path of the experiment
         """
 
         sim.delete_all_state_machines()
@@ -200,6 +248,8 @@ class SimulationResetCollab(Resource):
         """
         Reset transfer functions
         :param simulation: simulation object
+        :param bibi_conf: BIBI conf
+        :param base_path: base path of the experiment
         """
 
         import_referenced_python_tfs(bibi_conf, base_path)
@@ -237,7 +287,7 @@ class SimulationResetCollab(Resource):
         if reset_type == rsr.RESET_WORLD:
             return SimulationResetCollab._get_sdf_world_from_collab(context_id), None, None
         elif reset_type == rsr.RESET_BRAIN:
-            brain, populations = SimulationResetCollab._get_brain_info_from_collab(context_id)
+            brain, populations, _ = SimulationResetCollab._get_brain_info_from_collab(context_id)
             return None, brain, populations
         else:
             return None, None, None
@@ -282,7 +332,7 @@ class SimulationResetCollab(Resource):
             for (name, v) in neurons_config.iteritems()
         ]
 
-        return brain_dst_path, neurons_config_clean
+        return brain_dst_path, neurons_config_clean, neurons_config
 
     @staticmethod
     def _get_experiment_population(name, value):

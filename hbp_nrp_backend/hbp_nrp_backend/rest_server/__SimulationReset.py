@@ -6,6 +6,7 @@ __author__ = "Alessandro Ambrosano"
 
 import os
 import logging
+import json
 
 from flask import request
 from flask_restful import Resource, fields
@@ -21,6 +22,7 @@ from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     generate_tf, import_referenced_python_tfs, correct_indentation
@@ -123,10 +125,14 @@ class SimulationReset(Resource):
         try:
             resetType = body.get('resetType')
             if resetType == ResetSimulationRequest.RESET_FULL:
+                SimulationReset.resetBrain(sim)
                 SimulationReset.resetTransferFunctions(sim)
                 SimulationReset.resetStateMachines(sim)
-
-            sim.cle.reset(resetType)
+                sim.cle.reset(resetType)
+            elif resetType == ResetSimulationRequest.RESET_BRAIN:
+                SimulationReset.resetBrain(sim)
+            else:
+                sim.cle.reset(resetType)
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
@@ -162,6 +168,47 @@ class SimulationReset(Resource):
 
         sim.state_machine_manager.add_all(state_machine_paths, sim.sim_id)
         sim.state_machine_manager.initialize_all()
+
+    @staticmethod
+    def resetBrain(sim):
+        """
+        Reset populations
+        """
+
+        basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        _, bibi_conf = get_experiment_data(str(basepath))
+        if bibi_conf is None:
+            return
+
+        neurons_config = get_all_neurons_as_dict(bibi_conf.brainModel.populations)
+
+        # Convert the populations to a JSON dictionary
+
+        for (name, s) in neurons_config.iteritems():
+            v = {}
+            v['from'] = s.start
+            v['to'] = s.stop
+            if s.step <= 0:
+                v['step'] = 1
+            else:
+                v['step'] = s.step
+
+            neurons_config[name] = v
+
+        neurons_config = json.dumps(neurons_config)
+        brainPath = os.path.join(get_experiment_basepath(), bibi_conf.brainModel.file)
+
+        with open(brainPath, 'r') as myfile:
+            data = myfile.read()
+            NOT_CHANGE_POPULATION = 2
+            result = sim.cle.set_simulation_brain('py', data, "text", neurons_config,
+                                                   NOT_CHANGE_POPULATION)
+            if result.error_message is not "":
+                # Error in given brain
+                return {'error_message': result.error_message,
+                        'error_line': result.error_line,
+                        'error_column': result.error_column,
+                        'handle_population_change': result.handle_population_change}, 300
 
     @staticmethod
     def resetTransferFunctions(sim):
