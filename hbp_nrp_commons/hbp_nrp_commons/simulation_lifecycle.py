@@ -52,6 +52,9 @@ class SimulationLifecycle(object):
 
         :param state_change: The state change message as a SimulationLifecycleStateChange message
         """
+        if self.__subscriber is None:
+            logger.warning("Undead lifecycle message detected.")
+            return
         try:
             if get_caller_id() == state_change.source_node:
                 return
@@ -187,8 +190,14 @@ class SimulationLifecycle(object):
 
         :param shutdown_event: The event that caused the shutdown
         """
-        self.__subscriber.unregister()
-        self.__publisher.unregister()
+        subscriber = self.__subscriber
+        publisher = self.__publisher
+        if subscriber is not None:
+            subscriber.unregister()
+            self.__subscriber = None
+        if publisher is not None:
+            publisher.unregister()
+            self.__publisher = None
 
     def initialize(self, state_change):
         """
