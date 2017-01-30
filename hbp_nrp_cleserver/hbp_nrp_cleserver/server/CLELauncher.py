@@ -10,6 +10,9 @@ import subprocess
 import logging
 import importlib
 import argparse
+import zipfile
+import tempfile
+import shutil
 
 from RestrictedPython import compile_restricted
 
@@ -82,6 +85,7 @@ class CLELauncher(object):
         self.__abort_initialization = None
         self.__dependencies = compute_dependencies(bibi_conf)
         self.__gazebo_helper = None  # Will be instantiated after gazebo is started
+        self.__tmp_robot_dir = None
 
         self.cle_server = None
         self.models_path = None
@@ -180,8 +184,14 @@ class CLELauncher(object):
 
         self.gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
 
+        # find robot
+        robot_file = self.__bibi_conf.bodyModel
+        logger.info("Robot: " + robot_file)
+        robot_file_abs = self._get_robot_abs_path(robot_file)
+        logger.info("RobotAbs: " + robot_file_abs)
+
         try:
-            self.gzserver.start(ros_master_uri)
+            self.gzserver.start(ros_master_uri, self.__tmp_robot_dir)
         except XvfbXvnError as exception:
             logger.error(exception)
             error = "Recoverable error occurred. Please try again. Reason: {0}".format(
@@ -217,10 +227,6 @@ class CLELauncher(object):
         else:
             rpose = None
 
-        robot_file = self.__bibi_conf.bodyModel
-        logger.info("Robot: " + robot_file)
-        robot_file_abs = os.path.join(self.__experiment_path, robot_file)
-        logger.info("RobotAbs: " + robot_file_abs)
         # spawn robot model
         self.__gazebo_helper \
             .load_gazebo_model_file('robot', robot_file_abs, rpose)
@@ -233,6 +239,9 @@ class CLELauncher(object):
         if self.__bibi_conf.extRobotController is not None:  # load external robot controller
             robot_controller_filepath = os.path.join(models_path,
                                                      self.__bibi_conf.extRobotController)
+            if not os.path.isfile(robot_controller_filepath) and self.__tmp_robot_dir is not None:
+                robot_controller_filepath = os.path.join(self.__tmp_robot_dir,
+                                                         self.__bibi_conf.extRobotController)
             if os.path.isfile(robot_controller_filepath):
                 self.__notify("Loading external robot controllers")  # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
@@ -315,8 +324,32 @@ class CLELauncher(object):
 
         self.models_path = models_path
 
+    def _get_robot_abs_path(self, robot_file):
+        """
+        Gets the absolute path of the given robot file
+
+        :param robot_file: The robot file
+        :return: the absolute path to the robot file
+        """
+        abs_file = os.path.join(self.__experiment_path, robot_file)
+        name, ext = os.path.splitext(abs_file)
+        ext = ext.lower()
+        if ext == ".sdf":
+            return abs_file
+        elif ext == ".zip":
+            name = os.path.split(name)[1] + "/model.sdf"
+            with zipfile.ZipFile(abs_file) as robot_zip:
+                try:
+                    robot_zip.getinfo(name)
+                except KeyError:
+                    raise Exception("The robot zip archive must contain an sdf file named {0} "
+                                    "at the root of the archive, but does not.".format(name))
+                self.__tmp_robot_dir = tempfile.mkdtemp(suffix="robot")
+                robot_zip.extractall(path=self.__tmp_robot_dir)
+            return os.path.join(self.__tmp_robot_dir, name)
+
     # We try to shut down everything and aggregate the exceptions
-    #pylint: disable=broad-except
+    # pylint: disable=broad-except
     def shutdown(self):
         """
         Shutdown CLE
@@ -387,6 +420,11 @@ class CLELauncher(object):
         # instant and exit, but wrap it in a timeout since it's semi-officially supported)
         logger.info("Cleaning up ROS nodes and services")
         os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup")
+
+        # Delete temporary robot folder, if any
+        if self.__tmp_robot_dir is not None:
+            logger.info("Deleting temporary directory {temp}".format(temp=self.__tmp_robot_dir))
+            shutil.rmtree(self.__tmp_robot_dir, ignore_errors=True)
 
 
 def get_experiment_basepath():

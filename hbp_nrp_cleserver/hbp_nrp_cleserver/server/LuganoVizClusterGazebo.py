@@ -12,6 +12,7 @@ import os
 import sys
 import netifaces
 import datetime
+import subprocess
 from hbp_nrp_cleserver.server.GazeboInterface import IGazeboServerInstance
 from hbp_nrp_watchdog.WatchdogServer import WatchdogClient
 
@@ -57,7 +58,10 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
     expect() is used to match strings with the shell output in order to understand its status.
     """
 
-    CLUSTER_SLURM_FRONTEND = 'ssh -K bbpnrsoa@bbpviz1.cscs.ch'
+    # -M option is necessary to allow to spawn child ssh connections for doing file transfer
+    # -K option means that we are using Kerberos
+    CLUSTER_SLURM_FRONTEND = 'ssh -M -K bbpnrsoa@bbpviz1.cscs.ch'
+    CLUSTER_DIR_COPY = 'scp -r {src} bbpnrsoa@bbpviz1.cscs.ch:{trg}'
     # SLURM salloc calls allocates a node on the cluster. From salloc man page:
     #
     # salloc - Obtain a SLURM job allocation (a set of nodes), execute a command,and then release
@@ -137,6 +141,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # Holds the state of the SLURM job. The states are defined in SLURM.
         self.__state = "UNDEFINED"
         self.__node = None
+        self.__tmp_dir = None
         self.__watchdog_client = None
 
         self.__allocation_time = None
@@ -313,6 +318,8 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             clean_process = self.__spawn_vglconnect()
             # Clean all old Xvnc lock files.
             clean_process.sendline('rm -rf /tmp/.X*')
+            if self.__tmp_dir is not None:
+                clean_process.sendline('rm -rf {0}'.format(self.__tmp_dir))
             clean_process.terminate()
 
     def __start_xvnc(self):
@@ -355,7 +362,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # unable to find an open Xvnc port (very unlikely), abort
         raise(XvfbXvnError("Cannot start Xvnc, no open display ports."))
 
-    def __start_gazebo(self, ros_master_uri):
+    def __start_gazebo(self, ros_master_uri, models_path=None):
         """
         Start gazebo on the remote server
         """
@@ -414,6 +421,23 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # disable online (unreachable) model searching, only use local NRP models
         self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_DATABASE_URI=')
 
+        # copy robot, if needed
+        if models_path is not None:
+            notificator.info("Copy robot to remote server")
+            self.__gazebo_remote_process.sendline('tmpdir=$(mktemp -d)')
+            self.__gazebo_remote_process.sendline('echo $tmp')
+            # Pexpect compiles strings to regular expressions
+            self.__gazebo_remote_process.expect(r'echo \$tmp')
+            self.__gazebo_remote_process.readline()
+            self.__tmp_dir = self.__gazebo_remote_process.readline().rstrip()
+            # This is done outside the existing ssh connection, but will reuse the ssh connection
+            result = subprocess.call(self.CLUSTER_DIR_COPY
+                                     .format(src=models_path, trg=self.__tmp_dir))
+            self.__gazebo_remote_process.sendline('export GAZEBO_MODELS_PATH='
+                                                  '{trg}:$GAZEBO_MODELS_PATH'
+                                                  .format(trg=self.__tmp_dir))
+            self.__check_scp_result(result)
+
         # launch the watchdog inside the NRP virtualenv
         self.__gazebo_remote_process.sendline('source %s/platform_venv/bin/activate' % proj_path)
         self.__gazebo_remote_process.sendline('sleep 10 && python '
@@ -448,7 +472,27 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # Delay starting the watchdog client by 10s (because we delay the start of the watchdog 10s)
         self.__watchdog_client.start(delay=10)
 
-    def start(self, ros_master_uri):
+    @staticmethod
+    def __check_scp_result(result):
+        """
+        Checks the result of an scp call and raise an exception in case of a problem
+
+        :param result: the return code of the scp execution
+        """
+        if result != 0:
+            if result == 9:
+                error = "File transfer protocol mismatch"
+            elif result == 10:
+                error = "File not found"
+            elif result == 65:
+                error = "Host did not allow connection"
+            elif result == 66:
+                error = "General ssh protocol error"
+            else:
+                error = "Unknown error"
+            raise Exception("The robot could not be copied to the remote cluster: " + error)
+
+    def start(self, ros_master_uri, models_path=None):
         """
         Start gzserver on the Lugano viz cluster
         """
@@ -456,7 +500,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             self.__allocate_job()
             self.__start_fake_X()
             self.__start_xvnc()
-            self.__start_gazebo(ros_master_uri)
+            self.__start_gazebo(ros_master_uri, models_path)
             self.__start_watchdog_client()
         # pylint: disable=broad-except
         except Exception:

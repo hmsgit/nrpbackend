@@ -22,7 +22,7 @@ class LocalGazeboServerInstance(IGazeboServerInstance):
         super(LocalGazeboServerInstance, self).__init__()
         self.__watchdog = None
 
-    def start(self, ros_master_uri): # pylint: disable=unused-argument
+    def start(self, ros_master_uri, models_path=None): # pylint: disable=unused-argument
         """
         Starts a gzserver instance connected to the local roscore (provided by
         ros_master_uri)
@@ -30,7 +30,11 @@ class LocalGazeboServerInstance(IGazeboServerInstance):
         :param: ros_master_uri The ros master uri where to connect gzserver.
         """
         logger.info("Starting gzserver")
-        os.system(config.config.get('gazebo', 'restart-cmd'))
+        models_prefix = ""
+        if models_path is not None:
+            models_prefix = "export GAZEBO_MODELS_PATH={0}:$GAZEBO_MODELS_PATH && "\
+                .format(models_path)
+        os.system(models_prefix + config.config.get('gazebo', 'restart-cmd'))
         self.__ensure_watchdog_running()
 
     def __ensure_watchdog_running(self):
