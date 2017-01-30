@@ -149,17 +149,18 @@ class CLELauncher(object):
         models_path = get_experiment_basepath()
 
         # Only for Frontend progress bar logic
-        number_of_subtasks = 11
+        number_of_subtasks = 12
         if self.__bibi_conf.extRobotController is not None:
             number_of_subtasks = number_of_subtasks + 1
         if self.__bibi_conf.transferFunction is not None:
             number_of_subtasks = number_of_subtasks + 2 * len(self.__bibi_conf.transferFunction)
 
         self.cle_server.notify_start_task("Neurorobotics Closed Loop Engine",
-                                          "Starting Gazebo robotic simulator", # subtask 1
+                                          "Starting Neurorobotics Closed Loop Engine",
                                           number_of_subtasks=number_of_subtasks,
                                           block_ui=True)
 
+        Notificator.notify("Starting Gazebo robotic simulator", True)  # subtask 1
         ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
         local_ip = ifaddress[netifaces.AF_INET][0]['addr']
         ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
@@ -289,8 +290,12 @@ class CLELauncher(object):
                 logger.error(e)
                 raise
 
+        # Wait for the backend rendering environment to load (for any sensors/cameras)
+        Notificator.notify("Waiting for Gazebo simulated sensors to be ready", True)  # subtask 11
+        self.__gazebo_helper.wait_for_backend_rendering()
+
         # Loading is completed.
-        Notificator.notify("Finished", True)  # subtask 11
+        Notificator.notify("Finished", True)  # subtask 12
         self.cle_server.notify_finish_task()
 
         logger.info("CLELauncher Finished.")
