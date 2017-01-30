@@ -75,11 +75,16 @@ class TestSimulationResetCollab(RestTest):
         }))
         self.assertEqual(500, response.status_code)
 
+    @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_brain_info_from_collab")
     @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.copy_tree")
     @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.get_experiment_data")
-    def test_reset_is_called_properly(self, mock_get_experiment_data, mock_copy_tree):
+    def test_reset_is_called_properly(self, mock_get_experiment_data, mock_copy_tree, \
+                                                    mock_get_brain_info_from_collab):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
+
+        mock_get_brain_info_from_collab.return_value = os.path.join(PATH,
+                                                    'brain_model/braitenberg.py'), {}, {}
 
         experiment_file_path = os.path.join(PATH, 'ExDConf/test_1.xml')
 
@@ -160,14 +165,31 @@ class TestSimulationResetCollab(RestTest):
         self.assertEqual(SimulationResetCollab._compute_payload(reset_robot_pose_type, self.context_id),
                          empty_payload)
 
-    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_brain_info_from_collab')
-    def test_compute_payload_reset_brain(self, mock_get_brain_info):
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.tempfile')
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.get_all_neurons_as_dict')
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.bibi_api_gen.CreateFromDocument')
+    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
+    def test_compute_payload_reset_brain(self, mock_get_brain_info, mock_create_from_document,
+        mock_get_all_neurons_as_dict, mock_tempfile):
+
         from cle_ros_msgs.srv import ResetSimulationRequest
-        fake_brain_file = "random return value to check that this what we get"
-        mock_get_brain_info.return_value = fake_brain_file, "foo"
+
+        dummy_dir = "/my/temp/dir"
+        mock_tempfile.mkdtemp.return_value = dummy_dir
+
+        self.mock_collabClient_instance.get_first_file_path_with_mimetype.return_value = dummy_dir
+
+        # restore constant field
+        self.mock_CollabClient.BRAIN_PYNN_MIMETYPE = NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE
+        self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE
+        self.mock_CollabClient.BIBI_CONFIGURATION_FILE_NAME = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
+
+        dummy_populations = {}
+        mock_get_all_neurons_as_dict.return_value = dummy_populations
+
         payload = SimulationResetCollab._compute_payload(ResetSimulationRequest.RESET_BRAIN, self.context_id)
         self.assertEqual(mock_get_brain_info.call_count, 1)
-        self.assertEqual(payload, (None, fake_brain_file, "foo"))
+        self.assertEqual(payload, (None,  '/my/temp/dir/brain.py', []))
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_get_sdf_world_from_collab(self, mock_get_header_token):
@@ -211,7 +233,7 @@ class TestSimulationResetCollab(RestTest):
 
         dummy_populations = {'pop1': slice(0, 1, 1), 'pop2': slice(1, 2, 1)}
         mock_get_all_neurons_as_dict.return_value = dummy_populations
-        data_from_collab, populations = SimulationResetCollab._get_brain_info_from_collab(self.context_id)
+        data_from_collab, populations, _ = SimulationResetCollab._get_brain_info_from_collab(self.context_id)
         self.assertEqual(data_from_collab, os.path.join(dummy_dir, 'brain.py'))
         self.assertEqual("[name: pop2\ntype: 1\nids: []\nstart: 1\nstop: 2\nstep: 1, name: pop1\ntype: 1\nids: []\nstart: 0\nstop: 1\nstep: 1]", str(populations))
 
