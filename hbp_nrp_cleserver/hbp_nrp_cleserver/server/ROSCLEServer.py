@@ -89,7 +89,7 @@ class ROSCLEServer(object):
         self.__service_clean_CSV_recorders_files = None
 
         self.__timer = Timer.Timer(ROSCLEServer.STATUS_UPDATE_INTERVAL,
-                                   self.__publish_state_update)
+                                   self.publish_state_update)
         self.__timeout = timeout
         self.__gzserver = gzserver
 
@@ -609,7 +609,7 @@ class ROSCLEServer(object):
 
         return True
 
-    def __publish_state_update(self):
+    def publish_state_update(self):
         """
         Publish the state and the remaining timeout
         """
@@ -638,7 +638,7 @@ class ROSCLEServer(object):
         """
         self.__lifecycle.done_event.wait()
 
-        self.__publish_state_update()
+        self.publish_state_update()
         logger.info("Finished main loop")
 
     def shutdown(self):

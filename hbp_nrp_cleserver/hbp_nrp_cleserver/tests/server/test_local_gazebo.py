@@ -71,7 +71,7 @@ class TestLocalGazeboBridgeInstance(unittest.TestCase):
         bridge = LocalGazeboBridgeInstance()
         bridge.start()
         mocked_os.system.assert_called_once_with("foo")
-        mocked_config.config.get.assert_called_once_with('gzbridge', 'start_cmd')
+        mocked_config.config.get.assert_called_once_with('gzbridge', 'start-cmd')
 
     @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
     @patch('hbp_nrp_cleserver.server.LocalGazebo.config')
@@ -80,7 +80,7 @@ class TestLocalGazeboBridgeInstance(unittest.TestCase):
         bridge = LocalGazeboBridgeInstance()
         bridge.stop()
         mocked_os.system.assert_called_once_with("bar")
-        mocked_config.config.get.assert_called_once_with('gzbridge', 'stop_cmd')
+        mocked_config.config.get.assert_called_once_with('gzbridge', 'stop-cmd')
 
 
     @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
@@ -90,7 +90,7 @@ class TestLocalGazeboBridgeInstance(unittest.TestCase):
         bridge = LocalGazeboBridgeInstance()
         bridge.restart()
         mocked_os.system.assert_called_once_with("foobar")
-        mocked_config.config.get.assert_called_once_with('gzbridge', 'restart_cmd')
+        mocked_config.config.get.assert_called_once_with('gzbridge', 'restart-cmd')
 
 
 if __name__ == '__main__':
