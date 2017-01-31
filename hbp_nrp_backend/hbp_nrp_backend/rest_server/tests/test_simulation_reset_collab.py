@@ -167,7 +167,7 @@ class TestSimulationResetCollab(RestTest):
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.tempfile')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.get_all_neurons_as_dict')
-    @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.bibi_api_gen.CreateFromDocument')
+    @patch('hbp_nrp_commons.generated.bibi_api_gen.CreateFromDocument')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_compute_payload_reset_brain(self, mock_get_brain_info, mock_create_from_document,
         mock_get_all_neurons_as_dict, mock_tempfile):
@@ -179,6 +179,7 @@ class TestSimulationResetCollab(RestTest):
 
         self.mock_collabClient_instance.get_first_file_path_with_mimetype.return_value = dummy_dir
 
+        self.mock_collabClient_instance.clone_file_from_collab_context.return_value = os.path.join(dummy_dir, "brain.py"), None
         # restore constant field
         self.mock_CollabClient.BRAIN_PYNN_MIMETYPE = NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE
         self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE
