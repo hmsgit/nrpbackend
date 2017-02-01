@@ -1,9 +1,9 @@
-from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance
+from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance, LocalGazeboBridgeInstance
 from hbp_nrp_cle import config
 import unittest
 from mock import patch, MagicMock
 
-__author__ = 'Alessandro Ambrosano'
+__author__ = 'Alessandro Ambrosano, Georg Hinkel'
 
 
 class TestLocalGazeboServerInstance(unittest.TestCase):
@@ -58,6 +58,40 @@ class TestLocalGazeboServerInstance(unittest.TestCase):
         callback = mocked_watchdog.call_args[0][1]
         callback()
         self.assertTrue(self.has_died)
+
+    def test_can_extend(self):
+        self.assertTrue(self.instance.try_extend("does not matter"))
+
+
+class TestLocalGazeboBridgeInstance(unittest.TestCase):
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.config')
+    def test_start_performs_command(self, mocked_config, mocked_os):
+        mocked_config.config.get.return_value = "foo"
+        bridge = LocalGazeboBridgeInstance()
+        bridge.start()
+        mocked_os.system.assert_called_once_with("foo")
+        mocked_config.config.get.assert_called_once_with('gzbridge', 'start_cmd')
+
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.config')
+    def test_stop_performs_command(self, mocked_config, mocked_os):
+        mocked_config.config.get.return_value = "bar"
+        bridge = LocalGazeboBridgeInstance()
+        bridge.stop()
+        mocked_os.system.assert_called_once_with("bar")
+        mocked_config.config.get.assert_called_once_with('gzbridge', 'stop_cmd')
+
+
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.config')
+    def test_restart_performs_command(self, mocked_config, mocked_os):
+        mocked_config.config.get.return_value = "foobar"
+        bridge = LocalGazeboBridgeInstance()
+        bridge.restart()
+        mocked_os.system.assert_called_once_with("foobar")
+        mocked_config.config.get.assert_called_once_with('gzbridge', 'restart_cmd')
+
 
 if __name__ == '__main__':
     unittest.main()

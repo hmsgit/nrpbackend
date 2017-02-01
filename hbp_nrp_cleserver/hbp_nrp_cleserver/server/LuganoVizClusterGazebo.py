@@ -529,7 +529,7 @@ def _get_roscore_master_uri():
     return master_uri
 
 # Useful to test out the code.
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     logger.setLevel(logging.DEBUG)
     log_format = '%(asctime)s [%(threadName)-12.12s] [%(name)-12.12s] [%(levelname)s]  %(message)s'
     console_handler = logging.StreamHandler(sys.stdout)
