@@ -55,6 +55,7 @@ class TestLifecycle(unittest.TestCase):
                 self.assertEqual("simulationLifecycle", subscriber_mock.call_args[0][0])
                 self.assertIs(SimulationLifecycleStateChange, subscriber_mock.call_args[0][1])
                 self.subscriber_handler = subscriber_mock.call_args[0][2]
+                self.subscriber_mock = subscriber_mock()
         caller_id_patch = patch("hbp_nrp_commons.simulation_lifecycle.get_caller_id")
         self.caller_id = caller_id_patch.start()
         self.caller_id.return_value = "unittests"
@@ -212,3 +213,8 @@ class TestLifecycle(unittest.TestCase):
         self.assertRaises(Exception, invalid.stop, 'bar')
         self.assertRaises(Exception, invalid.fail, 'bar')
         self.assertRaises(Exception, invalid.reset, 'bar')
+
+    def test_shutdown(self):
+        self.lifecycle.shutdown(None)
+        self.assertEqual(self.subscriber_mock.unregister.call_count, 1)
+        self.assertEqual(self.publisher_mock.unregister.call_count, 1)
