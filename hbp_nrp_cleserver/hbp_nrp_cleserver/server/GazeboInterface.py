@@ -16,7 +16,7 @@ class IGazeboServerInstance(object):
         self.__gazebo_died_callback = None
 
     @property
-    def gazebo_died_callback(self):
+    def gazebo_died_callback(self):  # pragma: no cover
         """
         Gets the callback when gazebo dies
         """

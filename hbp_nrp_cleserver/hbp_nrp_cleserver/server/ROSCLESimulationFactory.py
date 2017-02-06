@@ -227,16 +227,22 @@ class ROSCLESimulationFactory(object):
 
         self.simulation_terminate_event.clear()
 
+        #pylint: disable=broad-except
         try:
             cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
                                            # threading.Thread.start
-
+        except Exception, e:
+            logger.error("Exception during simulation")
+            logger.exception(e)
         # always attempt to shutdown cleanly before raising Exception
         finally:
             self.__is_running_simulation_terminating = True
             try:
                 logger.info("Shutdown simulation")
                 cle_launcher.shutdown()
+            except Exception, e:
+                logger.error("Exception during shutdown")
+                logger.exception(e)
             finally:
                 self.running_simulation_thread = None
                 self.__is_running_simulation_terminating = False

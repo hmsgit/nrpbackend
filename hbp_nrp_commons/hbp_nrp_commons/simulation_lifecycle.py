@@ -2,7 +2,8 @@
 This package defines the simulation lifecycle such as used in the NRP
 """
 
-from transitions import Machine, MachineError
+from transitions.extensions import LockedMachine as Machine
+from transitions import MachineError
 from rospy import Publisher, Subscriber, get_caller_id
 from cle_ros_msgs.msg import SimulationLifecycleStateChange
 import logging
