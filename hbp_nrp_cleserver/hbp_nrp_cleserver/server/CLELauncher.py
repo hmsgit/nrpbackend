@@ -416,6 +416,8 @@ if __name__ == '__main__': # pragma: no cover
                             help='specify the base experiment path', required=True)
         parser.add_argument('--gzserver-host', dest='gzserver_host',
                             help='the gzserver target host', required=True)
+        parser.add_argument('--reservation', dest='reservation', default=None,
+                            help='cluster resource reservation', required=False)
         parser.add_argument('--sim-id', dest='sim_id', type=int,
                             help='the simulation id to use', required=True)
         parser.add_argument('--timeout', dest='timeout',
@@ -467,10 +469,14 @@ if __name__ == '__main__': # pragma: no cover
         import dateutil.parser as datetime_parser
         timeout_parsed = datetime_parser.parse(args.timeout.replace('_', ' '))
 
+        # check the reservation argument, if empty default to None
+        if args.reservation == '':
+            args.reservation = None
+
         cle_launcher = CLELauncher(exd,
                                    bibi,
                                    rcsf_get_experiment_basepath(args.exd_file),
-                                   args.gzserver_host, args.sim_id)
+                                   args.gzserver_host, args.reservation, args.sim_id)
         cle_launcher.cle_function_init(args.environment_file, timeout_parsed)
         if cle_launcher.cle_server is None:
             raise Exception("Error in cle_function_init. Cannot start simulation.")
