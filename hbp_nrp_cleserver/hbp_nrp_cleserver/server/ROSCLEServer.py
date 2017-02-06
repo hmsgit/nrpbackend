@@ -380,11 +380,11 @@ class ROSCLEServer(object):
         return [old_changed, new_added]
 
     @staticmethod
-    def change_transfer_functions(request, old_changed, new_added, transferFunctions):
+    def change_transfer_function_for_population(request, old_changed, new_added, transferFunctions,
+                                                changed_i):
         """
-        Modifies population names. Returns a value if needs user input.
+        Modifies a single population name. Returns a value if needs user input.
         """
-        pattern = re.compile(r'(?:(?<=\W)|^)(' + str(old_changed[0]) + r')(?:(?=\W)|$)')
         for tf in transferFunctions:
 
             tfHasChanged = False
@@ -399,9 +399,9 @@ class ROSCLEServer(object):
                         if mapping is not None:
                             node = None
                             # required item is either neurons or its parent
-                            if str(mapping.name) == str(old_changed[0]):
+                            if str(mapping.name) == str(old_changed[changed_i]):
                                 node = mapping
-                            elif str(mapping.parent.name) == str(old_changed[0]):
+                            elif str(mapping.parent.name) == str(old_changed[changed_i]):
                                 node = mapping.parent
                             if node:
                                 if request.change_population == \
@@ -412,13 +412,28 @@ class ROSCLEServer(object):
                                 elif request.change_population == \
                                         srv.SetBrainRequest.DO_RENAME_POPULATION:
                                     # permission granted, so we change TFs
-                                    node.name = new_added[0]
+                                    node.name = new_added[changed_i]
                                     tfHasChanged = True
             if tfHasChanged:
                 source = tf.source
-                modified_source = pattern.sub(str(new_added[0]), source)
+                pattern = re.compile(r'(?:(?<=\W)|^)(' +
+                                        str(old_changed[changed_i]) + r')(?:(?=\W)|$)')
+                modified_source = pattern.sub(str(new_added[changed_i]), source)
                 if not modified_source == source:
                     tf.source = modified_source
+
+    def change_transfer_functions(self, request, old_changed, new_added, transferFunctions):
+        """
+        Modifies population names. Returns a value if needs user input.
+        """
+
+        for changed_i in range(len(old_changed)):
+            r = self.change_transfer_function_for_population(request, old_changed,
+                                                                new_added,
+                                                                transferFunctions,
+                                                                changed_i)
+            if r is not None:
+                return r
 
     def __set_brain(self, request):
         """
@@ -430,7 +445,10 @@ class ROSCLEServer(object):
             [old_changed, new_added] = self.check_population_names(request)
             returnValue = ["", 0, 0, 0]
 
-            if (len(old_changed) == 1) and (len(new_added) == 1):
+            n_old_changed = len(old_changed)
+            n_new_changed = len(new_added)
+
+            if (n_old_changed >= 1) and (n_new_changed >= 1) and n_new_changed == n_old_changed:
                 transferFunctions = tf_framework.get_transfer_functions()
                 checkVarNameRe = re.compile(r'^([a-zA-Z_]+\w*)$')
                 match = checkVarNameRe.match(str(new_added[0]))
