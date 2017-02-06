@@ -5,6 +5,7 @@ Unit tests for the __SimulationResetCollab module.
 __author__ = 'Alessandro Ambrosano, Ugo Albanese, Georg Hinkel'
 
 import unittest
+import time
 import mock
 from mock import mock_open
 import json
@@ -22,6 +23,7 @@ from pyxb import ValidationError, NamespaceError
 
 
 PATH = os.path.split(__file__)[0]
+EXPERIMENT_DATA_PATH = os.path.join(PATH, 'experiments', 'experiment_data')
 
 class TestSimulationResetCollab(RestTest):
 
@@ -33,8 +35,8 @@ class TestSimulationResetCollab(RestTest):
         self.mock_collabClient_instance = self.mock_CollabClient.return_value
 
         del simulations[:]
-        simulations.append(Simulation(0, 'ExDConf/test_1.xml', None, 'default-owner', 'created'))
-        simulations.append(Simulation(1, 'ExDConf/test_1.xml', None, 'im-not-the-owner', 'created'))
+        simulations.append(Simulation(0, 'experiments/experiment_data/test_1.exc', None, 'default-owner', 'created'))
+        simulations.append(Simulation(1, 'experiments/experiment_data/test_1.exc', None, 'im-not-the-owner', 'created'))
 
         self.context_id = "0000-0000"
         # Correct request
@@ -78,15 +80,18 @@ class TestSimulationResetCollab(RestTest):
     @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.SimulationResetCollab._get_brain_info_from_collab")
     @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.copy_tree")
     @patch("hbp_nrp_backend.rest_server.__SimulationResetCollab.get_experiment_data")
-    def test_reset_is_called_properly(self, mock_get_experiment_data, mock_copy_tree, \
-                                                    mock_get_brain_info_from_collab):
+    @patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient")
+    @patch("hbp_nrp_backend.simulation_control.__Simulation.Simulation.lifecycle")
+    def test_reset_is_called_properly(self, mock_lifecycle, mock_neurorobotics_collab_client, \
+                                                mock_get_experiment_data, mock_copy_tree, \
+                                                mock_get_brain_info_from_collab):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
 
         mock_get_brain_info_from_collab.return_value = os.path.join(PATH,
-                                                    'brain_model/braitenberg.py'), {}, {}
+                                                    'models/braitenberg.py'), {}, {}
 
-        experiment_file_path = os.path.join(PATH, 'ExDConf/test_1.xml')
+        experiment_file_path = os.path.join(PATH, 'experiments/experiment_data/test_1.exc')
 
         with open(experiment_file_path) as exd_file:
             try:
@@ -96,7 +101,7 @@ class TestSimulationResetCollab(RestTest):
                                 "error: {1:s}".format(experiment_file_path, str(ve)))
 
             bibi_file = experiment.bibiConf.src
-            bibi_file_abs = os.path.join(PATH, bibi_file)
+            bibi_file_abs = os.path.join(EXPERIMENT_DATA_PATH, bibi_file)
             with open(bibi_file_abs) as b_file:
                 try:
                     bibi = bibi_api_gen.CreateFromDocument(b_file.read())
@@ -109,18 +114,25 @@ class TestSimulationResetCollab(RestTest):
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
         }))
+        self.assertEqual(200, response.status_code)
         simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_ROBOT_POSE,
                                                     world_sdf=None,
                                                     brain_path=None,
                                                     populations=None)
 
+
+        mock_lifecycle.return_value = mock.MagicMock(experiment_path="")
+        mock_neurorobotics_collab_client.clone_experiment_template_from_collab_context.return_value = {'experiment_conf': ""}
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_FULL
         }))
+
+        self.assertEqual(200, response.status_code)
         simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_FULL,
                                                     world_sdf=None,
                                                     brain_path=None,
                                                     populations=None)
+
 
         fake_world_sdf_string = '<sdf></sdf>'
 
@@ -143,7 +155,6 @@ class TestSimulationResetCollab(RestTest):
         fake_world_sdf_string = '<sdf></sdf>'
         mock_get_sdf.return_value = fake_world_sdf_string
 
-        from cle_ros_msgs.srv import ResetSimulationRequest
 
         reset_world_type = ResetSimulationRequest.RESET_WORLD
 
@@ -156,7 +167,6 @@ class TestSimulationResetCollab(RestTest):
         fake_world_sdf_string = '<sdf></sdf>'
         mock_get_sdf.return_value = fake_world_sdf_string
 
-        from cle_ros_msgs.srv import ResetSimulationRequest
 
         reset_robot_pose_type = ResetSimulationRequest.RESET_ROBOT_POSE
 
@@ -171,8 +181,6 @@ class TestSimulationResetCollab(RestTest):
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_compute_payload_reset_brain(self, mock_get_brain_info, mock_create_from_document,
         mock_get_all_neurons_as_dict, mock_tempfile):
-
-        from cle_ros_msgs.srv import ResetSimulationRequest
 
         dummy_dir = "/my/temp/dir"
         mock_tempfile.mkdtemp.return_value = dummy_dir
@@ -221,7 +229,6 @@ class TestSimulationResetCollab(RestTest):
     @patch('hbp_nrp_backend.rest_server.__SimulationResetCollab.UserAuthentication.get_header_token')
     def test_get_brain_info_from_collab(self, mock_get_brain_info,
         mock_get_all_neurons_as_dict, mock_tempfile):
-        import os
 
         dummy_dir = "/my/temp/dir"
         mock_tempfile.mkdtemp.return_value = dummy_dir

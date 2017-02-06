@@ -146,7 +146,7 @@ def correct_indentation(text, first_line_indent_level, indent_string=FOUR_SPACES
     return "\n".join(result)
 
 
-def import_referenced_python_tfs(bibi_conf_inst, models_path):
+def import_referenced_python_tfs(bibi_conf_inst, experiments_path):
     """
     Parses the BIBI configuration, resolves references to external python transfer functions and
     embeds them into the BIBI configuration instance
@@ -160,7 +160,7 @@ def import_referenced_python_tfs(bibi_conf_inst, models_path):
             # clean content beforehand
             assert isinstance(tf, bibi_api_gen.PythonTransferFunction)
             del tf.orderedContent()[:]
-            with open(os.path.join(models_path, tf.src)) as f:
+            with open(os.path.join(experiments_path, tf.src)) as f:
                 tf.append(f.read())
 
 

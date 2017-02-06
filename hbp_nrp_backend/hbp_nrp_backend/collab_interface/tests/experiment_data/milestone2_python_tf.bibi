@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <bibi xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.humanbrainproject.eu/SP10/2014/BIBI" xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/BIBI bibi_configuration.xsd">
   <brainModel>
-    <file>brain_model/my_brain.py</file>
+    <file>my_brain.py</file>
     <populations population="sensors" xsi:type="Range" from="0" to="5"/>
     <populations population="actors" xsi:type="Range" from="5" to="8"/>
   </brainModel>
@@ -16,8 +16,8 @@
       <neurons xsi:type="Index" population="actors" index="1"/>
     </device>
   </transferFunction>
-  <transferFunction xsi:type="PythonTransferFunction" src="BIBI/braitenberg_husky_linear_twist.py"/>
-    <transferFunction xsi:type="PythonTransferFunction" src="BIBI/braitenberg_husky_non_linear_twist.py"/>
+  <transferFunction xsi:type="PythonTransferFunction" src="braitenberg_husky_linear_twist.py"/>
+    <transferFunction xsi:type="PythonTransferFunction" src="braitenberg_husky_non_linear_twist.py"/>
   <transferFunction xsi:type="PythonTransferFunction">
     #<![CDATA[
     import sensor_msgs.msg

@@ -38,9 +38,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         super(BackendSimulationLifecycle, self).__init__(TOPIC_LIFECYCLE(simulation.sim_id),
                                                          initial_state)
         self.__simulation = simulation
-        self.__experiment_path = ""
         self.__simulation_root_folder = ""
-        self.models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+        self.__models_path = os.environ.get('NRP_MODELS_DIRECTORY')
+        self.__experiment_path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
 
     @property
     def simulation(self):
@@ -50,7 +50,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         return self.__simulation
 
-    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path, sm_base_path):
+    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path):
         """
         Parses the experiment configuration, loads state machines and updates the environment path
         with the one in the configuration file if none is passed as an argument, for supporting
@@ -58,7 +58,6 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param experiment_path: Path the experiment configuration.
         :param environment_path: Path to the environment configuration.
-        :param sm_base_path: The directory where the state machine files will be found.
         """
         # parse experiment
         with open(experiment_path) as exd_file:
@@ -66,13 +65,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         state_machine_paths = {}
         if experiment.experimentControl is not None:
-            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
+            state_machine_paths.update({sm.id: os.path.join(self.__simulation_root_folder, sm.src)
                                         for sm in
                                         experiment.experimentControl.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
         if experiment.experimentEvaluation is not None:
-            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
+            state_machine_paths.update({sm.id: os.path.join(self.__simulation_root_folder, sm.src)
                                         for sm in
                                         experiment.experimentEvaluation.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
@@ -81,7 +80,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         self.simulation.state_machine_manager.initialize_all()
         logger.info("Requesting simulation resources")
 
-        if environment_path is None:
+        if environment_path is None or environment_path.strip() == '':
             environment_path = os.path.join(self.models_path, str(experiment.environmentModel.src))
 
         return experiment, environment_path
@@ -104,18 +103,18 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                     UserAuthentication.get_header_token(request), simulation.context_id)
                 collab_paths = client.clone_experiment_template_from_collab_context()
                 self.__experiment_path = collab_paths['experiment_conf']
-                sm_base_path = os.path.dirname(self.__experiment_path)
                 self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
                 environment_path = collab_paths['environment_conf']
             else:
-                self.__simulation_root_folder = self.models_path
-                self.__experiment_path = os.path.join(self.models_path, simulation.experiment_conf)
+                self.__experiment_path = os.path.join(
+                    self.__experiment_path, simulation.experiment_conf
+                )
+                logger.info(self.__experiment_path)
+                self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
                 environment_path = simulation.environment_conf
-                sm_base_path = self.models_path
             experiment, environment_path = \
                 self._parse_exp_and_initialize_paths(self.__experiment_path,
-                                                     environment_path,
-                                                     sm_base_path)
+                                                     environment_path)
 
             simulation.kill_datetime = datetime.datetime.now(timezone) \
                 + datetime.timedelta(seconds=experiment.timeout)
@@ -220,6 +219,31 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :return: The experiment_path
         """
         return self.__experiment_path
+
+    @experiment_path.setter
+    def experiment_path(self, value):
+        """
+        Sets the experiment_path
+
+        """
+        self.__experiment_path = value
+
+    @property
+    def models_path(self):
+        """
+        Gets the models_path
+
+        :return: The models_path
+        """
+        return self.__models_path
+
+    @models_path.setter
+    def models_path(self, value):
+        """
+        Sets the models_path
+
+        """
+        self.__models_path = value
 
     @property
     def simulation_root_folder(self):

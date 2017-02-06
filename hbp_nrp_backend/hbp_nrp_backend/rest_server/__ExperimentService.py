@@ -44,7 +44,12 @@ class ErrorMessages(object):
     EXPERIMENT_BRAIN_FILE_NOT_FOUND_500 = "The experiment brain file was not found"
     EXPERIMENT_CONF_FILE_INVALID_500 = "The experiment configuration file is not valid"
     EXPERIMENT_PREVIEW_INVALID_500 = "The experiment preview image is not valid"
-    VARIABLE_ERROR = "Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty"
+    EXP_VARIABLE_ERROR = """Error on server: environment variable: \
+        'NRP_EXPERIMENTS_DIRECTORY' is empty"""
+    MOD_VARIABLE_ERROR = """Error on server: environment variable: \
+        'NRP_MODELS_DIRECTORY' is empty"""
+    MODEXP_VARIABLE_ERROR = """Error on server: environment variable: \
+        'NRP_MODELS_DIRECTORY' or 'NRP_EXPERIMENTS_DIRECTORY' is empty"""
     ERROR_SAVING_FILE_500 = "Error saving file"
     ERROR_IN_BASE64_400 = "Error in base64: {0}"
 
@@ -169,21 +174,22 @@ def get_experiments():
     Read all available Experiments from disk, and add to dictionary
     :return dictionary: with string: ID, string: ExDConfig File
     """
-
-    experiment_dir = "ExDConf"
-    path = os.path.join(get_experiment_basepath(), experiment_dir)
-    experiment_names = os.listdir(path)
+    experiment_names = os.listdir(get_experiment_basepath())
 
     experiment_dict = {}
 
-    for current in experiment_names:
-        if current.lower().endswith('.xml'):
-            # Parse Experiment
-            experiment_conf = os.path.join(get_experiment_basepath(), experiment_dir, current)
-            ex = parse_exp(experiment_conf)
-            if isinstance(ex, exp_conf_api_gen.ExD_):
-                current_exp = _make_experiment(ex, current, experiment_dir)
-                experiment_dict[os.path.splitext(current)[0]] = current_exp
+    for current_dir in experiment_names:
+        current_path = os.path.join(get_experiment_basepath(), current_dir)
+        if not os.path.isdir(current_path):
+            continue
+        for current in os.listdir(current_path):
+            if current.lower().endswith('.exc'):
+                # Parse Experiment
+                experiment_conf = os.path.join(current_path, current)
+                ex = parse_exp(experiment_conf)
+                if isinstance(ex, exp_conf_api_gen.ExD_):
+                    current_exp = _make_experiment(ex, current, current_path)
+                    experiment_dict[os.path.splitext(current)[0]] = current_exp
 
     return experiment_dict
 
@@ -220,7 +226,7 @@ def get_collab_experiment(context_id):
     if tempfile.gettempdir() in exp_xml_file_path:
         LOG.debug(
             "removing the temporary experiment xml file %s",
-             exp_xml_file_path
+            exp_xml_file_path
         )
         shutil.rmtree(os.path.dirname(exp_xml_file_path))
     return result
@@ -316,12 +322,24 @@ def save_file(base64_data, filename_abs, data=None):
 
 def get_experiment_basepath():
     """
+    :return: path given in the environment variable 'NRP_EXPERIMENTS_DIRECTORY'
+    """
+
+    path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
+    if path is None:
+        raise NRPServicesGeneralException(ErrorMessages.EXP_VARIABLE_ERROR, "Server Error", 500)
+
+    return path
+
+
+def get_model_basepath():
+    """
     :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
     """
 
     path = os.environ.get('NRP_MODELS_DIRECTORY')
     if path is None:
-        raise NRPServicesGeneralException(ErrorMessages.VARIABLE_ERROR, "Server Error", 500)
+        raise NRPServicesGeneralException(ErrorMessages.MOD_VARIABLE_ERROR, "Server Error", 500)
 
     return path
 
@@ -356,21 +374,23 @@ def get_experiment_conf(exp_id):
     return experiment_conf
 
 
-def get_bibi_file(exp_id):
+def get_bibi_file(exp_id, experiment_file=None):
     """
     Gets the filename of the bibi file
 
     :param exp_id: id of the experiment
+    :param experiment_file: The experiment file path
     :return Absolute path to experiment bibi file
     """
-    experiment_file = get_experiment_conf(exp_id)
+    if experiment_file is None:
+        experiment_file = get_experiment_conf(exp_id)
 
     # parse experiment configuration
     with open(experiment_file) as exd_file:
         experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
     assert isinstance(experiment, exp_conf_api_gen.ExD_)
     bibi_file = experiment.bibiConf.src
-    bibi_conf = os.path.join(get_experiment_basepath(), bibi_file)
+    bibi_conf = os.path.join(os.path.dirname(experiment_file), bibi_file)
     return bibi_conf
 
 
@@ -381,14 +401,13 @@ def get_brain_file(exp_id):
     :param exp_id: id of the experiment
     :return: Absolute path to experiment brain file
     """
-    bibi_file_name = get_bibi_file(exp_id)
+    experiment_file = get_experiment_conf(exp_id)
+    bibi_file_name = get_bibi_file(exp_id, experiment_file)
     with open(bibi_file_name) as bibi_file:
         bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
         assert isinstance(bibi, bibi_api_gen.BIBIConfiguration)
         brain_file_name = bibi.brainModel.file
-        return os.path.join(get_experiment_basepath(), brain_file_name)
-
-    return None
+        return os.path.join(os.path.dirname(experiment_file), brain_file_name)
 
 
 def get_control_state_machine_files(exp_id):
@@ -433,9 +452,10 @@ def _get_state_machine_files(exp_id, which):
         files = experiment.experimentEvaluation
 
     if files:
+        exp_dir = os.path.dirname(experiment_file)
         for sm in files.stateMachine:
             if isinstance(sm, exp_conf_api_gen.SMACHStateMachine):
-                ret[sm.id] = os.path.join(get_experiment_basepath(), sm.src)
+                ret[sm.id] = os.path.join(exp_dir, sm.src)
 
     return ret
 

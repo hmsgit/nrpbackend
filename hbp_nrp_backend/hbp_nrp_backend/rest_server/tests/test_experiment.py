@@ -19,6 +19,7 @@ from hbp_nrp_commons.generated import exp_conf_api_gen
 
 
 PATH = os.path.split(__file__)[0]
+EXPERIMENTS_PATH = os.path.join(PATH, 'experiments')
 
 imp1 = "@nrp.MapSpikeSink('left_wheel_neuron', nrp.brain.actors[1], nrp.population_rate)\n" \
        "@nrp.Neuron2Robot(Topic('/monitor/population_rate', cle_ros_msgs.msg.SpikeRate))\n" \
@@ -61,7 +62,7 @@ class TestExperimentService(RestTest):
     @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
     def test_collab_experiment_get_ok(self, collab_mock, mock_bp0):
         client_mock = MagicMock()
-        exp_temp_path = os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml")
+        exp_temp_path = os.path.join(os.path.split(__file__)[0], "experiments", "experiment_data", "test_1.exc")
         with open(exp_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
         client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path, "remote_path"
@@ -92,8 +93,10 @@ class TestExperimentService(RestTest):
         self.assertEqual(json.loads(response.get_data())['message'], ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404)
 
     # TEST ExperimentPreview
-    def test_experiment_preview_get_exp_not_found(self, mock_bp0):
-        mock_bp0.return_value = PATH
+    @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_experiment_basepath")
+    def test_experiment_preview_get_exp_not_found(self, mock_bp1, mock_bp0):
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_bp1.return_value = EXPERIMENTS_PATH
 
         response = self.client.get('/experiment/__NOT_EXISTING__/preview')
         self.assertEqual(response.status_code, 404)
@@ -103,8 +106,8 @@ class TestExperimentService(RestTest):
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_experiment_basepath")
     def test_experiment_preview_get_preview_not_found(self, mock_bp1, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_bp1.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_bp1.return_value = EXPERIMENTS_PATH
 
         response = self.client.get('/experiment/test_2/preview')
         self.assertEqual(response.status_code, 404)
@@ -114,15 +117,15 @@ class TestExperimentService(RestTest):
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentPreview.get_experiment_basepath")
     def test_experiment_preview_get_ok(self, mock_bp1, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_bp1.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_bp1.return_value = EXPERIMENTS_PATH
 
         response = self.client.get('/experiment/test_1/preview')
         self.assertEqual(response.status_code, 200)
 
     # Test State Machine
     def test_get_control_state_machine_files(self, mock_bp0):
-        mock_bp0.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
 
         files = get_control_state_machine_files("test_sm")
         self.assertEqual(len(files), 1)
@@ -131,7 +134,7 @@ class TestExperimentService(RestTest):
         self.assertEqual(len(files), 0)
 
     def test_get_evaluation_state_machine_files(self, mock_bp0):
-        mock_bp0.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
 
         files = get_evaluation_state_machine_files("test_sm")
         self.assertEqual(len(files), 1)

@@ -13,15 +13,15 @@ from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFac
 from mock import Mock, patch
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance
-PATH = os.getcwd()
+MODELS_PATH = os.path.split(__file__)[0]
+EXPERIMENTS_PATH = os.path.join(MODELS_PATH, 'experiment_data')
 tz = pytz.timezone("Europe/Zurich")
-if not os.path.exists("ExDConf"):
-    PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
+
 
 
 class MockedServiceRequest(object):
     environment_file = "environment_file.sdf"
-    exd_config_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
+    exd_config_file = os.path.join(EXPERIMENTS_PATH, "ExDXMLExample.exc")
     gzserver_host = "local"
     brain_processes = 1
     sim_id = 0
@@ -50,9 +50,12 @@ class MockOs(object):
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.nrp.config.active_node", new=Mock())
 @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
-    new=Mock(return_value=PATH)
+    new=Mock(return_value=EXPERIMENTS_PATH)
 )
-@patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=PATH))
+@patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=EXPERIMENTS_PATH))
+@patch("hbp_nrp_cleserver.server.CLELauncher.get_model_basepath",
+    new=Mock(return_value=MODELS_PATH)
+)
 @patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
        new=lambda x, y: LocalGazeboServerInstance())
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())

@@ -31,10 +31,9 @@ class TestSimulationResources(RestTest):
 
         sim = MockedSimulation()
         sim.lifecycle.experiment_path = os.path.join(
-            self.test_directory, "ExDConf", "testsimulationresources.xml")
+            self.test_directory, "experiments", "experiment_data", "testsimulationresources.exc")
 
-        sim.lifecycle.simulation_root_folder = os.path.split(
-            os.path.split(sim.lifecycle.experiment_path)[0])[0]
+        sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
 
@@ -48,8 +47,7 @@ class TestSimulationResources(RestTest):
         sim = MockedSimulation()
         sim.lifecycle.experiment_path = ""
 
-        sim.lifecycle.simulation_root_folder = os.path.split(
-            os.path.split(sim.lifecycle.experiment_path)[0])[0]
+        sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
 
@@ -62,7 +60,7 @@ class TestSimulationResources(RestTest):
 
         sim = MockedSimulation()
         sim.lifecycle.experiment_path = os.path.join(
-            self.test_directory, "ExDConf", "testsimulationresources.xml")
+            self.test_directory, "experiments", "experiment_data", "testsimulationresources.exc")
 
         sim.lifecycle.simulation_root_folder = "wrong_folder"
 
@@ -77,10 +75,9 @@ class TestSimulationResources(RestTest):
 
         sim = MockedSimulation()
         sim.lifecycle.experiment_path = os.path.join(
-            self.test_directory, "ExDConf", "test_1.xml")
+            self.test_directory, "experiments", "experiment_data", "test_1.exc")
 
-        sim.lifecycle.simulation_root_folder = os.path.split(
-            os.path.split(sim.lifecycle.experiment_path)[0])[0]
+        sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
 

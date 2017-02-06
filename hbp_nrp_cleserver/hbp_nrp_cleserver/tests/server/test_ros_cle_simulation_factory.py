@@ -19,7 +19,7 @@ import time
 import sys
 PATH = os.getcwd()
 tz = pytz.timezone("Europe/Zurich")
-if not os.path.exists("ExDConf"):
+if not os.path.exists("experiment_data"):
     PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
 
 
@@ -35,7 +35,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
 
     class MockedServiceRequest(object):
         environment_file = "environment_file.sdf"
-        exd_config_file = os.path.join(PATH, "ExDConf/ExDXMLExample.xml")
+        exd_config_file = os.path.join(PATH, "experiment_data/ExDXMLExample.exc")
         gzserver_host = "local"
         brain_processes = 1
         sim_id = 0

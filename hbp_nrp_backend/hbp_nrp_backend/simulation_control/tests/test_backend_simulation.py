@@ -4,11 +4,13 @@ This module tests the backend implementation of the simulation lifecycle
 
 from mock import Mock, patch
 import unittest
-from os import path
+import os
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import BackendSimulationLifecycle
 from hbp_nrp_backend import NRPServicesGeneralException
 import datetime
 import rospy
+
+PATH = os.path.split(__file__)[0]
 
 __author__ = 'Georg Hinkel'
 
@@ -42,9 +44,10 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         with patch("hbp_nrp_commons.simulation_lifecycle.Publisher"):
             with patch("hbp_nrp_commons.simulation_lifecycle.Subscriber"):
                 self.lifecycle = BackendSimulationLifecycle(self.simulation)
-                self.lifecycle.models_path = path.split(__file__)[0]
 
-        self.assertEqual("", self.lifecycle.experiment_path)
+
+        self.lifecycle.models_path = PATH
+        self.lifecycle.experiment_path = PATH
         self.assertEqual("", self.lifecycle.simulation_root_folder)
 
     def test_backend_initialize_non_collab(self):
@@ -71,19 +74,19 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]
 
         self.assertEqual(2, len(state_machines))
-        directory = path.split(__file__)[0]
-        self.assertEqual(path.join(directory, "SM1.py"), state_machines["SM1"])
-        self.assertEqual(path.join(directory, "SM2.py"), state_machines["SM2"])
+        directory = PATH
+        self.assertEqual(os.path.join(directory, "SM1.py"), state_machines["SM1"])
+        self.assertEqual(os.path.join(directory, "SM2.py"), state_machines["SM2"])
 
     def test_backend_initialize_collab(self):
         self.simulation.context_id = "Foobar"
         self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
-        directory = path.split(__file__)[0]
+        directory = PATH
         with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient") as collab_client:
             with patch("hbp_nrp_backend.rest_server.__UserAuthentication.UserAuthentication") as user_auth:
 
                 collab_paths = {
-                    'experiment_conf': path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
+                    'experiment_conf': os.path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
                     'environment_conf': "Neverland.sdf"
                 }
 

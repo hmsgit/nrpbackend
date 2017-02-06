@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ExD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
-     xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig ExDConfFile.xsd">
+     xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig">
     <name>Distributed Husky Braitenberg experiment</name>
-    <thumbnail>ExDConf/test_1.png</thumbnail>
+    <thumbnail>test_1.png</thumbnail>
     <description>This experiment is a distributed version of the Husky Braitenberg experiment that
         utilizes multiple brain processes.
     </description>
@@ -13,7 +12,7 @@
     <environmentModel src="virtual_room/virtual_room.sdf">
         <robotPose x="0.0" y="0.0" z="0.5" ux="0.0" uy="0.0" uz="1.0" theta="0.0"/>
     </environmentModel>
-    <bibiConf src="BIBI/testsimulationresources.xml" />
+    <bibiConf src="testsimulationresources.bibi" />
     <cameraPose>
         <cameraPosition x="4.5" y="0" z="1.8"/>
         <cameraLookAt x="0" y="0" z="0.6"/>

@@ -32,7 +32,7 @@ class NeuroroboticsCollabClient(object):
     Document services)
     """
 
-    EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.xml"
+    EXPERIMENT_CONFIGURATION_FILE_NAME = "experiment_configuration.exc"
     EXPERIMENT_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics+xml"
     SDF_WORLD_MIMETYPE = "application/hbp-neurorobotics.sdf.world+xml"
     # potential file name of sdf world
@@ -44,7 +44,7 @@ class NeuroroboticsCollabClient(object):
     # BIBI stands for Brain Interface and Body Integration.
     # It encompasses brain model and transfer functions
     # while it holds a reference to the body model.
-    BIBI_CONFIGURATION_FILE_NAME = "bibi_configuration.xml"
+    BIBI_CONFIGURATION_FILE_NAME = "bibi_configuration.bibi"
     BIBI_CONFIGURATION_MIMETYPE = "application/hbp-neurorobotics.bibi+xml"
     TRANSFER_FUNCTIONS_FILE_NAME = "transfer_functions.py"
     TRANSFER_FUNCTIONS_PY_MIMETYPE = "application/hbp-neurorobotics.tfs+python"
@@ -238,6 +238,7 @@ class NeuroroboticsCollabClient(object):
                             experiment_path['robot_model'] = localpath
         for t in threads:
             t.join()
+        logger.info(experiment_path)
         return experiment_path
 
     def clone_experiment_template_from_collab_context(self):
@@ -482,6 +483,18 @@ class NeuroroboticsCollabClient(object):
                                                           "name": "New Experiment"})
 
 
+def get_model_basepath():
+    """
+    :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
+    """
+
+    path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if path is None:
+        raise Exception("Server Error. NRP_MODELS_DIRECTORY not defined.")
+
+    return path
+
+
 class _FlattenedExperimentDirectory(object):
     """
     Helper context class. It takes all the files useful to describe an
@@ -497,9 +510,10 @@ class _FlattenedExperimentDirectory(object):
         self.__exp_configuration = exp_configuration
         self.__temp_directory = None
         # exp_configuration may look like:
-        # $NRP_MODELS/ExDConf/ExDBraitenbergHuskySBC.xml
-        # We extract: $NRP_MODELS
-        self.__models_folder = os.path.dirname(os.path.dirname(exp_configuration))
+        # $NRP_EXPERIMENTS_DIRECTORY/braitenberg_husky/ExDBraitenbergHuskySBC.xml
+        # We extract: $NRP_EXPERIMENTS_DIRECTORY
+        self.__experiment_folder = os.path.dirname(exp_configuration)
+        self.__models_folder = get_model_basepath()
 
     def __enter__(self):
         """
@@ -518,11 +532,11 @@ class _FlattenedExperimentDirectory(object):
         # copy statemachines
         if experiment_dom.experimentControl and experiment_dom.experimentControl.stateMachine:
             for sm in experiment_dom.experimentControl.stateMachine:
-                sm_file = os.path.join(self.__models_folder, sm.src)
+                sm_file = os.path.join(self.__experiment_folder, sm.src)
                 sm.src = os.path.basename(sm.src)
                 shutil.copyfile(sm_file, os.path.join(self.__temp_directory, sm.src))
         # Get the experiment image and copy it into the flattened experiment directory
-        img_file = os.path.join(self.__models_folder, experiment_dom.thumbnail)
+        img_file = os.path.join(self.__experiment_folder, experiment_dom.thumbnail)
         shutil.copyfile(img_file, os.path.join(self.__temp_directory, os.path.basename(img_file)))
         # Update the experiment thumbnail file with the new path
         experiment_dom.thumbnail = os.path.basename(img_file)
@@ -532,7 +546,9 @@ class _FlattenedExperimentDirectory(object):
         # Update the experiment configuration file with the new paths
         experiment_dom.environmentModel.src = os.path.basename(sdf_file)
         # Get the BIBI file path and copy it into the flattened experiment directory
-        bibi_configuration_file = os.path.join(self.__models_folder, experiment_dom.bibiConf.src)
+        bibi_configuration_file = os.path.join(
+            self.__experiment_folder, experiment_dom.bibiConf.src
+        )
         # Update the BIBI configuration file with the new paths
         experiment_dom.bibiConf.src = NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
         flattened_exp_configuration_file = \
@@ -556,7 +572,7 @@ class _FlattenedExperimentDirectory(object):
         """
         Copy the provided config file to the flattened temporary directory.
         """
-        config_filepath = os.path.join(self.__models_folder, config_file)
+        config_filepath = os.path.join(self.__experiment_folder, config_file)
         config_filename = os.path.basename(config_filepath)
         # we copy the config file at the root of the directory
         shutil.copyfile(config_filepath, os.path.join(self.__temp_directory, config_filename))
@@ -597,7 +613,7 @@ class _FlattenedExperimentDirectory(object):
         # and update file paths of TF python scripts
         for tf in bibi_configuration_dom.transferFunction:
             if hasattr(tf, "src") and tf.src:
-                tf_file = os.path.join(self.__models_folder, tf.src)
+                tf_file = os.path.join(self.__experiment_folder, tf.src)
                 tf.src = os.path.basename(tf.src)
                 shutil.copyfile(
                     tf_file,

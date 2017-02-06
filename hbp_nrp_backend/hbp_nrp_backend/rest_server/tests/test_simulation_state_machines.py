@@ -33,7 +33,7 @@ class TestSimulationStateMachines(RestTest):
 
     def setUp(self):
         load_data = {
-            "experimentConfiguration": "ExDConf/test_1.xml",
+            "experimentConfiguration": "experiments/experiment_data/test_1.exc",
             "gzserverHost": "local"
         }
         self.client.post('/simulation', data=json.dumps(load_data))

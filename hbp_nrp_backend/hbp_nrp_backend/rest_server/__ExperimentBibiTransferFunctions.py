@@ -104,7 +104,7 @@ class ExperimentBibiTransferFunctions(Resource):
         responseMessages=[
             {
                 "code": 500,
-                "message": ErrorMessages.VARIABLE_ERROR
+                "message": ErrorMessages.MODEXP_VARIABLE_ERROR
             },
             {
                 "code": 404,

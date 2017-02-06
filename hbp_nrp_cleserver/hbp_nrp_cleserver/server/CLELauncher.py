@@ -163,7 +163,7 @@ class CLELauncher(object):
         TIMESTEP = 0.02
 
         # set models path variable
-        models_path = get_experiment_basepath()
+        models_path = get_model_basepath()
 
         # Only for Frontend progress bar logic
         number_of_subtasks = 12
@@ -227,6 +227,13 @@ class CLELauncher(object):
         else:
             rpose = None
 
+        robot_file = self.__bibi_conf.bodyModel
+        logger.info("Robot: " + robot_file)
+        if self.__is_collab_hack():
+            robot_file_abs = os.path.join(self.__experiment_path, robot_file)
+        else:
+            robot_file_abs = os.path.join(models_path, robot_file)
+        logger.info("RobotAbs: " + robot_file_abs)
         # spawn robot model
         self.__gazebo_helper \
             .load_gazebo_model_file('robot', robot_file_abs, rpose)
@@ -272,8 +279,11 @@ class CLELauncher(object):
         self.__notify("Loading brain and population configuration")  # subtask 8
         # load brain
         brainfilepath = self.__bibi_conf.brainModel.file
-        if self.__experiment_path is not None:
-            brainfilepath = os.path.join(self.__experiment_path, brainfilepath)
+        if self.__is_collab_hack():
+            if self.__experiment_path is not None:
+                brainfilepath = os.path.join(self.__experiment_path, brainfilepath)
+        else:
+            brainfilepath = os.path.join(models_path, brainfilepath)
         neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
 
         # initialize CLE
@@ -355,7 +365,9 @@ class CLELauncher(object):
         Shutdown CLE
         """
 
-        # Once we do reach this point, the simulation is stopped and we could clean after ourselves.
+        # Once we do reach this point, the simulation is stopped
+        # and we can clean after ourselves.
+
         # Clean up gazebo after ourselves
         number_of_subtasks = 2
         if self.__bibi_conf.extRobotController is not None:
@@ -403,7 +415,7 @@ class CLELauncher(object):
                 # Shutdown CLE
                 Notificator.register_notification_function(
                     lambda subtask, update_progress:
-                        self.cle_server.notify_current_task(subtask, update_progress, False)
+                    self.cle_server.notify_current_task(subtask, update_progress, False)
                 )
                 self.cle_server.notify_current_task("Shutting down Closed Loop Engine",
                                                     update_progress=True, block_ui=False)
@@ -426,8 +438,16 @@ class CLELauncher(object):
             logger.info("Deleting temporary directory {temp}".format(temp=self.__tmp_robot_dir))
             shutil.rmtree(self.__tmp_robot_dir, ignore_errors=True)
 
+    def __is_collab_hack(self):
+        """
+        This horrible hack is supposed to be dropped when we remove support for SDF cloning
+        when we have introduced robot and env libraries.
+        :return: true if we detect we are in collab models
+        """
+        return self.__experiment_path.startswith(tempfile.gettempdir())
 
-def get_experiment_basepath():
+
+def get_model_basepath():
     """
     :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
     """
@@ -439,7 +459,19 @@ def get_experiment_basepath():
     return path
 
 
-if __name__ == '__main__': # pragma: no cover
+def get_experiment_basepath():
+    """
+    :return: path given in the environment variable 'NRP_EXPERIMENTS_DIRECTORY'
+    """
+
+    path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
+    if path is None:
+        raise Exception("Server Error. NRP_EXPERIMENTS_DIRECTORY not defined.")
+
+    return path
+
+
+if __name__ == '__main__':  # pragma: no cover
     # TODO: This should be separated into its own method such that we can unit test this code
     try:
         if os.environ["ROS_MASTER_URI"] == "":
@@ -463,9 +495,9 @@ if __name__ == '__main__': # pragma: no cover
 
         music_parser = parser.add_mutually_exclusive_group(required=False)
         music_parser.add_argument('--music', dest='music', action='store_true',
-                                   help='enable music support')
+                                  help='enable music support')
         music_parser.add_argument('--no-music', dest='music', action='store_false',
-                                   help='explicitly disable music support (default)')
+                                  help='explicitly disable music support (default)')
         parser.set_defaults(music=False)
 
         args = parser.parse_args()
@@ -498,8 +530,8 @@ if __name__ == '__main__': # pragma: no cover
         # simplified launch process below from ROSCLESimulationFactory.py, avoid circular depdency
         # by importing here
         from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
-        from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_basepath\
-                                                                     as rcsf_get_experiment_basepath
+        from hbp_nrp_cleserver.server.ROSCLESimulationFactory import \
+            get_experiment_basepath as rcsf_get_experiment_basepath
 
         exd, bibi = get_experiment_data(args.exd_file)
 
@@ -527,13 +559,13 @@ if __name__ == '__main__': # pragma: no cover
         cle_launcher.shutdown()
         logger.info('Shutdown complete, terminating.')
 
-    except Exception as e: # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
 
         # if running through MPI, catch Exception and terminate below to ensure brain processes
         # are also killed
         if args.music:
             logger.error('CLE aborted with message {}, terminating.'.format(e.message))
-            print 'CLE aborted with message {}, terminating.'.format(e.message) # if no logger
+            print 'CLE aborted with message {}, terminating.'.format(e.message)  # if no logger
 
         # standalone non-music launch, propagate error
         else:

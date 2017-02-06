@@ -17,13 +17,13 @@ from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 from hbp_nrp_commons.generated import exp_conf_api_gen
 
 PATH = os.path.split(__file__)[0]
-
+EXPERIMENTS_PATH = os.path.join(PATH, 'experiments')
 
 @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiment_basepath")
 class TestExperimentStateMachines(RestTest):
 
     def test_experiment_state_machines_get_ok(self, mock_bp0):
-        mock_bp0.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
 
         response = self.client.get('/experiment/test_sm/state-machines')
         self.assertEqual(response.status_code, 200)
@@ -49,8 +49,8 @@ class TestExperimentStateMachines(RestTest):
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentStateMachines.get_control_state_machine_files")
     def test_experiment_state_machines_put_ok(self, mock_get, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_get.return_value = dict(sm1=PATH+"/sm_file.py")
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_get.return_value = dict(sm1=EXPERIMENTS_PATH+"/sm_file.py")
 
         response = self.client.put('/experiment/test_1/state-machines/sm1', data="Test data")
         self.assertEqual(response.status_code, 200)
@@ -58,8 +58,8 @@ class TestExperimentStateMachines(RestTest):
     @patch("hbp_nrp_backend.rest_server.__ExperimentStateMachines"
            ".get_evaluation_state_machine_files")
     def test_experiment_state_machines_put_ok2(self, mock_get, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_get.return_value = dict(sm1=PATH+"/StateMachines/sm_file.py")
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_get.return_value = dict(sm1=os.path.join(EXPERIMENTS_PATH, "experiment_data/sm_file.py"))
 
         response = self.client.put('/experiment/test_1/state-machines/sm1', data="Test data")
         self.assertEqual(response.status_code, 200)
@@ -67,8 +67,8 @@ class TestExperimentStateMachines(RestTest):
     @patch("hbp_nrp_backend.rest_server.__ExperimentStateMachines"
            ".get_evaluation_state_machine_files")
     def test_experiment_state_machines_put_sm_not_found(self, mock_get, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_get.return_value = dict(sm1=PATH+"/StateMachines/sm_file.py")
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_get.return_value = dict(sm1=os.path.join(EXPERIMENTS_PATH, "experiment_data/sm_file.py"))
 
         response = self.client.put('/experiment/test_1/state-machines/sm2', data="Test data")
         self.assertEqual(response.status_code, 404)
@@ -77,22 +77,22 @@ class TestExperimentStateMachines(RestTest):
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentStateMachines.get_control_state_machine_files")
     def test_experiment_state_machines_get_ok2(self, mock_get, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_get.return_value = dict(sm1=PATH+"/StateMachines/sm_file.py")
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_get.return_value = dict(sm1=os.path.join(EXPERIMENTS_PATH, "experiment_data/sm_file.py"))
 
         response = self.client.get('/experiment/test_1/state-machines', data="Test data")
         self.assertEqual(response.status_code, 200)
 
     @patch("hbp_nrp_backend.rest_server.__ExperimentStateMachines.get_control_state_machine_files")
     def test_experiment_state_machines_get_fail(self, mock_get, mock_bp0):
-        mock_bp0.return_value = PATH
-        mock_get.return_value = dict(sm1=PATH+"/StateMachines/__MISSING_FILE__.py")
+        mock_bp0.return_value = EXPERIMENTS_PATH
+        mock_get.return_value = dict(sm1=EXPERIMENTS_PATH+"/StateMachines/__MISSING_FILE__.py")
 
         response = self.client.get('/experiment/test_1/state-machines', data="Test data")
         self.assertEqual(response.status_code, 404)
 
     def test_experiment_collab_state_machines_put_sm_missing(self, mock_bp0):
-        mock_bp0.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
         response = self.client.put('/experiment/context_id/state-machines', data={})
         self.assertEqual(response.status_code, 400)
 
@@ -110,7 +110,7 @@ class TestExperimentStateMachines(RestTest):
     @patch('hbp_nrp_commons.generated.exp_conf_api_gen.CreateFromDocument')
     def test_experiment_collab_state_machines_put_exp_wrong(self, create_from_mock, collab_mock, mock_bp0):
         client_mock = MagicMock()
-        client_mock.clone_file_from_collab_context.return_value = os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml")
+        client_mock.clone_file_from_collab_context.return_value = os.path.join(os.path.split(__file__)[0], "experiments", "experiment_data","test_1.exc")
         collab_mock.return_value = client_mock
         create_from_mock.return_value= ""
         mock_bp0.return_value = PATH
@@ -124,7 +124,7 @@ class TestExperimentStateMachines(RestTest):
         temp_directory = tempfile.mkdtemp()
         exp_temp_path = os.path.join(temp_directory, "exp_test.xml")
         exp_remote_path = os.path.join("collab_path", "exp_test.xml")
-        shutil.copyfile(os.path.join(os.path.split(__file__)[0], "ExDConf","test_1.xml"), exp_temp_path)
+        shutil.copyfile(os.path.join(os.path.split(__file__)[0], "experiments", "experiment_data","test_1.exc"), exp_temp_path)
         with open(exp_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
         client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path, exp_remote_path

@@ -57,7 +57,7 @@ class TestExperimentWorldSDF(RestTest):
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
 
-        exd_conf_original_path = os.path.join(self.test_directory, "ExDConf","test_1.xml")
+        exd_conf_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","test_1.exc")
         exd_conf_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(exd_conf_original_path, exd_conf_temp_path)
         with open(exd_conf_temp_path) as exp_xml:

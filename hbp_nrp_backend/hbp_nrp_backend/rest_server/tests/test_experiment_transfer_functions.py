@@ -42,8 +42,8 @@ class TestExperimentTransferFunctions(RestTest):
     def test_experiment_transfer_functions_put(self):
         context_id = '123456'
         data = {'transfer_functions': [self.tf1, self.tf2]}
-        bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
-        bibi_remote_path = os.path.join("/collab_remote_path", "bibi_1.xml")
+        bibi_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","bibi_1.bibi")
+        bibi_remote_path = os.path.join("/collab_remote_path", "bibi_1.bibi")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
         with open(bibi_temp_path) as bibi_xml:

@@ -21,6 +21,7 @@ from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
+from hbp_nrp_backend.rest_server.__ExperimentService import get_model_basepath
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
@@ -71,7 +72,7 @@ class SimulationReset(Resource):
             {
                 "code": 200,
                 "message": "Success. The reset type requested was performed on the given "
-                    "simulation."
+                "simulation."
             },
             {
                 "code": 400,
@@ -88,7 +89,7 @@ class SimulationReset(Resource):
             {
                 "code": 500,
                 "message": "Reset unsuccessful due to a server error, better specified by the"
-                    "error message."
+                "error message."
             }
         ]
     )
@@ -148,8 +149,8 @@ class SimulationReset(Resource):
         sim.delete_all_state_machines()
 
         sm_base_path = get_experiment_basepath()
-        basepath = os.path.join(sm_base_path, sim.experiment_conf)
-        experiment, _ = get_experiment_data(str(basepath))
+        experiment_basepath = os.path.join(sm_base_path, sim.experiment_conf)
+        experiment, _ = get_experiment_data(str(experiment_basepath))
         if experiment is None:
             return
 
@@ -175,8 +176,9 @@ class SimulationReset(Resource):
         Reset populations
         """
 
-        basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
-        _, bibi_conf = get_experiment_data(str(basepath))
+        experiments_basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        models_basepath = get_model_basepath()
+        _, bibi_conf = get_experiment_data(str(experiments_basepath))
         if bibi_conf is None:
             return
 
@@ -196,13 +198,12 @@ class SimulationReset(Resource):
             neurons_config[name] = v
 
         neurons_config = json.dumps(neurons_config)
-        brainPath = os.path.join(get_experiment_basepath(), bibi_conf.brainModel.file)
-
+        brainPath = os.path.join(models_basepath, bibi_conf.brainModel.file)
         with open(brainPath, 'r') as myfile:
             data = myfile.read()
             NOT_CHANGE_POPULATION = 2
             result = sim.cle.set_simulation_brain('py', data, "text", neurons_config,
-                                                   NOT_CHANGE_POPULATION)
+                                                  NOT_CHANGE_POPULATION)
             if result.error_message is not "":
                 # Error in given brain
                 return {'error_message': result.error_message,
@@ -216,13 +217,13 @@ class SimulationReset(Resource):
         Reset transfer functions
         """
 
-        basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
-        _, bibi_conf = get_experiment_data(str(basepath))
+        experiment_basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        _, bibi_conf = get_experiment_data(str(experiment_basepath))
         if bibi_conf is None:
             return
 
         # Reset Transfer functions
-        import_referenced_python_tfs(bibi_conf, get_experiment_basepath())
+        import_referenced_python_tfs(bibi_conf, os.path.dirname(experiment_basepath))
 
         for tf in bibi_conf.transferFunction:
             tf_code = generate_tf(tf, bibi_conf)

@@ -10,13 +10,13 @@ from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 
 
 PATH = os.path.split(__file__)[0]
-
+EXPERIMENTS_PATH = os.path.join(PATH, 'experiments')
 
 @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiment_basepath")
 class TestExperimentBIBITransferFunctions(RestTest):
 
     def test_experiment_state_machines_get_ok(self, mock_bp0):
-        mock_bp0.return_value = PATH
+        mock_bp0.return_value = EXPERIMENTS_PATH
 
         response = self.client.get('/experiment/test_1/bibi-transfer-functions')
         self.assertEqual(response.status_code, 200)

@@ -48,6 +48,9 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.models_directory = os.path.join(
             os.path.dirname(inspect.getfile(self.__class__)), 'mock_model_folder'
         )
+        self.experiments_directory = os.path.join(
+            os.path.dirname(inspect.getfile(self.__class__)), 'experiment_data'
+        )
         self.temporary_directory_to_clean = []
 
     def tearDown(self):
@@ -73,19 +76,21 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.assertEqual(neurorobotic_collab_client.generate_unique_folder_name('b'), 'b')
 
     @patch('shutil.rmtree')
-    def test_clone_experiment_template_to_collab_success(self, rmtree_mock):
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
+    def test_clone_experiment_template_to_collab_success(self, get_model_basepath_mock, rmtree_mock):
+        get_model_basepath_mock.return_value = self.models_directory
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
         neurorobotic_collab_client.clone_experiment_template_to_collab(
             'folder_a',
-            os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml')
+            os.path.join(self.experiments_directory, 'ExDXMLExample.exc')
         )
         self.mock_document_client_instance.mkdir.assert_called_with('folder_a')
         argslist = [x[0] for x in self.mock_document_client_instance.upload_file.call_args_list]
-        self.assertTrue(any('folder_a/experiment_configuration.xml' in args for args in argslist))
+        self.assertTrue(any('folder_a/experiment_configuration.exc' in args for args in argslist))
         self.assertTrue(any('folder_a/ExDXMLExample.png' in args for args in argslist))
         self.assertTrue(any('folder_a/virtual_room.sdf' in args for args in argslist))
         self.assertTrue(any('folder_a/model.sdf' in args for args in argslist))
-        self.assertTrue(any('folder_a/bibi_configuration.xml' in args for args in argslist))
+        self.assertTrue(any('folder_a/bibi_configuration.bibi' in args for args in argslist))
         self.assertTrue(any('folder_a/braitenberg_husky_non_linear_twist.py' in args for args in argslist))
         self.assertTrue(any('folder_a/braitenberg_husky_linear_twist.py' in args for args in argslist))
         self.assertTrue(any('folder_a/my_brain.py' in args for args in argslist))
@@ -127,7 +132,9 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.temporary_directory_to_clean.append(args[0])
 
     @patch('shutil.rmtree')
-    def test_clone_experiment_template_to_collab_failure(self, rmtree_mock):
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
+    def test_clone_experiment_template_to_collab_failure(self, get_model_basepath_mock, rmtree_mock):
+        get_model_basepath_mock.return_value = os.path.join(self.models_directory)
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
         mock_side_effect =\
             [
@@ -136,8 +143,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                 DocException('Upload Failure')
             ]
         self.mock_document_client_instance.upload_file.side_effect = mock_side_effect
-        #self.mock_document_client_instance.rmdir = MagicMock()
-        experiment_config_path = os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml')
+        experiment_config_path = os.path.join(self.experiments_directory, 'ExDXMLExample.exc')
         self.assertRaises(
             NRPServicesUploadException,
             neurorobotic_collab_client.clone_experiment_template_to_collab,
@@ -387,32 +393,34 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.assertIsNotNone(ncc.get_mimetype(ncc.BIBI_CONFIGURATION_FILE_NAME))
         world_file_path = os.path.join(self.models_directory, 'virtual_room/virtual_room.sdf')
         self.assertEqual(ncc.get_mimetype(world_file_path), ncc.SDF_WORLD_MIMETYPE)
-        image_file_path = os.path.join(self.models_directory, 'ExDConf/ExDXMLExample.png')
+        image_file_path = os.path.join(self.experiments_directory, 'ExDXMLExample.png')
         self.assertEqual(ncc.get_mimetype(image_file_path), ncc.PNG_IMAGE_MIMETYPE)
         model_file_path = os.path.join(self.models_directory, 'husky_model/model.sdf')
         self.assertEqual(ncc.get_mimetype(model_file_path), ncc.SDF_ROBOT_MIMETYPE)
-        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain.py')
+        brain_file_path = os.path.join(self.models_directory, 'my_brain.py')
         self.assertEqual(
             ncc.get_mimetype(brain_file_path),
             ncc.BRAIN_PYNN_MIMETYPE
         )
-        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain_2.py')
+        brain_file_path = os.path.join(self.models_directory, 'my_brain_2.py')
         self.assertEqual(
             ncc.get_mimetype(brain_file_path),
             ncc.BRAIN_PYNN_MIMETYPE
         )
-        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain_3.py')
+        brain_file_path = os.path.join(self.models_directory, 'my_brain_3.py')
         self.assertEqual(
             ncc.get_mimetype(brain_file_path),
             ncc.BRAIN_PYNN_MIMETYPE
         )
-        brain_file_path = os.path.join(self.models_directory, 'brain_model/my_brain_4.py')
+        brain_file_path = os.path.join(self.models_directory, 'my_brain_4.py')
         self.assertEqual(
             ncc.get_mimetype(brain_file_path),
             ncc.BRAIN_PYNN_MIMETYPE
         )
-    def test_flatten_bibi_configuration(self):
-        exp_configuration = os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExample.xml')
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
+    def test_flatten_bibi_configuration(self, get_model_basepath_mock):
+        get_model_basepath_mock.return_value = self.models_directory
+        exp_configuration = os.path.join(self.experiments_directory, 'ExDXMLExample.exc')
         expected_list = [
             NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME,
             'braitenberg_husky_linear_twist.py',
@@ -426,7 +434,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         ]
 
         with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
-            bibi_configuration_file = os.path.join(self.models_directory, 'BIBI/milestone2_python_tf.xml')
+            bibi_configuration_file = os.path.join(self.experiments_directory, 'milestone2_python_tf.bibi')
             l = os.listdir(temporary_folder)
             # make sure we do not copy things we aren't expecting
             self.assertEqual(len(l), len(expected_list))
@@ -465,9 +473,10 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                 bibi_configuration_dom.brainModel.file,
                 bibi_api_gen.Python_Filename('my_brain.py')
             )
-
-    def test_flatten_bibi_configuration_retina(self):
-        exp_configuration = os.path.join(self.models_directory, 'ExDConf', 'ExDXMLExampleRetina.xml')
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
+    def test_flatten_bibi_configuration_retina(self, get_model_basepath_mock):
+        get_model_basepath_mock.return_value = self.models_directory
+        exp_configuration = os.path.join(self.experiments_directory, 'ExDXMLExampleRetina.exc')
         expected_list = [
             NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME,
             'grab_image_retina_1.py',

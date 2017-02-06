@@ -80,7 +80,7 @@ def create_brain():
 
     def test_experiment_brain_put_withpoplist(self):
 
-        bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
+        bibi_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","bibi_1.bibi")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
@@ -113,7 +113,7 @@ def create_brain():
 
     def test_experiment_brain_put(self):
 
-        bibi_original_path = os.path.join(self.test_directory, "BIBI","bibi_1.xml")
+        bibi_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","bibi_1.bibi")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
         with open(bibi_temp_path) as bibi_xml:

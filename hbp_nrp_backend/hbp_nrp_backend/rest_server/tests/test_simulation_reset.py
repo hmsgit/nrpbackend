@@ -19,12 +19,13 @@ from mock import patch, MagicMock, Mock
 
 PATH = os.path.split(__file__)[0]
 
+
 class TestSimulationReset(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'ExDConf/test_1.xml', None, 'default-owner', 'created'))
-        simulations.append(Simulation(1, 'ExDConf/test_1.xml', None, 'im-not-the-owner', 'created'))
+        simulations.append(Simulation(0, 'experiments/experiment_data/test_1.exc', None, 'default-owner', 'created'))
+        simulations.append(Simulation(1, 'experiments/experiment_data/test_1.exc', None, 'im-not-the-owner', 'created'))
 
     def test_put_reset(self):
         simulations[0].cle = mock.MagicMock()
@@ -63,11 +64,13 @@ class TestSimulationReset(RestTest):
         self.assertEqual(500, response.status_code)
 
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
-    def test_reset_is_called_properly(self, mock_get_experiment_path):
+    @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_model_basepath")
+    def test_reset_is_called_properly(self, mock_get_model_path, mock_get_experiment_path):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
 
         mock_get_experiment_path.return_value = PATH
+        mock_get_model_path.return_value = os.path.join(PATH, 'models')
 
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
@@ -77,6 +80,7 @@ class TestSimulationReset(RestTest):
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_FULL
         }))
+        self.assertEqual(200, response.status_code)
         simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_FULL)
 
         response = self.client.put('/simulation/0/reset', data=json.dumps({

@@ -13,6 +13,8 @@ from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
 import os
+import logging
+LOG = logging.getLogger(__name__)
 
 # pylint: disable=no-self-use
 
@@ -70,7 +72,7 @@ class SimulationResources(Resource):
         responseMessages=[
             {
                 "code": 500,
-                "message": ErrorMessages.VARIABLE_ERROR
+                "message": ErrorMessages.MODEXP_VARIABLE_ERROR
             },
             {
                 "code": 404,
@@ -99,7 +101,6 @@ class SimulationResources(Resource):
         """
 
         simulation = _get_simulation_or_abort(sim_id)
-
         experiment_file = simulation.lifecycle.experiment_path
 
         if not os.path.isfile(experiment_file):
@@ -133,8 +134,13 @@ class SimulationResources(Resource):
                 conf['file'] = os.path.join('/config-from-cloned-folder', os.path.basename(
                     simulation.lifecycle.simulation_root_folder), os.path.basename(conf['file']))
         else:
+            # Get the template experiment folder name, e.g., "template_husky"
+            experiment_folder = os.path.basename(os.path.dirname(experiment_file))
             for conf in resources:
                 conf['file'] = os.path.join(
-                    '/config-from-template-folder', conf['file'])
+                    '/config-from-template-folder/experiments',
+                    experiment_folder,
+                    conf['file']
+                )
 
         return {'resources': resources}, 200

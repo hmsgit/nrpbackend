@@ -41,9 +41,9 @@ class SomeWeiredTFException(Exception):
 class TestCLELauncherInit(unittest.TestCase):
     def setUp(self):
         dir = os.path.split(__file__)[0]
-        with open(os.path.join(dir, "BIBI/milestone2.xml")) as bibi_file:
+        with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        with open(os.path.join(dir, "ExDConf/ExDXMLExample.xml")) as exd_file:
+        with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "local", None, 42)
 

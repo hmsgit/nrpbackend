@@ -182,8 +182,6 @@ class SimulationResetCollab(Resource):
         """
         Reset brain
         :param simulation: simulation object
-        :param bibi_conf: BIBI conf
-        :param base_path: base path of the experiment
         """
 
         brainPath, _, neurons_config = \

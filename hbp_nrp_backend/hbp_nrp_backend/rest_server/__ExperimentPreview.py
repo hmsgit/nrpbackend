@@ -56,7 +56,7 @@ class ExperimentPreview(Resource):
         responseMessages=[
             {
                 "code": 500,
-                "message": ErrorMessages.VARIABLE_ERROR
+                "message": ErrorMessages.MODEXP_VARIABLE_ERROR
             },
             {
                 "code": 404,
@@ -91,11 +91,12 @@ class ExperimentPreview(Resource):
             raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
                                                   error_code=404)
 
+        experiment_dir = os.path.split(experiment_file_path)[0]
         # Parse the experiment XML and get the thumbnail path
         with open(experiment_file_path) as exd_file:
             try:
                 experiment_file = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-                preview_file = os.path.join(get_experiment_basepath(), experiment_file.thumbnail)
+                preview_file = os.path.join(experiment_dir, experiment_file.thumbnail)
             except ValidationError:
                 raise NRPServicesClientErrorException(
                                                     ErrorMessages.EXPERIMENT_CONF_FILE_INVALID_500,
