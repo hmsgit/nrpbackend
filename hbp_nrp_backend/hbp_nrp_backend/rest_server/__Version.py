@@ -8,6 +8,7 @@ __author__ = 'AxelVonArnim, LucGuyot'
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from cle_ros_msgs import srv
 
 import rospy
@@ -55,6 +56,7 @@ class Version(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     def get(self):
         """
         Gets of the Closed Loop Engine and the Experiment Designer back-end.

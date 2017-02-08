@@ -9,6 +9,7 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
 import os
@@ -85,6 +86,7 @@ class SimulationResources(Resource):
             }
         ]
     )
+    @RestSyncMiddleware.threadsafe
     def get(self, sim_id):
         """
         Gets simulation resource files of the experiment running for the simulation ID

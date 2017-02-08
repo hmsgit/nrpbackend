@@ -7,7 +7,6 @@ python3 = True if sys.hexversion > 0x03000000 else False
 
 import logging
 import rospy
-import timeout_decorator
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
@@ -85,7 +84,6 @@ class ROSCLEServiceWrapper(object):
             logger.error(message)
             raise ROSCLEClientException(message)
 
-    @timeout_decorator.timeout(ROS_SERVICE_TIMEOUT)
     def __call__(self, *args, **kwargs):
         try:
             return self.__handler(*args, **kwargs)
