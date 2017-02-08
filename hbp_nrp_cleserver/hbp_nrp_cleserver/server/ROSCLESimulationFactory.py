@@ -178,6 +178,7 @@ class ROSCLESimulationFactory(object):
                                                  environment_file,
                                                  experiment_base_path,
                                                  gzserver_host,
+                                                 reservation,
                                                  sim_id,
                                                  timeout)
                     cle_launcher.init(bibi, exd.bibiConf.processes)
