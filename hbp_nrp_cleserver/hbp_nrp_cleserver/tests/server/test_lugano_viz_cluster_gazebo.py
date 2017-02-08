@@ -2,6 +2,7 @@ from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGaze
 
 import unittest
 from mock import patch, Mock, MagicMock
+import os
 
 __author__ = 'Alessandro Ambrosano'
 
@@ -165,7 +166,8 @@ class TestLuganoVizClusterGazebo(unittest.TestCase):
         self.instance = LuganoVizClusterGazebo()
 
     @patch('pexpect.spawn')
-    def test_start_gazebo(self, mock_spawn):
+    @patch('hbp_nrp_cleserver.server.LuganoVizClusterGazebo.os.environ')
+    def test_start_gazebo(self, mock_os_environ, mock_spawn):
         # failure: __node is None
         self.instance = LuganoVizClusterGazebo()
         self.instance._LuganoVizClusterGazebo__node = None
@@ -193,11 +195,18 @@ class TestLuganoVizClusterGazebo(unittest.TestCase):
 
         # successful call
         mock_spawn().expect = Mock(return_value=0)
-        mock_spawn.call_count = 0
+        mock_spawn().sendline.reset_mock()
+        mock_spawn.reset_mock()
+        nrp_variables_path = os.path.join(os.path.dirname(__file__), 'nrp-variables')
+        mock_os_environ.get = Mock(side_effect=['staging', nrp_variables_path])
 
         self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri')
         self.assertEqual(mock_spawn.call_count, 1)
-        self.assertNotEqual(mock_spawn().sendline.call_count, 0)
+        self.assertEqual(mock_os_environ.get.call_count, 2)
+        mock_spawn().sendline.assert_any_call('export ENVIRONMENT=staging')
+        mock_spawn().sendline.assert_any_call('ADDITIONAL_PACKAGE_VERSION=1.1.0')
+        mock_spawn().sendline.assert_any_call('SMALL_PACKAGE_VERSION=2.5.5')
+        self.assertGreater(mock_spawn().sendline.call_count, 3)
         self.assertNotEqual(mock_spawn().expect, 0)
 
         self.instance = LuganoVizClusterGazebo()
