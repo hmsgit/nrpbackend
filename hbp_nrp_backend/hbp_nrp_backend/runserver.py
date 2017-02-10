@@ -116,8 +116,13 @@ except NRPServicesDatabaseTimeoutException as e:
     root_logger.warn("Database connection timeout ( " + str(e) +
                      " ). You are probably in the local mode. ")
 
-if __name__ == '__main__':  # pragma: no cover
+# Detect uwsgi, start ros and initialize multithreading support
+if __name__.find("uwsgi_file") == 0:
+    start_ros()
+    app.wsgi_app = RestSyncMiddleware(app.wsgi_app, app)
 
+# This is executed in local install mode without uwsgi
+if __name__ == '__main__':  # pragma: no cover
     start_ros()
     app.wsgi_app = RestSyncMiddleware(app.wsgi_app, app)
 
