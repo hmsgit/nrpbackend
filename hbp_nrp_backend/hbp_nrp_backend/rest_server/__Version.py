@@ -9,10 +9,14 @@ __author__ = 'AxelVonArnim, LucGuyot'
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
-from cle_ros_msgs import srv
 
-import rospy
-import hbp_nrp_backend
+import hbp_nrp_backend # pylint: disable=unused-import
+import hbp_nrp_cle # pylint: disable=unused-import
+import hbp_nrp_cleserver # pylint: disable=unused-import
+import hbp_nrp_commons # pylint: disable=unused-import
+import hbp_nrp_excontrol # pylint: disable=unused-import
+import hbp_nrp_music_xml # pylint: disable=unused-import
+import hbp_nrp_music_interface # pylint: disable=unused-import
 
 # pylint: disable=R0201
 
@@ -20,32 +24,31 @@ import hbp_nrp_backend
 class Version(Resource):
     """
     Implements the REST service providing the user with the versions
-    of both Closed Loop Engine and the Experiment Designer back-end.
+    of all NRP python packages.
     """
-
-    def __init__(self):
-        Resource.__init__(self)
-        self.__get_version_service = rospy.ServiceProxy(
-            '/ros_cle_simulation/version',
-            srv.GetVersion)
-        self.__get_version_service.wait_for_service(timeout=10)
 
     @swagger.model
     class _Version(object):
         """
-        Version object containing CLE and ExDBackend versions
+        Version object containing python package versions
         Only used for swagger documentation
         """
 
         resource_fields = {
             'hbp_nrp_cle': fields.String(),
-            'hbp_nrp_backend': fields.String()
+            'hbp_nrp_backend': fields.String(),
+            'hbp_nrp_cleserver': fields.String(),
+            'hbp_nrp_commons': fields.String(),
+            'hbp_nrp_excontrol': fields.String(),
+            'hbp_nrp_music_xml': fields.String(),
+            'hbp_nrp_music_interface': fields.String()
         }
-        required = ['hbp_nrp_cle', 'hbp_nrp_backend']
+        required = ['hbp_nrp_cle', 'hbp_nrp_backend', 'hbp_nrp_cleserver', 'hbp_nrp_commons',
+                    'hbp_nrp_excontrol', 'hbp_nrp_music_xml', 'hbp_nrp_music_interface']
 
     @swagger.operation(
-        notes='Gets the versions of the Closed Loop Engine and \
-        the Experiment Designer Back-end.'
+        notes='Gets the versions of all the backend Neurororobotics \
+        python packages.'
         ' Possible values are: x.y.z, x.y.z.devW \
         where x,y,z and W are numbers',
         responseClass=_Version.__name__,
@@ -59,12 +62,11 @@ class Version(Resource):
     @RestSyncMiddleware.threadsafe
     def get(self):
         """
-        Gets of the Closed Loop Engine and the Experiment Designer back-end.
+        Returns the versions of all NRP python packages.
 
         :status 200: Success. The versions were retrieved
         """
 
-        # __get_version_service().version can be different from
-        # hbp_nrp_cle.__version__
-        return {'hbp_nrp_cle': str(self.__get_version_service().version),
-                'hbp_nrp_backend': str(hbp_nrp_backend.__version__)}, 200
+        packages = ['hbp_nrp_cle', 'hbp_nrp_backend', 'hbp_nrp_cleserver', 'hbp_nrp_commons',
+                    'hbp_nrp_excontrol', 'hbp_nrp_music_xml', 'hbp_nrp_music_interface']
+        return {name: eval(name + ".__version__") for name in packages}, 200
