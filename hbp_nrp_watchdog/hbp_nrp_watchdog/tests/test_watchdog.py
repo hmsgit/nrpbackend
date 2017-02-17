@@ -3,7 +3,7 @@ This module tests the watchdog implementation
 """
 
 import unittest
-from hbp_nrp_cleserver.server.Watchdog import Watchdog
+from hbp_nrp_watchdog.Watchdog import Watchdog
 from mock import patch, Mock
 
 __author__ = "Georg Hinkel"
@@ -14,7 +14,7 @@ class TestWatchdog(unittest.TestCase):
     def callback(self):
         self.__callback_called = True
 
-    @patch("hbp_nrp_cleserver.server.Watchdog.Timer")
+    @patch("hbp_nrp_watchdog.Watchdog.Timer")
     def setUp(self, timer_mock):
         self.__callback_called = False
         self.watchdog = Watchdog("foo", self.callback)
@@ -22,30 +22,30 @@ class TestWatchdog(unittest.TestCase):
         self.timer_mock = timer_mock()
 
     def test_callback_called_when_process_died(self):
-        with patch("hbp_nrp_cleserver.server.Watchdog.Watchdog._is_alive", return_value=False):
+        with patch("hbp_nrp_watchdog.Watchdog.Watchdog._is_alive", return_value=False):
             self.timer_callback()
             self.assertTrue(self.__callback_called)
 
     def test_callback_not_called_when_process_still_alive(self):
-        with patch("hbp_nrp_cleserver.server.Watchdog.Watchdog._is_alive", return_value=True):
+        with patch("hbp_nrp_watchdog.Watchdog.Watchdog._is_alive", return_value=True):
             self.timer_callback()
             self.assertFalse(self.__callback_called)
 
-    @patch("hbp_nrp_cleserver.server.Watchdog.psutil")
+    @patch("hbp_nrp_watchdog.Watchdog.psutil")
     def test_sanity_check_pids(self, ps_util_mock):
         p = Mock()
         p.name.return_value = "foobar"
         p.pid = 23
         ps_util_mock.Process.return_value = p
         ps_util_mock.NoSuchProcess = Exception
-        with patch("hbp_nrp_cleserver.server.Watchdog.Timer"):
+        with patch("hbp_nrp_watchdog.Watchdog.Timer"):
             self.assertEqual(23, Watchdog("foo", self.callback, 23).pid)
             self.assertIsNone(Watchdog("gzserver", self.callback, 23).pid)
             ps_util_mock.Process.side_effect = Exception
             self.assertIsNone(Watchdog("foo", self.callback, 23).pid)
 
 
-    @patch("hbp_nrp_cleserver.server.Watchdog.psutil")
+    @patch("hbp_nrp_watchdog.Watchdog.psutil")
     def test_is_alive_suceeds_process_found(self, ps_util_mock):
         p1 = Mock()
         p1.name.return_value = "gzserver"
@@ -58,7 +58,7 @@ class TestWatchdog(unittest.TestCase):
         self.assertFalse(self.__callback_called)
         self.assertEqual(42, self.watchdog.pid)
 
-    @patch("hbp_nrp_cleserver.server.Watchdog.psutil")
+    @patch("hbp_nrp_watchdog.Watchdog.psutil")
     def test_is_alive_fails_if_process_dead(self, ps_util_mock):
         p1 = Mock()
         p1.name.return_value = "gzserver"
@@ -68,7 +68,7 @@ class TestWatchdog(unittest.TestCase):
         self.assertTrue(self.__callback_called)
         self.assertIsNone(self.watchdog.pid)
 
-    @patch("hbp_nrp_cleserver.server.Watchdog.psutil")
+    @patch("hbp_nrp_watchdog.Watchdog.psutil")
     def test_is_alive_does_not_reiterate_if_pid_known(self, ps_util_mock):
         p1 = Mock()
         p1.name.return_value = "gzserver"
@@ -87,7 +87,7 @@ class TestWatchdog(unittest.TestCase):
         self.timer_callback()
         self.assertTrue(self.__callback_called)
 
-    @patch("hbp_nrp_cleserver.server.Watchdog.psutil")
+    @patch("hbp_nrp_watchdog.Watchdog.psutil")
     def test_reset_forgets_pid(self, ps_util_mock):
         p1 = Mock()
         p1.name.return_value = "gzserver"

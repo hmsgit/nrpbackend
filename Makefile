@@ -3,16 +3,16 @@
 ##
 
 #modules that have tests
-TEST_MODULES=hbp_nrp_commons/hbp_nrp_commons/ hbp_nrp_cleserver/hbp_nrp_cleserver/ hbp_nrp_backend/hbp_nrp_backend/
+TEST_MODULES=hbp_nrp_commons/hbp_nrp_commons/ hbp_nrp_cleserver/hbp_nrp_cleserver/ hbp_nrp_backend/hbp_nrp_backend/ hbp_nrp_watchdog/hbp_nrp_watchdog/
 
 #modules that are installable (ie: ones w/ setup.py)
-INSTALL_MODULES=hbp-flask-restful-swagger-master hbp_nrp_commons hbp_nrp_cleserver hbp_nrp_backend
+INSTALL_MODULES=hbp-flask-restful-swagger-master hbp_nrp_commons hbp_nrp_cleserver hbp_nrp_backend hbp_nrp_watchdog
 
 #packages to cover
-COVER_PACKAGES=hbp_nrp_commons hbp_nrp_cleserver hbp_nrp_backend
+COVER_PACKAGES=hbp_nrp_commons hbp_nrp_cleserver hbp_nrp_backend hbp_nrp_watchdog
 
 #documentation to build
-DOC_MODULES=hbp_nrp_commons/doc hbp_nrp_cleserver/doc hbp_nrp_backend/doc
+DOC_MODULES=hbp_nrp_commons/doc hbp_nrp_cleserver/doc hbp_nrp_backend/doc hbp_nrp_watchdog/doc
 
 ##
 ## Individual Component Release Targets

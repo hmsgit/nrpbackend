@@ -4,8 +4,8 @@ This module contains classes to access the watchdog functionality via a ROS in a
 
 import rospy
 from std_msgs.msg import Bool
-from hbp_nrp_cleserver.server.Watchdog import Watchdog
-from hbp_nrp_cleserver.server.Timer import Timer
+from hbp_nrp_watchdog.Watchdog import Watchdog
+from hbp_nrp_watchdog.Timer import Timer
 import time
 
 __author__ = "Georg Hinkel"
@@ -25,7 +25,7 @@ class WatchdogServer(Watchdog):
         :param interval: The interval in which the process is watched, by default 1s
         """
         super(WatchdogServer, self).__init__(process, None, None, interval)
-        self.__publisher = rospy.Publisher(topic, Bool)
+        self.__publisher = rospy.Publisher(topic, Bool, queue_size=10)
 
     def _watch(self):
         """
@@ -60,11 +60,13 @@ class WatchdogClient(object):
         self.__timer = Timer(1, self.__timer_check)
         self.__callback = callback
 
-    def start(self):
+    def start(self, delay=None):
         """
         Starts the watchdog client
         """
         self.__last_sight = time.time()
+        if delay is not None:
+            self.__last_sight += delay
         self.__timer.start()
 
     def stop(self):

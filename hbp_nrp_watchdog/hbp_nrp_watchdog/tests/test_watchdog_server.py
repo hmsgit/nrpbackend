@@ -3,7 +3,7 @@ This module tests the watchdog server and client implementation
 """
 
 import unittest
-from hbp_nrp_cleserver.server.WatchdogServer import WatchdogServer, WatchdogClient
+from hbp_nrp_watchdog.WatchdogServer import WatchdogServer, WatchdogClient
 from mock import patch, Mock
 
 __author__ = "Georg Hinkel"
@@ -11,9 +11,9 @@ __author__ = "Georg Hinkel"
 
 class TestWatchdogServer(unittest.TestCase):
 
-    @patch("hbp_nrp_cleserver.server.WatchdogServer.rospy")
+    @patch("hbp_nrp_watchdog.WatchdogServer.rospy")
     def setUp(self, rospy_mock):
-        with patch("hbp_nrp_cleserver.server.Watchdog.Timer") as timer_mock:
+        with patch("hbp_nrp_watchdog.Watchdog.Timer") as timer_mock:
             self.watchdog = WatchdogServer("gzserver", "/foo")
             self.assertEqual("/foo", rospy_mock.Publisher.call_args[0][0])
             self.timer_mock = timer_mock()
@@ -42,10 +42,10 @@ class TestWatchdogClient(unittest.TestCase):
     def __callback(self):
         self.__callback_called = True
 
-    @patch("hbp_nrp_cleserver.server.WatchdogServer.rospy")
+    @patch("hbp_nrp_watchdog.WatchdogServer.rospy")
     def setUp(self, rospy_mock):
         self.__callback_called = False
-        with patch("hbp_nrp_cleserver.server.WatchdogServer.Timer") as timer_mock:
+        with patch("hbp_nrp_watchdog.WatchdogServer.Timer") as timer_mock:
             self.watchdog = WatchdogClient("/foo", self.__callback)
             self.assertEqual("/foo", rospy_mock.Subscriber.call_args[0][0])
             self.subscriber_callback = rospy_mock.Subscriber.call_args[0][2]
@@ -71,7 +71,7 @@ class TestWatchdogClient(unittest.TestCase):
         self.subscriber_callback(data)
         self.assertTrue(self.__callback_called)
 
-    @patch("hbp_nrp_cleserver.server.WatchdogServer.time")
+    @patch("hbp_nrp_watchdog.WatchdogServer.time")
     def test_timer_callback(self, time_mock):
         time_mock.time.return_value = 42
         data = Mock()

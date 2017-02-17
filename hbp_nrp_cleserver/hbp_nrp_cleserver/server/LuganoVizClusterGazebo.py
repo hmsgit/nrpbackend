@@ -13,9 +13,7 @@ import sys
 import netifaces
 import datetime
 from hbp_nrp_cleserver.server.GazeboInterface import IGazeboServerInstance
-# We will monitor the remote Gazebo via a remote watchdog, but this implementation is not yet ready
-# pylint: disable=unused-import
-from hbp_nrp_cleserver.server.WatchdogServer import WatchdogClient
+from hbp_nrp_watchdog.WatchdogServer import WatchdogClient
 
 # Info messages sent to the notificator will be forwarded as notifications
 notificator = logging.getLogger('hbp_nrp_cle.user_notifications')
@@ -139,6 +137,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
         # Holds the state of the SLURM job. The states are defined in SLURM.
         self.__state = "UNDEFINED"
         self.__node = None
+        self.__watchdog_client = None
 
         self.__allocation_time = None
         if timezone is not None:
@@ -405,9 +404,6 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             raise(Exception("Error while configuring cluster node, gpfs may not be mounted." +
                             str(self.__gazebo_remote_process.after)))
 
-        # activate ROS python venv
-        self.__gazebo_remote_process.sendline('source $ROS_PYTHON_VENV/bin/activate')
-
         # configure variables after all module loads (that could overwrite values)
         self.__gazebo_remote_process.sendline('export DISPLAY=:' + str(self.__remote_display_port))
         self.__gazebo_remote_process.sendline('export ROS_MASTER_URI=' + ros_master_uri)
@@ -417,6 +413,17 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
 
         # disable online (unreachable) model searching, only use local NRP models
         self.__gazebo_remote_process.sendline('export GAZEBO_MODEL_DATABASE_URI=')
+
+        # launch the watchdog inside the NRP virtualenv
+        self.__gazebo_remote_process.sendline('source %s/platform_venv/bin/activate' % proj_path)
+        self.__gazebo_remote_process.sendline('sleep 10 && python '
+                                              '-m hbp_nrp_watchdog.WatchdogServer -n Watchdog '
+                                              '-p gzserver -t /gazebo/health &')
+        self.__gazebo_remote_process.sendline('export WATCHDOG_PID=$!')
+        self.__gazebo_remote_process.sendline('deactivate')
+
+        # activate ROS python venv to launch Gazebo
+        self.__gazebo_remote_process.sendline('source $ROS_PYTHON_VENV/bin/activate')
 
         # launch Gazebo with virtualgl, use -nodl to redirect native opengl calls to virtualgl
         notificator.info('Starting Gazebo server on the cluster node')
@@ -433,6 +440,14 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             raise(Exception("Error while starting gazebo: " +
                             str(self.__gazebo_remote_process.after)))
 
+    def __start_watchdog_client(self):
+        """
+        Starts the watchdog client
+        """
+        self.__watchdog_client = WatchdogClient("/gazebo/health", self._raise_gazebo_died)
+        # Delay starting the watchdog client by 10s (because we delay the start of the watchdog 10s)
+        self.__watchdog_client.start(delay=10)
+
     def start(self, ros_master_uri):
         """
         Start gzserver on the Lugano viz cluster
@@ -442,6 +457,7 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             self.__start_fake_X()
             self.__start_xvnc()
             self.__start_gazebo(ros_master_uri)
+            self.__start_watchdog_client()
         # pylint: disable=broad-except
         except Exception:
             logger.exception('Failure launching gzserver on remote node.')
@@ -478,12 +494,19 @@ class LuganoVizClusterGazebo(IGazeboServerInstance):
             return None
 
     def stop(self):
+
+        # stop the local watchdog client before terminating the remote side
+        if self.__watchdog_client is not None:
+            self.__watchdog_client.stop()
+            self.__watchdog_client = None
+
         # cluster node cleanup (this can fail, but make sure we always release the job below)
         try:
-            # terminate running gzserver and invoking bash shell
+            # terminate running remote watchdog, gzserver, and invoking bash shell
             if self.__gazebo_remote_process:
                 notificator.info('Stopping Gazebo server on the cluster node')
                 self.__gazebo_remote_process.sendcontrol('z')
+                self.__gazebo_remote_process.sendline('kill -v -n 9 $WATCHDOG_PID')
                 self.__gazebo_remote_process.sendline('killall -v -9 gzserver')
                 self.__gazebo_remote_process.expect([pexpect.TIMEOUT,
                                                      'Killed',

@@ -4,7 +4,7 @@ Unit tests for the double timer used for the state publishing and the timeout
 
 __author__ = 'Lorenzo Vannucci, Alessandro Ambrosano'
 
-from hbp_nrp_cleserver.server.Timer import Timer
+from hbp_nrp_watchdog.Timer import Timer
 import time
 import threading
 

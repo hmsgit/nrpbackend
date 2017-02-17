@@ -29,8 +29,9 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
-from hbp_nrp_cleserver.server import ros_handler, Timer
+from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
+from hbp_nrp_watchdog import Timer
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException
 import base64
