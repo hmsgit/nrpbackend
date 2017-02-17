@@ -645,7 +645,7 @@ class ROSCLEServer(object):
                 'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),
                 'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
             }
-            logger.info(json.dumps(message))
+            logger.debug(json.dumps(message))
             self.__ros_status_pub.publish(json.dumps(message))
         # pylint: disable=broad-except
         except Exception as e:
