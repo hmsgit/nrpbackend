@@ -4,9 +4,9 @@ format used to pass transfer functions via ROS
 """
 
 from cle_ros_msgs.msg import TransferFunction, Device, Topic, Variable, ExperimentPopulationInfo
-from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, MapRobotPublisher, \
+from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, \
     poisson, population_rate, leaky_integrator_alpha, leaky_integrator_exp, fixed_frequency,\
-    nc_source, dc_source, ac_source, spike_recorder
+    nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber
 import logging
 import textwrap
 
@@ -187,7 +187,7 @@ def __extract_topics(tf):
             name=t.name,
             topic=t.topic.name,
             type=__extract_type_name(t.topic.topic_type),
-            publishing=isinstance(t, MapRobotPublisher)
+            publishing=not isinstance(t, MapRobotSubscriber)
         )
         for t in __get_specs(tf) if t.is_robot_connection
         ]
