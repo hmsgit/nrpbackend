@@ -19,3 +19,11 @@ When version bumping, make sure, you bump the version of all packages
 (hbp_nrp_backend, hbp_nrp_commons ,hbp_nrp_cleserver)
 simutanously (preferably to the same version)
 and update the requirements.txt accordingly to the newest version
+
+Coverage
+=======
+
+To check the coverage level:
+
+nosetests --with-coverage hbp_nrp_backend/ --cover-package hbp_nrp_backend --cover-html
+

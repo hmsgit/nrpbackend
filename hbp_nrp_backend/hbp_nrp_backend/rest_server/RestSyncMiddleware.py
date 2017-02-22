@@ -46,6 +46,7 @@ class RestSyncMiddleware(object):
         # pylint: disable=broad-except
         except Exception, e:
             logger.exception(e)
+            res = None
         finally:
             if not hasattr(viewfn, "is_threadsafe"):
                 self.threadLock.release()

@@ -3,7 +3,8 @@ This module contains unit tests for structured transfer functions
 """
 
 import unittest
-from cle_ros_msgs.msg import Device, TransferFunction as TF
+from mock import patch, MagicMock
+from cle_ros_msgs.msg import Device, ExperimentPopulationInfo, TransferFunction as TF
 from hbp_nrp_cle.tf_framework import *
 from hbp_nrp_cle.mocks.brainsim import MockBrainCommunicationAdapter
 from hbp_nrp_cle.mocks.robotsim import MockRobotCommunicationAdapter
@@ -71,7 +72,9 @@ class TestStructuredTransferFunctions(unittest.TestCase):
     def test_convert_transfer_function(self):
 
         test_tf = self.create_default_TF()
+
         test = StructuredTransferFunction.extract_structure(test_tf)
+
         self.assert_default_TF(test)
 
         test_tf_2 = self.create_other_TF()
@@ -92,6 +95,50 @@ class TestStructuredTransferFunctions(unittest.TestCase):
 
         self.assert_default_TF(test)
         self.assert_other_TF(test2)
+
+    @patch('hbp_nrp_cleserver.bibi_config.StructuredTransferFunction.ExperimentPopulationInfo')
+    def test_extract_neurons(self, mock_exp_info):
+        mock_exp_info.TYPE_ENTIRE_POPULATION = "type"
+        mock_exp_info.TYPE_POPULATION_SLICE = "slice"
+        mock_exp_info.TYPE_POPULATION_LISTVIEW = "list"
+        neurons = MagicMock(spec=['name'])
+        neurons.name = "neuron_name"
+        StructuredTransferFunction._extract_neurons(neurons)
+
+        mock_exp_info.assert_called_with(name=neurons.name, type=mock_exp_info.TYPE_ENTIRE_POPULATION,
+                                         ids=[], start=0, stop=0, step=0)
+        neurons = MagicMock(spec=['name', 'index', 'parent'])
+        neurons.index = 5
+        neurons.parent = neurons
+        StructuredTransferFunction._extract_neurons(neurons)
+        mock_exp_info.assert_called_with(name=neurons.name, type=mock_exp_info.TYPE_POPULATION_SLICE,
+                                         ids=[], start=neurons.index, stop=neurons.index+1, step=1)
+        neurons.index = [5]
+        StructuredTransferFunction._extract_neurons(neurons)
+        mock_exp_info.assert_called_with(name=neurons.name, type=mock_exp_info.TYPE_POPULATION_LISTVIEW,
+                                         ids=neurons.index, start=0, stop=0, step=0)
+        with self.assertRaises(Exception):
+            neurons.index = {}
+            StructuredTransferFunction._extract_neurons(neurons)
+
+    def test_generate_neurons(self):
+        neurons = MagicMock()
+        neurons.name = "neuron_name"
+        neurons.start = 0
+        neurons.type = ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION
+
+        self.assertEqual(StructuredTransferFunction._generate_neurons(neurons), "nrp.brain.neuron_name")
+
+        neurons.type = ExperimentPopulationInfo.TYPE_POPULATION_SLICE
+        neurons.stop = neurons.start + 1
+        self.assertEqual(StructuredTransferFunction._generate_neurons(neurons), "nrp.brain.neuron_name[0]")
+
+        neurons.stop = 100
+        neurons.step = 5
+        self.assertEqual(StructuredTransferFunction._generate_neurons(neurons), "nrp.brain.neuron_name[slice(0,100,5)]")
+        neurons.type = ExperimentPopulationInfo.TYPE_POPULATION_LISTVIEW
+        neurons.ids = ['1','2','3']
+        self.assertEqual(StructuredTransferFunction._generate_neurons(neurons), "nrp.brain.neuron_name[[1, 2, 3]]")
 
     def test_roundtrip(self):
 

@@ -78,7 +78,7 @@ def __get_specs(tf):
     return map(__get_spec, tf.params[1:])
 
 
-def __extract_neurons(neurons):
+def _extract_neurons(neurons):
     """
     Extracts a population specification from the given property path
 
@@ -110,7 +110,7 @@ def __extract_neurons(neurons):
     raise Exception("Could not parse neurons " + repr(neurons))
 
 
-def __generate_neurons(neurons):
+def _generate_neurons(neurons):
     """
     Generates the code for a structured neuron information
 
@@ -140,7 +140,7 @@ def __extract_devices(tf):
         Device(
             name=d.name,
             type=device_types[d.device_type],
-            neurons=__extract_neurons(d.neurons)
+            neurons=_extract_neurons(d.neurons)
         )
         for d in __get_specs(tf) if d.is_brain_connection
     ]
@@ -156,10 +156,10 @@ def __generate_device(device):
     info = device_type_infos[device.type]
     if info[1]: # device is spike sink
         return '@nrp.MapSpikeSink("{0}", {1}, {2})\n'\
-            .format(device.name, __generate_neurons(device.neurons), info[0])
+            .format(device.name, _generate_neurons(device.neurons), info[0])
     else:
         return '@nrp.MapSpikeSource("{0}", {1}, {2})\n'\
-            .format(device.name, __generate_neurons(device.neurons), info[0])
+            .format(device.name, _generate_neurons(device.neurons), info[0])
 
 
 def __extract_type_name(topic_type):
@@ -348,4 +348,4 @@ def __generate_transfer_function_annotation(transfer_function, monitor_device, r
     else:
         monitor_info = device_type_infos[monitor_device.type]
         return "@nrp.NeuronMonitor({0}, {1})\n" \
-            .format(__generate_neurons(monitor_device.neurons), monitor_info[0])
+            .format(_generate_neurons(monitor_device.neurons), monitor_info[0])
