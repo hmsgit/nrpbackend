@@ -98,9 +98,10 @@ class NRPServicesWrongUserException(NRPServicesClientErrorException):
     def __init__(self):
         super(NRPServicesWrongUserException, self).\
             __init__(
-                "You need to be the simulation owner to apply your changes",
+                "You need to be the simulation owner to apply your changes.\
+                If you are the owner, try leaving and then re-joining the experiment.",
                 "Wrong user",
-                401
+                403
             )
 
 

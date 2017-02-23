@@ -127,7 +127,7 @@ class TestSimulationBrain(RestTest):
         self.assertEqual(response.status_code, 404)
 
         response = self.client.put('/simulation/1/brain')
-        self.assertEqual(response.status_code, 401, "Operation only allowed by simulation owner")
+        self.assertEqual(response.status_code, 403, "Operation only allowed by simulation owner")
 
     def test_population_rename_feature(self):
         new_brain_populations_json = """
