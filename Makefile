@@ -22,7 +22,7 @@ verify-hbp_nrp_commons:
                        INSTALL_MODULES=hbp_nrp_commons\
                        COVER_PACKAGES=hbp_nrp_commons\
                        DOC_MODULES=hbp_nrp_commons/doc/\
-                       IGNORE_LINT="$(IGNORE_LINT)|hbp_nrp_cleserver|hbp_nrp_backend|hbp-flask-restful-swagger-master"
+                       IGNORE_LINT="$(IGNORE_LINT)|hbp_nrp_cleserver|hbp_nrp_backend|hbp_nrp_watchdog|hbp-flask-restful-swagger-master"
 
 ##### DO NOT MODIFY BELOW #####################
 
