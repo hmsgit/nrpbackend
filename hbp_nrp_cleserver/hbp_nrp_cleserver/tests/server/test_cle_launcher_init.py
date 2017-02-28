@@ -37,6 +37,7 @@ class SomeWeiredTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLELauncher.instantiate_communication_adapter", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.instantiate_control_adapter", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.os", new=MockOs)
+@patch("hbp_nrp_cleserver.server.CLELauncher.CLELauncher._get_robot_abs_path", new=Mock(return_value="/a/robot/under/the/rainbow/model.sdf"))
 class TestCLELauncherInit(unittest.TestCase):
     def setUp(self):
         dir = os.path.split(__file__)[0]
@@ -71,7 +72,7 @@ class TestCLELauncherInit(unittest.TestCase):
         with self.assertRaises(SomeWeiredTFException):
             self.launcher.cle_function_init("world_file")
 
-    def __launch_callback(self, _):
+    def __launch_callback(self, *_):
         self.launcher.gzserver.gazebo_died_callback()
 
     @patch("hbp_nrp_cleserver.server.CLELauncher.nrp")

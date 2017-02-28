@@ -211,6 +211,55 @@ class TestLuganoVizClusterGazebo(unittest.TestCase):
 
         self.instance = LuganoVizClusterGazebo()
 
+    @patch('subprocess.call')
+    @patch('pexpect.spawn')
+    @patch('hbp_nrp_cleserver.server.LuganoVizClusterGazebo.os.environ')
+    def test_models_path(self, mock_os_environ, mock_spawn, mock_system):
+        mock_system.return_value = 0
+        self.instance = LuganoVizClusterGazebo()
+        self.instance._LuganoVizClusterGazebo__node = 'not none'
+        self.instance._LuganoVizClusterGazebo__allocation_process = 'this neither'
+        self.instance._LuganoVizClusterGazebo__remote_display_port = 1
+        self.instance._LuganoVizClusterGazebo__spawn_vglconnect = mock_spawn
+
+        mock_spawn().expect.return_value = 0
+        mock_spawn().readline.return_value = '/somewhere/under/the/rainbow'
+        mock_spawn.call_count = 0
+        nrp_variables_path = os.path.join(os.path.dirname(__file__), 'nrp-variables')
+        mock_os_environ.get = Mock(side_effect=['staging', nrp_variables_path])
+
+        self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri', '/somewhere/over/the/rainbow')
+        self.assertEqual(mock_spawn.call_count, 1)
+        self.assertNotEqual(mock_spawn().sendline.call_count, 0)
+        self.assertNotEqual(mock_spawn().expect.call_count, 0)
+        self.assertEqual(mock_spawn().readline.call_count, 2)
+
+        mock_system.assert_any_call('scp -r /somewhere/over/the/rainbow bbpnrsoa@bbpviz1.cscs.ch:/somewhere/under/the/rainbow')
+
+        # check error cases
+        with self.assertRaises(Exception):
+            mock_system.return_value = 9
+            self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri',
+                                                                '/somewhere/over/the/rainbow')
+        with self.assertRaises(Exception):
+            mock_system.return_value = 10
+            self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri',
+                                                                '/somewhere/over/the/rainbow')
+        with self.assertRaises(Exception):
+            mock_system.return_value = 65
+            self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri',
+                                                                '/somewhere/over/the/rainbow')
+        with self.assertRaises(Exception):
+            mock_system.return_value = 66
+            self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri',
+                                                                '/somewhere/over/the/rainbow')
+        with self.assertRaises(Exception):
+            mock_system.return_value = 42
+            self.instance._LuganoVizClusterGazebo__start_gazebo('random_master_uri',
+                                                                '/somewhere/over/the/rainbow')
+
+        self.instance = LuganoVizClusterGazebo()
+
     def test_start(self):
         self.instance._LuganoVizClusterGazebo__allocate_job = Mock()
         self.instance._LuganoVizClusterGazebo__start_fake_X = Mock()

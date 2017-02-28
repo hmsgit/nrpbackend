@@ -38,12 +38,13 @@ class IGazeboServerInstance(object):
         if self.__gazebo_died_callback is not None:
             self.__gazebo_died_callback()
 
-    def start(self, ros_master_uri):   # pragma: no cover
+    def start(self, ros_master_uri, models_path=None):   # pragma: no cover
         """
         Starts a gzserver instance connected to the local roscore (provided by
         ros_master_uri)
 
-        :param ros_master_uri The ros master uri where to connect gzserver.
+        :param ros_master_uri: The ros master uri where to connect gzserver.
+        :param models_path: An additional path where Gazebo may find models
         """
         raise NotImplementedError("This method was not implemented in the concrete implementation")
 
