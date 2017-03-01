@@ -1,5 +1,5 @@
-hbp-nrp-cle==1.1.8.dev1
-hbp-nrp-commons==1.1.8.dev1
+hbp-nrp-cle==1.1.8.dev3
+hbp-nrp-commons==1.1.8.dev3
 hbp-nrp-music-interface==1.1.8.dev1
-hbp-nrp-watchdog==1.1.8.dev2
+hbp-nrp-watchdog==1.1.8.dev3
 pyxb==1.2.4
