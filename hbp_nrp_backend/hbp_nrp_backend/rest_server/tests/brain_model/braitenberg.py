@@ -173,7 +173,7 @@ def create_brain():
                    population.get('v_rest'))
 
 
-    logger.info("Circuit description: " + str(population.describe()))
+    logger.debug("Circuit description: " + str(population.describe()))
     return population
 
 

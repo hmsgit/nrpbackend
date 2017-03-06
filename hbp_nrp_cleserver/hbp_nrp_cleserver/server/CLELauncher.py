@@ -301,7 +301,7 @@ class CLELauncher(object):
             self.__notify("Loading transfer function: %s" % tf.name)  # named subtask +2
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
-            logger.info("TF: " + tf.name + "\n" + tf_code + '\n')
+            logger.debug("TF: " + tf.name + "\n" + tf_code + '\n')
 
             try:
                 new_code = compile_restricted(tf_code, '<string>', 'exec')
