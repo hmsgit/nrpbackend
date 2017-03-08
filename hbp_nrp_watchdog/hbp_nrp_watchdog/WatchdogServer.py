@@ -25,7 +25,7 @@ class WatchdogServer(Watchdog):
         :param interval: The interval in which the process is watched, by default 1s
         """
         super(WatchdogServer, self).__init__(process, None, None, interval)
-        self.__publisher = rospy.Publisher(topic, Bool, queue_size=10)
+        self.__publisher = rospy.Publisher(topic, Bool, queue_size=1)
 
     def _watch(self):
         """
