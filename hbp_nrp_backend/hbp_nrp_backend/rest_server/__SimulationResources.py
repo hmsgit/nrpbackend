@@ -138,7 +138,7 @@ class SimulationResources(Resource):
             experiment_folder = os.path.basename(os.path.dirname(experiment_file))
             for conf in resources:
                 conf['file'] = os.path.join(
-                    '/config-from-template-folder/experiments',
+                    '/config-from-template-folder',
                     experiment_folder,
                     conf['file']
                 )
