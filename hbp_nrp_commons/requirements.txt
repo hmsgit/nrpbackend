@@ -4,3 +4,4 @@ PyYAML==3.11
 rospkg==1.0.38
 catkin_pkg==0.2.10
 mock==1.0.1
+pexpect==3.1
