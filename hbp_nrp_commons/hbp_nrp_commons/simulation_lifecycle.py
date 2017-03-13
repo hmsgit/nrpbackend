@@ -90,7 +90,7 @@ class SimulationLifecycle(object):
         self.__machine.send_event = True
 
         self.__publisher = Publisher(synchronization_topic, SimulationLifecycleStateChange,
-                                     queue_size=10)
+                                     queue_size=1)
         self.__subscriber = Subscriber(synchronization_topic, SimulationLifecycleStateChange,
                                        self.__synchronized_lifecycle_changed)
 
