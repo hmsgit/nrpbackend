@@ -6,9 +6,12 @@ format used to pass transfer functions via ROS
 from cle_ros_msgs.msg import TransferFunction, Device, Topic, Variable, ExperimentPopulationInfo
 from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, \
     poisson, population_rate, leaky_integrator_alpha, leaky_integrator_exp, fixed_frequency,\
-    nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber
+    nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber,\
+    MapCSVRecorder, MapRetina
+from hbp_nrp_cle.tf_framework._PropertyPath import IndexPathSegment
 import logging
 import textwrap
+import json
 
 __author__ = "Georg Hinkel"
 
@@ -86,7 +89,7 @@ def _extract_neurons(neurons):
     :return: A population specification
     """
     index = None
-    if hasattr(neurons, "index"):
+    if isinstance(neurons, IndexPathSegment):
         index = neurons.index
         neurons = neurons.parent
     name = neurons.name
@@ -107,7 +110,7 @@ def _extract_neurons(neurons):
         return ExperimentPopulationInfo(name=name,
                                         type=ExperimentPopulationInfo.TYPE_POPULATION_LISTVIEW,
                                         ids=index or [], start=0, stop=0, step=0)
-    raise Exception("Could not parse neurons " + repr(neurons))
+    raise Exception("Could not parse neurons {0} with index {1}".format(repr(neurons), index))
 
 
 def _generate_neurons(neurons):
@@ -172,7 +175,9 @@ def __extract_type_name(topic_type):
     module = topic_type.__module__
     if module.endswith(name) and '.' in module:
         module = module[:module.rindex('.')]
-    return module + "." + name
+    if module.endswith(".msg"):
+        module = module[:-4]
+    return module + "/" + name
 
 
 def __extract_topics(tf):
@@ -210,14 +215,28 @@ def __extract_variables(tf):
     :param tf: The transfer function
     :return: A list of converted variables
     """
-    return [
-        Variable(
-            name=v.name,
-            type=type(v.initial_value).__name__,
-            initial_value=str(v.initial_value)
-        )
-        for v in __get_specs(tf) if not v.is_robot_connection and not v.is_brain_connection
-    ]
+    variables = []
+    for v in __get_specs(tf):
+        if not v.is_robot_connection and not v.is_brain_connection:
+            if isinstance(v, MapRetina):
+                variables.append(Variable(
+                    name=v.name,
+                    type="retina",
+                    initial_value=v.retina_config_file
+                ))
+            elif isinstance(v, MapCSVRecorder):
+                variables.append(Variable(
+                    name=v.name,
+                    type="csv",
+                    initial_value=json.dumps({'filename': v.filename, 'headers': v.headers})
+                ))
+            else:
+                variables.append(Variable(
+                    name=v.name,
+                    type=type(v.initial_value).__name__,
+                    initial_value=str(v.initial_value)
+                ))
+    return variables
 
 
 def __get_tf_code(tf):
@@ -286,8 +305,9 @@ def generate_code_from_structured_tf(transfer_function):
     :param transfer_function:
     :return: The code that represents the transfer function
     """
+    imports = []
     devices = ""
-    code = ""
+    code = "\n"
     return_topic = None
     monitor_device = None
     for dev in transfer_function.devices:
@@ -301,18 +321,51 @@ def generate_code_from_structured_tf(transfer_function):
             return_topic = topic
         elif transfer_function.type == NeuronMonitor.structured_type and topic.name == "publisher":
             # This topic is inferred by the NeuronMonitor and therefore ignored
-            pass
+            continue
         else:
             devices += ", " + topic.name
             code += __generate_topic(topic)
+        topic_type = topic.type[:topic.type.rindex('/')] + ".msg"
+        if not topic_type in imports:
+            imports.append(topic_type)
     for var in transfer_function.variables:
         devices += ", " + var.name
-        code += '@nrp.MapVariable("{0}", initial_value={1})\n'\
-            .format(var.name, __get_initial_value_string(var))
+        code += __generate_variable(var)
+
     code += __generate_transfer_function_annotation(transfer_function, monitor_device, return_topic)
     code += "def {0}(t{1}):\n".format(transfer_function.name, devices)
     code += indent(transfer_function.code)
+    for imp in imports:
+        code = "import " + imp + "\n" + code
     return code
+
+
+def __generate_variable(var):
+    """
+    Generates the given variable
+
+    :param var: The variable
+    :return: The code generated for the given variable
+    """
+    if var.type == "retina":
+        return '@nrp.MapRetina("{0}", "{1}")\n'.format(var.name, var.initial_value)
+    elif var.type == "csv":
+        extracted = json.loads(var.initial_value)
+        return '@nrp.MapCSVRecorder("{0}", "{1}", {2})\n'\
+            .format(var.name, extracted['filename'], json.dumps(extracted['headers']))
+    else:
+        return '@nrp.MapVariable("{0}", initial_value={1})\n' \
+            .format(var.name, __get_initial_value_string(var))
+
+
+def __generate_topic_type(topic):
+    """
+    Generates the topic type
+
+    :param topic: The given topic
+    :return: The name of the Python class realizing the topic
+    """
+    return topic.type.replace("/", ".msg.")
 
 
 def __generate_topic(topic):
@@ -323,10 +376,10 @@ def __generate_topic(topic):
     """
     if topic.publishing:
         return '@nrp.MapRobotPublisher("{0}", Topic("{1}", {2}))\n' \
-            .format(topic.name, topic.topic, topic.type)
+            .format(topic.name, topic.topic, __generate_topic_type(topic))
     else:
         return '@nrp.MapRobotSubscriber("{0}", Topic("{1}", {2}))\n' \
-            .format(topic.name, topic.topic, topic.type)
+            .format(topic.name, topic.topic, __generate_topic_type(topic))
 
 
 def __generate_transfer_function_annotation(transfer_function, monitor_device, return_topic):
@@ -342,7 +395,7 @@ def __generate_transfer_function_annotation(transfer_function, monitor_device, r
             return "@nrp.Neuron2Robot()\n"
         else:
             return '@nrp.Neuron2Robot(Topic("{0}", {1}))\n' \
-                .format(return_topic.topic, return_topic.type)
+                .format(return_topic.topic, __generate_topic_type(return_topic))
     elif transfer_function.type == Robot2Neuron.structured_type:
         return "@nrp.Robot2Neuron()\n"
     else:

@@ -286,10 +286,12 @@ class ROSCLEClient(object):
         Sets the given structured transfer function
 
         :param transfer_function: The new transfer function in a structured format
+        :returns: "" if the call to ROS is successful,
+                     a string containing an error message otherwise
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_set_structured_transfer_function(transfer_function)
+        return self.__cle_set_structured_transfer_function(transfer_function).error_message
 
     def get_populations(self):
         """

@@ -3,6 +3,7 @@ This module contains unit tests for structured transfer functions
 """
 
 import unittest
+import json
 from mock import patch, MagicMock
 from cle_ros_msgs.msg import Device, ExperimentPopulationInfo, TransferFunction as TF
 from hbp_nrp_cle.tf_framework import *
@@ -35,6 +36,16 @@ class TestStructuredTransferFunctions(unittest.TestCase):
 
         return test_tf_2
 
+    def create_variable_TF(self):
+        @MapVariable("a", initial_value=42)
+        @MapRetina("b", "foo.py")
+        @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
+        @NeuronMonitor(brain.actors, spike_recorder)
+        def some_stupid_test_tf(t, a, b, c):
+            pass
+
+        return some_stupid_test_tf
+
     def assert_default_TF(self, test):
         self.assertIsNotNone(test)
         self.assertEqual("test_tf", test.name)
@@ -49,7 +60,7 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         self.assertEqual("LeakyIntegratorAlpha", d.type)
         self.assertEqual("pub", t.name)
         self.assertEqual("/foo", t.topic)
-        self.assertEqual("cle_ros_msgs.msg.Device", t.type)
+        self.assertEqual("cle_ros_msgs/Device", t.type)
         self.assertTrue(t.publishing)
 
     def assert_other_TF(self, test):
@@ -66,20 +77,45 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         self.assertEqual("Poisson", d.type)
         self.assertEqual("sub", t.name)
         self.assertEqual("/foo", t.topic)
-        self.assertEqual("cle_ros_msgs.msg.Device", t.type)
+        self.assertEqual("cle_ros_msgs/Device", t.type)
         self.assertFalse(t.publishing)
+
+    def assert_variables_tf(self, test):
+        self.assertIsNotNone(test)
+        self.assertEqual("some_stupid_test_tf", test.name)
+        self.assertEqual("pass", test.code)
+        self.assertEqual(TF.NEURONMONITOR, test.type)
+        self.assertEqual(1, len(test.devices))
+        self.assertEqual(1, len(test.topics))
+        self.assertEqual(3, len(test.variables))
+
+        a = test.variables[0]
+        b = test.variables[1]
+        c = test.variables[2]
+
+        self.assertEqual("a", a.name)
+        self.assertEqual("int", a.type)
+        self.assertEqual("42", a.initial_value)
+        self.assertEqual("b", b.name)
+        self.assertEqual("retina", b.type)
+        self.assertEqual("foo.py", b.initial_value)
+        self.assertEqual("c", c.name)
+        self.assertEqual("csv", c.type)
+        self.assertDictEqual({"filename":"file.csv", "headers": ["Name", "Value"]}, json.loads(c.initial_value))
 
     def test_convert_transfer_function(self):
 
         test_tf = self.create_default_TF()
-
         test = StructuredTransferFunction.extract_structure(test_tf)
-
         self.assert_default_TF(test)
 
         test_tf_2 = self.create_other_TF()
         test_2 = StructuredTransferFunction.extract_structure(test_tf_2)
         self.assert_other_TF(test_2)
+
+        test_tf_3 = self.create_variable_TF()
+        test_3 = StructuredTransferFunction.extract_structure(test_tf_3)
+        self.assert_variables_tf(test_3)
 
     def test_convert_initialized_transfer_function(self):
 
@@ -101,25 +137,18 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         mock_exp_info.TYPE_ENTIRE_POPULATION = "type"
         mock_exp_info.TYPE_POPULATION_SLICE = "slice"
         mock_exp_info.TYPE_POPULATION_LISTVIEW = "list"
-        neurons = MagicMock(spec=['name'])
-        neurons.name = "neuron_name"
-        StructuredTransferFunction._extract_neurons(neurons)
+        StructuredTransferFunction._extract_neurons(brain.neuron_name)
 
-        mock_exp_info.assert_called_with(name=neurons.name, type=mock_exp_info.TYPE_ENTIRE_POPULATION,
+        mock_exp_info.assert_called_with(name='neuron_name', type=mock_exp_info.TYPE_ENTIRE_POPULATION,
                                          ids=[], start=0, stop=0, step=0)
-        neurons = MagicMock(spec=['name', 'index', 'parent'])
-        neurons.index = 5
-        neurons.parent = neurons
-        StructuredTransferFunction._extract_neurons(neurons)
-        mock_exp_info.assert_called_with(name=neurons.name, type=mock_exp_info.TYPE_POPULATION_SLICE,
-                                         ids=[], start=neurons.index, stop=neurons.index+1, step=1)
-        neurons.index = [5]
-        StructuredTransferFunction._extract_neurons(neurons)
-        mock_exp_info.assert_called_with(name=neurons.name, type=mock_exp_info.TYPE_POPULATION_LISTVIEW,
-                                         ids=neurons.index, start=0, stop=0, step=0)
+        StructuredTransferFunction._extract_neurons(brain.neuron_name[5])
+        mock_exp_info.assert_called_with(name='neuron_name', type=mock_exp_info.TYPE_POPULATION_SLICE,
+                                         ids=[], start=5, stop=6, step=1)
+        StructuredTransferFunction._extract_neurons(brain.neuron_name[[5]])
+        mock_exp_info.assert_called_with(name='neuron_name', type=mock_exp_info.TYPE_POPULATION_LISTVIEW,
+                                         ids=[5], start=0, stop=0, step=0)
         with self.assertRaises(Exception):
-            neurons.index = {}
-            StructuredTransferFunction._extract_neurons(neurons)
+            StructuredTransferFunction._extract_neurons(brain.neuron_name[{}])
 
     def test_generate_neurons(self):
         neurons = MagicMock()
@@ -147,6 +176,7 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         code = StructuredTransferFunction.generate_code_from_structured_tf(converted)
 
         self.assertMultiLineEqual(
+            'import cle_ros_msgs.msg\n\n'
             '@nrp.MapSpikeSink("neuron", nrp.brain.sensors[4], nrp.leaky_integrator_alpha)\n'
             '@nrp.MapRobotPublisher("pub", Topic("/foo", cle_ros_msgs.msg.Device))\n'
             '@nrp.Neuron2Robot(Topic("/bar", cle_ros_msgs.msg.TransferFunction))\n'
@@ -158,8 +188,23 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         code = StructuredTransferFunction.generate_code_from_structured_tf(converted)
 
         self.assertMultiLineEqual(
+            'import cle_ros_msgs.msg\n\n'
             '@nrp.MapSpikeSource("neuron", nrp.brain.actors[slice(1,4,2)], nrp.poisson)\n'
             '@nrp.MapRobotSubscriber("sub", Topic("/foo", cle_ros_msgs.msg.Device))\n'
             '@nrp.Robot2Neuron()\n'
             'def test_tf_2(t, neuron, sub):\n'
             '    print \'42\'', code)
+
+
+        test_tf_3 = self.create_variable_TF()
+        test_3 = StructuredTransferFunction.extract_structure(test_tf_3)
+        code = StructuredTransferFunction.generate_code_from_structured_tf(test_3)
+
+        self.assertMultiLineEqual(
+            '\n@nrp.MapVariable("a", initial_value=42)\n'
+            '@nrp.MapRetina("b", "foo.py")\n'
+            '@nrp.MapCSVRecorder("c", "file.csv", ["Name", "Value"])\n'
+            '@nrp.NeuronMonitor(nrp.brain.actors, nrp.spike_recorder)\n'
+            'def some_stupid_test_tf(t, a, b, c):\n'
+            '    pass', code
+        )
