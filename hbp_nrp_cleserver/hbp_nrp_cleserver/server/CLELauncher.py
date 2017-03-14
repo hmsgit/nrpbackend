@@ -552,6 +552,17 @@ if __name__ == '__main__':  # pragma: no cover
         if cle_launcher.cle_server is None:
             raise Exception("Error in cle_function_init. Cannot start simulation.")
 
+        # FIXME: This should be done more cleanly within the adapter, see [NRRPLT-4858]
+        # the tag is a magic number to avoid circular build/release dependency for now but
+        # this will be removed when the referenced bug is fixed
+        # notify MPI/music processes that configuration is complete
+        if args.music:
+            from mpi4py import MPI
+            for rank in xrange(MPI.COMM_WORLD.Get_size()):
+                if rank != MPI.COMM_WORLD.Get_rank():
+                    MPI.COMM_WORLD.send('ready', dest=rank, tag=100)
+            MPI.COMM_WORLD.Barrier()
+
         logger.info('Starting CLE.')
         cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
                                        # threading.Thread.start
