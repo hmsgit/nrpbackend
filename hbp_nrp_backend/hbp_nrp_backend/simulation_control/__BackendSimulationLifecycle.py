@@ -165,7 +165,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (sm.sm_id, str(sm.result))
                     for sm in self.simulation.state_machines))
 
-        self.simulation.state_machine_manager.terminate_all()
+        self.simulation.state_machine_manager.shutdown()
         self.simulation.kill_datetime = None
 
         using_collab_storage = self.simulation.context_id is not None

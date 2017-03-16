@@ -6,7 +6,6 @@ __author__ = 'Georg Hinkel'
 
 from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
-from hbp_nrp_excontrol.StateMachineInstance import StateMachineInstance
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import \
     BackendSimulationLifecycle
 from tempfile import NamedTemporaryFile
@@ -240,8 +239,8 @@ class Simulation(object):
 
         sm = self.get_state_machine(name)
         if sm is None:
-            sm = StateMachineInstance(name, self.sim_id)
-            self.state_machines.append(sm)
+            sm = self.state_machine_manager.create_state_machine(name, self.sim_id)
+
         sm.sm_path = file_path
 
         if not sm.is_running:
