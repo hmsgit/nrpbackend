@@ -133,10 +133,7 @@ api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machin
 api.add_resource(SimulationTransferFunction,
                  '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
 api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
-api.add_resource(
-    SimulationCSVRecorders,
-    '/simulation/<int:sim_id>/<string:context_id>/csv-recorders'
-)
+api.add_resource(SimulationCSVRecorders, '/simulation/<int:sim_id>/csv-recorders')
 api.add_resource(SimulationStructuredTransferFunctions,
                  '/simulation/<int:sim_id>/simulation-structured-transfer-functions')
 api.add_resource(SimulationTopics, '/simulation/topics')
