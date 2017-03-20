@@ -8,6 +8,7 @@ import threading
 import rospy
 import numpy
 import datetime
+import time
 
 from std_msgs.msg import String
 from std_srvs.srv import Empty
@@ -658,6 +659,7 @@ class ROSCLEServer(object):
         self.__lifecycle.done_event.wait()
 
         self.publish_state_update()
+        time.sleep(1.0)
         logger.info("Finished main loop")
 
     def shutdown(self):
@@ -670,6 +672,7 @@ class ROSCLEServer(object):
         if self.__cle is not None:
             logger.info("Shutting down the closed loop service")
             self.__cle.shutdown()
+            time.sleep(1)
             logger.info("Shutting down reset service")
             self.__service_reset.shutdown()
             logger.info("Shutting down extend timeout service")
@@ -692,6 +695,7 @@ class ROSCLEServer(object):
             self.__service_get_CSV_recorders_files.shutdown()
             logger.info("Shutting down clean_CSV_recorders_files service")
             self.__service_clean_CSV_recorders_files.shutdown()
+            time.sleep(1)
 
         # shutdown topics and items initialized in the constructor
         logger.info("Unregister error/transfer_function topic")

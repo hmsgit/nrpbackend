@@ -431,8 +431,22 @@ class CLELauncher(object):
         # Cleanup ROS core nodes, services, and topics (the command should be almost
         # instant and exit, but wrap it in a timeout since it's semi-officially supported)
         logger.info("Cleaning up ROS nodes and services")
-        os.system('rosnode kill /Watchdog /gazebo')
-        os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup")
+
+        try:
+            res = subprocess.check_output(["rosnode", "list"])
+
+            if res.find("/gazebo") > -1 and res.find("/Watchdog") > -1:
+                os.system('rosnode kill /gazebo /Watchdog')
+
+            elif res.find("/gazebo") > -1:
+                os.system('rosnode kill /gazebo >/dev/null 2>&1')
+
+            elif res.find("/Watchdog") > -1:
+                os.system('rosnode kill /Watchdog >/dev/null 2>&1')
+        except Exception, e:
+            logger.exception(e)
+
+        os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup >/dev/null 2>&1")
 
         # Delete temporary robot folder, if any
         if self.__tmp_robot_dir is not None:
