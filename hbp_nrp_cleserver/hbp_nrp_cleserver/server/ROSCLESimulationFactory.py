@@ -162,9 +162,6 @@ class ROSCLESimulationFactory(object):
                         cle_launcher.shutdown()
                         raise
 
-                    if cle_launcher.cle_server is None:
-                        raise Exception("Error in cle_function_init. Cannot start simulation.")
-
                 # distributed, multi-process launch
                 else:
                     logger.info("Creating distributed MUSICLauncher object")
@@ -181,7 +178,15 @@ class ROSCLESimulationFactory(object):
                                                  reservation,
                                                  sim_id,
                                                  timeout)
-                    cle_launcher.init(bibi, exd.bibiConf.processes)
+                    try:
+                        cle_launcher.init(bibi, exd.bibiConf.processes)
+                    # pylint: disable=broad-except
+                    except Exception:
+                        cle_launcher.shutdown()
+                        raise
+
+                if cle_launcher.cle_server is None:
+                    raise Exception("Error in cle_function_init. Cannot start simulation.")
 
             # pylint: disable=broad-except
             except Exception:

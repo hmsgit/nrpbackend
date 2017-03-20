@@ -177,7 +177,7 @@ class CLELauncher(object):
                                           number_of_subtasks=number_of_subtasks,
                                           block_ui=True)
 
-        Notificator.notify("Starting Gazebo robotic simulator", True)  # subtask 1
+        self.__notify("Starting Gazebo robotic simulator")  # subtask 1
         ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
         local_ip = ifaddress[netifaces.AF_INET][0]['addr']
         ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
@@ -474,6 +474,7 @@ def get_experiment_basepath():
 
 if __name__ == '__main__':  # pragma: no cover
     # TODO: This should be separated into its own method such that we can unit test this code
+    cle_launcher = None
     try:
         if os.environ["ROS_MASTER_URI"] == "":
             raise Exception("You should run ROS first.")
@@ -503,6 +504,11 @@ if __name__ == '__main__':  # pragma: no cover
 
         args = parser.parse_args()
 
+        # expand any parameters (e.g. NRP_EXPERIMENTS_DIRECTORY) in paths
+        args.exd_file = os.path.expandvars(args.exd_file)
+        args.environment_file = os.path.expandvars(args.environment_file)
+        args.path = os.path.expandvars(args.path)
+
         # music specific configuration for CLE
         if args.music:
             logger.info('Using MUSIC configuration and adapters for CLE')
@@ -513,6 +519,9 @@ if __name__ == '__main__':  # pragma: no cover
                 import MUSICPyNNCommunicationAdapter
             from hbp_nrp_music_interface.cle.MUSICPyNNControlAdapter\
                 import MUSICPyNNControlAdapter
+
+            # exit code, 0 for success and -1 for any failures
+            mpi_returncode = 0
 
             # write pid to lock file so launcher can always terminate us (failsafe)
             pid = os.getpid()
@@ -567,10 +576,6 @@ if __name__ == '__main__':  # pragma: no cover
         cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
                                        # threading.Thread.start
 
-        logger.info('Shutting down CLE.')
-        cle_launcher.shutdown()
-        logger.info('Shutdown complete, terminating.')
-
     except Exception as e:  # pylint: disable=broad-except
 
         # if running through MPI, catch Exception and terminate below to ensure brain processes
@@ -578,13 +583,26 @@ if __name__ == '__main__':  # pragma: no cover
         if args.music:
             logger.error('CLE aborted with message {}, terminating.'.format(e.message))
             print 'CLE aborted with message {}, terminating.'.format(e.message)  # if no logger
+            logger.exception(e)
+            mpi_returncode = -1
 
         # standalone non-music launch, propagate error
         else:
             raise
 
-    # terminate the MUSIC spawned brain processes, exit code does not matter as this is not
-    # propagated, this exits forcefully and ungracefully, but nothing we launch needs more notice
+    finally:
+
+        # always attempt to shutdown the CLE launcher and release resources
+        if cle_launcher:
+            logger.info('Shutting down CLE.')
+            cle_launcher.shutdown()
+            logger.info('Shutdown complete, terminating.')
+
+    # terminate the MUSIC spawned brain processes
+    # send a shutdown message in case the brain processes are in a recv loop at startup since they
+    # seem to block and ignore the Abort command until receiving a message
     if args.music:
         from mpi4py import MPI
-        MPI.COMM_WORLD.Abort(MPI.SUCCESS)
+        for rank in xrange(MPI.COMM_WORLD.Get_size()):
+            MPI.COMM_WORLD.isend('shutdown', dest=rank, tag=100)
+        MPI.COMM_WORLD.Abort(mpi_returncode)
