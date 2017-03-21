@@ -153,7 +153,7 @@ class LuganoVizCluster(object):
             " --reservation=" + reservation +
             " -p interactive -c " + str(processes) +
             " --account=proj30 " +
-            " --gres=gpu:" + str(gpus) if gpus > 0 else ""
+            (" --gres=gpu:" + str(gpus) if gpus > 0 else "")
         )
 
     def _spawn_ssh_SLURM_frontend(self):
