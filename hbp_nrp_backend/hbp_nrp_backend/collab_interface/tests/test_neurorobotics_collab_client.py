@@ -11,7 +11,7 @@ from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
     import NeuroroboticsCollabClient, _FlattenedExperimentDirectory
 from hbp_nrp_backend.collab_interface import NRPServicesUploadException
 from bbp_client.document_service.exceptions import DocException
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen, model_conf_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
 from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
 
@@ -148,7 +148,8 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             NRPServicesUploadException,
             neurorobotic_collab_client.clone_experiment_template_to_collab,
             'folder_a',
-            experiment_config_path
+            experiment_config_path,
+            None
         )
         self.assertEqual(
             self.mock_document_client_instance.rmdir.call_count,
@@ -433,7 +434,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             'test_sm.py'
         ]
 
-        with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
+        with _FlattenedExperimentDirectory(exp_configuration, None) as temporary_folder:
             bibi_configuration_file = os.path.join(self.experiments_directory, 'milestone2_python_tf.bibi')
             l = os.listdir(temporary_folder)
             # make sure we do not copy things we aren't expecting
@@ -489,7 +490,7 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             'my_brain.py'
         ]
 
-        with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
+        with _FlattenedExperimentDirectory(exp_configuration, None) as temporary_folder:
             bibi_configuration_file = os.path.join(self.models_directory, 'BIBI/retina_bibi.xml')
             l = os.listdir(temporary_folder)
             # make sure we do not copy things we aren't expecting
@@ -557,6 +558,28 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
            'text/csv'
         )
 
-
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
+    def test_flattened_parse_model_config_files(self, get_model_basepath_mock):
+        expected_list = ['fakeRobot.sdf',
+                         'experiment_configuration.exc',
+                         'TemplateEmpty.png',
+                         'TemplateEmpty.json',
+                         'bibi_configuration.bibi',
+                         'fakeEnv.sdf',
+                         'fakeBrain.py']
+        get_model_basepath_mock.return_value = self.models_directory
+        exp_configuration = os.path.join(self.experiments_directory, 'experiment_configuration.exc')
+        mock_paths = {
+            "envPath": os.path.join("fakeEnvFolder", "model.config"),
+            "robotPath": os.path.join("fakeRobotFolder", "model.config"),
+            "brainPath": os.path.join("fakeBrainFolder", "fakeBrain.py")
+        }
+        with _FlattenedExperimentDirectory(exp_configuration, mock_paths) as temporary_folder:
+            self.assertEqual('fakeRobot.sdf' in os.listdir(temporary_folder), True)
+            self.assertEqual('experiment_configuration.exc' in os.listdir(temporary_folder), True)
+            self.assertEqual('TemplateEmpty.png' in os.listdir(temporary_folder), True)
+            self.assertEqual('TemplateEmpty.json' in os.listdir(temporary_folder), True)
+            self.assertEqual('bibi_configuration.bibi' in os.listdir(temporary_folder), True)
+            self.assertEqual('fakeBrain.py' in os.listdir(temporary_folder), True)
 if __name__ == '__main__':
     unittest.main()

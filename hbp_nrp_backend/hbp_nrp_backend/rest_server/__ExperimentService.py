@@ -169,16 +169,19 @@ class CollabExperiment(Resource):
         return dict(data=get_collab_experiment(context_id)), 200
 
 
-def get_experiments():
+def get_experiments(empty_experiment=False):
     """
     Read all available Experiments from disk, and add to dictionary
     :return dictionary: with string: ID, string: ExDConfig File
     """
     experiment_names = os.listdir(get_experiment_basepath())
-
+    if empty_experiment:
+        filtered_experiment_names = [x for x in experiment_names if x.startswith('.')]
+    else:
+        filtered_experiment_names = [x for x in experiment_names if not x.startswith('.')]
     experiment_dict = {}
 
-    for current_dir in experiment_names:
+    for current_dir in filtered_experiment_names:
         current_path = os.path.join(get_experiment_basepath(), current_dir)
         if not os.path.isdir(current_path):
             continue
@@ -190,7 +193,6 @@ def get_experiments():
                 if isinstance(ex, exp_conf_api_gen.ExD_):
                     current_exp = _make_experiment(ex, current, current_path)
                     experiment_dict[os.path.splitext(current)[0]] = current_exp
-
     return experiment_dict
 
 
@@ -346,8 +348,17 @@ def get_model_basepath():
 
 def get_experiment_rel(exp_id):
     """
+    Given an experiment id it returns the experiment dictionary containing the experiment
+    files' paths and returns the experiment configuration rel path.
+    In case we are launching a new experiment we are returning the path
+    to the empty template experiment
     :return: relative name of the experiment xml
     """
+    if exp_id == 'newExperiment':
+        empty_experiment_dict = get_experiments(empty_experiment=True)
+        empty_experiment_file_path = \
+          empty_experiment_dict['TemplateEmpty']['experimentConfiguration']
+        return empty_experiment_file_path
 
     experiment_dict = get_experiments()
     if exp_id not in experiment_dict:
@@ -368,7 +379,6 @@ def get_experiment_conf(exp_id):
     :param exp_id: id of the experiment
     :return Absolute path to experiment xml file
     """
-
     experiment_file = get_experiment_rel(exp_id)
     experiment_conf = os.path.join(get_experiment_basepath(), experiment_file)
     return experiment_conf

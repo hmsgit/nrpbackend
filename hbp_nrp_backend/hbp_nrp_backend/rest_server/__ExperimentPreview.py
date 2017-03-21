@@ -86,7 +86,8 @@ class ExperimentPreview(Resource):
         """
 
         # Check experiment
-        experiment_file_path = os.path.join(get_experiment_basepath(), get_experiment_rel(exp_id))
+        experiment_file_path = os.path.join(get_experiment_basepath(),
+                                            get_experiment_rel(exp_id))
         if not os.path.isfile(experiment_file_path):
             raise NRPServicesClientErrorException(ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
                                                   error_code=404)

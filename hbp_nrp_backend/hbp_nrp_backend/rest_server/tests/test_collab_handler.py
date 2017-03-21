@@ -7,6 +7,7 @@ __author__ = 'Luc Guyot'
 
 import unittest
 import json
+import os
 from mock import MagicMock, patch
 from hbp_nrp_backend.rest_server.tests import RestTest
 from sqlalchemy import exc
@@ -56,6 +57,43 @@ class TestCollabHandler(RestTest):
     def test_collab_handler_put(self):
         rqdata = {
             "experimentID": self.exId,
+        }
+        self.mock_get_or_raise_collab_context.return_value=None
+        self.mock_collabClient_instance.clone_experiment_template_to_collab.return_value = self.experiment_folder_uuId
+        self.mock_collabClient_instance.add_app_to_nav_menu = MagicMock()
+        response = self.client.put('/collab/configuration/' + self.uuId, data=json.dumps(rqdata))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.strip(), json.dumps(self.mock_response_value))
+
+        error = None
+        response = self.client.put('/collab/configuration/' + self.uuId, data=error)
+        self.assertEqual(response.status_code, 400)
+
+        # An entry with the given context UUID as primary key already exists
+        self.mock_db.session = MagicMock(add=MagicMock(), commit=MagicMock())
+        self.mock_get_or_raise_collab_context.return_value = self.mock_db_entry
+        response = self.client.put('/collab/configuration/' + self.uuId, data=json.dumps(rqdata))
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.mock_db.session.add.call_count, 0)
+        self.assertEqual(self.mock_db.session.commit.call_count, 0)
+
+        # A new entry must be created in the database
+        self.mock_get_or_raise_collab_context.return_value=None
+        self.mock_db.session = MagicMock(add=MagicMock(), commit=MagicMock())
+        response = self.client.put('/collab/configuration/' + self.uuId, data=json.dumps(rqdata))
+        self.assertEqual(self.mock_db.session.add.call_count, 1)
+        self.assertEqual(self.mock_db.session.commit.call_count, 1)
+
+        # The template should have been cloned
+        self.mock_collabClient_instance.clone_experiment_template_to_collab.assert_called()
+        self.mock_collabClient_instance.add_app_to_nav_menu.assert_called()
+
+    def test_collab_handler_put_with_path(self):
+        rqdata = {
+            "experimentID": self.exId,
+            "envPath": os.path.join("environments","fakeEnvPath","fakeEnv.sdf"),
+            "robotPath":os.path.join("robots","fakeRobotPath","fakeRobot.sdf"),
+            "brainPath":os.path.join("brains","fakeBrainPath","fakeBrain.py")
         }
         self.mock_get_or_raise_collab_context.return_value=None
         self.mock_collabClient_instance.clone_experiment_template_to_collab.return_value = self.experiment_folder_uuId

@@ -13,7 +13,8 @@ from mock import patch, MagicMock
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.rest_server.__ExperimentService import \
     ErrorMessages, get_experiment_basepath, save_file, \
-    get_control_state_machine_files, get_evaluation_state_machine_files
+    get_control_state_machine_files, get_evaluation_state_machine_files, get_experiments, \
+    get_experiment_rel
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
 
@@ -167,6 +168,29 @@ class TestExperimentService2(unittest.TestCase):
         self.assertRaises(NRPServicesGeneralException, save_file, "SGVsbG8gV29ybGQK",
                           "../../../relative/path/out.xml")
 
+    @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiment_basepath")
+    def test_get_experiments(self, mock_experiment_names):
+        mock_experiment_names.return_value = EXPERIMENTS_PATH
+        experiment_dict = get_experiments(empty_experiment=True)
+        self.assertEqual(experiment_dict['TemplateEmpty']['experimentConfiguration'],
+                         os.path.join(EXPERIMENTS_PATH,
+                                      ".empty_experiment",
+                                      "TemplateEmpty.exc"))
 
+    @patch("hbp_nrp_backend.rest_server.__ExperimentService.get_experiments")
+    def test_get_experiment_rel(self, mock_experiments):
+        mock_experiments.return_value = {'TemplateEmpty':
+                                         {'description': u'This empty experiment is based on the models that you have selected. You are free to edit the description.',
+                                          'experimentConfiguration':  os.path.join(EXPERIMENTS_PATH,".empty_experiment","TemplateEmpty.exc"),
+                                          'brainProcesses': 1L,
+                                          'cameraPose': [4.5, 0.0, 1.8, 0.0, 0.0, 0.6],
+                                             'maturity': u'development',
+                                             'visualModelParams': None,
+                                             'timeout': 840.0,
+                                             'visualModel': None,
+                                             'name': u'Empty template experiment'}}
+        experiment_file = get_experiment_rel('newExperiment')
+        self.assertEqual(experiment_file, os.path.join(EXPERIMENTS_PATH, ".empty_experiment","TemplateEmpty.exc"))
+ 
 if __name__ == '__main__':
     unittest.main()

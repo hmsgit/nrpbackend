@@ -18,7 +18,7 @@ from bbp_client.collab_service.client import Client as CollabClient
 from hbp_nrp_backend.collab_interface import NRPServicesUploadException
 from bbp_client.document_service.client import Client as DocumentClient
 from bbp_client.document_service.exceptions import DocException
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen, model_conf_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import get_or_raise as get_or_raise_collab_context
 from hbp_nrp_backend import hbp_nrp_backend_config
 
@@ -161,7 +161,7 @@ class NeuroroboticsCollabClient(object):
             self._project_thread.join()
         return self.__project
 
-    def clone_experiment_template_to_collab(self, folder_name, exp_configuration):
+    def clone_experiment_template_to_collab(self, folder_name, exp_configuration, paths=None):
         """
         Takes an experiment template and clones it into the storage space of the current Collab
         :param folder_name: The name of the folder to create in the storage space
@@ -178,7 +178,7 @@ class NeuroroboticsCollabClient(object):
 
         logger.debug("Creating a temporary directory where flattened files will go")
         raise_upload_exception = False
-        with _FlattenedExperimentDirectory(exp_configuration) as temporary_folder:
+        with _FlattenedExperimentDirectory(exp_configuration, paths) as temporary_folder:
             logger.debug("Uploading the flattened experiment files to the Collab")
             for filename in os.listdir(temporary_folder):
                 filepath = os.path.join(temporary_folder, filename)
@@ -501,14 +501,14 @@ class _FlattenedExperimentDirectory(object):
     experiment and puts them at the root of a temporary directory.
     All the links in these files are updated.
     """
-
-    def __init__(self, exp_configuration):
+    def __init__(self, exp_configuration, models_paths):
         """
         Constructor. Does nothing more that saving the exp_configuration parameter.
         :param exp_configuration: The experiment configuration file of the template to clone.
         """
         self.__exp_configuration = exp_configuration
         self.__temp_directory = None
+        self.__models_paths = models_paths
         # exp_configuration may look like:
         # $NRP_EXPERIMENTS_DIRECTORY/braitenberg_husky/ExDBraitenbergHuskySBC.xml
         # We extract: $NRP_EXPERIMENTS_DIRECTORY
@@ -528,7 +528,6 @@ class _FlattenedExperimentDirectory(object):
         # Get the experiment configuration file as a DOM object
         with open(self.__exp_configuration) as e:
             experiment_dom = exp_conf_api_gen.CreateFromDocument(e.read())
-
         # copy statemachines
         if experiment_dom.experimentControl and experiment_dom.experimentControl.stateMachine:
             for sm in experiment_dom.experimentControl.stateMachine:
@@ -541,7 +540,12 @@ class _FlattenedExperimentDirectory(object):
         # Update the experiment thumbnail file with the new path
         experiment_dom.thumbnail = os.path.basename(img_file)
         # Get the SDF file path and copy it into the flattened experiment directory
-        sdf_file = os.path.join(self.__models_folder, experiment_dom.environmentModel.src)
+        #if we are creating a new experiment we have to change the path to the environment
+        if self.__models_paths is not None and self.__models_paths['envPath'] is not None:
+            sdf_file = \
+              self._parse_models_config_file(self.__models_paths['envPath'], 'environments')
+        else:
+            sdf_file = os.path.join(self.__models_folder, experiment_dom.environmentModel.src)
         shutil.copyfile(sdf_file, os.path.join(self.__temp_directory, os.path.basename(sdf_file)))
         # Update the experiment configuration file with the new paths
         experiment_dom.environmentModel.src = os.path.basename(sdf_file)
@@ -599,12 +603,20 @@ class _FlattenedExperimentDirectory(object):
             self.__copy_config_file(conf.src)
 
         # Get the robot file path and copy it into the flattened experiment directory
-        robot_sdf_file = os.path.join(self.__models_folder, bibi_configuration_dom.bodyModel)
+        if self.__models_paths is not None and self.__models_paths['robotPath'] is not None:
+            robot_sdf_file = \
+              self._parse_models_config_file(self.__models_paths['robotPath'], 'robots')
+        else:
+            robot_sdf_file = os.path.join(self.__models_folder, bibi_configuration_dom.bodyModel)
         robot_sdf_file_name = os.path.basename(robot_sdf_file)
         shutil.copyfile(robot_sdf_file, os.path.join(self.__temp_directory, robot_sdf_file_name))
         bibi_configuration_dom.bodyModel = bibi_api_gen.SDF_Filename(robot_sdf_file_name)
         # Get the PyNN file path and copy it into the flattened experiment directory
-        brain_file = os.path.join(self.__models_folder, bibi_configuration_dom.brainModel.file)
+        if self.__models_paths is not None and self.__models_paths['brainPath'] is not None:
+            brain_file = \
+              os.path.join(self.__models_folder, 'brains', self.__models_paths['brainPath'])
+        else:
+            brain_file = os.path.join(self.__models_folder, bibi_configuration_dom.brainModel.file)
         brain_file_name = os.path.basename(brain_file)
         shutil.copyfile(brain_file, os.path.join(self.__temp_directory, brain_file_name))
         bibi_configuration_dom.brainModel.file = bibi_api_gen.Python_Filename(brain_file_name)
@@ -636,3 +648,31 @@ class _FlattenedExperimentDirectory(object):
         if (not (exc_type or exc_value or traceback)):
             logger.debug("Clean up temporary directory " + self.__temp_directory)
             shutil.rmtree(self.__temp_directory)
+
+    def _parse_models_config_file(self, model_config_path, model_type):
+        """
+        Parse the model.config files from the paths we receive from
+        the frontend. These files contain the path to the models
+        (environment and robot)
+        :param model_config_path: The path to the model we are getting
+        from the frontend. Looks like: /lauron_model/model.sdf
+        :param model_type: Differentiate between environment, robot
+        :return model_sdf_file: The absolute path to the model
+        """
+        #Looks like : $NRR/Models/robots/lauron_model/model.config
+        model_config_file = \
+          os.path.join(self.__models_folder, model_type, model_config_path)
+        with open(model_config_file) as model_config:
+            model_config_dom = \
+              model_conf_api_gen.CreateFromDocument(model_config.read())
+            #we read the relative path to the sdf
+            model_sdf_value = model_config_dom.sdf.value()
+            #we extract the name of the model folder, i.e. lauron_model
+            model_folder_name = os.path.split(model_config_path)[0]
+            #the final path looks like $NRR/Models/robots/lauron_model/model.sdf
+            model_sdf_file = \
+              os.path.join(self.__models_folder,
+                           model_type,
+                           model_folder_name,
+                           model_sdf_value)
+            return model_sdf_file

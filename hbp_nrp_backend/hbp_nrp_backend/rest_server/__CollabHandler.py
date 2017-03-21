@@ -42,7 +42,10 @@ class CollabHandler(Resource):
 
         resource_fields = {
             'experimentID': fields.String(),
-            'contextID': fields.String()
+            'contextID': fields.String(),
+            'envPath': fields.String(),
+            'brainPath': fields.String(),
+            'robotPath': fields.String()
         }
         required = ['experimentID', 'contextID']
 
@@ -105,11 +108,11 @@ class CollabHandler(Resource):
                 "dataType": str.__name__
             },
             {
-                "name": "experimentID",
-                "description": "The ID of the selected experiment",
-                "required": True,
+                "name": "body",
+                "description": "the paths to the models files, and the experiment ID",
                 "paramType": "body",
-                "dataType": str.__name__
+                "required": True,
+                "dataType": _CollabHandler.__name__
             }
         ],
         responseMessages=[
@@ -130,17 +133,18 @@ class CollabHandler(Resource):
         an experiment ID
 
         :param context_id: The Collab context UUID
+        :param env_path: The object containing the paths to the environment
+        :param brain_path: The object containing the paths to the brain
+        :param robot_path: The object containing the paths to the robot
         :status 400: No experimentID given.
         :status 200: The Collab context and its associated experiment ID were successfully retrieved
         """
-
         # pylint: disable=no-member
         collab_context = get_or_raise_collab_context(context_id)
         if collab_context is not None:
             # In the future, we may allow people to recreate experiment using the same
             # context (this should erase the given directory and clean up the storage).
             return "Forbidden to override a given experiment template.", 409
-
         body = request.get_json(force=True)
         if 'experimentID' not in body:
             raise NRPServicesClientErrorException("No experimentID given")
@@ -152,10 +156,16 @@ class CollabHandler(Resource):
             import NeuroroboticsCollabClient
         client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request),
                                            context_id)
+        paths = None
+        if 'envPath' in body and 'robotPath' in body and 'brainPath' in body:
+            paths = {}
+            paths['envPath'] = body['envPath']
+            paths['robotPath'] = body['robotPath']
+            paths['brainPath'] = body['brainPath']
         exd_configuration = get_experiment_conf(experiment_id)
         experiment_folder_uuid = client.clone_experiment_template_to_collab(
             client.generate_unique_folder_name(client.get_context_app_name()),
-                                                   exd_configuration)
+                                                   exd_configuration, paths)
 
         db.session.add(CollabContext(context_id, experiment_id, experiment_folder_uuid))
         db.session.commit()
