@@ -6,7 +6,6 @@ hbp-nrp-excontrol==1.1.9.dev0
 
 # other requirements
 lxml==3.4.0
-Jinja2==2.7.1
 PyYAML==3.11
 rospkg==1.0.38
 catkin_pkg==0.2.10
