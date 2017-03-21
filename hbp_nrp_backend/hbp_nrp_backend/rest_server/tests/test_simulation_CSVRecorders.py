@@ -33,7 +33,7 @@ class TestSimulationCSVRecorders(RestTest):
         sim_id = 0
         subfolder_uuid = '123-456-789-e'
         self.mock_collabClient_instance.populate_subfolder_in_collab.return_value = subfolder_uuid
-        response = self.client.put('/simulation/' + str(sim_id) + '/' + context_id + '/csv-recorders')
+        response = self.client.put('/simulation/' + str(sim_id) + '/csv-recorders')
         self.assertEqual(self.mock_collabClient_instance.populate_subfolder_in_collab.call_count, 1)
         self.assertEqual(self.mock_collabClient_instance.populate_subfolder_in_collab.call_args[0][0],
                    'csv_records_' + time)
