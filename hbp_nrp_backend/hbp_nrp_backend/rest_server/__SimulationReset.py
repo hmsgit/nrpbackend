@@ -206,10 +206,10 @@ class SimulationReset(Resource):
                                                   NOT_CHANGE_POPULATION)
             if result.error_message is not "":
                 # Error in given brain
-                return {'error_message': result.error_message,
-                        'error_line': result.error_line,
-                        'error_column': result.error_column,
-                        'handle_population_change': result.handle_population_change}, 300
+                raise ROSCLEClientException('{}, line:{}, column:{}, population_change:{}'
+                                            .format(result.error_message, result.error_line,
+                                                    result.error_column,
+                                                    result.handle_population_change))
 
     @staticmethod
     def resetTransferFunctions(sim):

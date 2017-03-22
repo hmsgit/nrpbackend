@@ -12,6 +12,7 @@ import time
 
 from std_msgs.msg import String
 from std_srvs.srv import Empty
+from cle_ros_msgs.srv import SetBrainRequest
 
 import textwrap
 import re
@@ -223,7 +224,7 @@ class ROSCLEServer(object):
 
         self.__service_set_brain = rospy.Service(
             SERVICE_SET_BRAIN(self.__simulation_id), srv.SetBrain,
-            self.__set_brain
+            self.__try_set_brain
         )
 
         self.__service_get_populations = rospy.Service(
@@ -360,7 +361,7 @@ class ROSCLEServer(object):
                 changed.append(element_a)
         return changed
 
-    def check_population_names(self, request):
+    def check_population_names(self, brain_populations):
         """
         Extracts and returns population names that were changed,
         plus new population names from request
@@ -373,7 +374,7 @@ class ROSCLEServer(object):
             old_popls.append(str(p))
 
         new_popls = []
-        for popl in json.loads(request.brain_populations):
+        for popl in json.loads(brain_populations):
             new_popls.append(str(popl))
 
         old_changed = self.findChangedStrings(old_popls, new_popls)
@@ -382,8 +383,8 @@ class ROSCLEServer(object):
         return [old_changed, new_added]
 
     @staticmethod
-    def change_transfer_function_for_population(request, old_changed, new_added, transferFunctions,
-                                                changed_i):
+    def change_transfer_function_for_population(change_population, old_changed, new_added,
+                                                transferFunctions, changed_i):
         """
         Modifies a single population name. Returns a value if needs user input.
         """
@@ -406,12 +407,12 @@ class ROSCLEServer(object):
                             elif str(mapping.parent.name) == str(old_changed[changed_i]):
                                 node = mapping.parent
                             if node:
-                                if request.change_population == \
+                                if change_population == \
                                         srv.SetBrainRequest.ASK_RENAME_POPULATION:
                                     # here we send a reply to the frontend to ask
                                     # the user a permission to change TFs
                                     return ["we ask the user if we change TFs", 0, 0, 1]
-                                elif request.change_population == \
+                                elif change_population == \
                                         srv.SetBrainRequest.DO_RENAME_POPULATION:
                                     # permission granted, so we change TFs
                                     node.name = new_added[changed_i]
@@ -424,27 +425,47 @@ class ROSCLEServer(object):
                 if not modified_source == source:
                     tf.source = modified_source
 
-    def change_transfer_functions(self, request, old_changed, new_added, transferFunctions):
+    def change_transfer_functions(self, change_population, old_changed, new_added,
+                                    transferFunctions):
         """
         Modifies population names. Returns a value if needs user input.
         """
 
         for changed_i in range(len(old_changed)):
-            r = self.change_transfer_function_for_population(request, old_changed,
+            r = self.change_transfer_function_for_population(change_population, old_changed,
                                                                 new_added,
                                                                 transferFunctions,
                                                                 changed_i)
             if r is not None:
                 return r
 
-    def __set_brain(self, request):
+    def __try_set_brain(self, request):
         """
-        Sets the neuronal network according to the given request
+        Tries set the neuronal network according to the given request
+        If it fails, it restores previous neuronal network
 
         :param request: The mandatory rospy request parameter
         """
+        previous_valid_brain = self.__get_brain(None)
+        returnValue = self.__set_brain(request.brain_populations, request.brain_type,
+                                        request.brain_data, request.data_type,
+                                        request.change_population)
+
+        if returnValue[0] != "":
+            # failed to set new brain, we re set previous valid brain
+            self.__set_brain(previous_valid_brain[3], previous_valid_brain[0],
+                                            previous_valid_brain[1], previous_valid_brain[2],
+                                            SetBrainRequest.ASK_RENAME_POPULATION)
+        return returnValue
+
+    def __set_brain(self, brain_populations, brain_type, brain_data, data_type, change_population):
+        """
+        Sets the neuronal network according to the given parameters
+        """
+
+        #pylint: disable-msg=R0914
         try:
-            [old_changed, new_added] = self.check_population_names(request)
+            [old_changed, new_added] = self.check_population_names(brain_populations)
             returnValue = ["", 0, 0, 0]
 
             n_old_changed = len(old_changed)
@@ -457,7 +478,7 @@ class ROSCLEServer(object):
                 if not match:
                     return ["Provided name \"" + str(new_added[0]) +
                             "\" is not a valid population name", 0, 0, 0]
-                r = self.change_transfer_functions(request, old_changed, new_added,
+                r = self.change_transfer_functions(change_population, old_changed, new_added,
                                                    transferFunctions)
                 if r is not None:
                     return r
@@ -466,17 +487,17 @@ class ROSCLEServer(object):
                 # pylint: disable=no-member
                 self.__lifecycle.paused()
             with NamedTemporaryFile(prefix='brain', suffix='.' +
-                                    request.brain_type, delete=False) as tmp:
+                                    brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
-                    if request.data_type == "text":
-                        brain_file.write(request.brain_data)
-                    elif request.data_type == "base64":
-                        brain_file.write(base64.decodestring(request.brain_data))
+                    if data_type == "text":
+                        brain_file.write(brain_data)
+                    elif data_type == "base64":
+                        brain_file.write(base64.decodestring(brain_data))
                     else:
                         tmp.delete = True
-                        return ["Data type {0} is invalid".format(request.data_type), 0, 0, 0]
+                        return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
                 self.__cle.load_network_from_file(
-                    tmp.name, **json.loads(request.brain_populations))
+                    tmp.name, **json.loads(brain_populations))
         except ValueError, e:
             returnValue = ["Population format is invalid: " + str(e), 0, 0, 0]
         except SyntaxError, e:
