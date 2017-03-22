@@ -137,7 +137,7 @@ class TestExperimentStateMachines(RestTest):
 
         response = self.client.put('/experiment/context_id/state-machines', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)
-        client_mock.replace_file_content_in_collab.assert_any_call(sm, client_mock.STATE_MACHINE_PY_MIMETYPE, "test_sm.py")
+        client_mock.replace_file_content_in_collab.assert_any_call(sm, client_mock.STATE_MACHINE_PY_MIMETYPE, "test_sm.exd")
         new_exp = client_mock.replace_file_content_in_collab.call_args_list[-1][0][0]
         e = exp_conf_api_gen.CreateFromDocument(new_exp)
         self.assertEqual(len(e.experimentControl.stateMachine), 1)

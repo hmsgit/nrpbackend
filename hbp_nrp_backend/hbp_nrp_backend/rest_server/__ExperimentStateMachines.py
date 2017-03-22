@@ -267,7 +267,7 @@ class ExperimentCollabStateMachine(Resource):
         for sm_name in body['state_machines']:
             sm_node = exp_conf_api_gen.SMACHStateMachine()
             sm_node.id = os.path.splitext(sm_name)[0]
-            sm_node.src = sm_name if sm_name.endswith(".py") else sm_name + ".py"
+            sm_node.src = sm_name if sm_name.endswith(".exd") else sm_name + ".exd"
             exp_control = exp_conf_api_gen.ExperimentControl()
             exp_control.stateMachine.append(sm_node)
             exp.experimentControl = exp_control
