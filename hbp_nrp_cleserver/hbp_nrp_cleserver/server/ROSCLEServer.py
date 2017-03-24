@@ -275,7 +275,7 @@ class ROSCLEServer(object):
         """
         return_val = srv.GetPopulationsResponse([
             PopulationInfo(str(p.name), str(p.celltype),
-                           ROSCLEServer.__convert_parameters(p.parameters), p.gids)
+                           ROSCLEServer.__convert_parameters(p.parameters), p.gids, p.indices)
             for p in self.__cle.bca.get_populations()
         ])
         return return_val
