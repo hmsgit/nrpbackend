@@ -28,6 +28,7 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
     DEFAULT_GZSERVER_PORT = 11345
     GAZEBO_PROCESSES = 4
     GAZEBO_GPUS = 1
+    VGLCONNECT_CMD = 'vglconnect bbpnrsoa@{node}.cscs.ch -M -K'
 
     def __init__(self, timezone=None, reservation=None):
 
@@ -82,13 +83,16 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
         if self._node is None or self._allocation_process is None:
             raise(Exception("Cannot connect to a cluster node without a proper Job allocation."))
 
-        vglconnect_process = pexpect.spawn('bash',
-                                           env={"DISPLAY": ":1",
-                                                "HOME": "/home/bbpnrsoa"},
-                                           logfile=logger)
-        vglconnect_process.sendline(('vglconnect bbpnrsoa@' +
-                                     self._node +
-                                     self.NODE_DOMAIN))
+        # Ensure $HOME is valid otherwise vglconnect will fail to write session data, this depends
+        # on if we are launching from a backend VM or from another cluster node via SSH session
+        env = dict(os.environ, DISPLAY=':1')
+        if not os.path.exists(os.environ.get('HOME')):
+            env['HOME'] = '/gpfs/bbp.cscs.ch/home/bbpnrsoa'
+
+        # Launch a clean bash session and vglconnect with reused ssh authentication
+        vglconnect_process = pexpect.spawn('bash', env=env, logfile=logger)
+        vglconnect_process.sendline(self.VGLCONNECT_CMD.format(node=self._node))
+
         # We do expect a prompt here
         result = vglconnect_process.expect([r'\[bbpnrsoa@' + self._node + r'\ ~\]\$',
                                             'password',
