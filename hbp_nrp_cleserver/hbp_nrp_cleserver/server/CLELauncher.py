@@ -508,6 +508,8 @@ if __name__ == '__main__':  # pragma: no cover
                             help='the simulation id to use', required=True)
         parser.add_argument('--timeout', dest='timeout',
                             help='the simulation default time allocated', required=True)
+        parser.add_argument('-v', '--verbose', action='store_true',
+                            help='increase output verbosity')
 
         music_parser = parser.add_mutually_exclusive_group(required=False)
         music_parser.add_argument('--music', dest='music', action='store_true',
@@ -553,9 +555,17 @@ if __name__ == '__main__':  # pragma: no cover
 
         # simplified launch process below from ROSCLESimulationFactory.py, avoid circular depdency
         # by importing here
+        import rospy
+        from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME
+        from hbp_nrp_cleserver.server.ROSCLESimulationFactory import set_up_logger
         from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
         from hbp_nrp_cleserver.server.ROSCLESimulationFactory import \
             get_experiment_basepath as rcsf_get_experiment_basepath
+
+        # reconfigure the logger to stdout as done in ROSCLESimulationFactory.py otherwise all
+        # output will be trapped by the ROS logger after the first ROS node is initialized
+        rospy.init_node(ROS_CLE_NODE_NAME, anonymous=True)
+        set_up_logger(None, args.verbose)
 
         exd, bibi = get_experiment_data(args.exd_file)
 
