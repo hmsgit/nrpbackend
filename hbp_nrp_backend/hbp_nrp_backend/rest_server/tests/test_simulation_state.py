@@ -47,7 +47,7 @@ class TestSimulationStateService(RestTest):
         self.mock_state.return_value = "foo"
         response = self.client.put('/simulation/0/state', data='{"state": "bar"}')
         assert (isinstance(response, Response))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_set_state_invalid_transition(self):
         self.mock_state.return_value = "foo"

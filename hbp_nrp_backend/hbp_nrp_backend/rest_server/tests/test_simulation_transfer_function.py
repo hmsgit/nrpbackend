@@ -34,7 +34,7 @@ class TestSimulationTransferFunction(RestTest):
         sim = simulations[1]
         response = self.client.put('/simulation/1/transfer-functions/amazing_tf_35')
         self.assertRaises(NRPServicesClientErrorException)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_simulation_transfer_function_delete(self):
         self.sim.cle.delete_simulation_transfer_function = MagicMock(return_value=True)
@@ -50,7 +50,7 @@ class TestSimulationTransferFunction(RestTest):
         sim = simulations[1]
         response = self.client.delete('/simulation/1/transfer-functions/amazing_tf_35')
         self.assertRaises(NRPServicesClientErrorException)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
 if __name__ == '__main__':
     unittest.main()

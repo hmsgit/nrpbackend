@@ -101,7 +101,7 @@ class NRPServicesWrongUserException(NRPServicesClientErrorException):
                 "You need to be the simulation owner to apply your changes.\
                 If you are the owner, try leaving and then re-joining the experiment.",
                 "Wrong user",
-                403
+                401
             )
 
 

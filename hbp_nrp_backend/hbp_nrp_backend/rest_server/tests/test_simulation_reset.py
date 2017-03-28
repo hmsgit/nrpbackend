@@ -54,7 +54,7 @@ class TestSimulationReset(RestTest):
 
         # I'm not the owner of this one
         response = self.client.put('/simulation/1/reset')
-        self.assertEqual(403, response.status_code)
+        self.assertEqual(401, response.status_code)
 
         # Now the request is fine, but something goes wrong out of the backend reach
         simulations[0].cle.reset.side_effect = ROSCLEClientException()

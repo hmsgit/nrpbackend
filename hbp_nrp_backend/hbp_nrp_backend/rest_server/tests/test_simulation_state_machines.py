@@ -99,7 +99,7 @@ class TestSimulationStateMachines(RestTest):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
         response = self.client.put('/simulation/0/state-machines/Control1', headers=hdr, data=SM)
         self.assertRaises(NRPServicesWrongUserException)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_simulation_state_machines_put_wrong_state(self):
         simulation = _get_simulation_or_abort(0)
@@ -141,7 +141,7 @@ class TestSimulationStateMachines(RestTest):
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "wrong-owner"}
         response = self.client.delete('/simulation/0/state-machines/Control1', headers=hdr)
         self.assertRaises(NRPServicesWrongUserException)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == '__main__':

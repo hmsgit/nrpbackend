@@ -66,7 +66,7 @@ class TestScript(RestTest):
             try:
                 self.mc.put(0)
             except NRPServicesClientErrorException as e:
-                self.assertEquals(e.error_code, 403)
+                self.assertEquals(e.error_code, 401)
 
     def test_material_control_no_visual_path(self):
         """
