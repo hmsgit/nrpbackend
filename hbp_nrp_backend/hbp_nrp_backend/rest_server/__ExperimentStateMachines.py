@@ -270,7 +270,7 @@ class ExperimentCollabStateMachine(Resource):
             import NeuroroboticsCollabClient
 
         body = request.get_json(force=True)
-        if (not 'state_machines' in body):
+        if not 'state_machines' in body:
             raise NRPServicesClientErrorException(
                 "State machine code should be sent in "
                 "the body under the 'state_machines' key"
@@ -280,7 +280,7 @@ class ExperimentCollabStateMachine(Resource):
             UserAuthentication.get_header_token(request),
             context_id
         )
-        exp, exp_xml_file_path, exp_remote_path = client.clone_exp_file_from_collab_context()
+        exp, exp_xml_file_path, exp_uuid = client.clone_exp_file_from_collab_context()
         threads = []
         for sm_name in body['state_machines']:
             sm_node = exp_conf_api_gen.SMACHStateMachine()
@@ -290,9 +290,10 @@ class ExperimentCollabStateMachine(Resource):
             exp_control.stateMachine.append(sm_node)
             exp.experimentControl = exp_control
             t = Thread(target=client.replace_file_content_in_collab,
-                       args=(body['state_machines'][sm_name],
-                             client.STATE_MACHINE_PY_MIMETYPE,
-                             sm_node.src))
+                       kwargs={'content': body['state_machines'][sm_name],
+                               'mimetype': client.STATE_MACHINE_PY_MIMETYPE,
+                               'filename': sm_node.src
+                               })
             t.start()
             threads.append(t)
 
@@ -303,9 +304,7 @@ class ExperimentCollabStateMachine(Resource):
             )
             shutil.rmtree(os.path.dirname(exp_xml_file_path))
         t = Thread(target=client.replace_file_content_in_collab,
-                   args=(exp.toxml("utf-8"),
-                         client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-                         exp_remote_path))
+                   args=(exp.toxml("utf-8"), exp_uuid))
         t.start()
         threads.append(t)
         for thread in threads:

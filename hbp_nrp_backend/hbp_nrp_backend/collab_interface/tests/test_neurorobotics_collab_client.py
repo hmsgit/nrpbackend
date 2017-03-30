@@ -24,11 +24,11 @@ import inspect
 import unittest
 import shutil
 import os
-from mock import patch, MagicMock, mock_open
+from mock import patch, MagicMock, mock_open, call
 from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
     import NeuroroboticsCollabClient, _FlattenedExperimentDirectory
 from hbp_nrp_backend.collab_interface import NRPServicesUploadException
-from bbp_client.document_service.exceptions import DocException
+from hbp_service_client.document_service.exceptions import DocException
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen, model_conf_api_gen
 from hbp_nrp_backend.rest_server.__CollabContext import CollabContext
 from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
@@ -51,11 +51,13 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         self.mock_collab_client_instance = self.mock_collab_client.return_value
 
         document_client_patcher = patch(
-            'hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.DocumentClient'
+            'hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.Client'
         )
         self.addCleanup(document_client_patcher.stop)
         self.mock_document_client = document_client_patcher.start()
-        self.mock_document_client_instance = self.mock_document_client.return_value
+        storageMock = MagicMock()
+        self.mock_document_client.new = MagicMock(return_value=storageMock)
+        self.mock_document_client_instance = self.mock_document_client.new().storage
 
         get_or_raise_collab_context_patcher = patch(
             'hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_or_raise_collab_context'
@@ -89,43 +91,54 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
 
     def test_generate_unique_folder_name(self):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        self.mock_document_client_instance.listdir.return_value = ['a', 'a_0', 'b_0']
+        self.mock_document_client_instance.list_project_content.return_value = {'results':[{'name':'a'}, {'name':'a_0'}, {'name':'b_0'}], 'next': None}
         self.assertEqual(neurorobotic_collab_client.generate_unique_folder_name('a'), 'a_1')
         self.assertEqual(neurorobotic_collab_client.generate_unique_folder_name('b'), 'b')
+        # Test the paging
+        self.mock_document_client_instance.list_project_content.side_effect = [{'results':[{'name':'a'}, {'name':'a_0'}, {'name':'b_0'}], 'next': 'get_more_pages!'},
+                                                                               {'results':[{'name':'a_1'}, {'name':'a_2'}, {'name':'a_3'}], 'next': None}]
+        self.assertEqual(neurorobotic_collab_client.generate_unique_folder_name('a'), 'a_4')
 
     @patch('shutil.rmtree')
     @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
     def test_clone_experiment_template_to_collab_success(self, get_model_basepath_mock, rmtree_mock):
         get_model_basepath_mock.return_value = self.models_directory
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
+
+        neurorobotic_collab_client._get_project_uuid = MagicMock(return_value="parent_uuid")
+        self.mock_document_client_instance.create_folder.return_value = {"uuid": "folder_uuid"}
+        self.mock_document_client_instance.create_file.return_value = {"uuid": "created_file_uuid"}
+
         neurorobotic_collab_client.clone_experiment_template_to_collab(
             'folder_a',
             os.path.join(self.experiments_directory, 'ExDXMLExample.exc')
         )
-        self.mock_document_client_instance.mkdir.assert_called_with('folder_a')
-        argslist = [x[0] for x in self.mock_document_client_instance.upload_file.call_args_list]
-        self.assertTrue(any('folder_a/experiment_configuration.exc' in args for args in argslist))
-        self.assertTrue(any('folder_a/ExDXMLExample.png' in args for args in argslist))
-        self.assertTrue(any('folder_a/virtual_room.sdf' in args for args in argslist))
-        self.assertTrue(any('folder_a/model.sdf' in args for args in argslist))
-        self.assertTrue(any('folder_a/bibi_configuration.bibi' in args for args in argslist))
-        self.assertTrue(any('folder_a/braitenberg_husky_non_linear_twist.py' in args for args in argslist))
-        self.assertTrue(any('folder_a/braitenberg_husky_linear_twist.py' in args for args in argslist))
-        self.assertTrue(any('folder_a/my_brain.py' in args for args in argslist))
-        # Check the external links has been flattened
-        for (arg1, arg2, arg3) in argslist:
-            self.assertTrue(os.path.exists(arg1))
-            if (arg2 == 'folder_a/ExDXMLExample.png'):
-                self.assertEqual(arg3, 'image/png')
-            if (arg2 == 'folder_a/virtual_room.sdf'):
-                self.assertEqual(arg3, 'application/hbp-neurorobotics.sdf.world+xml')
-            if (arg2 == 'folder_a/model.sdf'):
-                self.assertEqual(arg3, 'application/hbp-neurorobotics.sdf.robot+xml')
-            if (arg2 == 'folder_a/my_brain.py'):
-                self.assertEqual(arg3, 'application/hbp-neurorobotics.brain+python')
-            if (arg2 == 'folder_a/bibi_configuration.xml'):
-                self.assertEqual(arg3, 'application/hbp-neurorobotics.bibi+xml')
-                with open(arg1) as bibi_file:
+
+        self.mock_document_client_instance.create_folder.assert_called_with('folder_a', parent="parent_uuid")
+
+        call_list = [
+            call('experiment_configuration.exc', content_type='application/hbp-neurorobotics+xml', parent='folder_uuid'),
+            call('ExDXMLExample.png', content_type='image/png', parent='folder_uuid'),
+            call('virtual_room.sdf', content_type='application/hbp-neurorobotics.sdf.world+xml', parent='folder_uuid'),
+            call('model.sdf', content_type='application/hbp-neurorobotics.sdf.robot+xml', parent='folder_uuid'),
+            call('bibi_configuration.bibi', content_type='application/hbp-neurorobotics.bibi+xml', parent='folder_uuid'),
+            call('braitenberg_husky_non_linear_twist.py', content_type='application/hbp-neurorobotics.tfs+python', parent='folder_uuid'),
+            call('braitenberg_husky_linear_twist.py', content_type='application/hbp-neurorobotics.tfs+python', parent='folder_uuid'),
+            call('my_brain.py', content_type='application/hbp-neurorobotics.brain+python', parent='folder_uuid'),
+        ]
+        self.mock_document_client_instance.create_file.assert_has_calls(call_list, any_order=True)
+
+        # get the arguments for the file_upload and check they are correct
+        # and that the place the file is being uploaded from exists
+        for each_call in self.mock_document_client_instance.upload_file_content.call_args_list:
+            args, kwargs = each_call
+            file_uuid = args[0]
+            each_file = kwargs['source']
+
+            self.assertEqual(file_uuid, 'created_file_uuid')
+            self.assertTrue(os.path.exists(each_file))
+            if each_file.endswith('.bibi'):
+                with open(each_file) as bibi_file:
                     bibi_dom = bibi_api_gen.CreateFromDocument(bibi_file.read())
                     self.assertEqual(
                         bibi_dom.bodyModel,
@@ -135,9 +148,9 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                         bibi_dom.brainModel.file,
                         bibi_api_gen.Python_Filename('my_brain.py')
                     )
-            if (arg2 == 'folder_a/experiment_configuration.xml'):
-                self.assertEqual(arg3, 'application/hbp-neurorobotics+xml')
-                with open(arg1) as exd_file:
+
+            elif each_file.endswith('.exc'):
+                with open(each_file) as exd_file:
                     experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
                     self.assertEqual(experiment.environmentModel.src, 'virtual_room.sdf')
                     self.assertEqual(
@@ -154,33 +167,22 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
     def test_clone_experiment_template_to_collab_failure(self, get_model_basepath_mock, rmtree_mock):
         get_model_basepath_mock.return_value = os.path.join(self.models_directory)
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        mock_side_effect =\
-            [
-                None,
-                None,
-                DocException('Upload Failure')
-            ]
-        self.mock_document_client_instance.upload_file.side_effect = mock_side_effect
+
+        neurorobotic_collab_client._get_project_uuid = MagicMock(return_value="parent_uuid")
+        self.mock_document_client_instance.create_folder.return_value = {"uuid": "folder_uuid"}
+        self.mock_document_client_instance.create_file.return_value = {"uuid": "created_file_uuid"}
         experiment_config_path = os.path.join(self.experiments_directory, 'ExDXMLExample.exc')
-        self.assertRaises(
-            NRPServicesUploadException,
-            neurorobotic_collab_client.clone_experiment_template_to_collab,
-            'folder_a',
-            experiment_config_path,
-            None
-        )
-        self.assertEqual(
-            self.mock_document_client_instance.rmdir.call_count,
-            1
-        )
-        self.mock_document_client_instance.upload_file.side_effect = mock_side_effect
-        try:
+        self.mock_document_client_instance.upload_file_content.side_effect = [None, None, DocException('Upload Failure')]
+
+        with self.assertRaises(NRPServicesUploadException) as exc:
             neurorobotic_collab_client.clone_experiment_template_to_collab(
                 'folder_a',
-                experiment_config_path
+                experiment_config_path,
+                None
             )
-        except NRPServicesUploadException as e:
-            self.assertEqual(e.message, 'Upload Failure')
+
+        self.assertEqual(exc.exception.message, 'Upload Failure')
+        self.assertTrue(self.mock_document_client_instance.delete_folder.called)
 
         kall = rmtree_mock.call_args
         args, kwargs = kall
@@ -191,20 +193,27 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         tmp_dir = "/tmp/tmp_directory"
         mkdtemp_mock.return_value = tmp_dir
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        experiment_folder = "fake_experiment_folder"
         experiment_conf = "exdConf.xml"
         environment_conf = "my_world.sdf"
         robot_model = "model.sdf"
-        self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
-        self.mock_document_client_instance.listdir.return_value = [experiment_conf, environment_conf, robot_model]
-        self.mock_document_client_instance.get_standard_attr.side_effect =\
-            [
-              {'_entityType': 'file', '_contentType': 'application/hbp-neurorobotics+xml','_uuid': 'a_uuid'},
-              {'_entityType': 'file', '_contentType': 'application/hbp-neurorobotics.sdf.world+xml','_uuid': 'a_uuid'},
-              {'_entityType': 'file', '_contentType': 'application/hbp-neurorobotics.sdf.robot+xml','_uuid': 'a_uuid'}
-            ]
-        result = neurorobotic_collab_client.clone_experiment_template_from_collab('some_uuid',)
-        self.assertEqual(self.mock_document_client_instance.download_file_by_id.call_count, 3)
+        neurorobotic_collab_client.find_file_in_collab = MagicMock(return_value={'results': [{'name': experiment_conf, 'content_type': 'application/hbp-neurorobotics+xml','uuid': 'a_uuid'},
+                                                                                           {'name': environment_conf, 'content_type': 'application/hbp-neurorobotics.sdf.world+xml','uuid': 'b_uuid'},
+                                                                                           {'name': robot_model, 'content_type': 'application/hbp-neurorobotics.sdf.robot+xml','uuid': 'c_uuid'}]}['results'])
+        self.mock_document_client_instance.download_file_content.side_effect = [["some_content1"], ["some_content2"], ["some_content3"]]
+        m = mock_open()
+        with patch("__builtin__.open", m):
+            result = neurorobotic_collab_client.clone_experiment_template_from_collab()
+
+        self.mock_document_client_instance.download_file_content.assert_has_calls([call('a_uuid'), call('b_uuid'), call('c_uuid')])
+        m.assert_has_calls([call(os.path.join(tmp_dir,experiment_conf), 'w'),
+                            call(os.path.join(tmp_dir, environment_conf), 'w'),
+                            call(os.path.join(tmp_dir, robot_model), 'w')],
+                           any_order=True)
+        handle = m()
+        handle.write.assert_has_calls([call('some_content1'),
+                                 call('some_content2'),
+                                 call('some_content3')])
+        neurorobotic_collab_client.find_file_in_collab.assert_called_with()
         self.assertEqual(result,
             {
                 'experiment_conf': os.path.join(tmp_dir, experiment_conf),
@@ -213,130 +222,71 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             }
         )
 
-    @patch('tempfile.mkdtemp')
-    def test_clone_experiment_template_from_collab_context(self, mkdtemp_mock):
-        tmp_dir = "/tmp/tmp_directory"
-        mkdtemp_mock.return_value = tmp_dir
-        neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        experiment_folder = "fake_experiment_folder"
-        experiment_conf = "exdConf.xml"
-        environment_conf = "model.sdf"
-        robot_model = "model.sdf"
-        self.mock_get_or_raise_collab_context.return_value = CollabContext(
-            'context_id', os.path.dirname(experiment_conf), 'folder_uuid'
-        )
-        self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
-        self.mock_document_client_instance.listdir.return_value = [experiment_conf, environment_conf, robot_model]
-        self.mock_document_client_instance.get_standard_attr.side_effect =\
-            [
-                {'_entityType': 'file', '_contentType': 'application/hbp-neurorobotics+xml','_uuid': 'a_uuid'},
-                {'_entityType': 'file', '_contentType': 'application/hbp-neurorobotics.sdf.world+xml','_uuid': 'a_uuid'},
-                {'_entityType': 'file', '_contentType': 'application/hbp-neurorobotics.sdf.robot+xml','_uuid': 'a_uuid'}
-
-            ]
-        result = neurorobotic_collab_client.clone_experiment_template_from_collab_context()
-        self.assertEqual(self.mock_document_client_instance.download_file_by_id.call_count, 3)
-        print(result)
-        print({
-                'experiment_conf': os.path.join(tmp_dir, experiment_conf),
-                'environment_conf': os.path.join(tmp_dir, environment_conf),
-                'robot_model': os.path.join(tmp_dir, robot_model)
-            }
-        )
-        self.assertEqual(result,
-            {
-                'experiment_conf': os.path.join(tmp_dir, experiment_conf),
-                'environment_conf': os.path.join(tmp_dir, environment_conf),
-                'robot_model': os.path.join(tmp_dir, robot_model)
-            }
-        )
 
     @patch('tempfile.mkdtemp')
     def test_clone_file_from_collab(self, mkdtemp_mock):
         tmp_dir = "/tmp/tmp_directory"
         mkdtemp_mock.return_value = tmp_dir
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        experiment_folder = "fake_experiment_folder"
-        self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
-        bibi_configuration_file = "bibi_cfg.xml"
-        self.mock_document_client_instance.listdir.return_value = [
-            "exdConf.xml",
-            "my_world.sdf",
-            "model.sdf",
-            bibi_configuration_file
+        experiment_conf = "exdConf.xml"
+        mimetype = 'application/hbp-neurorobotics+xml'
+        neurorobotic_collab_client.find_file_in_collab = MagicMock(return_value={'name': experiment_conf, 'content_type': 'application/hbp-neurorobotics+xml','uuid': 'a_uuid'})
 
-        ]
-        self.mock_document_client_instance.get_standard_attr.side_effect =\
-          [
-              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'},
-              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.robot+xml'},
-              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.bibi+xml', '_uuid': 'a_uuid'}
-          ]
-        result = neurorobotic_collab_client.clone_file_from_collab('some_uuid', neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
-        self.assertEqual(self.mock_document_client_instance.download_file_by_id.call_count, 1)
-        bibi_configuration_path = os.path.join(tmp_dir, bibi_configuration_file)
-        self.assertEqual(result[0], bibi_configuration_path)
-        self.assertEqual(result[1], os.path.join(experiment_folder, bibi_configuration_file))
-        self.mock_document_client_instance.get_standard_attr.side_effect =\
-          [
-              {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.bibi+xml', '_uuid': 'a_uuid'}
-          ]
-        self.mock_document_client_instance.download_file_by_id.reset_mock()
-        result = neurorobotic_collab_client.clone_file_from_collab('some_uuid', neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
-        self.assertEqual(self.mock_document_client_instance.download_file_by_id.call_count, 1)
-        bibi_configuration_path = os.path.join(tmp_dir, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
-        self.assertEqual(result[0], bibi_configuration_path)
-        self.assertEqual(result[1], os.path.join(experiment_folder, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME))
+        self.mock_document_client_instance.download_file_content.return_value = ["some_content1"]
+        m = mock_open()
+        with patch("__builtin__.open", m):
+            saved_localpath, saved_file_uuid = neurorobotic_collab_client.clone_file_from_collab(mimetype)
+            self.assertEqual(saved_file_uuid, 'a_uuid')
+            self.assertEqual(saved_localpath, os.path.join(tmp_dir, experiment_conf))
 
-    @patch(
-        'hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab'
-    )
-    def test_clone_file_from_collab_context(self, mock_clone_file_from_collab):
-        uuid = "some uuid"
-        collab_context = MagicMock(experiment_folder_uuid=uuid)
-        self.mock_get_or_raise_collab_context.return_value = collab_context
-        neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        neurorobotic_collab_client.clone_file_from_collab_context(neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
-        self.assertEqual(neurorobotic_collab_client.clone_file_from_collab.call_count, 1)
-        neurorobotic_collab_client.clone_file_from_collab.assert_called_with(uuid, neurorobotic_collab_client.BIBI_CONFIGURATION_MIMETYPE, neurorobotic_collab_client.BIBI_CONFIGURATION_FILE_NAME)
+        self.mock_document_client_instance.download_file_content.assert_called_with('a_uuid')
+        m.assert_called_with(os.path.join(tmp_dir,experiment_conf), 'w')
 
-    def test_clone_bibi_file_from_collab_context(self):
-        # check that it calls clone_file_from_collab correctly
+        handle = m()
+        handle.write.assert_called_with('some_content1')
+
+        neurorobotic_collab_client.find_file_in_collab.assert_called_with(mimetype)
+
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient._parse_and_check_file_is_valid')
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab')
+    def test_clone_bibi_file_from_collab_context(self, clone_file_mock, check_file_is_valid_mock):
          client = NeuroroboticsCollabClient("token", 'aaa')
-         with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab_context") as collab_context_mock:
-             with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient._parse_and_check_file_is_valid") as check_file_is_valid_mock:
-                 collab_context_mock.return_value = ("bibi file path", "bibi_remote_path")
-                 check_file_is_valid_mock.return_value = "bibi obj"
-                 bibi, bibi_filepath, bibi_remote_path = client.clone_bibi_file_from_collab_context()
-                 self.assertEqual(bibi, "bibi obj")
-                 self.assertEqual(bibi_filepath, "bibi file path")
-                 self.assertEqual(collab_context_mock.call_count, 1)
-                 collab_context_mock.assert_called_with(client.BIBI_CONFIGURATION_MIMETYPE, client.BIBI_CONFIGURATION_FILE_NAME)
-                 self.assertEqual(check_file_is_valid_mock.call_count, 1)
-                 check_file_is_valid_mock.assert_called_with("bibi file path", bibi_api_gen.CreateFromDocument, bibi_api_gen.BIBIConfiguration)
-                 # check exception is raised when file could not be cloned.
-                 collab_context_mock.return_value = None
-                 self.assertRaises(NRPServicesGeneralException, client.clone_bibi_file_from_collab_context)
+         clone_file_mock.return_value = ("bibi file path", "bibi_remote_uuid")
+         check_file_is_valid_mock.return_value = "bibi obj"
+         bibi, bibi_filepath, bibi_remote_path = client.clone_bibi_file_from_collab_context()
 
-    def test_clone_exp_file_from_collab_context(self):
-        # check that it calls clone_file_from_collab correctly
+         self.assertEqual(bibi, "bibi obj")
+         self.assertEqual(bibi_filepath, "bibi file path")
+         self.assertEqual(clone_file_mock.call_count, 1)
+
+         clone_file_mock.assert_called_with(client.BIBI_CONFIGURATION_MIMETYPE)
+         self.assertEqual(check_file_is_valid_mock.call_count, 1)
+         check_file_is_valid_mock.assert_called_with("bibi file path", bibi_api_gen.CreateFromDocument, bibi_api_gen.BIBIConfiguration)
+
+         # check exception is raised when file could not be cloned.
+         clone_file_mock.return_value = None
+         self.assertRaises(NRPServicesGeneralException, client.clone_bibi_file_from_collab_context)
+
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient._parse_and_check_file_is_valid')
+    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab')
+    def test_clone_exp_file_from_collab_context(self, clone_file_mock, check_file_is_valid_mock):
          client = NeuroroboticsCollabClient("token", 'aaa')
-         with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient.clone_file_from_collab_context") as collab_context_mock:
-             with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient._parse_and_check_file_is_valid") as check_file_is_valid_mock:
-                 collab_context_mock.return_value = ("exp file path", "exp_remote_path")
-                 check_file_is_valid_mock.return_value = "exp obj"
-                 exp, exp_filepath, exp_remote_path = client.clone_exp_file_from_collab_context()
-                 self.assertEqual(exp, "exp obj")
-                 self.assertEqual(exp_filepath, "exp file path")
-                 self.assertEqual(collab_context_mock.call_count, 1)
-                 collab_context_mock.assert_called_with(client.EXPERIMENT_CONFIGURATION_MIMETYPE, client.EXPERIMENT_CONFIGURATION_FILE_NAME)
-                 self.assertEqual(check_file_is_valid_mock.call_count, 1)
-                 check_file_is_valid_mock.assert_called_with("exp file path", exp_conf_api_gen.CreateFromDocument, exp_conf_api_gen.ExD_)
-                 # check exception is raised when file could not be cloned.
-                 collab_context_mock.return_value = None
-                 self.assertRaises(NRPServicesGeneralException, client.clone_exp_file_from_collab_context)
+         #client.
+         clone_file_mock.return_value = ("exp file path", "exp_remote_uuid")
+         check_file_is_valid_mock.return_value = "exp obj"
+         exp, exp_filepath, exp_remote_path = client.clone_exp_file_from_collab_context()
+
+         self.assertEqual(exp, "exp obj")
+         self.assertEqual(exp_filepath, "exp file path")
+         self.assertEqual(clone_file_mock.call_count, 1)
+
+         clone_file_mock.assert_called_with(client.EXPERIMENT_CONFIGURATION_MIMETYPE)
+         self.assertEqual(check_file_is_valid_mock.call_count, 1)
+         check_file_is_valid_mock.assert_called_with("exp file path", exp_conf_api_gen.CreateFromDocument, exp_conf_api_gen.ExD_)
+
+         # check exception is raised when file could not be cloned.
+         clone_file_mock.return_value = None
+         self.assertRaises(NRPServicesGeneralException, client.clone_exp_file_from_collab_context)
 
     def test_parse_and_check_file_is_valid(self):
         client = NeuroroboticsCollabClient("token", 'aaa')
@@ -349,53 +299,58 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
             file_content = client._parse_and_check_file_is_valid("filepath", str, str)
             self.assertEqual(file_content, "file data")
 
-    def test_find_and_replace_file_in_collab(self):
+    def test_replace_file_content_collab(self):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        experiment_folder = "/fake_collab/fake_experiment_folder"
-        experiment_conf = "exdConf.xml"
-        environment_conf = "model.sdf"
-        default_filename = "default_file.txt"
-        fake_content = "content"
-        neurorobotic_collab_client.replace_file_content_in_collab = MagicMock()
-        self.mock_get_or_raise_collab_context.return_value = CollabContext(
-            'context_id', os.path.dirname(experiment_conf), 'folder_uuid'
-        )
-        self.mock_document_client_instance.get_path_by_id.return_value = experiment_folder
-        self.mock_document_client_instance.listdir.return_value = [experiment_conf, environment_conf]
-        self.mock_document_client_instance.get_standard_attr.side_effect = [
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'},
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'}]
+        neurorobotic_collab_client.find_file_in_collab = MagicMock()
+        # Check when uuid is given
+        neurorobotic_collab_client.replace_file_content_in_collab("my_content", "my_uuid")
 
-        neurorobotic_collab_client.find_and_replace_file_in_collab(fake_content, "fake_mimetype", default_filename)
-        neurorobotic_collab_client.replace_file_content_in_collab.assert_called_with(fake_content, "fake_mimetype", os.path.join(experiment_folder, default_filename))
+        self.mock_document_client_instance.upload_file_content.assert_called_with("my_uuid", content="my_content")
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab.called, False)
+        self.assertEqual(self.mock_document_client_instance.create_file.called, False)
+        # check when uuid is not given but mimetype is but no filename
+        neurorobotic_collab_client.find_file_in_collab = MagicMock(return_value={'uuid':'my_new_uuid'})
+        neurorobotic_collab_client.replace_file_content_in_collab("my_content", mimetype="my_mimetype")
 
-        self.mock_document_client_instance.get_standard_attr.side_effect = [
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics+xml'},
-            {'_entityType':'file', '_contentType':'application/hbp-neurorobotics.sdf.world+xml'}
-        ]
-        neurorobotic_collab_client.find_and_replace_file_in_collab(fake_content, "application/hbp-neurorobotics.sdf.world+xml", default_filename)
-        neurorobotic_collab_client.replace_file_content_in_collab.assert_called_with(fake_content, "application/hbp-neurorobotics.sdf.world+xml", os.path.join(experiment_folder, environment_conf))
+        self.mock_document_client_instance.upload_file_content.assert_called_with("my_new_uuid", content="my_content")
+        neurorobotic_collab_client.find_file_in_collab.assert_called_with("my_mimetype", None)
+        self.assertEqual(self.mock_document_client_instance.create_file.called, False)
+        # check when uuid is not given but mimetype and filename is
+        self.mock_document_client_instance.create_file = MagicMock(return_value={"uuid": "created_uuid"})
+        neurorobotic_collab_client.find_file_in_collab = MagicMock(return_value=None)
+        neurorobotic_collab_client.replace_file_content_in_collab("my_content", mimetype="my_other_mimetype", filename="my_filename")
 
-    def test_replace_file_content_in_collab(self):
-        file_name = "fake_name.txt"
-        dir_path ="/fake_collab/fake_experiment_folder"
-        filepath = dir_path + "/"+ file_name
+        self.mock_document_client_instance.upload_file_content.assert_called_with("created_uuid", content="my_content")
+        neurorobotic_collab_client.find_file_in_collab.assert_called_with("my_other_mimetype", "my_filename")
+        self.mock_document_client_instance.create_file.assert_called_with("my_filename", "my_other_mimetype", self.mock_get_or_raise_collab_context().experiment_folder_uuid)
+
+
+    def test_find_file_in_collab(self):
+
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')
-        self.mock_document_client_instance.get_path_by_id.return_value = dir_path
-        mimetype = "fake_mime_type"
-        string_to_upload = "some_string"
-        neurorobotic_collab_client.replace_file_content_in_collab(string_to_upload, mimetype, file_name)
-        self.assertEqual(self.mock_document_client_instance.remove.call_count, 1)
-        self.assertEqual(self.mock_document_client_instance.upload_string.call_count, 1)
-        argslist = [x[0] for x in self.mock_document_client_instance.upload_string.call_args_list]
-        arg1, arg2, arg3 = argslist[0]
-        self.assertEqual(arg1, string_to_upload)
-        self.assertEqual(arg2, filepath)
-        self.assertEqual(arg3, mimetype)
+
+        neurorobotic_collab_client.experiment_folder_content = False
+        self.mock_document_client_instance.list_folder_content = MagicMock(return_value={'results': 'fake_result'})
+        # Check when we give no parameters (we want to get everything)
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab(), 'fake_result')
+        self.mock_document_client_instance.list_folder_content.assert_called_with(self.mock_get_or_raise_collab_context().experiment_folder_uuid, entity_type='file')
+        # Check when we dont request again when we already got the data before
+        self.mock_document_client_instance.list_folder_content.reset_mock()
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab(), 'fake_result')
+        self.assertEqual(self.mock_document_client_instance.list_folder_content.called, False)
+        # Check when we give a mimetype and no filename
+        neurorobotic_collab_client.experiment_folder_content = [{'name': 'name_a', 'content_type': 'content_a'},
+                                                                {'name': 'name_b', 'content_type': 'content_b'},
+                                                                {'name': 'name_c', 'content_type': 'content_c'},
+                                                                {'name': 'name_d', 'content_type': 'content_a'},
+                                                                {'name': 'name_d', 'content_type': 'content_d'}
+                                                                ]
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab('content_a'), {'name': 'name_a', 'content_type': 'content_a'})
+        # Check when we give a filename and no mimetype
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab(filename='name_b'), {'name': 'name_b', 'content_type': 'content_b'})
+        # Check when we gve a mimetype and a filename
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab('content_a', 'name_d'), {'name': 'name_d', 'content_type': 'content_a'})
+        self.assertEqual(neurorobotic_collab_client.find_file_in_collab('content_d', 'name_d'), {'name': 'name_d', 'content_type': 'content_d'})
 
     def test_add_app_to_nav_menu(self):
 
@@ -550,24 +505,26 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         ]
         subfoldername = 'csv_recorders_2016-11-23_02_54_01'
         mimetype = 'text/csv'
-        neurorobotic_collab_client.populate_subfolder_in_collab(
-          subfoldername,
-          files,
-          mimetype
-        )
-        self.mock_document_client_instance.mkdir.assert_called_with(subfoldername)
-        argslist = [x[0] for x in self.mock_document_client_instance.upload_file.call_args_list]
-        self.assertIn((files[0].temporary_path, subfoldername + '/' + files[0].name, mimetype), argslist)
-        self.assertIn((files[1].temporary_path, subfoldername + '/' + files[1].name, mimetype), argslist)
-        self.assertEqual(self.mock_document_client_instance.rmdir.call_count, 1)
-        neurorobotic_collab_client.populate_subfolder_in_collab(
-          subfoldername,
-          files,
-          mimetype
-        )
-        self.mock_document_client_instance.rmdir.assert_called_with(subfoldername)
+        neurorobotic_collab_client._get_path_by_id = MagicMock(return_value='exp_path')
+        self.mock_document_client_instance.get_entity_by_query.return_value = {"uuid": "folder_uuid"}
+        self.mock_document_client_instance.create_folder.return_value = {"uuid": "new_folder_uuid"}
+        self.mock_document_client_instance.create_file.side_effect = [{"uuid": "uuid_1"}, {"uuid": "uuid_2"}]
 
-        self.mock_document_client_instance.upload_file.side_effect = [None, DocException('Upload Failure')]
+        neurorobotic_collab_client.populate_subfolder_in_collab(subfoldername, files, mimetype)
+
+        self.mock_document_client_instance.create_folder.assert_called_with(subfoldername, parent=self.mock_get_or_raise_collab_context().experiment_folder_uuid)
+
+        create_call_list = [call(files[0].name, content_type=mimetype, parent="new_folder_uuid"), call(files[1].name, content_type=mimetype, parent="new_folder_uuid")]
+        self.mock_document_client_instance.create_file.assert_has_calls(create_call_list)
+        upload_call_list = [call("uuid_1", source=files[0].temporary_path), call("uuid_2", source=files[1].temporary_path)]
+        self.mock_document_client_instance.upload_file_content.assert_has_calls(upload_call_list)
+
+        self.assertEqual(self.mock_document_client_instance.delete_folder.call_count, 1)
+
+        self.mock_document_client_instance.get_entity_by_query.assert_called_with(path=os.path.join("exp_path", subfoldername))
+        self.mock_document_client_instance.delete_folder.assert_called_with("folder_uuid")
+        self.mock_document_client_instance.create_file.side_effect = [{"uuid": "uuid_1"}, {"uuid": "uuid_2"}]
+        self.mock_document_client_instance.upload_file_content.side_effect = [None, DocException('Upload Failure')]
         self.assertRaises(
             NRPServicesUploadException,
             neurorobotic_collab_client.populate_subfolder_in_collab,

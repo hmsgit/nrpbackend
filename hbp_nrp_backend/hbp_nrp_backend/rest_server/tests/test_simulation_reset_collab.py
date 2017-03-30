@@ -140,7 +140,7 @@ class TestSimulationResetCollab(RestTest):
 
 
         mock_lifecycle.return_value = mock.MagicMock(experiment_path="")
-        mock_neurorobotics_collab_client.clone_experiment_template_from_collab_context.return_value = {'experiment_conf': ""}
+        mock_neurorobotics_collab_client.clone_experiment_template_from_collab.return_value = {'experiment_conf': ""}
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_FULL
         }))
@@ -207,7 +207,7 @@ class TestSimulationResetCollab(RestTest):
 
         self.mock_collabClient_instance.get_first_file_path_with_mimetype.return_value = dummy_dir
 
-        self.mock_collabClient_instance.clone_file_from_collab_context.return_value = os.path.join(dummy_dir, "brain.py"), None
+        self.mock_collabClient_instance.clone_file_from_collab.return_value = os.path.join(dummy_dir, "brain.py"), None
         # restore constant field
         self.mock_CollabClient.BRAIN_PYNN_MIMETYPE = NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE
         self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE
@@ -239,8 +239,8 @@ class TestSimulationResetCollab(RestTest):
         # assertions
         mock_get_header_token.assert_called()
 
-        self.mock_collabClient_instance.clone_file_from_collab_context.assert_called_with(
-            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE, NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME)
+        self.mock_collabClient_instance.clone_file_from_collab.assert_called_with(
+            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE)
 
         self.assertEqual(world_sdf_string, fake_world_sdf_string)
 
@@ -253,7 +253,7 @@ class TestSimulationResetCollab(RestTest):
         dummy_dir = "/my/temp/dir"
         mock_tempfile.mkdtemp.return_value = dummy_dir
 
-        self.mock_collabClient_instance.clone_file_from_collab_context.return_value = os.path.join(dummy_dir, "brain.py"), None
+        self.mock_collabClient_instance.clone_file_from_collab.return_value = os.path.join(dummy_dir, "brain.py"), None
         # restore constant field
         self.mock_CollabClient.BRAIN_PYNN_MIMETYPE = NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE
         self.mock_CollabClient.BIBI_CONFIGURATION_MIMETYPE = NeuroroboticsCollabClient.BIBI_CONFIGURATION_MIMETYPE

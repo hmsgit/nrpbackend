@@ -23,7 +23,7 @@ __author__ = 'Daniel Peppicelli'
 
 import json
 import shutil
-from mock import patch
+from mock import patch, call
 from hbp_nrp_backend.rest_server.tests import RestTest
 import os
 import json
@@ -115,11 +115,10 @@ def create_brain():
         )
         self.assertEqual(response.status_code, 200)
 
-        self.mock_collabClient_instance.find_and_replace_file_in_collab.assert_called_with(body['data'], self.mock_collabClient_instance.BRAIN_PYNN_MIMETYPE, "recovered_pynn_brain_model.py")
-
+        self.mock_collabClient_instance.replace_file_content_in_collab.assert_calls(call(body['data'], mimetype=self.mock_collabClient_instance.BRAIN_PYNN_MIMETYPE))
         save_string_to_file = self.mock_collabClient_instance.replace_file_content_in_collab
 
-        arg1, arg2, arg3 = save_string_to_file.call_args_list[0][0]
+        arg1, arg2 = save_string_to_file.call_args_list[1][0]
         bibi = bibi_api_gen.CreateFromDocument(arg1)
         for population in bibi.brainModel.populations:
             if population.population == 'record':
@@ -136,7 +135,7 @@ def create_brain():
         shutil.copyfile(bibi_original_path, bibi_temp_path)
         with open(bibi_temp_path) as bibi_xml:
             bibi = bibi_api_gen.CreateFromDocument(bibi_xml.read())
-        self.mock_collabClient_instance.clone_bibi_file_from_collab_context.return_value = bibi, bibi_temp_path, "bibi_remote_path"
+        self.mock_collabClient_instance.clone_bibi_file_from_collab_context.return_value = bibi, bibi_temp_path, "bibi_uuid"
 
         context_id = '123456'
         brain_populations = {'index': [0], 'slice': {'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
@@ -147,12 +146,11 @@ def create_brain():
         )
         self.assertEqual(response.status_code, 200)
 
-        self.mock_collabClient_instance.find_and_replace_file_in_collab.assert_called_with(body['data'], self.mock_collabClient_instance.BRAIN_PYNN_MIMETYPE, "recovered_pynn_brain_model.py")
-
+        self.mock_collabClient_instance.replace_file_content_in_collab.assert_calls(call(body['data'], mimetype=self.mock_collabClient_instance.BRAIN_PYNN_MIMETYPE))
         save_string_to_file = self.mock_collabClient_instance.replace_file_content_in_collab
 
-        arg1, arg2, arg3 = save_string_to_file.call_args_list[0][0]
-        self.assertEqual(arg3, "bibi_remote_path")
+        arg1, arg2, = save_string_to_file.call_args_list[1][0]
+        self.assertEqual(arg2, "bibi_uuid")
         bibi = bibi_api_gen.CreateFromDocument(arg1)
         for population in bibi.brainModel.populations:
             if population.population == 'index':

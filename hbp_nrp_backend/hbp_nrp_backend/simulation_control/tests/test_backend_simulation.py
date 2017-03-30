@@ -108,13 +108,13 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                     'environment_conf': "Neverland.sdf"
                 }
 
-                collab_client().clone_experiment_template_from_collab_context.return_value = collab_paths
+                collab_client().clone_experiment_template_from_collab.return_value = collab_paths
 
                 self.lifecycle.initialize(Mock())
 
                 self.assertTrue(user_auth.get_header_token.called)
                 self.assertEqual("Foobar", collab_client.call_args[0][1])
-                self.assertTrue(collab_client().clone_experiment_template_from_collab_context)
+                self.assertTrue(collab_client().clone_experiment_template_from_collab)
 
         # Assert that the state machine experiment has been called
         state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]

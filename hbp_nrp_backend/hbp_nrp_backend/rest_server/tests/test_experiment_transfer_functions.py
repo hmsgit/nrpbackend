@@ -71,8 +71,7 @@ class TestExperimentTransferFunctions(RestTest):
         self.assertEqual(response.status_code, 200)
 
         replace_file_argslist = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[-1]
-        replace_file_arg1, replace_file_arg2, replace_file_arg3 = replace_file_argslist[0]
-        print replace_file_argslist[0]
+        replace_file_arg1, replace_file_arg2 = replace_file_argslist[0]
         bibi = bibi_api_gen.CreateFromDocument(replace_file_arg1)
         tfs_names = [name + ".py" for name in self.tf1_name,self.tf2_name]
         for tf in bibi.transferFunction:

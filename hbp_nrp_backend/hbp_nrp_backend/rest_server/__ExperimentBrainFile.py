@@ -162,11 +162,11 @@ class ExperimentBrainFile(Resource):
             context_id
         )
 
-        replace_brain = Thread(target=client.find_and_replace_file_in_collab,
-                               args=(data, client.BRAIN_PYNN_MIMETYPE,
-                                     "recovered_pynn_brain_model.py"))
+        replace_brain = Thread(target=client.replace_file_content_in_collab,
+                               kwargs={'content': data,
+                                       'mimetype': client.BRAIN_PYNN_MIMETYPE})
         replace_brain.start()
-        bibi, bibi_file_path, bibi_remote_path = client.clone_bibi_file_from_collab_context()
+        bibi, bibi_file_path, bibi_uuid = client.clone_bibi_file_from_collab_context()
         # Remove all populations from BIBI.
         del bibi.brainModel.populations[:]
 
@@ -181,8 +181,7 @@ class ExperimentBrainFile(Resource):
             shutil.rmtree(os.path.dirname(bibi_file_path))
         client.replace_file_content_in_collab(
             bibi.toxml("utf-8"),
-            client.BIBI_CONFIGURATION_MIMETYPE,
-            bibi_remote_path
+            bibi_uuid
         )
         replace_brain.join()
         return 200

@@ -119,7 +119,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             if using_collab_storage:
                 client = NeuroroboticsCollabClient(
                     UserAuthentication.get_header_token(request), simulation.context_id)
-                collab_paths = client.clone_experiment_template_from_collab_context()
+                collab_paths = client.clone_experiment_template_from_collab()
                 self.__experiment_path = collab_paths['experiment_conf']
                 self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
                 environment_path = collab_paths['environment_conf']

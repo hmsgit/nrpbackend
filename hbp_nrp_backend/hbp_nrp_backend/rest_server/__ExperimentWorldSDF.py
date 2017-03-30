@@ -28,7 +28,6 @@ import os
 import rospy
 import shutil
 import tempfile
-from threading import Thread
 import tf.transformations
 
 from lxml import etree as ET
@@ -111,17 +110,15 @@ class ExperimentWorldSDF(Resource):
 
         client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request),
                                            context_id)
-        replace_sdf = Thread(target=client.replace_file_content_in_collab,
-                             args=(sdf_string,
-                                   NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
-                                   NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME))
-        replace_sdf.start()
+
+        client.replace_file_content_in_collab(
+            sdf_string, mimetype=NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE)
 
         # Save the robot position in the ExDConf file
-        if (len(robot_pose) is 6):  # We need 6 elements (from Gazebo)
+        if len(robot_pose) is 6:  # We need 6 elements (from Gazebo)
             experiment_configuration, \
                 experiment_configuration_file_path, \
-                    exp_remote_file_path = client.clone_exp_file_from_collab_context()
+                    exp_uuid = client.clone_exp_file_from_collab_context()
 
             experiment_configuration.environmentModel.robotPose.x = robot_pose[0]
             experiment_configuration.environmentModel.robotPose.y = robot_pose[1]
@@ -142,12 +139,10 @@ class ExperimentWorldSDF(Resource):
                 shutil.rmtree(os.path.dirname(experiment_configuration_file_path))
             client.replace_file_content_in_collab(
                 experiment_configuration.toxml("utf-8"),
-                client.EXPERIMENT_CONFIGURATION_MIMETYPE,
-                exp_remote_file_path
+                exp_uuid
             )
 
         else:
             logger.error("Malformed robot position tag in SDF: " + robot_pose)
 
-        replace_sdf.join()
         return 200

@@ -146,7 +146,7 @@ class ExperimentTransferfunctions(Resource):
             import NeuroroboticsCollabClient
 
         body = request.get_json(force=True)
-        if (not 'transfer_functions' in body):
+        if not 'transfer_functions' in body:
             raise NRPServicesClientErrorException(
                 "Transfer functions code should be sent in "
                 "the body under the 'transfer_functions' key"
@@ -156,22 +156,22 @@ class ExperimentTransferfunctions(Resource):
             UserAuthentication.get_header_token(request),
             context_id
         )
-        bibi, bibi_file_path, bibi_remote_path = client.clone_bibi_file_from_collab_context()
+        bibi, bibi_file_path, bibi_uuid = client.clone_bibi_file_from_collab_context()
         # Remove all transfer functions from BIBI. Then we save them in a separate python file.
         del bibi.transferFunction[:]
         threads = []
         for transfer_function in body['transfer_functions']:
             transfer_function_name = get_tf_name(transfer_function)
-            if (transfer_function_name is not None):
+            if transfer_function_name is not None:
                 transfer_function_filename = transfer_function_name + ".py"
                 transfer_function_node = bibi_api_gen.PythonTransferFunction()
                 transfer_function_node.src = transfer_function_filename
                 bibi.transferFunction.append(transfer_function_node)
 
                 t = Thread(target=client.replace_file_content_in_collab,
-                           args=(transfer_function,
-                                 client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
-                                 transfer_function_filename))
+                           kwargs={'content': transfer_function,
+                                   'mimetype': client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
+                                   'filename': transfer_function_filename})
                 t.start()
                 threads.append(t)
 
@@ -181,11 +181,8 @@ class ExperimentTransferfunctions(Resource):
                 bibi_file_path
             )
             shutil.rmtree(os.path.dirname(bibi_file_path))
-        t = Thread(target=client.replace_file_content_in_collab, args=(
-            bibi.toxml("utf-8"),
-            client.BIBI_CONFIGURATION_MIMETYPE,
-            bibi_remote_path
-        ))
+        t = Thread(target=client.replace_file_content_in_collab,
+                   args=(bibi.toxml("utf-8"), bibi_uuid))
         t.start()
         threads.append(t)
         for x in threads:

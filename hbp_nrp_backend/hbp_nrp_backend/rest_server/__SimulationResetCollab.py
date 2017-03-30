@@ -176,7 +176,7 @@ class SimulationResetCollab(Resource):
         client = NeuroroboticsCollabClient(
             UserAuthentication.get_header_token(request), simulation.context_id)
 
-        collab_paths = client.clone_experiment_template_from_collab_context()
+        collab_paths = client.clone_experiment_template_from_collab()
         cloned_base_path = os.path.dirname(collab_paths['experiment_conf'])
 
         current_experiment_path = simulation.lifecycle.experiment_path
@@ -323,9 +323,8 @@ class SimulationResetCollab(Resource):
         header_token = UserAuthentication.get_header_token(request)
         client = NeuroroboticsCollabClient(header_token, context_id)
 
-        brain_dst_path = client.clone_file_from_collab_context(
-            NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE,
-            "brain.py")[0]
+        brain_dst_path = client.clone_file_from_collab(
+            NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE)[0]
 
         bibi = client.clone_bibi_file_from_collab_context()[0]
         neurons_config = get_all_neurons_as_dict(bibi.brainModel.populations)
@@ -374,8 +373,7 @@ class SimulationResetCollab(Resource):
 
         client = NeuroroboticsCollabClient(header_token, context_id)
 
-        file_path_world_sdf = client.clone_file_from_collab_context(
-            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE,
-            NeuroroboticsCollabClient.SDF_WORLD_FILE_NAME)[0]
+        file_path_world_sdf = client.clone_file_from_collab(
+            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE)[0]
         with open(file_path_world_sdf) as f:
             return f.read()

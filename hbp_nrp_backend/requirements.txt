@@ -3,6 +3,7 @@ hbp-flask-restful-swagger==0.15.2
 hbp-nrp-cle==1.2.0
 hbp-nrp-cleserver==1.2.0
 hbp-nrp-excontrol==1.2.0
+hbp-service-client==0.0.1
 
 # other requirements
 lxml==3.4.0
