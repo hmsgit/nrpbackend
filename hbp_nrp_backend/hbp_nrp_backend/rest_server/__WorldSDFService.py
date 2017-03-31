@@ -6,15 +6,13 @@ describing the world in which a simulation is carried out.
 __author__ = 'UgoAlbanese'
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesUnavailableROSService, NRPServicesGeneralException
+     NRPServicesUnavailableROSService
 from gazebo_msgs.srv import ExportWorldSDF
-from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 import logging
 import rospy
 from lxml import etree as ET
-import tempfile
 
 # pylint: disable=no-self-use
 
@@ -66,49 +64,3 @@ class WorldSDFService(Resource):
                 "Service did not process request:" + str(exc))
 
         return {"sdf": sdf_string}, 200
-
-    @swagger.operation(
-        notes='Saves the SDF file with the custom environment in a temporary folder.',
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "SDF environment successfully saved"
-            },
-            {
-                "code": 400,
-                "message": "Invalid XML string"
-            },
-            {
-                "code": 401,
-                "message": "Couldn't create the temporary file"
-            }
-        ]
-    )
-    # pylint: disable=broad-except
-    def put(self):
-        """
-        Saves the SDF file with the custom environment in the Model folder.
-
-        :<json string sdf: the sdf describing the world
-        :>json string path: the path where the file was saved
-        :status 200: SDF environment successfully saved
-        :status 400: Invalid XML string
-        :status 500: Couldn't create the temporary file
-        """
-
-        body = request.get_json(force=True)
-        sdf_string = body['sdf']
-
-        try:
-            ET.fromstring(sdf_string)
-        except ET.XMLSyntaxError as e:
-            raise NRPServicesClientErrorException(
-                "Invalid XML format in 'sdf' argument: " + str(e))
-
-        try:
-            with tempfile.NamedTemporaryFile(prefix='customenv_', dir='/tmp', delete=False) as f:
-                f.write(sdf_string)
-                return {'path': f.name}, 200
-        except Exception as e:
-            raise NRPServicesGeneralException(
-                "Couldn't create the temporary file: " + str(e))

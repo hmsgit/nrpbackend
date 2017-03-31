@@ -59,34 +59,5 @@ class TestWorldSDFService(RestTest):
         # check the status code
         self.assertEqual(response.status_code, 400)
 
-
-    @mock.patch('hbp_nrp_backend.rest_server.__WorldSDFService.tempfile')
-    def test_worldSDF_put(self, mckd_tempfile):
-        # Case OK
-        mckd_namedtmp_instance = mock.MagicMock()
-        mckd_namedtmp_instance.name = "randomname"
-        # For testing with the 'with' statement
-        mckd_namedtmp_instance.__enter__ = mock.MagicMock(return_value=mckd_namedtmp_instance)
-        mckd_tempfile.NamedTemporaryFile = mock.MagicMock(return_value=mckd_namedtmp_instance)
-        to_save = "<sdf>Dummy</sdf>"
-        response = self.client.put('/simulation/sdf_world', data=json.dumps({'sdf': to_save}))
-
-        self.assertEquals(response.status_code, 200)
-        self.assertEquals(mckd_namedtmp_instance.name, json.loads(response.data)['path'])
-        self.assertEquals(mckd_namedtmp_instance.write.call_args[0][0], to_save)
-
-        # Invalid XML
-        to_save = "<unsdf>Dummy</nein>"
-        response = self.client.put('/simulation/sdf_world', data=json.dumps({'sdf': to_save}))
-
-        self.assertEquals(response.status_code, 400)
-
-        # Exception while writing the file
-        to_save = "<sdf>Dummy</sdf>"
-        mckd_namedtmp_instance.write = mock.MagicMock(side_effect=Exception)
-        response = self.client.put('/simulation/sdf_world', data=json.dumps({'sdf': to_save}))
-
-        self.assertEquals(response.status_code, 500)
-
 if __name__ == '__main__':
     unittest.main()
