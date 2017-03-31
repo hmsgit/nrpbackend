@@ -35,6 +35,4 @@ class SimulationTopics(Resource):
                 'topicType': filtereddict[k]
             }
             topics.append(topic_e)
-
-        print m.getSystemState()
         return {'topics': topics}, 200

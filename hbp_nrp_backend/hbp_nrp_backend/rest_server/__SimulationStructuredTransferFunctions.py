@@ -194,7 +194,7 @@ class SimulationStructuredTransferFunctions(Resource):
             variables = [{
                 'name': var.name,
                 'type': var.type,
-                'initial value': var.initial_value
+                'initial_value': var.initial_value
             } for var in tf.variables]
 
             tf_e = {
@@ -266,8 +266,8 @@ class SimulationStructuredTransferFunctions(Resource):
         if error_message:
             raise NRPServicesTransferFunctionException(
                 "Transfer function patch failed: "
-                + str(error_message) + "\n"
-                + "Updated source:\n"
-                + str(transfer_function.code)
+                + error_message + "\n"
+                + "Transfer function:\n"
+                + request.data
             )
         return 200

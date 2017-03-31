@@ -97,10 +97,10 @@ class SimulationTransferFunction(Resource):
             transfer_function_name,
             transfer_function_source
         )
-        if (error_message):
+        if error_message:
             raise NRPServicesTransferFunctionException(
                 "Transfer function patch failed: "
-                + str(error_message) + "\n"
+                + error_message + "\n"
                 + "Updated source:\n"
                 + str(transfer_function_source)
             )
