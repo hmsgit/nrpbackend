@@ -306,7 +306,8 @@ class ROSCLEClient(object):
                     'name': p.name,
                     'neuron_model': p.neuron_model,
                     'parameters': ROSCLEClient.__convert_parameter_list(p.parameters),
-                    'gids': p.gids
+                    'gids': p.gids,
+                    'indices': p.indices
                 } for p in populations.neurons
             ]
         }

@@ -165,7 +165,7 @@ class TestROSCLEClient(unittest.TestCase):
 
         populations = Mock()
         populations.neurons = [
-            PopulationInfo("foo", "bar", [ NeuronParameter("p", 42.0) ], [0, 8, 15])
+            PopulationInfo("foo", "bar", [ NeuronParameter("p", 42.0) ], [0, 8, 15], range(0, 3))
         ]
 
         client._ROSCLEClient__cle_get_populations = Mock(return_value=populations)
@@ -175,7 +175,8 @@ class TestROSCLEClient(unittest.TestCase):
                     'name': 'foo',
                     'neuron_model': 'bar',
                     'parameters': [{ 'parameterName': 'p', 'value': 42.0}],
-                    'gids': [0,8,15]
+                    'gids': [0,8,15],
+                    'indices': range(0, 3)
                 }
             ]
         })
