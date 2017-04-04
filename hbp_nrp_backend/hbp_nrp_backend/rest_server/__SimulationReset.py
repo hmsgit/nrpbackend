@@ -201,9 +201,9 @@ class SimulationReset(Resource):
         brainPath = os.path.join(models_basepath, bibi_conf.brainModel.file)
         with open(brainPath, 'r') as myfile:
             data = myfile.read()
-            NOT_CHANGE_POPULATION = 2
+            DO_CHANGE_POPULATION = 1
             result = sim.cle.set_simulation_brain('py', data, "text", neurons_config,
-                                                  NOT_CHANGE_POPULATION)
+                                                  DO_CHANGE_POPULATION)
             if result.error_message is not "":
                 # Error in given brain
                 raise ROSCLEClientException('{}, line:{}, column:{}, population_change:{}'
