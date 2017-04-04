@@ -34,10 +34,11 @@ class TestCLELauncher(unittest.TestCase):
         with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "gz_host", None, 42)
+        self.launcher.models_path ="models_path"
 
     def test_robot_path_sdf(self):
         robot_file = self.launcher._get_robot_abs_path("robots/this_is_a_robot.sdf")
-        self.assertEqual(robot_file, "/somewhere/over/the/rainbow/robots/this_is_a_robot.sdf")
+        self.assertEqual(robot_file, "models_path/robots/this_is_a_robot.sdf")
         self.assertIsNone(self.launcher._CLELauncher__tmp_robot_dir)
 
     @patch("tempfile.mkdtemp")
@@ -50,6 +51,6 @@ class TestCLELauncher(unittest.TestCase):
         self.assertEqual(robot_file, "/tmp/under/the/rainbow/this_is_a_robot/model.sdf")
 
         self.assertTrue(mocked_temp.called)
-        mocked_zip.assert_called_once_with("/somewhere/over/the/rainbow/robots/this_is_a_robot.zip")
+        mocked_zip.assert_called_once_with("models_path/robots/this_is_a_robot.zip")
         mocked_zip().__enter__().getinfo.assert_called_once_with("this_is_a_robot/model.sdf")
         mocked_zip().__enter__().extractall.assert_called_once_with(path="/tmp/under/the/rainbow")

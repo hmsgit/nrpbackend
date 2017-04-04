@@ -145,7 +145,6 @@ class CLELauncher(object):
         :param timeout: The datetime object when the simulation timeouts or None
         :param except_hook: A handler method for critical exceptions
         """
-
         logger.info("Path is " + self.__experiment_path)
         os.chdir(self.__experiment_path)
 
@@ -181,7 +180,7 @@ class CLELauncher(object):
         TIMESTEP = 0.02
 
         # set models path variable
-        models_path = get_model_basepath()
+        self.models_path = get_model_basepath()
 
         # Only for Frontend progress bar logic
         number_of_subtasks = 12
@@ -206,7 +205,6 @@ class CLELauncher(object):
         robot_file = self.__bibi_conf.bodyModel
         logger.info("Robot: " + robot_file)
         robot_file_abs = self._get_robot_abs_path(robot_file)
-        logger.info("RobotAbs: " + robot_file_abs)
 
         try:
             self.gzserver.start(ros_master_uri, self.__tmp_robot_dir)
@@ -245,12 +243,6 @@ class CLELauncher(object):
         else:
             rpose = None
 
-        robot_file = self.__bibi_conf.bodyModel
-        logger.info("Robot: " + robot_file)
-        if self.__is_collab_hack():
-            robot_file_abs = os.path.join(self.__experiment_path, robot_file)
-        else:
-            robot_file_abs = os.path.join(models_path, robot_file)
         logger.info("RobotAbs: " + robot_file_abs)
         # spawn robot model
         self.__gazebo_helper \
@@ -262,7 +254,7 @@ class CLELauncher(object):
         roscomm = RosCommunicationAdapter()
 
         if self.__bibi_conf.extRobotController is not None:  # load external robot controller
-            robot_controller_filepath = os.path.join(models_path,
+            robot_controller_filepath = os.path.join(self.models_path,
                                                      self.__bibi_conf.extRobotController)
             if not os.path.isfile(robot_controller_filepath) and self.__tmp_robot_dir is not None:
                 robot_controller_filepath = os.path.join(self.__tmp_robot_dir,
@@ -301,7 +293,7 @@ class CLELauncher(object):
             if self.__experiment_path is not None:
                 brainfilepath = os.path.join(self.__experiment_path, brainfilepath)
         else:
-            brainfilepath = os.path.join(models_path, brainfilepath)
+            brainfilepath = os.path.join(self.models_path, brainfilepath)
         neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
 
         # initialize CLE
@@ -350,8 +342,6 @@ class CLELauncher(object):
 
         logger.info("CLELauncher Finished.")
 
-        self.models_path = models_path
-
     def _get_robot_abs_path(self, robot_file):
         """
         Gets the absolute path of the given robot file
@@ -359,7 +349,10 @@ class CLELauncher(object):
         :param robot_file: The robot file
         :return: the absolute path to the robot file
         """
-        abs_file = os.path.join(self.__experiment_path, robot_file)
+        if self.__is_collab_hack():
+            abs_file = os.path.join(self.__experiment_path, robot_file)
+        else:
+            abs_file = os.path.join(self.models_path, robot_file)
         name, ext = os.path.splitext(abs_file)
         ext = ext.lower()
         if ext == ".sdf":
