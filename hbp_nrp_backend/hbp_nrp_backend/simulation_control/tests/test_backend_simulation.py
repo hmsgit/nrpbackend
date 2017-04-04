@@ -130,8 +130,8 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
     def test_backend_stop(self):
         self.lifecycle.stop(Mock())
 
-        # Assert state machines have been terminated
-        self.assertTrue(self.simulation.state_machine_manager.terminate_all.called)
+        # Assert State Machines have been terminated
+        self.assertTrue(self.simulation.state_machine_manager.shutdown.called)
 
         self.assertIsNone(self.simulation.kill_datetime)
 

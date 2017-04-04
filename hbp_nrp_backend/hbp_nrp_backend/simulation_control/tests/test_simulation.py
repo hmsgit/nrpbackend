@@ -9,29 +9,22 @@ from os import path
 from mock import patch, MagicMock, Mock
 from hbp_nrp_backend.simulation_control import Simulation
 from hbp_nrp_backend.simulation_control import __Simulation as sim_module
-
+from hbp_nrp_excontrol import StateMachineManager as sm_manager_module
 
 class TestSimulation(unittest.TestCase):
 
-    def create_sm_mock(self, sm_id, sim_id, sm_path = None):
-        sm = Mock()
-        sm.sm_id = sm_id
-        sm.sim_id = sim_id
-        sm.sm_path = sm_path
+    def create_sm_mock(self, sm_id, sim_id, sm_path=None):
+        sm = Mock(sm_id=sm_id, sim_id=sim_id, sm_path=sm_path)
         self.__simulation.state_machines.append(sm)
+        return sm
 
     def setUp(self):
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state')
         self.mock_state = self.patch_state.start()
 
-        def create_state_machine_mock(id, sim_id):
-            sm = Mock()
-            sm.sm_id = id
-            sm.sim_id = sim_id
-            return sm
-
-        self.original_smi = sim_module.StateMachineInstance
-        sim_module.StateMachineInstance = create_state_machine_mock
+        #monkey patch StateMachineManager.create_state_machine
+        self.original_sm_manager_create_state_machine = sm_manager_module.StateMachineManager.create_state_machine
+        sm_manager_module.StateMachineManager.create_state_machine = self.create_sm_mock
 
         sim_id = 2
         experiment_conf = 'some_exp_id'
@@ -55,7 +48,7 @@ class TestSimulation(unittest.TestCase):
 
     def tearDown(self):
         self.mock_state = self.patch_state.stop()
-        sim_module.StateMachineInstance = self.original_smi
+        sm_manager_module.StateMachineManager.create_state_machine = self.original_sm_manager_create_state_machine
 
     def test_set_killtime_early(self):
         self.__simulation.kill_datetime = self.__simulation.creation_datetime
@@ -98,6 +91,7 @@ class TestSimulation(unittest.TestCase):
 
         self.__simulation.state = 'paused'
         response = self.__simulation.set_state_machine_code('SM2', another_valid_code)
+
         sm2_updated_code = self.__simulation.get_state_machine_code('SM2')
         self.assertEqual(another_valid_code, sm2_updated_code)
 
