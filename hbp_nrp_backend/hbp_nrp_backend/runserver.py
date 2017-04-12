@@ -12,6 +12,7 @@ from hbp_nrp_backend.rest_server import db_create_and_check, NRPServicesDatabase
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 import logging
 import sys
+import rosparam
 import rospy
 from threading import Thread
 
@@ -35,6 +36,7 @@ def start_ros(): # pragma: no cover
     Starts ROS utilities and cleanup thread in the app process.
     """
     root_logger.info("Starting ROS node")
+    rosparam.set_param("/use_sim_time", "true")
     rospy.init_node("nrp_backend")
 
     rospy_thread = Thread(target=rospy.spin)
