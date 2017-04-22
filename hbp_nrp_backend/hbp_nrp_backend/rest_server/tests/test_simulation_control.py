@@ -1,4 +1,24 @@
 # -*- coding: utf-8 -*-
+# Failing test about non ascii character? -> The line above (encoding) has to be the first of the file.
+
+# ---LICENSE-BEGIN - DO NOT CHANGE OR MOVE THIS HEADER
+# This file is part of the Neurorobotics Platform software
+# Copyright (C) 2014,2015,2016,2017 Human Brain Project
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# ---LICENSE-END
 
 """
 Code for testing all classes in hbp_nrp_backend.rest_server.__SimulationControl
@@ -145,6 +165,7 @@ class TestScript(RestTest):
         """
         This method crafts some successful requests.
         """
+
         hdr = {UserAuthentication.HTTP_HEADER_USER_NAME: "default-owner"}
         ddict = {
             'visual_path': 'sensible_model::actual_link::existing_visual',
@@ -395,6 +416,8 @@ class TestScript(RestTest):
 
     def test_light_control_as_ascii(self):
         self.assertEquals(LightControl.as_ascii(None), None)
+        # Failing test about non ascii character? -> The encoding line (see top of file) has to be
+        # the first of the file.
         self.assertEquals(LightControl.as_ascii(u"no utf-8 here.àèìòù"), "no utf-8 here.")
         self.assertEquals(LightControl.as_ascii("abababa"), "abababa")
 
