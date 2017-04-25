@@ -33,6 +33,8 @@ from flask import request
 from flask_restful import Resource, fields, marshal, marshal_with
 from flask_restful_swagger import swagger
 import logging
+import time
+import random
 
 # pylint: disable=R0201
 
@@ -128,16 +130,25 @@ class SimulationService(Resource):
            (not isinstance(body.get('brainProcesses'), int) or body.get('brainProcesses') < 1):
             raise NRPServicesClientErrorException('Invalid number of brain processes.')
 
+        if 'creationUniqueID' not in body:
+            creationUniqueID = str(time.time() + random.random())
+        else:
+            creationUniqueID = body.get('creationUniqueID')
+
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_reservation = body.get('reservation', None)
         sim_context_id = body.get('contextID', None)
         sim_owner = UserAuthentication.get_x_user_name_header(request)
         sim_brain_processes = body.get('brainProcesses', 1)
-        simulations.append(Simulation(
-            sim_id, body['experimentConfiguration'],
-            body.get('environmentConfiguration', None), sim_owner,
-            sim_gzserver_host, sim_reservation, sim_brain_processes, sim_context_id)
-        )
+        sim = Simulation(sim_id, body['experimentConfiguration'],
+                            body.get('environmentConfiguration', None),
+                            sim_owner,
+                            sim_gzserver_host, sim_reservation,
+                            sim_brain_processes, sim_context_id)
+
+        sim.creationUniqueID = creationUniqueID
+        sim.state = "initialized"
+        simulations.append(sim)
 
         return marshal(simulations[sim_id], Simulation.resource_fields), 201, {
             'location': api.url_for(SimulationControl, sim_id=sim_id),
