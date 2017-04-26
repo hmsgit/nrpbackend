@@ -73,6 +73,20 @@ gazebo_logger.setLevel(logging.INFO)
 notificator_handler = NotificatorHandler()
 
 
+def extract_line_number(tb):
+    """
+    Extracts the line number of the given traceback or returns -1
+
+    :param tb: The traceback with the original error information
+    """
+    current = tb
+    while current is not None:
+        if current.tb_frame.f_code.co_filename == "<string>":
+            return current.tb_lineno
+        current = current.tb_next
+    return -1
+
+
 # pylint: disable=R0902
 # the attributes are reasonable in this case
 class ROSCLEServer(object):
@@ -165,16 +179,18 @@ class ROSCLEServer(object):
         if severity == CLEError.SEVERITY_CRITICAL and self.__lifecycle is not None:
             self.__lifecycle.failed()
 
-    def __tf_except_hook(self, tf, tf_error):
+    def __tf_except_hook(self, tf, tf_error, tb):
         """
         Handles an exception in the Transfer Functions
 
         :param tf: The transfer function that crashed
         :param tf_error: The exception that was thrown
+        :param tb: The original traceback
         """
         if tf.updated:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Runtime", str(tf_error),
-                               severity=CLEError.SEVERITY_ERROR, function_name=tf.name)
+                               severity=CLEError.SEVERITY_ERROR, function_name=tf.name,
+                               line_number=extract_line_number(tb))
 
     def prepare_simulation(self, cle, except_hook=None):
         """
