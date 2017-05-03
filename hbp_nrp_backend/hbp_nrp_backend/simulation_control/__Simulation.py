@@ -69,6 +69,23 @@ class Simulation(object):
         self.__state_machines_manager = StateMachineManager()
         self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
         self.__lifecycle = BackendSimulationLifecycle(self, state)
+        self.__creationUniqueID = None
+
+    @property
+    def creationUniqueID(self):
+        """
+        :return: unique creation ID (used by Frontend to identify this simulation)
+        """
+        return self.__creationUniqueID
+
+    @creationUniqueID.setter
+    def creationUniqueID(self, new_ID):
+        """
+        Sets the simulation unique creation UD (used by Frontend to identify this simulation)
+
+        :param new_ID: The new ID
+        """
+        self.__creationUniqueID = new_ID
 
     @property
     def errors(self):
@@ -331,7 +348,8 @@ class Simulation(object):
         'gzserverHost': fields.String(attribute='gzserver_host'),
         'reservation': fields.String(attribute='reservation'),
         'contextID': fields.String(attribute='context_id'),
-        'brainProcesses': fields.Integer(attribute='brain_processes')
+        'brainProcesses': fields.Integer(attribute='brain_processes'),
+        'creationUniqueID': fields.String(attribute='creationUniqueID')
     }
     required = [
         'state', 'simulationID', 'experimentConfiguration', 'gzserverHost'

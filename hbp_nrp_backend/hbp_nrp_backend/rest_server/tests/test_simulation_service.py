@@ -26,7 +26,7 @@ __author__ = 'GeorgHinkel'
 import unittest
 import json
 import datetime
-from mock import patch, MagicMock
+from mock import patch, MagicMock, PropertyMock
 from hbp_nrp_backend.simulation_control import simulations
 from hbp_nrp_backend.rest_server.tests import RestTest
 
@@ -36,21 +36,31 @@ class TestSimulationService(RestTest):
         self.now = datetime.datetime.now()
         # Ensure that the patcher is cleaned up correctly even in exceptional cases
         del simulations[:]
+        self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state',
+                                    new_callable=PropertyMock)
+        self.mock_state = self.patch_state.start()
 
     @patch('hbp_nrp_backend.simulation_control.__Simulation.datetime')
-    def test_simulation_service_post(self, mocked_date_time):
+    @patch('hbp_nrp_backend.rest_server.__SimulationService.time')
+    @patch('hbp_nrp_backend.rest_server.__SimulationService.random')
+    def test_simulation_service_post(self, mocked_random, mocked_time, mocked_date_time):
         mocked_date_time.datetime = MagicMock()
         mocked_date_time.datetime.now = MagicMock(return_value=self.now)
 
+        mocked_random.random = MagicMock(return_value=0)
+        mocked_time.time = MagicMock(return_value=0)
+        self.mock_state.return_value = "initialized"
+
         response = self.client.post('/simulation',
                                     data=json.dumps({"experimentConfiguration": "MyExample.xml",
-                                                     "gzserverHost": "local", "reservation": "user_workshop"}))
+                                                     "gzserverHost": "local",
+                                                     "reservation": "user_workshop"}))
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers['Location'], 'http://localhost/simulation/0')
         expected_response_data = {
             'owner': "default-owner",
-            'state': "created",
+            'state': "initialized",
             'creationDate': self.now.isoformat(),
             'simulationID': 0,
             'experimentConfiguration': "MyExample.xml",
@@ -58,6 +68,7 @@ class TestSimulationService(RestTest):
             'gzserverHost': 'local',
             'contextID': None,
             'brainProcesses': 1,
+            'creationUniqueID': '0',
             'reservation': 'user_workshop'
         }
         erd = json.dumps(expected_response_data)
