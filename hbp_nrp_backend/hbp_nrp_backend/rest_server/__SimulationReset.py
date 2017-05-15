@@ -44,7 +44,7 @@ from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
-    generate_tf, import_referenced_python_tfs, correct_indentation
+    generate_tf, import_referenced_python_tfs, correct_indentation, get_tf_name
 
 from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -234,6 +234,10 @@ class SimulationReset(Resource):
         """
         Reset transfer functions
         """
+        # Delete all TFs
+        old_tfs = sim.cle.get_simulation_transfer_functions()
+        for tf in old_tfs:
+            sim.cle.delete_simulation_transfer_function(get_tf_name(tf))
 
         experiment_basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
         _, bibi_conf = get_experiment_data(str(experiment_basepath))
