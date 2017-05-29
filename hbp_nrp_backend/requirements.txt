@@ -17,4 +17,4 @@ Flask-Migrate==1.6.0
 psycopg2==2.6.1
 bbp-client==0.3.19
 timeout-decorator==0.3.2
-urllib3[secure]==1.19.1
+urllib3[secure]==1.21.1
