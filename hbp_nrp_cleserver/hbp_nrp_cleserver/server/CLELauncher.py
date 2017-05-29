@@ -176,9 +176,6 @@ class CLELauncher(object):
         # Needed in order to cleanup global static variables
         nrp.start_new_tf_manager()
 
-        # consts
-        TIMESTEP = 0.02
-
         # set models path variable
         self.models_path = get_model_basepath()
 
@@ -296,9 +293,14 @@ class CLELauncher(object):
             brainfilepath = os.path.join(self.models_path, brainfilepath)
         neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
 
+        # integration timestep between simulators, convert from ms to s (default to 20ms)
+        if self.__bibi_conf.timestep is None:
+            self.__bibi_conf.timestep = 20
+        timestep = float(self.__bibi_conf.timestep) / 1000.0
+
         # initialize CLE
         self.__notify("Initializing CLE")  # subtask 9
-        cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, TIMESTEP)
+        cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, timestep)
         cle.initialize(brainfilepath, **neurons_config)
 
         # Set initial pose
