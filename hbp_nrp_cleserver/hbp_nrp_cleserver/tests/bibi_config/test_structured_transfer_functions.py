@@ -121,7 +121,8 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         self.assertEqual("csv", c.type)
         self.assertDictEqual({"filename":"file.csv", "headers": ["Name", "Value"]}, json.loads(c.initial_value))
 
-    def test_convert_transfer_function(self):
+    @patch('os.path.isfile', return_value=True)
+    def test_convert_transfer_function(self, mock_isfile):
 
         test_tf = self.create_default_TF()
         test = StructuredTransferFunction.extract_structure(test_tf)
@@ -187,7 +188,8 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         neurons.ids = ['1','2','3']
         self.assertEqual(StructuredTransferFunction._generate_neurons(neurons), "nrp.brain.neuron_name[[1, 2, 3]]")
 
-    def test_roundtrip(self):
+    @patch('os.path.isfile', return_value=True)
+    def test_roundtrip(self, mock_isfile):
 
         test_tf = self.create_default_TF()
         converted = StructuredTransferFunction.extract_structure(test_tf)
