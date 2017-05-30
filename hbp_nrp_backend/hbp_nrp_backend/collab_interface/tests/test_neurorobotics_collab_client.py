@@ -204,7 +204,10 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
         with patch("__builtin__.open", m):
             result = neurorobotic_collab_client.clone_experiment_template_from_collab()
 
-        self.mock_document_client_instance.download_file_content.assert_has_calls([call('a_uuid'), call('b_uuid'), call('c_uuid')])
+        self.mock_document_client_instance.download_file_content.assert_has_calls([call('a_uuid'),
+                                                                                   call('b_uuid'),
+                                                                                   call('c_uuid')],
+                                                                                  any_order=True)
         m.assert_has_calls([call(os.path.join(tmp_dir,experiment_conf), 'w'),
                             call(os.path.join(tmp_dir, environment_conf), 'w'),
                             call(os.path.join(tmp_dir, robot_model), 'w')],
