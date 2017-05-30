@@ -143,7 +143,7 @@ class TestSimulationStateMachines(RestTest):
         simulation.state = "bad_state"
 
         response = self.client.put('/simulation/0/state-machines/Control1', data=SM)
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 403)
 
     def test_simulation_state_machines_put_attribute_error(self):
         simulation = _get_simulation_or_abort(0)

@@ -40,9 +40,9 @@ from sys import exc_info
 logger = logging.getLogger(__name__)
 
 
-def reset_simulation_or_raise(simulation):
+def pause_simulation_or_raise(simulation):
     """
-    Reset the simulation and raise an exception in case of failure.
+    Pauses the simulation and raise an exception in case of failure.
     This is needed before an update of a state machine code
     :param simulation: The simulation to be reset
     """
@@ -53,7 +53,7 @@ def reset_simulation_or_raise(simulation):
     if state != 'paused':
         raise NRPServicesGeneralException(
             "Simulation in state {0}. Can't update the state machine".format(state),
-            "Server error"
+            "Server error", error_code=403
         )
 
 
@@ -169,20 +169,8 @@ class SimulationStateMachine(Resource):
         ],
         responseMessages=[
             {
-                "code": 500,
-                "message": "Simulation in state [STATE]. Can't update state machine."
-            },
-            {
                 "code": 404,
                 "message": "The simulation with the given ID was not found"
-            },
-            {
-                "code": 404,
-                "message": "State machine not found."
-            },
-            {
-                "code": 400,
-                "message": "The passed source code does not describe a valid SMACH statemachine"
             },
             {
                 "code": 400,
@@ -193,6 +181,10 @@ class SimulationStateMachine(Resource):
                 "message": "Operation only allowed by simulation owner"
             },
             {
+                "code": 403,
+                "message": "The operation is forbidden while the simulation is in its current state"
+            },
+            {
                 "code": 200,
                 "message": "Success. The code was successfully patched"
             }
@@ -201,20 +193,17 @@ class SimulationStateMachine(Resource):
     def put(self, sim_id, state_machine_name):
         """
         Applies user changes to state machine code.
-        When the simulation state is 'paused' or 'started', the simulation is reset
-        and the new state is 'initialized'.
-        When the Simulation state is 'stopped', 'created' or 'failed', nothing happens.
+        If the simulation is paused or started, it will be paused.
+        A stopped, created or failed simulation will fail the request with error code 403
 
         :param path sim_id: The simulation id
         :param path state_machine_name: The state machine name
         :param body source_code: The source code of the state machine
 
-        :status 400: The source code doesn't describe a valid SMACH state machine
         :status 400: The source code is invalid: [ERROR-MESSAGE]
         :status 401: Operation only allowed by simulation owner
+        :status 403: The operation is forbidden while the simulation is in its current state
         :status 404: The simulation with the given ID was not found
-        :status 404: The state machine with the given name was not found
-        :status 500: Simulation in state [STATE]. Can't update state machine.
         :status 200: Success. The code was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
@@ -223,7 +212,7 @@ class SimulationStateMachine(Resource):
             raise NRPServicesWrongUserException()
 
         state_machine_source = request.data
-        reset_simulation_or_raise(simulation)
+        pause_simulation_or_raise(simulation)
         try:
             simulation.set_state_machine_code(
                 state_machine_name,

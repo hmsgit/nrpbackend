@@ -243,7 +243,7 @@ class Simulation(object):
         Get state machine code
 
         :param name: name of the state machine
-        :return: source code of the state machine (string) or False (bool) when \
+        :return: source code of the state machine (string) or None when \
         state machine is not found
         """
         sm = self.get_state_machine(name)
