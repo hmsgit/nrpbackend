@@ -140,6 +140,8 @@ except NRPServicesDatabaseTimeoutException as e:
 if __name__.find("uwsgi_file") == 0:
     start_ros()
     app.wsgi_app = RestSyncMiddleware(app.wsgi_app, app)
+    _args = __process_args()
+    init_logging(_args)
 
 # This is executed in local install mode without uwsgi
 if __name__ == '__main__':  # pragma: no cover
