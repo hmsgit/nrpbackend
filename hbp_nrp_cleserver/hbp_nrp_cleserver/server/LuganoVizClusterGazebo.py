@@ -231,6 +231,7 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
         notificator.info('Starting Gazebo server on the cluster node')
         self._gazebo_remote_process.sendline(
             'vglrun -nodl $GAZEBO_BIN_DIR/gzserver ' +
+            '--pause ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_api_plugin.so ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_paths_plugin.so ' +
             '--verbose')
