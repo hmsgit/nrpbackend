@@ -62,15 +62,12 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         return test_tf_2
 
     def create_variable_TF(self):
-        with patch("hbp_nrp_cle.tf_framework._GlobalData.os.path") as path_mock:
-            path_mock.is_file.return_value = True
 
-            @MapVariable("a", initial_value=42)
-            @MapRetina("b", "foo.py")
-            @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
-            @NeuronMonitor(brain.actors, spike_recorder)
-            def some_stupid_test_tf(t, a, b, c):
-                pass
+        @MapVariable("a", initial_value=42)
+        @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
+        @NeuronMonitor(brain.actors, spike_recorder)
+        def some_stupid_test_tf(t, a, c):
+            pass
 
         return some_stupid_test_tf
 
@@ -115,18 +112,14 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         self.assertEqual(TF.NEURONMONITOR, test.type)
         self.assertEqual(1, len(test.devices))
         self.assertEqual(1, len(test.topics))
-        self.assertEqual(3, len(test.variables))
+        self.assertEqual(2, len(test.variables))
 
         a = test.variables[0]
-        b = test.variables[1]
-        c = test.variables[2]
+        c = test.variables[1]
 
         self.assertEqual("a", a.name)
         self.assertEqual("int", a.type)
         self.assertEqual("42", a.initial_value)
-        self.assertEqual("b", b.name)
-        self.assertEqual("retina", b.type)
-        self.assertEqual("foo.py", b.initial_value)
         self.assertEqual("c", c.name)
         self.assertEqual("csv", c.type)
         self.assertDictEqual({"filename":"file.csv", "headers": ["Name", "Value"]}, json.loads(c.initial_value))
@@ -232,9 +225,8 @@ class TestStructuredTransferFunctions(unittest.TestCase):
 
         self.assertMultiLineEqual(
             '\n@nrp.MapVariable("a", initial_value=42)\n'
-            '@nrp.MapRetina("b", "foo.py")\n'
             '@nrp.MapCSVRecorder("c", "file.csv", ["Name", "Value"])\n'
             '@nrp.NeuronMonitor(nrp.brain.actors, nrp.spike_recorder)\n'
-            'def some_stupid_test_tf(t, a, b, c):\n'
+            'def some_stupid_test_tf(t, a, c):\n'
             '    pass', code
         )

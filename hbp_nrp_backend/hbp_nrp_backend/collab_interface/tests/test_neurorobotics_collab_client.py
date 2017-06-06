@@ -456,50 +456,6 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                 bibi_configuration_dom.brainModel.file,
                 bibi_api_gen.PythonFilename('my_brain.py')
             )
-    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
-    def test_flatten_bibi_configuration_retina(self, get_model_basepath_mock):
-        get_model_basepath_mock.return_value = self.models_directory
-        exp_configuration = os.path.join(self.experiments_directory, 'ExDXMLExampleRetina.exc')
-        expected_list = [
-            NeuroroboticsCollabClient.EXPERIMENT_CONFIGURATION_FILE_NAME,
-            'grab_image_retina_1.py',
-            'retina_config_1.py',
-            'retina_config_2.py',
-            'virtual_room.sdf',
-            'model.sdf',
-            'ExDXMLExample.png',
-            NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME,
-            'my_brain.py'
-        ]
-
-        with _FlattenedExperimentDirectory(exp_configuration, None) as temporary_folder:
-            bibi_configuration_file = os.path.join(self.models_directory, 'BIBI/retina_bibi.xml')
-            l = os.listdir(temporary_folder)
-            # make sure we do not copy things we aren't expecting
-            self.assertEqual(len(l), len(expected_list))
-            for expected_file in expected_list:
-                self.assertIn(expected_file, l)
-            flattened_bibi_configuration_file = os.path.join(
-                temporary_folder,
-                NeuroroboticsCollabClient.BIBI_CONFIGURATION_FILE_NAME
-            )
-            with open(flattened_bibi_configuration_file) as b:
-                bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
-
-            for tf in bibi_configuration_dom.transferFunction:
-                if hasattr(tf, "src") and tf.src:
-                    self.assertEqual(tf.src, os.path.basename(tf.src))
-                    path = os.path.join(temporary_folder, tf.src)
-                    self.assertEqual(os.path.exists(path), True)
-
-            self.assertEqual(
-                bibi_configuration_dom.bodyModel,
-                bibi_api_gen.SDFFilename('model.sdf')
-            )
-            self.assertEqual(
-                bibi_configuration_dom.brainModel.file,
-                bibi_api_gen.PythonFilename('my_brain.py')
-            )
 
     def test_populate_subfolder_in_collab(self):
         neurorobotic_collab_client = NeuroroboticsCollabClient("token", 'aaa')

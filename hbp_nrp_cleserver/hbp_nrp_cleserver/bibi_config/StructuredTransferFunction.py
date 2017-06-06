@@ -30,7 +30,7 @@ from cle_ros_msgs.msg import TransferFunction, Device, Topic, Variable, Experime
 from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, \
     poisson, population_rate, leaky_integrator_alpha, leaky_integrator_exp, fixed_frequency,\
     nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber,\
-    MapCSVRecorder, MapRetina, MapSpikeSink, MapSpikeSource, MapVariable, config
+    MapCSVRecorder, MapSpikeSink, MapSpikeSource, MapVariable, config
 from hbp_nrp_cle.tf_framework._PropertyPath import IndexPathSegment
 import logging
 import textwrap
@@ -258,13 +258,7 @@ def __extract_variables(tf):
     """
     variables = []
     for v in __get_specs(tf):
-        if isinstance(v, MapRetina):
-            variables.append(Variable(
-                name=v.name,
-                type="retina",
-                initial_value=v.retina_config_file
-            ))
-        elif isinstance(v, MapCSVRecorder):
+        if isinstance(v, MapCSVRecorder):
             variables.append(Variable(
                 name=v.name,
                 type="csv",
@@ -387,9 +381,7 @@ def __generate_variable(var):
     :param var: The variable
     :return: The code generated for the given variable
     """
-    if var.type == "retina":
-        return '@nrp.MapRetina("{0}", "{1}")\n'.format(var.name, var.initial_value)
-    elif var.type == "csv":
+    if var.type == "csv":
         extracted = json.loads(var.initial_value)
         return '@nrp.MapCSVRecorder("{0}", "{1}", {2})\n'\
             .format(var.name, extracted['filename'], json.dumps(extracted['headers']))

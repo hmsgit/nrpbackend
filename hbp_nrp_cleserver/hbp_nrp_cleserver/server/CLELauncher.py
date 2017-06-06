@@ -295,9 +295,18 @@ class CLELauncher(object):
             rpose = None
 
         logger.info("RobotAbs: " + robot_file_abs)
+
+        # check retina script file
+        retina_config_path = None
+
+        for conf in self.__bibi_conf.configuration:
+            if conf.type == 'retina':
+                self.__notify("Configuring Retina Camera Plugin")
+                retina_config_path = conf.src
+
         # spawn robot model
         self.__gazebo_helper \
-            .load_gazebo_model_file('robot', robot_file_abs, rpose)
+            .load_gazebo_model_file('robot', robot_file_abs, rpose, retina_config_path)
 
         # control adapter
         roscontrol = RosControlAdapter()
