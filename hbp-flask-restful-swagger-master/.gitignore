@@ -1,5 +1,8 @@
 *.py[cod]
 
+flask_restful_swagger/static/config.json
+flask_restful_swagger/static/config.json.sample
+
 # C extensions
 *.so
 
