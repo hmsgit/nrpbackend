@@ -17,9 +17,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ---LICENSE-END
 """
-This module contains the REST implementation
-for setting and getting the experiment control
-state maching in a running simulation
+This module contains the REST implementation for setting and getting the experiment control State
+Machines in a running simulation.
 """
 
 __author__ = 'Bernd Eckstein'
@@ -77,6 +76,7 @@ class StateMachineData(object):
     Swagger documentation object
     Main Data Attribute for parsing convenience on the frontend side.
     """
+
     resource_fields = {
         'data': fields.Nested(StateMachineDictionary.resource_fields)
     }

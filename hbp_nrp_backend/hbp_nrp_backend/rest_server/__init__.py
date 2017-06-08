@@ -84,8 +84,8 @@ from hbp_nrp_backend.rest_server.__SimulationReset import SimulationReset
 from hbp_nrp_backend.rest_server.__SimulationResetCollab import SimulationResetCollab
 from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
-from hbp_nrp_backend.rest_server.__SimulationTransferFunction import SimulationTransferFunction
-from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunctions
+from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunction, \
+    SimulationTransferFunctions
 from hbp_nrp_backend.rest_server.__SimulationStateMachines import SimulationStateMachines, \
     SimulationStateMachine
 from hbp_nrp_backend.rest_server.__SimulationCSVRecorders import SimulationCSVRecorders
