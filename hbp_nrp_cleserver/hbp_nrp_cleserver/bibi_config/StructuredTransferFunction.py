@@ -25,7 +25,7 @@ from cle_ros_msgs.msg import TransferFunction, Device, Topic, Variable, Experime
 from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, \
     poisson, population_rate, leaky_integrator_alpha, leaky_integrator_exp, fixed_frequency,\
     nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber,\
-    MapCSVRecorder, MapRetina
+    MapCSVRecorder, MapRetina, config
 from hbp_nrp_cle.tf_framework._PropertyPath import IndexPathSegment
 import logging
 import textwrap
@@ -99,6 +99,25 @@ def __get_specs(tf):
     return map(__get_spec, tf.params[1:])
 
 
+def __extract_name_and_index(neurons, root, bca):
+    """
+    Extracts the name and the index from the given neuron specification
+
+    :param neurons: The neuron specification
+    :param root: The inserted root object
+    :param bca: The brain info
+    :return: A tuple of the name of the population and the index
+    """
+    name = repr(neurons)
+    index = None
+    if isinstance(neurons, IndexPathSegment):
+        parent = neurons.select(root, bca)
+        if bca.is_population(parent):
+            name = repr(neurons.parent)
+            index = neurons.index
+    return name[7:], index
+
+
 def _extract_neurons(neurons):
     """
     Extracts a population specification from the given property path
@@ -106,11 +125,8 @@ def _extract_neurons(neurons):
     :param neurons: The given neurons
     :return: A population specification
     """
-    index = None
-    if isinstance(neurons, IndexPathSegment):
-        index = neurons.index
-        neurons = neurons.parent
-    name = neurons.name
+    name, index = __extract_name_and_index(neurons, config.brain_root,
+                                           config.active_node.brain_adapter)
     if index is None:
         return ExperimentPopulationInfo(name=name,
                                         type=ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION,

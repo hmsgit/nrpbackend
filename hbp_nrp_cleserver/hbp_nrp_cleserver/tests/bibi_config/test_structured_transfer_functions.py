@@ -31,10 +31,12 @@ from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
 
 __author__ = "Georg Hinkel"
 
+
 class TestStructuredTransferFunctions(unittest.TestCase):
 
     def setUp(self):
         start_new_tf_manager()
+        config.active_node.brain_adapter = MockBrainCommunicationAdapter()
 
     def create_default_TF(self):
         @MapRobotPublisher("pub", Topic("/foo", Device))
@@ -55,12 +57,15 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         return test_tf_2
 
     def create_variable_TF(self):
-        @MapVariable("a", initial_value=42)
-        @MapRetina("b", "foo.py")
-        @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
-        @NeuronMonitor(brain.actors, spike_recorder)
-        def some_stupid_test_tf(t, a, b, c):
-            pass
+        with patch("hbp_nrp_cle.tf_framework._GlobalData.os.path") as path_mock:
+            path_mock.is_file.return_value = True
+
+            @MapVariable("a", initial_value=42)
+            @MapRetina("b", "foo.py")
+            @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
+            @NeuronMonitor(brain.actors, spike_recorder)
+            def some_stupid_test_tf(t, a, b, c):
+                pass
 
         return some_stupid_test_tf
 
