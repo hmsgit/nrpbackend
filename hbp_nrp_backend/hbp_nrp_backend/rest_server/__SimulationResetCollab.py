@@ -275,8 +275,7 @@ class SimulationResetCollab(Resource):
             tf_code = tf_code.strip() + "\n"
             logger.info(" RESET TF: " + tf.name + "\n" + tf_code + '\n')
 
-            error_message = simulation.cle.set_simulation_transfer_function(
-                str(tf.name),
+            error_message = simulation.cle.add_simulation_transfer_function(
                 str(tf_code)
             )
             if error_message:

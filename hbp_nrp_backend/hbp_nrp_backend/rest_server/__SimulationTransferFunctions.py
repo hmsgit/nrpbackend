@@ -27,7 +27,7 @@ from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException, \
-    NRPServicesWrongUserException
+    NRPServicesWrongUserException, NRPServicesDuplicateNameException
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
 __author__ = 'LucGuyot, DanielPeppicelli'
@@ -120,6 +120,65 @@ class SimulationTransferFunctions(Resource):
 
         return dict(data=transfer_functions), 200
 
+    @swagger.operation(
+        notes='Adds a new transfer function.',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "sim_id",
+                "required": True,
+                "description": "The ID of the simulation whose transfer function will be modified",
+                "paramType": "path",
+                "dataType": int.__name__
+            },
+            {
+                "name": "source",
+                "description": "The transfer function source code to patch",
+                "required": True,
+                "paramType": "body",
+                "dataType": str.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 403,
+                "message": "Transfer function name already exists"
+            },
+            {
+                "code": 200,
+                "message": "Success. The code was successfully patched"
+            }
+        ]
+    )
+    def post(self, sim_id):
+        """
+        Adds a new transfer function
+
+        :param sim_id: The simulation ID
+        """
+        simulation = _get_simulation_or_abort(sim_id)
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            raise NRPServicesWrongUserException()
+
+        transfer_function_source = request.data
+
+        error_message = simulation.cle.add_simulation_transfer_function(transfer_function_source)
+        if error_message and "duplicate" in error_message:
+            raise NRPServicesDuplicateNameException(
+                "Transfer function patch failed: "
+                + error_message + "\n"
+                + "Updated source:\n"
+                + str(transfer_function_source)
+            )
+        elif error_message:
+            raise NRPServicesTransferFunctionException(
+                "Adding a new Transfer Function failed: "
+                + error_message + "\n"
+                + "Updated source:\n"
+                + str(transfer_function_source)
+            )
+        return 200
+
 
 class SimulationTransferFunction(Resource):
     """
@@ -161,6 +220,10 @@ class SimulationTransferFunction(Resource):
                 "message": "The simulation was not found"
             },
             {
+                "code": 403,
+                "message": "Transfer function name already exists"
+            },
+            {
                 "code": 400,
                 "message": "The source code is invalid"
             },
@@ -183,11 +246,17 @@ class SimulationTransferFunction(Resource):
             raise NRPServicesWrongUserException()
 
         transfer_function_source = request.data
-        error_message = simulation.cle.set_simulation_transfer_function(
-            transfer_function_name,
-            transfer_function_source
-        )
-        if error_message:
+        error_message = simulation.cle.edit_simulation_transfer_function(
+            transfer_function_name, transfer_function_source)
+
+        if error_message and "duplicate" in error_message:
+            raise NRPServicesDuplicateNameException(
+                "Transfer function patch failed: "
+                + error_message + "\n"
+                + "Updated source:\n"
+                + str(transfer_function_source)
+            )
+        elif error_message:
             raise NRPServicesTransferFunctionException(
                 "Transfer function patch failed: "
                 + error_message + "\n"

@@ -15,7 +15,7 @@ import multiprocessing
 from hbp_nrp_backend import NRPServicesGeneralException, NRPServicesClientErrorException, \
     NRPServicesStateException, NRPServicesTransferFunctionException, \
     NRPServicesStateMachineException, NRPServicesWrongUserException, \
-    NRPServicesUnavailableROSService
+    NRPServicesUnavailableROSService, NRPServicesDuplicateNameException
 
 
 class NRPServicesDatabaseException(NRPServicesGeneralException):

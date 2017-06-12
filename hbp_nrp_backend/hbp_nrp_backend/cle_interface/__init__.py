@@ -15,8 +15,10 @@ SERVICE_SIM_STATE_ID = lambda sim_id: '/%s/%d/state' % (ROS_CLE_NODE_NAME, sim_i
 SERVICE_SIM_EXTEND_TIMEOUT_ID = lambda sim_id: '/%s/%d/extend_timeout' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_TRANSFER_FUNCTIONS = lambda sim_id: \
     '/%s/%d/get_transfer_functions' % (ROS_CLE_NODE_NAME, sim_id)
-SERVICE_SET_TRANSFER_FUNCTION = lambda sim_id: \
-    '/%s/%d/set_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_ADD_TRANSFER_FUNCTION = lambda sim_id: \
+    '/%s/%d/add_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_EDIT_TRANSFER_FUNCTION = lambda sim_id: \
+    '/%s/%d/edit_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_DELETE_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/delete_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_BRAIN = lambda sim_id: '/%s/%d/get_brain' % (ROS_CLE_NODE_NAME, sim_id)

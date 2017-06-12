@@ -40,7 +40,7 @@ class TestSimulationTransferFunctions(RestTest):
         simulations.append(Simulation(1, 'experiment_1', None, 'untrusted-owner', 'local', 'created'))
         self.sim = simulations[0]
         self.sim.cle = MagicMock()
-        self.sim.cle.set_simulation_transfer_function = MagicMock(return_value='')
+        self.sim.cle.edit_simulation_transfer_function = MagicMock(return_value='')
 
     def test_get_tf_name(self):
         self.assertEqual(None, get_tf_name(" not valid :)"))
@@ -67,10 +67,10 @@ class TestSimulationTransferFunctions(RestTest):
 
     def test_simulation_transfer_function_put(self):
         response = self.client.put('/simulation/0/transfer-functions/incredible_tf_12')
-        self.assertEqual(self.sim.cle.set_simulation_transfer_function.call_count, 1)
+        self.assertEqual(self.sim.cle.edit_simulation_transfer_function.call_count, 1)
         self.assertEqual(response.status_code, 200)
 
-        self.sim.cle.set_simulation_transfer_function.return_value = "error"
+        self.sim.cle.edit_simulation_transfer_function.return_value = "error"
         response = self.client.put('/simulation/0/transfer-functions/stunning_tf_34')
         self.assertRaises(NRPServicesTransferFunctionException)
         self.assertEqual(response.status_code, 400)

@@ -1,3 +1,5 @@
+# pylint: disable=C0302
+
 # ---LICENSE-BEGIN - DO NOT CHANGE OR MOVE THIS HEADER
 # This file is part of the Neurorobotics Platform software
 # Copyright (C) 2014,2015,2016,2017 Human Brain Project
@@ -42,11 +44,10 @@ from RestrictedPython import compile_restricted
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
-from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
-    TOPIC_STATUS, TOPIC_CLE_ERROR, SERVICE_SIM_RESET_ID, \
-    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, SERVICE_SET_BRAIN, \
-    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
+from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, TOPIC_STATUS, TOPIC_CLE_ERROR, \
+    SERVICE_SIM_RESET_ID, SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
+    SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
+    SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
 from hbp_nrp_cleserver.server import ros_handler
@@ -63,7 +64,6 @@ import dateutil.parser as datetime_parser
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
-
 
 # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
 # information that is useful to know for the user.
@@ -113,7 +113,8 @@ class ROSCLEServer(object):
         self.__service_reset = None
         self.__service_extend_timeout = None
         self.__service_get_transfer_functions = None
-        self.__service_set_transfer_function = None
+        self.__service_add_transfer_function = None
+        self.__service_edit_transfer_function = None
         self.__service_get_structured_transfer_functions = None
         self.__service_set_structured_transfer_function = None
         self.__service_delete_transfer_function = None
@@ -129,16 +130,12 @@ class ROSCLEServer(object):
         self.__gzserver = gzserver
 
         self.__simulation_id = sim_id
-        self.__ros_status_pub = rospy.Publisher(
-            TOPIC_STATUS,
-            String,
-            queue_size=10  # Not expecting more that 10hz
-        )
-        self.__ros_cle_error_pub = rospy.Publisher(
-            TOPIC_CLE_ERROR,
-            CLEError,
-            queue_size=10  # Not expecting more that 10hz
-        )
+
+        # Not expecting more that 10hz
+        self.__ros_status_pub = rospy.Publisher(TOPIC_STATUS, String, queue_size=10)
+
+        # Not expecting more that 10hz
+        self.__ros_cle_error_pub = rospy.Publisher(TOPIC_CLE_ERROR, CLEError, queue_size=10)
 
         self.__current_task = None
         self.__current_subtask_count = 0
@@ -162,14 +159,15 @@ class ROSCLEServer(object):
         """
         Publishes an error message
 
-        :param severity: The severity of the error
         :param source_type: The module the error message comes from, e.g. "Transfer Function"
         :param error_type: The error type, e.g. "Compile"
         :param message: The error message description, e.g. unexpected indent
+        :param severity: The severity of the error
         :param function_name: The function name, if available
-        :param line_number: The line number where the error ocurred
+        :param line_number: The line number where the error occurred
         :param offset: The offset
         :param line_text: The text of the line causing the error
+        :param file_name:
         """
         if severity >= CLEError.SEVERITY_ERROR:
             logger.exception("Error in {0} ({1}): {2}".format(source_type, error_type, message))
@@ -229,9 +227,14 @@ class ROSCLEServer(object):
             self.__get_transfer_function_sources
         )
 
-        self.__service_set_transfer_function = rospy.Service(
-            SERVICE_SET_TRANSFER_FUNCTION(self.__simulation_id), srv.SetTransferFunction,
-            self.__set_transfer_function
+        self.__service_add_transfer_function = rospy.Service(
+            SERVICE_ADD_TRANSFER_FUNCTION(self.__simulation_id), srv.AddTransferFunction,
+            self.__add_transfer_function
+        )
+
+        self.__service_edit_transfer_function = rospy.Service(
+            SERVICE_EDIT_TRANSFER_FUNCTION(self.__simulation_id), srv.EditTransferFunction,
+            self.__edit_transfer_function
         )
 
         self.__service_get_structured_transfer_functions = rospy.Service(
@@ -291,8 +294,8 @@ class ROSCLEServer(object):
         Get the remaining time of the simulation
         """
         if self.__timeout is not None:
-            #pylint: disable=E1103
-            #false positive
+            # pylint: disable=E1103
+            # false positive
             remaining = (self.__timeout - datetime.datetime.now(self.__timeout.tzinfo)) \
                 .total_seconds()
             # pylint: enable=E1103
@@ -307,11 +310,11 @@ class ROSCLEServer(object):
         """
         Gets the populations available in the neural network
         """
-        return_val = srv.GetPopulationsResponse([
-            PopulationInfo(str(p.name), str(p.celltype),
-                           ROSCLEServer.__convert_parameters(p.parameters), p.gids, p.indices)
-            for p in self.__cle.bca.get_populations()
-        ])
+        return_val = srv.GetPopulationsResponse([PopulationInfo(str(p.name), str(p.celltype),
+                                                                ROSCLEServer.__convert_parameters(
+                                                                    p.parameters), p.gids,
+                                                                p.indices)
+                                                 for p in self.__cle.bca.get_populations()])
         return return_val
 
     # pylint: disable=unused-argument, no-self-use
@@ -319,10 +322,9 @@ class ROSCLEServer(object):
         """
         Return the recorder file paths along with the name wanted by the user
         """
-        return srv.GetCSVRecordersFilesResponse([
-            CSVRecordedFile(recorded_file[0], recorded_file[1])
-            for recorded_file in tf_framework.dump_csv_recorder_to_files()
-        ])
+        return srv.GetCSVRecordersFilesResponse([CSVRecordedFile(recorded_file[0], recorded_file[1])
+                                                 for recorded_file in
+                                                 tf_framework.dump_csv_recorder_to_files()])
 
     # pylint: disable=unused-argument, no-self-use
     @ros_handler
@@ -340,18 +342,14 @@ class ROSCLEServer(object):
         :param parameters: A parameter dictionary
         :return: A list of ROS-compatible neuron parameters
         """
-        return [
-            NeuronParameter(str(key), float(parameters[key]))
-            for key in parameters
-        ]
+        return [NeuronParameter(str(key), float(parameters[key])) for key in parameters]
 
     # pylint: disable=unused-argument, no-self-use
     def __get_brain(self, request):
         """
-        Returns the current neuronal network model. By default we
-        do assume that if the sources are not available, the model
-        comes from a h5 file. This has to be refined once we will
-        be more confident in the fate of the h5 files.
+        Returns the current neuronal network model. By default we do assume that if the sources are
+        not available, the model comes from a h5 file. This has to be refined once we will be more
+        confident in the fate of the h5 files.
 
         :param request: The rospy request parameter
         :return: an array compatible with the GetBrain.srv ROS service
@@ -364,12 +362,7 @@ class ROSCLEServer(object):
             data_type = "text"
             brain_code = tf_framework.get_brain_source()
 
-        return [
-            braintype,
-            brain_code,
-            data_type,
-            json.dumps(tf_framework.get_brain_populations())
-        ]
+        return [braintype, brain_code, data_type, json.dumps(tf_framework.get_brain_populations())]
 
     @staticmethod
     def findChangedStrings(list_a, list_b):
@@ -397,10 +390,11 @@ class ROSCLEServer(object):
 
     def check_population_names(self, brain_populations):
         """
-        Extracts and returns population names that were changed,
-        plus new population names from request
+        Extracts and returns population names that were changed, plus new population names from
+        request.
+
         :return: tuple with first existing names list,
-        then new names list, i.e. [old_changed, new_added]
+                 then new names list, i.e. [old_changed, new_added]
         """
         old_popls = []
         existingPopls = tf_framework.get_brain_populations()
@@ -465,7 +459,7 @@ class ROSCLEServer(object):
                     tf.source = modified_source
 
     def change_transfer_functions(self, change_population, old_changed, new_added,
-                                    transferFunctions):
+                                  transferFunctions):
         """
         Modifies population names. Returns a value if needs user input.
 
@@ -474,6 +468,7 @@ class ROSCLEServer(object):
         :param new_added: A list of new population names
         :param transferFunctions: The transfer functions to which the changes should be applied to
         """
+
         for changed_i in range(len(old_changed)):
             r = self.change_transfer_function_for_population(change_population,
                                                              str(old_changed[changed_i]),
@@ -484,29 +479,28 @@ class ROSCLEServer(object):
 
     def __try_set_brain(self, request):
         """
-        Tries set the neuronal network according to the given request
-        If it fails, it restores previous neuronal network
+        Tries set the neuronal network according to the given request. If it fails, it restores
+        the previous neuronal network.
 
         :param request: The mandatory rospy request parameter
         """
         previous_valid_brain = self.__get_brain(None)
         returnValue = self.__set_brain(request.brain_populations, request.brain_type,
-                                        request.brain_data, request.data_type,
-                                        request.change_population)
+                                       request.brain_data, request.data_type,
+                                       request.change_population)
 
         if returnValue[0] != "":
             # failed to set new brain, we re set previous valid brain
             self.__set_brain(previous_valid_brain[3], previous_valid_brain[0],
-                                            previous_valid_brain[1], previous_valid_brain[2],
-                                            SetBrainRequest.ASK_RENAME_POPULATION)
+                             previous_valid_brain[1], previous_valid_brain[2],
+                             SetBrainRequest.ASK_RENAME_POPULATION)
         return returnValue
 
     def __set_brain(self, brain_populations, brain_type, brain_data, data_type, change_population):
         """
         Sets the neuronal network according to the given parameters
         """
-
-        #pylint: disable-msg=R0914
+        # pylint: disable-msg=R0914
         try:
             [old_changed, new_added] = self.check_population_names(brain_populations)
             returnValue = ["", 0, 0, 0]
@@ -529,8 +523,7 @@ class ROSCLEServer(object):
                 # Member added by transitions library
                 # pylint: disable=no-member
                 self.__lifecycle.paused()
-            with NamedTemporaryFile(prefix='brain', suffix='.' +
-                                    brain_type, delete=False) as tmp:
+            with NamedTemporaryFile(prefix='brain', suffix='.' + brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
                     if data_type == "text":
                         brain_file.write(brain_data)
@@ -565,54 +558,91 @@ class ROSCLEServer(object):
         arr = numpy.asarray([tf.source.encode('UTF-8') for tf in tfs])
         return arr
 
-    def __set_transfer_function(self, request):
+    def __check_duplicate_tf_name(self, tf_name):
         """
-        Patch a transfer function
+        Internal helper to check whether a transfer function name already exists.
+
+        :param tf_name: transfer function name to be checked.
+        :return: Raises a ValueError if name already exists. Returns nothing otherwise.
+        """
+
+        tf_names = []
+        for tf in self.__get_transfer_function_sources(None):
+            tf_names.append(self.get_tf_name(tf)[1])
+
+        if tf_name in tf_names:
+            raise ValueError("Duplicate definition name")
+
+    def __add_transfer_function(self, request):
+        """
+        Adds a new transfer function
+
+        :param request: The ROS Service request message (cle_ros_msgs.srv.AddTransferFunction)
+        :return: empty string for a successful compilation in restricted mode
+                 (executed synchronously), an error message otherwise.
+        """
+        return self.__set_transfer_function(request, True)
+
+    def __edit_transfer_function(self, request):
+        """
+        Modifies an existing transfer function
 
         :param request: The mandatory rospy request parameter
         :return: empty string for a successful compilation in restricted mode
-                (executed synchronously),
-                 an error message otherwise.
+                 (executed synchronously), an error message otherwise.
         """
+        return self.__set_transfer_function(request, False)
 
-        original_name = request.transfer_function_name
-        # Delete synchronously the original if needed
-        if original_name:
-            tf_framework.delete_transfer_function(original_name)
+    # pylint: disable=R0911
+    def __set_transfer_function(self, request, new):
+        """
+        Patch a transfer function. This method is called when adding or editing a transfer function.
 
-        # Update transfer function's source code
+        :param request: The mandatory rospy request parameter
+        :param new: A boolean indicating whether a transfer function is being added or modified.
+        :return: empty string for a successful compilation in restricted mode
+                 (executed synchronously), an error message otherwise.
+        """
         new_source = textwrap.dedent(request.transfer_function_source)
+        logger.info("About to compile transfer function with the following python code: \n"
+                    + repr(new_source))
 
-        # Check whether the function has a single definition name
-        logger.info(
-            "About to compile transfer function originally named "
-            + original_name + "\n"
-            + "with the following python code: \n"
-            + repr(new_source)
-        )
-        m = re.findall(r"(?:\n|^)def\s+(\w+)\s*\(", new_source)
-        if len(m) != 1:
-            error_msg = original_name
-            if len(m) == 0:
-                error_msg += " has no definition name."
-            else:
-                error_msg += " has multiple definition names."
-            error_msg += " Compilation aborted"
+        tf_name = self.get_tf_name(new_source)
+        if tf_name[0]:
+            new_name = tf_name[1]
+        else:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "NoOrMultipleNames",
-                               error_msg,
-                               severity=CLEError.SEVERITY_ERROR, function_name=original_name)
-            return error_msg
+                               tf_name[1], severity=CLEError.SEVERITY_ERROR)
+            return tf_name[1]
+
+        if not new:
+            original_name = request.transfer_function_name
+            # Delete synchronously the original if needed
+            if original_name:
+                tf_framework.delete_transfer_function(original_name)
+        else:
+            original_name = None
+
+        # Make sure function name is not a duplicate
+        try:
+            self.__check_duplicate_tf_name(new_name)
+        except ValueError:
+            message = "duplicate Transfer Function name"
+            # Select the correct function to highlight
+            function_name = new_name if original_name is None else original_name
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading",
+                               "Duplicate Definition Name", function_name=function_name)
+            return message
 
         # Compile (synchronously) transfer function's new code in restricted mode
-        new_name = m[0]
         new_code = None
         try:
             new_code = compile_restricted(new_source, '<string>', 'exec')
         except SyntaxError as e:
             message = "Syntax Error while compiling the updated" \
-                + " transfer function named " + new_name \
-                + " in restricted mode.\n" \
-                + str(e)
+                      + " transfer function named " + new_name \
+                      + " in restricted mode.\n" \
+                      + str(e)
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Compile", str(e),
                                severity=CLEError.SEVERITY_ERROR, function_name=new_name,
                                line_number=e.lineno, offset=e.offset, line_text=e.text,
@@ -637,6 +667,24 @@ class ROSCLEServer(object):
                                severity=CLEError.SEVERITY_CRITICAL, function_name=new_name)
             return e.message
         return ""
+
+    @staticmethod
+    def get_tf_name(source):
+        """
+        Check whether the function has a single definition name
+
+        :param source: Transfer function source code
+        :return: True and Function name if found, False and error message if none or multiple found
+        """
+        m = re.findall(r"(?:\n|^)def\s+(\w+)\s*\(", source)
+        if len(m) != 1:
+            if len(m) == 0:
+                error_msg = "New Transfer Function has no definition name."
+            else:
+                error_msg = "New Transfer Function has multiple definition names."
+            error_msg += " Compilation aborted"
+            return False, error_msg
+        return True, m[0]
 
     def __extend_timeout(self, request):
         """
@@ -673,15 +721,12 @@ class ROSCLEServer(object):
 
         :param request: The mandatory rospy request parameter
         :return: empty string for a successful compilation in restricted mode
-                (executed synchronously),
-                 an error message otherwise.
+                 (executed synchronously), an error message otherwise.
         """
-        set_tf_request = srv.SetTransferFunctionRequest(
-            transfer_function_name=request.transfer_function.name,
-            transfer_function_source=StructuredTransferFunction
-                .generate_code_from_structured_tf(request.transfer_function)
-        )
-        return self.__set_transfer_function(set_tf_request)
+        return self.__set_transfer_function(request.transfer_function.name,
+                                            StructuredTransferFunction.
+                                            generate_code_from_structured_tf(request.
+                                                                             transfer_function))
 
     def __delete_transfer_function(self, request):
         """
@@ -735,7 +780,7 @@ class ROSCLEServer(object):
         """
 
         # the cle and services are initialized in prepare_simulation, which is not
-        # guaranteed to have occured before shutdown is called
+        # guaranteed to have occurred before shutdown is called
         if self.__cle is not None:
             logger.info("Shutting down the closed loop service")
             self.__cle.shutdown()
@@ -747,8 +792,10 @@ class ROSCLEServer(object):
             logger.info("Shutting down get_transfer_functions service")
             self.__service_get_transfer_functions.shutdown()
             self.__service_get_structured_transfer_functions.shutdown()
+            logger.info("Shutting down add_transfer_function service")
+            self.__service_add_transfer_function.shutdown()
             logger.info("Shutting down set_transfer_function services")
-            self.__service_set_transfer_function.shutdown()
+            self.__service_edit_transfer_function.shutdown()
             self.__service_set_structured_transfer_function.shutdown()
             logger.info("Shutting down delete_transfer_function services")
             self.__service_delete_transfer_function.shutdown()
@@ -802,7 +849,7 @@ class ROSCLEServer(object):
         """
         Sends a status notification that the current task is updated with a new subtask.
 
-        :param: subtask_name: Title of the first subtask. Could be empty
+        :param: subtask_name: Title of the first subtask. Could be empt
                 (example: loading Virtual Room).
         :param: update_progress: Boolean indicating if the index of the current subtask
                 should be updated (usually yes).
@@ -860,7 +907,7 @@ class ROSCLEServer(object):
             neurons_conf = request.populations
             network_conf_orig = {
                 p.name: self._get_population_value(p) for p in neurons_conf
-            }
+                }
             self.__cle.reset_brain(brain_temp_path, network_conf_orig)
         else:
             self.__cle.reset_brain()
@@ -879,7 +926,7 @@ class ROSCLEServer(object):
             neurons_conf = request.populations
             network_conf_orig = {
                 p.name: self._get_population_value(p) for p in neurons_conf
-            }
+                }
             with self.task_notifier("Resetting the simulation", ""):
                 self.notify_current_task("Restoring the 3D world", False, True)
                 self.__cle.reset_world(sdf_world_string)
@@ -947,7 +994,6 @@ class ROSCLEServer(object):
 
     @contextlib.contextmanager
     def task_notifier(self, task_name, subtask_name):
-
         """
         Task notifier context manager
 
@@ -955,9 +1001,7 @@ class ROSCLEServer(object):
         :param subtask_name:
         """
 
-        self.notify_start_task(task_name, subtask_name,
-                               number_of_subtasks=0,
-                               block_ui=True)
+        self.notify_start_task(task_name, subtask_name, number_of_subtasks=0, block_ui=True)
         try:
             yield
         finally:

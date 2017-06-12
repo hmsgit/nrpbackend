@@ -214,8 +214,8 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                            any_order=True)
         handle = m()
         handle.write.assert_has_calls([call('some_content1'),
-                                 call('some_content2'),
-                                 call('some_content3')])
+                                       call('some_content2'),
+                                       call('some_content3')])
         neurorobotic_collab_client.find_file_in_collab.assert_called_with()
         self.assertEqual(result,
             {

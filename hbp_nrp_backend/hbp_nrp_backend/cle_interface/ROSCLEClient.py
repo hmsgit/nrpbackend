@@ -29,7 +29,7 @@ import rospy
 # in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
-    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
+    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
@@ -147,6 +147,7 @@ class ROSCLEClient(object):
     def __init__(self, sim_id):
         """
         Create the wrapper client
+
         :param sim_id: The simulation id
         """
         self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), ResetSimulation,
@@ -158,14 +159,20 @@ class ROSCLEClient(object):
         self.__cle_get_transfer_functions = ROSCLEServiceWrapper(
             SERVICE_GET_TRANSFER_FUNCTIONS(sim_id), srv.GetTransferFunctions, self)
 
-        self.__cle_set_transfer_function = ROSCLEServiceWrapper(
-            SERVICE_SET_TRANSFER_FUNCTION(sim_id), srv.SetTransferFunction, self)
+        self.__cle_add_transfer_function = ROSCLEServiceWrapper(
+            SERVICE_ADD_TRANSFER_FUNCTION(sim_id), srv.AddTransferFunction, self)
+
+        self.__cle_edit_transfer_function = ROSCLEServiceWrapper(
+            SERVICE_EDIT_TRANSFER_FUNCTION(sim_id), srv.EditTransferFunction, self)
+
         self.__cle_get_structured_transfer_functions = ROSCLEServiceWrapper(
             SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(sim_id),
             srv.GetStructuredTransferFunctions, self)
+
         self.__cle_set_structured_transfer_function = ROSCLEServiceWrapper(
             SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(sim_id),
             srv.SetStructuredTransferFunction, self)
+
         self.__cle_delete_transfer_function = ROSCLEServiceWrapper(
             SERVICE_DELETE_TRANSFER_FUNCTION(sim_id), srv.DeleteTransferFunction, self)
 
@@ -182,7 +189,7 @@ class ROSCLEClient(object):
     def stop_communication(self, reason):
         """
         Tells the client to stop all communication to the simulation server because of the given
-         reason
+        reason
 
         :param reason: The reason why no more communication should be performed
         """
@@ -196,7 +203,7 @@ class ROSCLEClient(object):
         :param brain_path: The brain path for the reset
         :param world_sdf: The world sdf
         :param reset_type: Denotes the kind of reset the user wants to perform, details about
-            reset types and details are given in the ResetSimulation service request message.
+        reset types and details are given in the ResetSimulation service request message.
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
@@ -277,19 +284,31 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_delete_transfer_function(transfer_function_name).success
 
-    def set_simulation_transfer_function(self, transfer_function_name, transfer_function_source):
+    def edit_simulation_transfer_function(self, transfer_function_name, transfer_function_source):
         """
-        Set the simulation transfer function's source code.
+        Edit the simulation transfer function's source code.
 
-        :param transfer_function_name: Name of the transfer function to modify or create
+        :param transfer_function_name: Name of the transfer function to modify
         :param transfer_function_source: Source code of the transfer function
         :returns: "" if the call to ROS is successful,
                      a string containing an error message otherwise
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_set_transfer_function(transfer_function_name, transfer_function_source) \
+        return self.__cle_edit_transfer_function(transfer_function_name, transfer_function_source) \
                    .error_message
+
+    def add_simulation_transfer_function(self, transfer_function_source):
+        """
+        Add a new simulation transfer function source code.
+
+        :param transfer_function_source: Source code of the transfer function
+        :returns: "" if the call to ROS is successful,
+                     a string containing an error message otherwise
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        return self.__cle_add_transfer_function(transfer_function_source).error_message
 
     def get_structured_transfer_functions(self):
         """

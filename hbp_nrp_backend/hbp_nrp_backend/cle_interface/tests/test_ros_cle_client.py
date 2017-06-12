@@ -25,14 +25,14 @@ from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState
 from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
-    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_SET_TRANSFER_FUNCTION, \
+    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES
 from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation, ResetSimulationRequest
 from std_srvs.srv import Empty
-from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, SetTransferFunction, \
-    DeleteTransferFunction, GetBrain, SetBrain
+from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, EditTransferFunction, \
+    AddTransferFunction, DeleteTransferFunction, GetBrain, SetBrain
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from mock import patch, MagicMock, Mock
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
@@ -61,9 +61,9 @@ class TestROSCLEClient(unittest.TestCase):
         listened_services = [x[0][0] for x in service_wrapper_mock.call_args_list]
         expected_services = [
             SERVICE_SIM_RESET_ID(0), SERVICE_GET_TRANSFER_FUNCTIONS(0),
-            SERVICE_SET_TRANSFER_FUNCTION(0), SERVICE_DELETE_TRANSFER_FUNCTION(0),
-            SERVICE_GET_BRAIN(0), SERVICE_SET_BRAIN(0), SERVICE_GET_POPULATIONS(0),
-            SERVICE_GET_CSV_RECORDERS_FILES(0)
+            SERVICE_EDIT_TRANSFER_FUNCTION(0), SERVICE_ADD_TRANSFER_FUNCTION(0),
+            SERVICE_DELETE_TRANSFER_FUNCTION(0), SERVICE_GET_BRAIN(0), SERVICE_SET_BRAIN(0),
+            SERVICE_GET_POPULATIONS(0), SERVICE_GET_CSV_RECORDERS_FILES(0)
         ]
         self.assertNotIn(False, [x in listened_services for x in expected_services])
 
@@ -119,20 +119,35 @@ class TestROSCLEClient(unittest.TestCase):
         client.stop_communication("Test stop")
         self.assertEqual([], client.get_simulation_transfer_functions())
 
-    def test_set_simulation_transfer_function(self):
-        msg = SetTransferFunction()
+    def test_add_simulation_transfer_function(self):
+        msg = AddTransferFunction()
+        resp = msg._response_class(error_message="Some error message")
+
+        client = ROSCLEClient.ROSCLEClient(0)
+        client._ROSCLEClient__cle_add_transfer_function = MagicMock(return_value=resp)
+        self.assertEqual(
+            client.add_simulation_transfer_function("def tf_1(): \n  return 1"),
+            resp.error_message
+        )
+
+        client.stop_communication("Test stop")
+        with self.assertRaises(ROSCLEClientException):
+            client.add_simulation_transfer_function("def tf_1(): \n return 1")
+
+    def test_edit_simulation_transfer_function(self):
+        msg = EditTransferFunction()
         resp = msg._response_class(error_message="Some error message")
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        client._ROSCLEClient__cle_set_transfer_function = MagicMock(return_value=resp)
+        client._ROSCLEClient__cle_edit_transfer_function = MagicMock(return_value=resp)
         self.assertEquals(
-            client.set_simulation_transfer_function("tf_1", "def tf_1(): \n return 1"),
+            client.edit_simulation_transfer_function("tf_1", "def tf_1(): \n return 1"),
             resp.error_message)
 
         client.stop_communication("Test stop")
         with self.assertRaises(ROSCLEClientException):
-            client.set_simulation_transfer_function("tf_1", "def tf_1(): \n return 1")
+            client.edit_simulation_transfer_function("tf_1", "def tf_1(): \n return 1")
 
     def test_delete_simulation_transfer_function(self):
         msg = DeleteTransferFunction()
@@ -149,7 +164,7 @@ class TestROSCLEClient(unittest.TestCase):
     def test_get_brain(self):
         msg = GetBrain()
         resp = msg._response_class(brain_data='the brain data', brain_type='the brain type',
-            data_type='the data type')
+                                   data_type='the data type')
 
         client = ROSCLEClient.ROSCLEClient(0)
 

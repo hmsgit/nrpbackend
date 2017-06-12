@@ -252,8 +252,7 @@ class SimulationReset(Resource):
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
 
-            error_message = sim.cle.set_simulation_transfer_function(
-                str(tf.name),
+            error_message = sim.cle.add_simulation_transfer_function(
                 str(tf_code)
             )
             if (error_message):

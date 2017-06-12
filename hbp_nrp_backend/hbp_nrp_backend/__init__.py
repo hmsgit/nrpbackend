@@ -57,13 +57,25 @@ class NRPServicesClientErrorException(NRPServicesGeneralException):
 
 class NRPServicesStateException(NRPServicesGeneralException):
     """
-    State exception class that can be used to return meaningful messages
-    to the HBP frontend code.
+    State exception class that can be used to return meaningful messages to the HBP frontend.
 
     :param message: message displayed to the end user.
     """
     def __init__(self, message):
         super(NRPServicesStateException, self).__init__(message, "Transition error", 400)
+
+
+class NRPServicesDuplicateNameException(NRPServicesGeneralException):
+    """
+    Duplicate name exception that can be used to return meaningful messages to the HBP frontend in
+    case simulation scripts (transfer-functions or state-machines) or populations contain duplicate
+    names.
+
+    :param message: message displayed to the end user.
+    """
+    def __init__(self, message):
+        super(NRPServicesDuplicateNameException, self).\
+            __init__(message, "Duplicate name error", 403)
 
 
 class NRPServicesTransferFunctionException(NRPServicesGeneralException):

@@ -120,7 +120,7 @@ class TestROSCLEServer(unittest.TestCase):
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
         self.__ros_cle_server.prepare_simulation(self.__mocked_cle)
-        self.assertEqual(12, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(13, self.__mocked_rospy.Service.call_count)
 
     def test_reset_simulation(self):
         self.__mocked_cle.is_initialized = False
@@ -315,6 +315,14 @@ class TestROSCLEServer(unittest.TestCase):
         clean_CSV_recorders_files_implementation(None)
         self.assertEqual(1, mocked_tf_framework.clean_csv_recorders_files.call_count)
 
+    def test_get_tf_name(self):
+        tf1 = "def tf1  (a,b,c):\n return"
+        tf2 = "not a tf"
+        tf3 = "def tf1(a,b,c):\ndef tf2(a):\n    return  return"
+        self.assertEqual(ROSCLEServer.ROSCLEServer.get_tf_name(tf1), (True, "tf1"))
+        self.assertEqual(ROSCLEServer.ROSCLEServer.get_tf_name(tf2), (False, "New Transfer Function has no definition name. Compilation aborted"))
+        self.assertEqual(ROSCLEServer.ROSCLEServer.get_tf_name(tf3), (False, "New Transfer Function has multiple definition names. Compilation aborted"))
+
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_get_transfer_functions(self, mocked_tf_framework):
         tf = [MagicMock(), MagicMock()]
@@ -332,54 +340,53 @@ class TestROSCLEServer(unittest.TestCase):
         mocked_tf_framework.set_transfer_function = MagicMock(return_value=None)
         mocked_tf_framework.delete_transfer_function = MagicMock()
         ros_callbacks = self.__get_handlers_for_testing_main()
-        set_transfer_function_handler = ros_callbacks['set_transfer_function']
+        add_transfer_function_handler = ros_callbacks['add_transfer_function']
         request = MagicMock()
         request.transfer_function_name = "tf_0"
         request.transfer_function_source = "def tf0(): \n return 0"
-        response = set_transfer_function_handler(request)
-        mocked_tf_framework.delete_transfer_function.assert_called_once_with("tf_0")
+        response = add_transfer_function_handler(request)
         self.assertEqual("", response)
 
         mocked_tf_framework.delete_transfer_function.reset_mock()
         request.transfer_function_name = ""
         request.transfer_function_source = "def tf0(): \n return 0"
-        response = set_transfer_function_handler(request)
+        response = add_transfer_function_handler(request)
         self.assertEqual(0, mocked_tf_framework.delete_transfer_function.call_count)
         self.assertEqual("", response)
 
         request.transfer_function_name = "tf_1"
         request.transfer_function_source = "def (): \n return -1"
-        response = set_transfer_function_handler(request)
+        response = add_transfer_function_handler(request)
         self.assertIn("no definition name", response)
 
         request.transfer_function_name = "tf_2"
         request.transfer_function_source = "def tf_2(): \n return -1 undefined"
-        response = set_transfer_function_handler(request)
+        response = add_transfer_function_handler(request)
         self.assertIn("invalid syntax", response)
         self.assertIn("line 2", response)
 
         request.transfer_function_name = "tf_3"
         request.transfer_function_source = "def tf_3_a(): \n\treturn -1\ndef tf_3_b(): \n\treturn -2"
-        response = set_transfer_function_handler(request)
+        response = add_transfer_function_handler(request)
         self.assertIn("multiple definition names", response)
 
         with patch('hbp_nrp_cleserver.server.ROSCLEServer.compile_restricted') as compile_restricted:
             request.transfer_function_name = "tf_4"
             request.transfer_function_source = "def tf_4(): \n return 0"
             compile_restricted.side_effect = Exception("foo")
-            response = set_transfer_function_handler(request)
+            response = add_transfer_function_handler(request)
             self.assertEqual("foo", response)
 
         mocked_tf_framework.set_transfer_function.side_effect = Exception("bar")
         self.__ros_cle_server._ROSCLEServer__lifecycle = Mock()
-        response = set_transfer_function_handler(request)
+        response = add_transfer_function_handler(request)
         self.assertEqual("bar", response)
 
         mocked_tf_framework.set_transfer_function.reset_mock()
         name ="tf_3_a"
         request.transfer_function_name = name
         request.transfer_function_source = "def tf_3_a(): \n\tdef tf_3_b(): \n\t\treturn -2\n\treturn -1"
-        response = set_transfer_function_handler(request)
+        response = add_transfer_function_handler(request)
         assert name in mocked_tf_framework.set_transfer_function.call_args[0]
         self.assertNotIn("multiple definition names", response)
 
@@ -398,7 +405,7 @@ class TestROSCLEServer(unittest.TestCase):
         mock_tf.params = []
         mock_tf.source = "tf_source node_name"
         tfs = [mock_tf]
-        ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(MagicMock(),MagicMock(), MagicMock(), tfs)
+        ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(MagicMock(), MagicMock(), MagicMock(), tfs)
         # check nothing has changed
         self.assertEqual(mock_tf.source, "tf_source node_name")
 
@@ -461,23 +468,24 @@ class TestROSCLEServer(unittest.TestCase):
         b = self.__ros_cle_server._ROSCLEServer__current_task = None
         c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
         d = self.__ros_cle_server._ROSCLEServer__service_extend_timeout = MagicMock()
-        e = self.__ros_cle_server._ROSCLEServer__service_set_transfer_function = MagicMock()
-        f = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
-        g = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
-        h = self.__ros_cle_server._ROSCLEServer__service_get_populations = MagicMock()
-        i = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files = MagicMock()
-        j = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
-        k = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = MagicMock()
-        l = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = MagicMock()
-        m = self.__ros_cle_server._ROSCLEServer__service_delete_transfer_function = MagicMock()
-        n = self.__ros_cle_server._ROSCLEServer__ros_cle_error_pub = MagicMock()
-        o = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
+        e = self.__ros_cle_server._ROSCLEServer__service_add_transfer_function = MagicMock()
+        f = self.__ros_cle_server._ROSCLEServer__service_edit_transfer_function = MagicMock()
+        g = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
+        h = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
+        i = self.__ros_cle_server._ROSCLEServer__service_get_populations = MagicMock()
+        j = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files = MagicMock()
+        k = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
+        l = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = MagicMock()
+        m = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = MagicMock()
+        n = self.__ros_cle_server._ROSCLEServer__service_delete_transfer_function = MagicMock()
+        o = self.__ros_cle_server._ROSCLEServer__ros_cle_error_pub = MagicMock()
+        p = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
 
         self.__ros_cle_server.shutdown()
-        for x in [a, c, d, e, f, g, h, i, j, k, l, m, z]:
+        for x in [a, c, d, e, f, g, h, i, j, k, l, m, n, z]:
             self.assertEquals(x.shutdown.call_count, 1)
-        self.assertEquals(n.unregister.call_count, 1)
         self.assertEquals(o.unregister.call_count, 1)
+        self.assertEquals(p.unregister.call_count, 1)
 
     @log_capture(level=logging.WARNING)
     def test_notify_current_task(self, logcapture):
