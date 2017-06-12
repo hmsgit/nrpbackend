@@ -19,7 +19,7 @@
 # ./exp_conf_api_gen.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:e455c55bde4037492ee2ed5fe3b59ed8c44bb0d3
-# Generated 2017-05-31 09:57:31.957648 by PyXB version 1.2.4 using Python 2.7.12.final.0
+# Generated 2017-06-12 09:04:35.770618 by PyXB version 1.2.4 using Python 2.7.12.final.0
 # Namespace http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig
 
 from __future__ import unicode_literals
@@ -33,7 +33,7 @@ import sys
 import pyxb.utils.six as _six
 
 # Unique identifier for bindings created at the same time
-_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:ccb6f694-45d6-11e7-9862-847beb4693fd')
+_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:648286ea-4f3d-11e7-af17-847beb4693fd')
 
 # Version of PyXB used to generate the bindings
 _PyXBVersion = '1.2.4'
@@ -133,18 +133,6 @@ Conf_Type_Enumeration._CF_enumeration = pyxb.binding.facets.CF_enumeration(value
 Conf_Type_Enumeration.n3d_settings = Conf_Type_Enumeration._CF_enumeration.addEnumeration(unicode_value='3d-settings', tag='n3d_settings')
 Conf_Type_Enumeration._InitializeFacetMap(Conf_Type_Enumeration._CF_enumeration)
 Namespace.addCategoryObject('typeBinding', 'Conf_Type_Enumeration', Conf_Type_Enumeration)
-
-# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}BrainProcesses
-class BrainProcesses (pyxb.binding.datatypes.integer):
-
-    """An atomic simple type."""
-
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'BrainProcesses')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 98, 4)
-    _Documentation = None
-BrainProcesses._CF_minInclusive = pyxb.binding.facets.CF_minInclusive(value_datatype=BrainProcesses, value=pyxb.binding.datatypes.integer(1))
-BrainProcesses._InitializeFacetMap(BrainProcesses._CF_minInclusive)
-Namespace.addCategoryObject('typeBinding', 'BrainProcesses', BrainProcesses)
 
 # Union simple type: {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}Conf_Type
 # superclasses pyxb.binding.datatypes.anySimpleType
@@ -406,6 +394,43 @@ class VisualModel (pyxb.binding.basis.complexTypeDefinition):
 Namespace.addCategoryObject('typeBinding', 'VisualModel', VisualModel)
 
 
+# Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}bibiConf with content type EMPTY
+class bibiConf (pyxb.binding.basis.complexTypeDefinition):
+    """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}bibiConf with content type EMPTY"""
+    _TypeDefinition = None
+    _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
+    _Abstract = False
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'bibiConf')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 98, 4)
+    _ElementMap = {}
+    _AttributeMap = {}
+    # Base type is pyxb.binding.datatypes.anyType
+    
+    # Attribute src uses Python identifier src
+    __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014ExDConfig_bibiConf_src', pyxb.binding.datatypes.string)
+    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 99, 8)
+    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 99, 8)
+    
+    src = property(__src.value, __src.set, None, None)
+
+    
+    # Attribute processes uses Python identifier processes
+    __processes = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'processes'), 'processes', '__httpschemas_humanbrainproject_euSP102014ExDConfig_bibiConf_processes', pyxb.binding.datatypes.positiveInteger, unicode_default='1')
+    __processes._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 100, 8)
+    __processes._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 100, 8)
+    
+    processes = property(__processes.value, __processes.set, None, None)
+
+    _ElementMap.update({
+        
+    })
+    _AttributeMap.update({
+        __src.name() : __src,
+        __processes.name() : __processes
+    })
+Namespace.addCategoryObject('typeBinding', 'bibiConf', bibiConf)
+
+
 # Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}RosLaunch with content type EMPTY
 class RosLaunch (pyxb.binding.basis.complexTypeDefinition):
     """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}RosLaunch with content type EMPTY"""
@@ -413,15 +438,15 @@ class RosLaunch (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'RosLaunch')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 110, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 104, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute src uses Python identifier src
     __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014ExDConfig_RosLaunch_src', pyxb.binding.datatypes.string)
-    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 111, 8)
-    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 111, 8)
+    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 105, 8)
+    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 105, 8)
     
     src = property(__src.value, __src.set, None, None)
 
@@ -441,100 +466,107 @@ class ExD_ (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ExD')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 115, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 109, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}name uses Python identifier name
-    __name = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigname', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 117, 12), )
+    __name = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigname', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 111, 12), )
 
     
     name = property(__name.value, __name.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}thumbnail uses Python identifier thumbnail
-    __thumbnail = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'thumbnail'), 'thumbnail', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigthumbnail', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12), )
+    __thumbnail = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'thumbnail'), 'thumbnail', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigthumbnail', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 112, 12), )
 
     
     thumbnail = property(__thumbnail.value, __thumbnail.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}description uses Python identifier description
-    __description = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'description'), 'description', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigdescription', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 119, 12), )
+    __description = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'description'), 'description', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigdescription', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 113, 12), )
 
     
     description = property(__description.value, __description.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}timeout uses Python identifier timeout
-    __timeout = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'timeout'), 'timeout', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigtimeout', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12), )
+    __timeout = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'timeout'), 'timeout', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigtimeout', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 114, 12), )
 
     
     timeout = property(__timeout.value, __timeout.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}configuration uses Python identifier configuration
-    __configuration = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'configuration'), 'configuration', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigconfiguration', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 121, 12), )
+    __configuration = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'configuration'), 'configuration', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigconfiguration', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 115, 12), )
 
     
     configuration = property(__configuration.value, __configuration.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}maturity uses Python identifier maturity
-    __maturity = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'maturity'), 'maturity', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigmaturity', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 122, 12), )
+    __maturity = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'maturity'), 'maturity', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigmaturity', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 116, 12), )
 
     
     maturity = property(__maturity.value, __maturity.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}environmentModel uses Python identifier environmentModel
-    __environmentModel = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'environmentModel'), 'environmentModel', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigenvironmentModel', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 123, 12), )
+    __environmentModel = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'environmentModel'), 'environmentModel', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigenvironmentModel', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 117, 12), )
 
     
     environmentModel = property(__environmentModel.value, __environmentModel.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}visualModel uses Python identifier visualModel
-    __visualModel = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'visualModel'), 'visualModel', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigvisualModel', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 124, 12), )
+    __visualModel = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'visualModel'), 'visualModel', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigvisualModel', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12), )
 
     
     visualModel = property(__visualModel.value, __visualModel.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}bibiConf uses Python identifier bibiConf
-    __bibiConf = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'bibiConf'), 'bibiConf', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigbibiConf', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 125, 12), )
+    __bibiConf = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'bibiConf'), 'bibiConf', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigbibiConf', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 119, 12), )
 
     
     bibiConf = property(__bibiConf.value, __bibiConf.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}experimentControl uses Python identifier experimentControl
-    __experimentControl = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'experimentControl'), 'experimentControl', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigexperimentControl', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12), )
+    __experimentControl = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'experimentControl'), 'experimentControl', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigexperimentControl', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12), )
 
     
     experimentControl = property(__experimentControl.value, __experimentControl.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}experimentEvaluation uses Python identifier experimentEvaluation
-    __experimentEvaluation = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'experimentEvaluation'), 'experimentEvaluation', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigexperimentEvaluation', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12), )
+    __experimentEvaluation = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'experimentEvaluation'), 'experimentEvaluation', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigexperimentEvaluation', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12), )
 
     
     experimentEvaluation = property(__experimentEvaluation.value, __experimentEvaluation.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}cameraPose uses Python identifier cameraPose
-    __cameraPose = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'cameraPose'), 'cameraPose', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigcameraPose', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 138, 12), )
+    __cameraPose = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'cameraPose'), 'cameraPose', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigcameraPose', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12), )
 
     
     cameraPose = property(__cameraPose.value, __cameraPose.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}rosLaunch uses Python identifier rosLaunch
-    __rosLaunch = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'rosLaunch'), 'rosLaunch', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigrosLaunch', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 139, 12), )
+    __rosLaunch = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'rosLaunch'), 'rosLaunch', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigrosLaunch', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 133, 12), )
 
     
     rosLaunch = property(__rosLaunch.value, __rosLaunch.set, None, None)
+
+    
+    # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}rngSeed uses Python identifier rngSeed
+    __rngSeed = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'rngSeed'), 'rngSeed', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExD__httpschemas_humanbrainproject_euSP102014ExDConfigrngSeed', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 134, 12), )
+
+    
+    rngSeed = property(__rngSeed.value, __rngSeed.set, None, None)
 
     _ElementMap.update({
         __name.name() : __name,
@@ -549,7 +581,8 @@ class ExD_ (pyxb.binding.basis.complexTypeDefinition):
         __experimentControl.name() : __experimentControl,
         __experimentEvaluation.name() : __experimentEvaluation,
         __cameraPose.name() : __cameraPose,
-        __rosLaunch.name() : __rosLaunch
+        __rosLaunch.name() : __rosLaunch,
+        __rngSeed.name() : __rngSeed
     })
     _AttributeMap.update({
         
@@ -564,13 +597,13 @@ class ExperimentControl (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ExperimentControl')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 148, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 143, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}stateMachine uses Python identifier stateMachine
-    __stateMachine = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'stateMachine'), 'stateMachine', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExperimentControl_httpschemas_humanbrainproject_euSP102014ExDConfigstateMachine', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 145, 12), )
+    __stateMachine = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'stateMachine'), 'stateMachine', '__httpschemas_humanbrainproject_euSP102014ExDConfig_ExperimentControl_httpschemas_humanbrainproject_euSP102014ExDConfigstateMachine', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 140, 12), )
 
     
     stateMachine = property(__stateMachine.value, __stateMachine.set, None, None)
@@ -591,15 +624,15 @@ class StateMachine (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'StateMachine')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 152, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 147, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute id uses Python identifier id
     __id = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'id'), 'id', '__httpschemas_humanbrainproject_euSP102014ExDConfig_StateMachine_id', pyxb.binding.datatypes.string, required=True)
-    __id._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 153, 8)
-    __id._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 153, 8)
+    __id._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 148, 8)
+    __id._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 148, 8)
     
     id = property(__id.value, __id.set, None, None)
 
@@ -612,43 +645,6 @@ class StateMachine (pyxb.binding.basis.complexTypeDefinition):
 Namespace.addCategoryObject('typeBinding', 'StateMachine', StateMachine)
 
 
-# Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}bibiConf with content type EMPTY
-class bibiConf (pyxb.binding.basis.complexTypeDefinition):
-    """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}bibiConf with content type EMPTY"""
-    _TypeDefinition = None
-    _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
-    _Abstract = False
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'bibiConf')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 104, 4)
-    _ElementMap = {}
-    _AttributeMap = {}
-    # Base type is pyxb.binding.datatypes.anyType
-    
-    # Attribute src uses Python identifier src
-    __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014ExDConfig_bibiConf_src', pyxb.binding.datatypes.string)
-    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 105, 8)
-    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 105, 8)
-    
-    src = property(__src.value, __src.set, None, None)
-
-    
-    # Attribute processes uses Python identifier processes
-    __processes = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'processes'), 'processes', '__httpschemas_humanbrainproject_euSP102014ExDConfig_bibiConf_processes', BrainProcesses, unicode_default='1')
-    __processes._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 106, 8)
-    __processes._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 106, 8)
-    
-    processes = property(__processes.value, __processes.set, None, None)
-
-    _ElementMap.update({
-        
-    })
-    _AttributeMap.update({
-        __src.name() : __src,
-        __processes.name() : __processes
-    })
-Namespace.addCategoryObject('typeBinding', 'bibiConf', bibiConf)
-
-
 # Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}SMACHStateMachine with content type EMPTY
 class SMACHStateMachine (StateMachine):
     """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig}SMACHStateMachine with content type EMPTY"""
@@ -656,7 +652,7 @@ class SMACHStateMachine (StateMachine):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SMACHStateMachine')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 156, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 151, 4)
     _ElementMap = StateMachine._ElementMap.copy()
     _AttributeMap = StateMachine._AttributeMap.copy()
     # Base type is StateMachine
@@ -665,8 +661,8 @@ class SMACHStateMachine (StateMachine):
     
     # Attribute src uses Python identifier src
     __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014ExDConfig_SMACHStateMachine_src', pyxb.binding.datatypes.string)
-    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 159, 16)
-    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 159, 16)
+    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 154, 16)
+    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 154, 16)
     
     src = property(__src.value, __src.set, None, None)
 
@@ -686,7 +682,7 @@ class SCXMLStateMachine (StateMachine):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SCXMLStateMachine')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 164, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 159, 4)
     _ElementMap = StateMachine._ElementMap.copy()
     _AttributeMap = StateMachine._AttributeMap.copy()
     # Base type is StateMachine
@@ -702,8 +698,8 @@ class SCXMLStateMachine (StateMachine):
     
     # Attribute src uses Python identifier src
     __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014ExDConfig_SCXMLStateMachine_src', pyxb.binding.datatypes.string)
-    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 170, 14)
-    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 170, 14)
+    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 165, 14)
+    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 165, 14)
     
     src = property(__src.value, __src.set, None, None)
 
@@ -753,7 +749,7 @@ class Conf_File (pyxb.binding.basis.complexTypeDefinition):
 Namespace.addCategoryObject('typeBinding', 'Conf_File', Conf_File)
 
 
-ExD = pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'ExD'), ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 176, 4))
+ExD = pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'ExD'), ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 171, 4))
 Namespace.addCategoryObject('elementBinding', ExD.name().localName(), ExD)
 
 
@@ -834,31 +830,33 @@ VisualModel._Automaton = _BuildAutomaton_2()
 
 
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'name'), pyxb.binding.datatypes.string, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 117, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'name'), pyxb.binding.datatypes.string, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 111, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'thumbnail'), ThumbnailFile, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'thumbnail'), ThumbnailFile, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 112, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'description'), pyxb.binding.datatypes.string, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 119, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'description'), pyxb.binding.datatypes.string, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 113, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'timeout'), pyxb.binding.datatypes.double, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12), unicode_default='5'))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'timeout'), pyxb.binding.datatypes.double, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 114, 12), unicode_default='5'))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'configuration'), Conf_File, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 121, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'configuration'), Conf_File, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 115, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'maturity'), MaturityType, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 122, 12), unicode_default='development'))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'maturity'), MaturityType, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 116, 12), unicode_default='development'))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'environmentModel'), EnvironmentModel, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 123, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'environmentModel'), EnvironmentModel, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 117, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'visualModel'), VisualModel, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 124, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'visualModel'), VisualModel, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'bibiConf'), bibiConf, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 125, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'bibiConf'), bibiConf, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 119, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'experimentControl'), ExperimentControl, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'experimentControl'), ExperimentControl, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'experimentEvaluation'), ExperimentControl, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'experimentEvaluation'), ExperimentControl, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'cameraPose'), CameraPose, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 138, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'cameraPose'), CameraPose, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12)))
 
-ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'rosLaunch'), RosLaunch, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 139, 12)))
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'rosLaunch'), RosLaunch, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 133, 12)))
+
+ExD_._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'rngSeed'), pyxb.binding.datatypes.positiveInteger, scope=ExD_, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 134, 12), unicode_default='123456'))
 
 def _BuildAutomaton_3 ():
     # Remove this helper function from the namespace after it is invoked
@@ -867,79 +865,86 @@ def _BuildAutomaton_3 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12))
+    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 114, 12))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 121, 12))
+    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 115, 12))
     counters.add(cc_1)
-    cc_2 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 122, 12))
+    cc_2 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 116, 12))
     counters.add(cc_2)
-    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 124, 12))
+    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12))
     counters.add(cc_3)
-    cc_4 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12))
+    cc_4 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12))
     counters.add(cc_4)
-    cc_5 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12))
+    cc_5 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12))
     counters.add(cc_5)
-    cc_6 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 138, 12))
+    cc_6 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12))
     counters.add(cc_6)
-    cc_7 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 139, 12))
+    cc_7 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 133, 12))
     counters.add(cc_7)
+    cc_8 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 134, 12))
+    counters.add(cc_8)
     states = []
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'name')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 117, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'name')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 111, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'thumbnail')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'thumbnail')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 112, 12))
     st_1 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'description')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 119, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'description')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 113, 12))
     st_2 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_2)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'timeout')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'timeout')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 114, 12))
     st_3 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_3)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'configuration')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 121, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'configuration')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 115, 12))
     st_4 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_4)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'maturity')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 122, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'maturity')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 116, 12))
     st_5 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_5)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'environmentModel')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 123, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'environmentModel')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 117, 12))
     st_6 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_6)
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'visualModel')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 124, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'visualModel')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 118, 12))
     st_7 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_7)
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'bibiConf')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 125, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'bibiConf')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 119, 12))
     st_8 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_8)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_4, False))
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'experimentControl')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'experimentControl')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 120, 12))
     st_9 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_9)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_5, False))
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'experimentEvaluation')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'experimentEvaluation')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 126, 12))
     st_10 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_10)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_6, False))
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'cameraPose')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 138, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'cameraPose')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 132, 12))
     st_11 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_11)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_7, False))
-    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'rosLaunch')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 139, 12))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'rosLaunch')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 133, 12))
     st_12 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_12)
+    final_update = set()
+    final_update.add(fac.UpdateInstruction(cc_8, False))
+    symbol = pyxb.binding.content.ElementUse(ExD_._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'rngSeed')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 134, 12))
+    st_13 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
+    states.append(st_13)
     transitions = []
     transitions.append(fac.Transition(st_1, [
          ]))
@@ -1003,6 +1008,8 @@ def _BuildAutomaton_3 ():
          ]))
     transitions.append(fac.Transition(st_12, [
          ]))
+    transitions.append(fac.Transition(st_13, [
+         ]))
     st_8._set_transitionSet(transitions)
     transitions = []
     transitions.append(fac.Transition(st_9, [
@@ -1013,6 +1020,8 @@ def _BuildAutomaton_3 ():
         fac.UpdateInstruction(cc_4, False) ]))
     transitions.append(fac.Transition(st_12, [
         fac.UpdateInstruction(cc_4, False) ]))
+    transitions.append(fac.Transition(st_13, [
+        fac.UpdateInstruction(cc_4, False) ]))
     st_9._set_transitionSet(transitions)
     transitions = []
     transitions.append(fac.Transition(st_10, [
@@ -1021,24 +1030,34 @@ def _BuildAutomaton_3 ():
         fac.UpdateInstruction(cc_5, False) ]))
     transitions.append(fac.Transition(st_12, [
         fac.UpdateInstruction(cc_5, False) ]))
+    transitions.append(fac.Transition(st_13, [
+        fac.UpdateInstruction(cc_5, False) ]))
     st_10._set_transitionSet(transitions)
     transitions = []
     transitions.append(fac.Transition(st_11, [
         fac.UpdateInstruction(cc_6, True) ]))
     transitions.append(fac.Transition(st_12, [
         fac.UpdateInstruction(cc_6, False) ]))
+    transitions.append(fac.Transition(st_13, [
+        fac.UpdateInstruction(cc_6, False) ]))
     st_11._set_transitionSet(transitions)
     transitions = []
     transitions.append(fac.Transition(st_12, [
         fac.UpdateInstruction(cc_7, True) ]))
+    transitions.append(fac.Transition(st_13, [
+        fac.UpdateInstruction(cc_7, False) ]))
     st_12._set_transitionSet(transitions)
+    transitions = []
+    transitions.append(fac.Transition(st_13, [
+        fac.UpdateInstruction(cc_8, True) ]))
+    st_13._set_transitionSet(transitions)
     return fac.Automaton(states, counters, False, containing_state=None)
 ExD_._Automaton = _BuildAutomaton_3()
 
 
 
 
-ExperimentControl._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'stateMachine'), StateMachine, scope=ExperimentControl, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 145, 12)))
+ExperimentControl._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'stateMachine'), StateMachine, scope=ExperimentControl, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 140, 12)))
 
 def _BuildAutomaton_4 ():
     # Remove this helper function from the namespace after it is invoked
@@ -1047,12 +1066,12 @@ def _BuildAutomaton_4 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 149, 8))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 144, 8))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(ExperimentControl._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'stateMachine')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 145, 12))
+    symbol = pyxb.binding.content.ElementUse(ExperimentControl._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'stateMachine')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 140, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -1076,12 +1095,12 @@ def _BuildAutomaton_5 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 168, 16))
+    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 163, 16))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(SCXMLStateMachine._UseForTag(pyxb.namespace.ExpandedName(_Namespace_sc, 'scxml')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 168, 16))
+    symbol = pyxb.binding.content.ElementUse(SCXMLStateMachine._UseForTag(pyxb.namespace.ExpandedName(_Namespace_sc, 'scxml')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/ExDConfFile.xsd', 163, 16))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []

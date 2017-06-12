@@ -19,7 +19,7 @@
 # ./_sc.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:757c0b070fc96b1e70d6f186e818dd670f5c7db9
-# Generated 2017-05-31 09:57:31.957472 by PyXB version 1.2.4 using Python 2.7.12.final.0
+# Generated 2017-06-12 09:04:35.770398 by PyXB version 1.2.4 using Python 2.7.12.final.0
 # Namespace http://schemas.humanbrainproject.eu/SP10/2015/ExDConfig/scxml [xmlns:sc]
 
 from __future__ import unicode_literals
@@ -33,7 +33,7 @@ import sys
 import pyxb.utils.six as _six
 
 # Unique identifier for bindings created at the same time
-_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:ccb6f694-45d6-11e7-9862-847beb4693fd')
+_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:648286ea-4f3d-11e7-af17-847beb4693fd')
 
 # Version of PyXB used to generate the bindings
 _PyXBVersion = '1.2.4'

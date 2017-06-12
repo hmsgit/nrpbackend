@@ -31,6 +31,8 @@ import argparse
 import zipfile
 import tempfile
 import shutil
+import sys
+import random
 
 from RestrictedPython import compile_restricted
 
@@ -60,6 +62,7 @@ from hbp_nrp_cle.cle.ClosedLoopEngine import ClosedLoopEngine
 from hbp_nrp_cle.brainsim import instantiate_communication_adapter
 from hbp_nrp_cle.brainsim import instantiate_control_adapter
 import hbp_nrp_cle.tf_framework as nrp
+import hbp_nrp_cle.brainsim.config as brainconfig
 # End of NEST-starting imports
 
 logger = logging.getLogger(__name__)
@@ -195,6 +198,13 @@ class CLELauncher(object):
                                           number_of_subtasks=number_of_subtasks,
                                           block_ui=True)
 
+        # RNG seed for components, use config value if explicitly specified or generated a new one
+        rng_seed = self.__exd_conf.rngSeed
+        if rng_seed is None:
+            logger.warn('No RNG seed specified, generating a random value.')
+            rng_seed = random.randint(1, sys.maxint)
+        logger.info('RNG seed = %i', rng_seed)
+
         # optional roslaunch support prior to Gazebo launch
         if self.__exd_conf.rosLaunch is not None:
 
@@ -218,8 +228,11 @@ class CLELauncher(object):
         logger.info("Robot: " + robot_file)
         robot_file_abs = self._get_robot_abs_path(robot_file)
 
+        # experiment specific gzserver command line arguments
+        gzserver_args = '--seed {rng_seed}'.format(rng_seed=rng_seed)
+
         try:
-            self.gzserver.start(ros_master_uri, self.__tmp_robot_dir)
+            self.gzserver.start(ros_master_uri, self.__tmp_robot_dir, gzserver_args)
         except XvfbXvnError as exception:
             logger.error(exception)
             error = "Recoverable error occurred. Please try again. Reason: {0}".format(
@@ -281,13 +294,12 @@ class CLELauncher(object):
 
         # Create interfaces to brain
         self.__notify("Loading Nest brain simulator")
-        # control adapter
+        brainconfig.rng_seed = rng_seed
         braincontrol = instantiate_control_adapter()
-        # communication adapter
         braincomm = instantiate_communication_adapter()
+
         # Create transfer functions manager
         self.__notify("Connecting brain simulator to robot")
-        # tf manager
         tfmanager = nrp.config.active_node
 
         # set adapters
@@ -568,7 +580,6 @@ if __name__ == '__main__':  # pragma: no cover
             logger.info('Using MUSIC configuration and adapters for CLE')
             import music
 
-            import hbp_nrp_cle.brainsim.config
             from hbp_nrp_music_interface.cle.MUSICPyNNCommunicationAdapter\
                 import MUSICPyNNCommunicationAdapter
             from hbp_nrp_music_interface.cle.MUSICPyNNControlAdapter\
@@ -588,8 +599,8 @@ if __name__ == '__main__':  # pragma: no cover
             # TODO: the above calls to instantiate_{control/communication}_adapter
             #       should be generalized to allow us to specify the adapters and this
             #       backdoor specification should no longer be required
-            hbp_nrp_cle.brainsim.config.communication_adapter_type = MUSICPyNNCommunicationAdapter
-            hbp_nrp_cle.brainsim.config.control_adapter_type = MUSICPyNNControlAdapter
+            brainconfig.communication_adapter_type = MUSICPyNNCommunicationAdapter
+            brainconfig.control_adapter_type = MUSICPyNNControlAdapter
 
         # simplified launch process below from ROSCLESimulationFactory.py, avoid circular depdency
         # by importing here

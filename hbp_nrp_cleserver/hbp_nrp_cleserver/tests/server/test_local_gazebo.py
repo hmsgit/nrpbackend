@@ -55,6 +55,16 @@ class TestLocalGazeboServerInstance(unittest.TestCase):
 
     @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
     @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog')
+    def test_start_gzserver_args(self, mocked_watchdog, mocked_os):
+        self.instance.start('', None, '--seed 123456')
+        print(mocked_os.system.call_args_list)
+        mocked_os.system.assert_any_call('export GZSERVER_ARGS="--seed 123456" && ' +
+                                         config.config.get('gazebo', 'restart-cmd'))
+        self.assertTrue(mocked_watchdog.called)
+        self.assertTrue(mocked_watchdog().start.called)
+
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
+    @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog')
     def test_stop(self, mocked_watchdog, mocked_os):
         self.instance.start('')
         self.instance.stop()

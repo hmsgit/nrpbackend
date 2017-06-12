@@ -166,7 +166,7 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
         # unable to find an open Xvnc port (very unlikely), abort
         raise(XvfbXvnError("Cannot start Xvnc, no open display ports."))
 
-    def _start_gazebo(self, ros_master_uri, models_path=None):
+    def _start_gazebo(self, ros_master_uri, models_path=None, gzserver_args=None):
         """
         Start gazebo on the remote server
         """
@@ -227,10 +227,15 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
         # activate ROS python venv to launch Gazebo
         self._gazebo_remote_process.sendline('source $ROS_PYTHON_VENV/bin/activate')
 
+        # configure command line arguments for gzserver if provided
+        if gzserver_args is not None:
+            self._gazebo_remote_process.sendline('export GZSERVER_ARGS="%s"' % gzserver_args)
+
         # launch Gazebo with virtualgl, use -nodl to redirect native opengl calls to virtualgl
         notificator.info('Starting Gazebo server on the cluster node')
         self._gazebo_remote_process.sendline(
             'vglrun -nodl $GAZEBO_BIN_DIR/gzserver ' +
+            '$GZSERVER_ARGS ' +
             '--pause ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_api_plugin.so ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_paths_plugin.so ' +
@@ -251,7 +256,7 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
         # Delay starting the watchdog client by 10s (because we delay the start of the watchdog 10s)
         self._watchdog_client.start(delay=10)
 
-    def start(self, ros_master_uri, models_path=None):
+    def start(self, ros_master_uri, models_path=None, gzserver_args=None):
         """
         Start gzserver on the Lugano viz cluster
         """
@@ -259,7 +264,7 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
             self._allocate_job(reuse_nodes=False) # only one gzserver per cluster node
             self._start_fake_X()
             self._start_xvnc()
-            self._start_gazebo(ros_master_uri, models_path)
+            self._start_gazebo(ros_master_uri, models_path, gzserver_args)
             self._start_watchdog_client()
         # pylint: disable=broad-except
         except Exception:
