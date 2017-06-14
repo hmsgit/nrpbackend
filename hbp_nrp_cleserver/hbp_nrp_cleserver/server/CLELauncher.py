@@ -204,6 +204,19 @@ class CLELauncher(object):
             logger.warn('No RNG seed specified, generating a random value.')
             rng_seed = random.randint(1, sys.maxint)
         logger.info('RNG seed = %i', rng_seed)
+        # Physics engine selection from ExDConfig; pass as -e <physics_engine> to gzserver
+        physics_engine = self.__exd_conf.physicsEngine
+        physics_engine_arg = ""
+        logger.info("Looking for physicsEngine tag value in ExDConfig")
+        if physics_engine is not None:
+            logger.info("Physics engine specified in ExDConfig: " + str(repr(physics_engine)))
+            if physics_engine == "ode" or physics_engine == "opensim":
+                physics_engine_arg = " -e " + physics_engine
+            else:
+                raise Exception("Invalid physics_engine value '" + physics_engine + "' supplied.")
+        else:
+            logger.info("No physics engine specified explicitly. Using default setting 'ode'")
+            physics_engine_arg = " -e ode"
 
         # optional roslaunch support prior to Gazebo launch
         if self.__exd_conf.rosLaunch is not None:
@@ -230,8 +243,11 @@ class CLELauncher(object):
 
         # experiment specific gzserver command line arguments
         gzserver_args = '--seed {rng_seed}'.format(rng_seed=rng_seed)
+        # Pass along the physics engine command line switch
+        gzserver_args += physics_engine_arg
 
         try:
+            logger.info("gzserver arguments: " + gzserver_args)
             self.gzserver.start(ros_master_uri, self.__tmp_robot_dir, gzserver_args)
         except XvfbXvnError as exception:
             logger.error(exception)
