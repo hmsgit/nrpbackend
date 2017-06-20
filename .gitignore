@@ -21,3 +21,4 @@ CLE/
 .settings/
 __generated_experiment*
 /.coverage.hbp_nrp_commons_hbp_nrp_commons
+user_makefile

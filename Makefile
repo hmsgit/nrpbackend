@@ -26,12 +26,17 @@ verify-hbp_nrp_commons:
 
 ##### DO NOT MODIFY BELOW #####################
 
-CI_REPO?=ssh://bbpcode.epfl.ch/platform/ContinuousIntegration.git
-CI_DIR?=ContinuousIntegration
+ifeq ($(NRP_INSTALL_MODE),user)
+        include user_makefile
+else
+        CI_REPO?=ssh://bbpcode.epfl.ch/platform/ContinuousIntegration.git
+        CI_DIR?=ContinuousIntegration
 
-FETCH_CI := $(shell \
-		if [ ! -d $(CI_DIR) ]; then \
-			git clone $(CI_REPO) $(CI_DIR) > /dev/null ;\
-		fi;\
-		echo $(CI_DIR) )
-include $(FETCH_CI)/python/common_makefile
+        FETCH_CI := $(shell \
+                if [ ! -d $(CI_DIR) ]; then \
+                        git clone $(CI_REPO) $(CI_DIR) > /dev/null ;\
+                fi;\
+                echo $(CI_DIR) )
+
+        include $(FETCH_CI)/python/common_makefile
+endif
