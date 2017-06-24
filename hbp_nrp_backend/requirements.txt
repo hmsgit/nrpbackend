@@ -1,9 +1,6 @@
 # HBP requirements
-hbp-flask-restful-swagger==0.15.2
-hbp-nrp-cle==1.2.1.dev0
-hbp-nrp-cleserver==1.2.0
-hbp-nrp-excontrol==1.2.1.dev0
-hbp-service-client==0.0.2.dev1
+hbp-service-client==0.0.2.dev1  # EPFL_SPECIFIC
+bbp-client==0.3.19  # EPFL_SPECIFIC
 
 # other requirements
 lxml==3.4.0
@@ -15,6 +12,5 @@ Flask-SQLAlchemy==2.1
 Flask-Script==2.0.5
 Flask-Migrate==1.6.0
 psycopg2==2.6.1
-bbp-client==0.3.19
 timeout-decorator==0.3.2
 urllib3[secure]==1.21.1

@@ -111,12 +111,12 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         simulation = self.simulation
         try:
-            # TODO: fix dependencies so these import are not necessary anymore
-            from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-            from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import \
-                NeuroroboticsCollabClient
             using_collab_storage = simulation.context_id is not None
             if using_collab_storage:
+                # TODO: fix dependencies so these import are not necessary anymore
+                from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+                from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import \
+                NeuroroboticsCollabClient
                 client = NeuroroboticsCollabClient(
                     UserAuthentication.get_header_token(request), simulation.context_id)
                 collab_paths = client.clone_experiment_template_from_collab()
