@@ -142,11 +142,11 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
                     bibi_dom = bibi_api_gen.CreateFromDocument(bibi_file.read())
                     self.assertEqual(
                         bibi_dom.bodyModel,
-                        bibi_api_gen.SDF_Filename('model.sdf')
+                        bibi_api_gen.SDFFilename('model.sdf')
                     )
                     self.assertEqual(
                         bibi_dom.brainModel.file,
-                        bibi_api_gen.Python_Filename('my_brain.py')
+                        bibi_api_gen.PythonFilename('my_brain.py')
                     )
 
             elif each_file.endswith('.exc'):
@@ -444,11 +444,11 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
 
             self.assertEqual(
                 bibi_configuration_dom.bodyModel,
-                bibi_api_gen.SDF_Filename('model.sdf')
+                bibi_api_gen.SDFFilename('model.sdf')
             )
             self.assertEqual(
                 bibi_configuration_dom.brainModel.file,
-                bibi_api_gen.Python_Filename('my_brain.py')
+                bibi_api_gen.PythonFilename('my_brain.py')
             )
     @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.get_model_basepath')
     def test_flatten_bibi_configuration_retina(self, get_model_basepath_mock):
@@ -488,11 +488,11 @@ class TestNeuroroboticsCollabClient(unittest.TestCase):
 
             self.assertEqual(
                 bibi_configuration_dom.bodyModel,
-                bibi_api_gen.SDF_Filename('model.sdf')
+                bibi_api_gen.SDFFilename('model.sdf')
             )
             self.assertEqual(
                 bibi_configuration_dom.brainModel.file,
-                bibi_api_gen.Python_Filename('my_brain.py')
+                bibi_api_gen.PythonFilename('my_brain.py')
             )
 
     def test_populate_subfolder_in_collab(self):

@@ -19,7 +19,7 @@
 # ./hbp_nrp_commons/hbp_nrp_commons/generated/bibi_api_gen/py.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:d8bc1000793d9bf647fd97a1512e459e4ce45e64
-# Generated 2017-05-29 11:20:21.894016 by PyXB version 1.2.4 using Python 2.7.12.final.0
+# Generated 2017-06-26 10:37:50.602002 by PyXB version 1.2.4 using Python 2.7.12.final.0
 # Namespace http://schemas.humanbrainproject.eu/SP10/2014/BIBI
 
 from __future__ import unicode_literals
@@ -33,7 +33,7 @@ import sys
 import pyxb.utils.six as _six
 
 # Unique identifier for bindings created at the same time
-_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:0a410636-4450-11e7-9862-847beb4693fd')
+_GenerationUID = pyxb.utils.utility.UniqueIdentifier('urn:uuid:bd2284cc-5a4a-11e7-9cb9-e4b318398898')
 
 # Version of PyXB used to generate the bindings
 _PyXBVersion = '1.2.4'
@@ -97,77 +97,77 @@ class TimeStep (pyxb.binding.datatypes.positiveInteger):
     """An atomic simple type."""
 
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'TimeStep')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 26, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 22, 4)
     _Documentation = None
 TimeStep._CF_maxInclusive = pyxb.binding.facets.CF_maxInclusive(value_datatype=TimeStep, value=pyxb.binding.datatypes.positiveInteger(1000))
 TimeStep._InitializeFacetMap(TimeStep._CF_maxInclusive)
 Namespace.addCategoryObject('typeBinding', 'TimeStep', TimeStep)
 
-# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}SDF_Filename
-class SDF_Filename (pyxb.binding.datatypes.string):
+# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}SDFFilename
+class SDFFilename (pyxb.binding.datatypes.string):
 
     """An atomic simple type."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SDF_Filename')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 44, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SDFFilename')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 40, 4)
     _Documentation = None
-SDF_Filename._CF_pattern = pyxb.binding.facets.CF_pattern()
-SDF_Filename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.(sdf|zip)')
-SDF_Filename._InitializeFacetMap(SDF_Filename._CF_pattern)
-Namespace.addCategoryObject('typeBinding', 'SDF_Filename', SDF_Filename)
+SDFFilename._CF_pattern = pyxb.binding.facets.CF_pattern()
+SDFFilename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.(sdf|zip)')
+SDFFilename._InitializeFacetMap(SDFFilename._CF_pattern)
+Namespace.addCategoryObject('typeBinding', 'SDFFilename', SDFFilename)
 
-# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}H5_Filename
-class H5_Filename (pyxb.binding.datatypes.string):
+# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}H5Filename
+class H5Filename (pyxb.binding.datatypes.string):
 
     """An atomic simple type."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'H5_Filename')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 50, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'H5Filename')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 46, 4)
     _Documentation = None
-H5_Filename._CF_pattern = pyxb.binding.facets.CF_pattern()
-H5_Filename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.h5')
-H5_Filename._InitializeFacetMap(H5_Filename._CF_pattern)
-Namespace.addCategoryObject('typeBinding', 'H5_Filename', H5_Filename)
+H5Filename._CF_pattern = pyxb.binding.facets.CF_pattern()
+H5Filename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.h5')
+H5Filename._InitializeFacetMap(H5Filename._CF_pattern)
+Namespace.addCategoryObject('typeBinding', 'H5Filename', H5Filename)
 
-# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Python_Filename
-class Python_Filename (pyxb.binding.datatypes.string):
+# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}PythonFilename
+class PythonFilename (pyxb.binding.datatypes.string):
 
     """An atomic simple type."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Python_Filename')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 56, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'PythonFilename')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 52, 4)
     _Documentation = None
-Python_Filename._CF_pattern = pyxb.binding.facets.CF_pattern()
-Python_Filename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.py')
-Python_Filename._InitializeFacetMap(Python_Filename._CF_pattern)
-Namespace.addCategoryObject('typeBinding', 'Python_Filename', Python_Filename)
+PythonFilename._CF_pattern = pyxb.binding.facets.CF_pattern()
+PythonFilename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.py')
+PythonFilename._InitializeFacetMap(PythonFilename._CF_pattern)
+Namespace.addCategoryObject('typeBinding', 'PythonFilename', PythonFilename)
 
-# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Script_Filename
-class Script_Filename (pyxb.binding.datatypes.string):
+# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}ScriptFilename
+class ScriptFilename (pyxb.binding.datatypes.string):
 
     """An atomic simple type."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Script_Filename')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 62, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ScriptFilename')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 58, 4)
     _Documentation = None
-Script_Filename._CF_pattern = pyxb.binding.facets.CF_pattern()
-Script_Filename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.sh')
-Script_Filename._InitializeFacetMap(Script_Filename._CF_pattern)
-Namespace.addCategoryObject('typeBinding', 'Script_Filename', Script_Filename)
+ScriptFilename._CF_pattern = pyxb.binding.facets.CF_pattern()
+ScriptFilename._CF_pattern.addPattern(pattern='[a-zA-Z0-9\\._/]*\\.sh')
+ScriptFilename._InitializeFacetMap(ScriptFilename._CF_pattern)
+Namespace.addCategoryObject('typeBinding', 'ScriptFilename', ScriptFilename)
 
-# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Conf_Type_Enumeration
-class Conf_Type_Enumeration (pyxb.binding.datatypes.string, pyxb.binding.basis.enumeration_mixin):
+# Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}ConfTypeEnumeration
+class ConfTypeEnumeration (pyxb.binding.datatypes.string, pyxb.binding.basis.enumeration_mixin):
 
     """An atomic simple type."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Conf_Type_Enumeration')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 77, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ConfTypeEnumeration')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 73, 4)
     _Documentation = None
-Conf_Type_Enumeration._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=Conf_Type_Enumeration, enum_prefix=None)
-Conf_Type_Enumeration.retina = Conf_Type_Enumeration._CF_enumeration.addEnumeration(unicode_value='retina', tag='retina')
-Conf_Type_Enumeration.brainvisualizer = Conf_Type_Enumeration._CF_enumeration.addEnumeration(unicode_value='brainvisualizer', tag='brainvisualizer')
-Conf_Type_Enumeration._InitializeFacetMap(Conf_Type_Enumeration._CF_enumeration)
-Namespace.addCategoryObject('typeBinding', 'Conf_Type_Enumeration', Conf_Type_Enumeration)
+ConfTypeEnumeration._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=ConfTypeEnumeration, enum_prefix=None)
+ConfTypeEnumeration.retina = ConfTypeEnumeration._CF_enumeration.addEnumeration(unicode_value='retina', tag='retina')
+ConfTypeEnumeration.brainvisualizer = ConfTypeEnumeration._CF_enumeration.addEnumeration(unicode_value='brainvisualizer', tag='brainvisualizer')
+ConfTypeEnumeration._InitializeFacetMap(ConfTypeEnumeration._CF_enumeration)
+Namespace.addCategoryObject('typeBinding', 'ConfTypeEnumeration', ConfTypeEnumeration)
 
 # Atomic simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}NeuronTarget
 class NeuronTarget (pyxb.binding.datatypes.string, pyxb.binding.basis.enumeration_mixin):
@@ -175,7 +175,7 @@ class NeuronTarget (pyxb.binding.datatypes.string, pyxb.binding.basis.enumeratio
     """An atomic simple type."""
 
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'NeuronTarget')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 154, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 147, 4)
     _Documentation = None
 NeuronTarget._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=NeuronTarget, enum_prefix=None)
 NeuronTarget.Inhibitory = NeuronTarget._CF_enumeration.addEnumeration(unicode_value='Inhibitory', tag='Inhibitory')
@@ -189,7 +189,7 @@ class TemplatePattern (pyxb.binding.datatypes.string):
     """An atomic simple type."""
 
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'TemplatePattern')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 334, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 316, 4)
     _Documentation = None
 TemplatePattern._CF_pattern = pyxb.binding.facets.CF_pattern()
 TemplatePattern._CF_pattern.addPattern(pattern='(\\(\\s*)*(i|\\d+)(\\s*(\\+|\\*)\\s*(\\(\\s*)*(i|\\d+)\\s*|\\))*')
@@ -202,7 +202,7 @@ class DeviceType (pyxb.binding.datatypes.string, pyxb.binding.basis.enumeration_
     """An atomic simple type."""
 
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'DeviceType')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 371, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 352, 4)
     _Documentation = None
 DeviceType._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=DeviceType, enum_prefix=None)
 DeviceType.ACSource = DeviceType._CF_enumeration.addEnumeration(unicode_value='ACSource', tag='ACSource')
@@ -223,48 +223,48 @@ class RobotTopicAddress (pyxb.binding.datatypes.string):
     """An atomic simple type."""
 
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'RobotTopicAddress')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 394, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 375, 4)
     _Documentation = None
 RobotTopicAddress._CF_pattern = pyxb.binding.facets.CF_pattern()
 RobotTopicAddress._CF_pattern.addPattern(pattern='(/[a-zA-Z0-9_-]+)+(/)?')
 RobotTopicAddress._InitializeFacetMap(RobotTopicAddress._CF_pattern)
 Namespace.addCategoryObject('typeBinding', 'RobotTopicAddress', RobotTopicAddress)
 
-# Union simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Brain_Filename
+# Union simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}BrainFilename
 # superclasses pyxb.binding.datatypes.anySimpleType
-class Brain_Filename (pyxb.binding.basis.STD_union):
+class BrainFilename (pyxb.binding.basis.STD_union):
 
-    """Simple type that is a union of H5_Filename, Python_Filename."""
+    """Simple type that is a union of H5Filename, PythonFilename."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Brain_Filename')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 40, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'BrainFilename')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 36, 4)
     _Documentation = None
 
-    _MemberTypes = ( H5_Filename, Python_Filename, )
-Brain_Filename._CF_pattern = pyxb.binding.facets.CF_pattern()
-Brain_Filename._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=Brain_Filename)
-Brain_Filename._InitializeFacetMap(Brain_Filename._CF_pattern,
-   Brain_Filename._CF_enumeration)
-Namespace.addCategoryObject('typeBinding', 'Brain_Filename', Brain_Filename)
+    _MemberTypes = ( H5Filename, PythonFilename, )
+BrainFilename._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=BrainFilename)
+BrainFilename._CF_pattern = pyxb.binding.facets.CF_pattern()
+BrainFilename._InitializeFacetMap(BrainFilename._CF_enumeration,
+   BrainFilename._CF_pattern)
+Namespace.addCategoryObject('typeBinding', 'BrainFilename', BrainFilename)
 
-# Union simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Conf_Type
+# Union simple type: {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}ConfType
 # superclasses pyxb.binding.datatypes.anySimpleType
-class Conf_Type (pyxb.binding.basis.STD_union):
+class ConfType (pyxb.binding.basis.STD_union):
 
-    """Simple type that is a union of Conf_Type_Enumeration, pyxb.binding.datatypes.string."""
+    """Simple type that is a union of ConfTypeEnumeration, pyxb.binding.datatypes.string."""
 
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Conf_Type')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 73, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ConfType')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 69, 4)
     _Documentation = None
 
-    _MemberTypes = ( Conf_Type_Enumeration, pyxb.binding.datatypes.string, )
-Conf_Type._CF_pattern = pyxb.binding.facets.CF_pattern()
-Conf_Type._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=Conf_Type)
-Conf_Type.retina = 'retina'                       # originally Conf_Type_Enumeration.retina
-Conf_Type.brainvisualizer = 'brainvisualizer'     # originally Conf_Type_Enumeration.brainvisualizer
-Conf_Type._InitializeFacetMap(Conf_Type._CF_pattern,
-   Conf_Type._CF_enumeration)
-Namespace.addCategoryObject('typeBinding', 'Conf_Type', Conf_Type)
+    _MemberTypes = ( ConfTypeEnumeration, pyxb.binding.datatypes.string, )
+ConfType._CF_enumeration = pyxb.binding.facets.CF_enumeration(value_datatype=ConfType)
+ConfType._CF_pattern = pyxb.binding.facets.CF_pattern()
+ConfType.retina = 'retina'                        # originally ConfTypeEnumeration.retina
+ConfType.brainvisualizer = 'brainvisualizer'      # originally ConfTypeEnumeration.brainvisualizer
+ConfType._InitializeFacetMap(ConfType._CF_enumeration,
+   ConfType._CF_pattern)
+Namespace.addCategoryObject('typeBinding', 'ConfType', ConfType)
 
 # Complex type {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}BIBIConfiguration with content type ELEMENT_ONLY
 class BIBIConfiguration (pyxb.binding.basis.complexTypeDefinition):
@@ -314,21 +314,21 @@ class BIBIConfiguration (pyxb.binding.basis.complexTypeDefinition):
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}connectors uses Python identifier connectors
-    __connectors = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectors'), 'connectors', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBIConfiguration_httpschemas_humanbrainproject_euSP102014BIBIconnectors', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12), )
+    __connectors = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectors'), 'connectors', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBIConfiguration_httpschemas_humanbrainproject_euSP102014BIBIconnectors', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 16, 12), )
 
     
     connectors = property(__connectors.value, __connectors.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}synapseDynamics uses Python identifier synapseDynamics
-    __synapseDynamics = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), 'synapseDynamics', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBIConfiguration_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamics', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 19, 12), )
+    __synapseDynamics = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), 'synapseDynamics', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBIConfiguration_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamics', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12), )
 
     
     synapseDynamics = property(__synapseDynamics.value, __synapseDynamics.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}transferFunction uses Python identifier transferFunction
-    __transferFunction = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'transferFunction'), 'transferFunction', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBIConfiguration_httpschemas_humanbrainproject_euSP102014BIBItransferFunction', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 21, 12), )
+    __transferFunction = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'transferFunction'), 'transferFunction', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBIConfiguration_httpschemas_humanbrainproject_euSP102014BIBItransferFunction', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 18, 12), )
 
     
     transferFunction = property(__transferFunction.value, __transferFunction.set, None, None)
@@ -356,20 +356,20 @@ class BrainModel (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'BrainModel')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 32, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 28, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}file uses Python identifier file
-    __file = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'file'), 'file', '__httpschemas_humanbrainproject_euSP102014BIBI_BrainModel_httpschemas_humanbrainproject_euSP102014BIBIfile', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 34, 12), )
+    __file = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'file'), 'file', '__httpschemas_humanbrainproject_euSP102014BIBI_BrainModel_httpschemas_humanbrainproject_euSP102014BIBIfile', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 30, 12), )
 
     
     file = property(__file.value, __file.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}populations uses Python identifier populations
-    __populations = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'populations'), 'populations', '__httpschemas_humanbrainproject_euSP102014BIBI_BrainModel_httpschemas_humanbrainproject_euSP102014BIBIpopulations', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 35, 12), )
+    __populations = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'populations'), 'populations', '__httpschemas_humanbrainproject_euSP102014BIBI_BrainModel_httpschemas_humanbrainproject_euSP102014BIBIpopulations', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 31, 12), )
 
     
     populations = property(__populations.value, __populations.set, None, None)
@@ -391,7 +391,7 @@ class TransferFunction (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'TransferFunction')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 85, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 81, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
@@ -411,31 +411,31 @@ class NeuronConnector (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'NeuronConnector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 161, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 154, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute weights uses Python identifier weights
     __weights = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'weights'), 'weights', '__httpschemas_humanbrainproject_euSP102014BIBI_NeuronConnector_weights', pyxb.binding.datatypes.double)
-    __weights._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 162, 8)
-    __weights._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 162, 8)
+    __weights._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 155, 8)
+    __weights._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 155, 8)
     
     weights = property(__weights.value, __weights.set, None, None)
 
     
     # Attribute delays uses Python identifier delays
     __delays = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'delays'), 'delays', '__httpschemas_humanbrainproject_euSP102014BIBI_NeuronConnector_delays', pyxb.binding.datatypes.double)
-    __delays._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 163, 8)
-    __delays._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 163, 8)
+    __delays._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 156, 8)
+    __delays._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 156, 8)
     
     delays = property(__delays.value, __delays.set, None, None)
 
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_NeuronConnector_name', pyxb.binding.datatypes.string, unicode_default='default')
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 164, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 164, 8)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 157, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 157, 8)
     
     name = property(__name.value, __name.set, None, None)
 
@@ -457,15 +457,15 @@ class NeuronConnectorRef (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'NeuronConnectorRef')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 167, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 160, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute ref uses Python identifier ref
     __ref = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'ref'), 'ref', '__httpschemas_humanbrainproject_euSP102014BIBI_NeuronConnectorRef_ref', pyxb.binding.datatypes.string, required=True)
-    __ref._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 170, 16)
-    __ref._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 170, 16)
+    __ref._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 163, 16)
+    __ref._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 163, 16)
     
     ref = property(__ref.value, __ref.set, None, None)
 
@@ -485,15 +485,15 @@ class SynapseDynamics (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SynapseDynamics')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 195, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 188, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_SynapseDynamics_name', pyxb.binding.datatypes.string, unicode_default='default')
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 196, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 196, 8)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 189, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 189, 8)
     
     name = property(__name.value, __name.set, None, None)
 
@@ -513,15 +513,15 @@ class SynapseDynamicsRef (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SynapseDynamicsRef')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 199, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 192, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute ref uses Python identifier ref
     __ref = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'ref'), 'ref', '__httpschemas_humanbrainproject_euSP102014BIBI_SynapseDynamicsRef_ref', pyxb.binding.datatypes.string, required=True)
-    __ref._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 202, 16)
-    __ref._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 202, 16)
+    __ref._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 195, 16)
+    __ref._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 195, 16)
     
     ref = property(__ref.value, __ref.set, None, None)
 
@@ -541,7 +541,7 @@ class NeuronGroupSelector (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'NeuronGroupSelector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 259, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 246, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
@@ -561,15 +561,15 @@ class NeuronSelector (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'NeuronSelector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 288, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 270, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute population uses Python identifier population
-    __population = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'population'), 'population', '__httpschemas_humanbrainproject_euSP102014BIBI_NeuronSelector_population', pyxb.binding.datatypes.string)
-    __population._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 289, 8)
-    __population._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 289, 8)
+    __population = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'population'), 'population', '__httpschemas_humanbrainproject_euSP102014BIBI_NeuronSelector_population', pyxb.binding.datatypes.string, required=True)
+    __population._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 271, 8)
+    __population._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 271, 8)
     
     population = property(__population.value, __population.set, None, None)
 
@@ -589,7 +589,7 @@ class NeuronSelectorTemplate (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'NeuronSelectorTemplate')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 340, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 322, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
@@ -609,7 +609,7 @@ class FlowExpression (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'FlowExpression')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 400, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 381, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
@@ -629,13 +629,13 @@ class Argument (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Argument')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 472, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 451, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}value uses Python identifier value_
-    __value = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'value'), 'value_', '__httpschemas_humanbrainproject_euSP102014BIBI_Argument_httpschemas_humanbrainproject_euSP102014BIBIvalue', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 474, 12), )
+    __value = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'value'), 'value_', '__httpschemas_humanbrainproject_euSP102014BIBI_Argument_httpschemas_humanbrainproject_euSP102014BIBIvalue', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 453, 12), )
 
     
     value_ = property(__value.value, __value.set, None, None)
@@ -643,8 +643,8 @@ class Argument (pyxb.binding.basis.complexTypeDefinition):
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_Argument_name', pyxb.binding.datatypes.string, required=True)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 476, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 476, 8)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 455, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 455, 8)
     
     name = property(__name.value, __name.set, None, None)
 
@@ -664,13 +664,13 @@ class Local (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Local')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 479, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 458, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}body uses Python identifier body
-    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_Local_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 481, 12), )
+    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_Local_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 460, 12), )
 
     
     body = property(__body.value, __body.set, None, None)
@@ -678,8 +678,8 @@ class Local (pyxb.binding.basis.complexTypeDefinition):
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_Local_name', pyxb.binding.datatypes.string, required=True)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 483, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 483, 8)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 462, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 462, 8)
     
     name = property(__name.value, __name.set, None, None)
 
@@ -699,15 +699,15 @@ class PythonTransferFunction (TransferFunction):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_MIXED
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'PythonTransferFunction')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 88, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 83, 4)
     _ElementMap = TransferFunction._ElementMap.copy()
     _AttributeMap = TransferFunction._AttributeMap.copy()
     # Base type is TransferFunction
     
     # Attribute src uses Python identifier src
-    __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014BIBI_PythonTransferFunction_src', Python_Filename)
-    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 96, 16)
-    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 96, 16)
+    __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014BIBI_PythonTransferFunction_src', PythonFilename)
+    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 91, 16)
+    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 91, 16)
     
     src = property(__src.value, __src.set, None, None)
 
@@ -728,43 +728,43 @@ class BIBITransferFunction (TransferFunction):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'BIBITransferFunction')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 102, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 97, 4)
     _ElementMap = TransferFunction._ElementMap.copy()
     _AttributeMap = TransferFunction._AttributeMap.copy()
     # Base type is TransferFunction
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}local uses Python identifier local
-    __local = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'local'), 'local', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBIlocal', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20), )
+    __local = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'local'), 'local', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBIlocal', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20), )
 
     
     local = property(__local.value, __local.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}device uses Python identifier device
-    __device = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'device'), 'device', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBIdevice', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 24), )
+    __device = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'device'), 'device', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBIdevice', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 103, 24), )
 
     
     device = property(__device.value, __device.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}deviceGroup uses Python identifier deviceGroup
-    __deviceGroup = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup'), 'deviceGroup', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBIdeviceGroup', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 109, 24), )
+    __deviceGroup = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup'), 'deviceGroup', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBIdeviceGroup', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 104, 24), )
 
     
     deviceGroup = property(__deviceGroup.value, __deviceGroup.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}topic uses Python identifier topic
-    __topic = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'topic'), 'topic', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBItopic', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20), )
+    __topic = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'topic'), 'topic', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_httpschemas_humanbrainproject_euSP102014BIBItopic', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20), )
 
     
     topic = property(__topic.value, __topic.set, None, None)
 
     
     # Attribute name uses Python identifier name
-    __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_name', pyxb.binding.datatypes.string)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 114, 16)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 114, 16)
+    __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_name', pyxb.binding.datatypes.string, required=True)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 16)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 16)
     
     name = property(__name.value, __name.set, None, None)
 
@@ -787,7 +787,7 @@ class OneToOneConnector (NeuronConnector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'OneToOneConnector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 175, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 168, 4)
     _ElementMap = NeuronConnector._ElementMap.copy()
     _AttributeMap = NeuronConnector._AttributeMap.copy()
     # Base type is NeuronConnector
@@ -813,7 +813,7 @@ class AllToAllConnector (NeuronConnector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'AllToAllConnector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 181, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 174, 4)
     _ElementMap = NeuronConnector._ElementMap.copy()
     _AttributeMap = NeuronConnector._AttributeMap.copy()
     # Base type is NeuronConnector
@@ -839,7 +839,7 @@ class FixedNumberPreConnector (NeuronConnector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'FixedNumberPreConnector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 187, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 180, 4)
     _ElementMap = NeuronConnector._ElementMap.copy()
     _AttributeMap = NeuronConnector._AttributeMap.copy()
     # Base type is NeuronConnector
@@ -851,9 +851,9 @@ class FixedNumberPreConnector (NeuronConnector):
     # Attribute name inherited from {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}NeuronConnector
     
     # Attribute count uses Python identifier count
-    __count = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'count'), 'count', '__httpschemas_humanbrainproject_euSP102014BIBI_FixedNumberPreConnector_count', pyxb.binding.datatypes.positiveInteger)
-    __count._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 190, 16)
-    __count._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 190, 16)
+    __count = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'count'), 'count', '__httpschemas_humanbrainproject_euSP102014BIBI_FixedNumberPreConnector_count', pyxb.binding.datatypes.positiveInteger, required=True)
+    __count._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 183, 16)
+    __count._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 183, 16)
     
     count = property(__count.value, __count.set, None, None)
 
@@ -873,7 +873,7 @@ class TsodyksMarkramMechanism (SynapseDynamics):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'TsodyksMarkramMechanism')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 207, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 200, 4)
     _ElementMap = SynapseDynamics._ElementMap.copy()
     _AttributeMap = SynapseDynamics._AttributeMap.copy()
     # Base type is SynapseDynamics
@@ -881,25 +881,25 @@ class TsodyksMarkramMechanism (SynapseDynamics):
     # Attribute name inherited from {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}SynapseDynamics
     
     # Attribute u uses Python identifier u
-    __u = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'u'), 'u', '__httpschemas_humanbrainproject_euSP102014BIBI_TsodyksMarkramMechanism_u', pyxb.binding.datatypes.double)
-    __u._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 210, 16)
-    __u._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 210, 16)
+    __u = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'u'), 'u', '__httpschemas_humanbrainproject_euSP102014BIBI_TsodyksMarkramMechanism_u', pyxb.binding.datatypes.double, required=True)
+    __u._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 203, 16)
+    __u._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 203, 16)
     
     u = property(__u.value, __u.set, None, None)
 
     
     # Attribute tau_rec uses Python identifier tau_rec
-    __tau_rec = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'tau_rec'), 'tau_rec', '__httpschemas_humanbrainproject_euSP102014BIBI_TsodyksMarkramMechanism_tau_rec', pyxb.binding.datatypes.double)
-    __tau_rec._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 211, 16)
-    __tau_rec._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 211, 16)
+    __tau_rec = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'tau_rec'), 'tau_rec', '__httpschemas_humanbrainproject_euSP102014BIBI_TsodyksMarkramMechanism_tau_rec', pyxb.binding.datatypes.double, required=True)
+    __tau_rec._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 204, 16)
+    __tau_rec._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 204, 16)
     
     tau_rec = property(__tau_rec.value, __tau_rec.set, None, None)
 
     
     # Attribute tau_facil uses Python identifier tau_facil
-    __tau_facil = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'tau_facil'), 'tau_facil', '__httpschemas_humanbrainproject_euSP102014BIBI_TsodyksMarkramMechanism_tau_facil', pyxb.binding.datatypes.double)
-    __tau_facil._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 212, 16)
-    __tau_facil._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 212, 16)
+    __tau_facil = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'tau_facil'), 'tau_facil', '__httpschemas_humanbrainproject_euSP102014BIBI_TsodyksMarkramMechanism_tau_facil', pyxb.binding.datatypes.double, required=True)
+    __tau_facil._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 205, 16)
+    __tau_facil._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 205, 16)
     
     tau_facil = property(__tau_facil.value, __tau_facil.set, None, None)
 
@@ -921,55 +921,55 @@ class DeviceChannel (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'DeviceChannel')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 217, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 210, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}neurons uses Python identifier neurons
-    __neurons = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'neurons'), 'neurons', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIneurons', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 219, 12), )
+    __neurons = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'neurons'), 'neurons', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIneurons', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 212, 12), )
 
     
     neurons = property(__neurons.value, __neurons.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}connector uses Python identifier connector
-    __connector = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connector'), 'connector', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIconnector', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 16), )
+    __connector = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connector'), 'connector', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIconnector', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 214, 16), )
 
     
     connector = property(__connector.value, __connector.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}connectorRef uses Python identifier connectorRef
-    __connectorRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), 'connectorRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIconnectorRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 16), )
+    __connectorRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), 'connectorRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIconnectorRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 215, 16), )
 
     
     connectorRef = property(__connectorRef.value, __connectorRef.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}synapseDynamics uses Python identifier synapseDynamics
-    __synapseDynamics = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), 'synapseDynamics', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamics', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 226, 16), )
+    __synapseDynamics = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), 'synapseDynamics', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamics', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 218, 16), )
 
     
     synapseDynamics = property(__synapseDynamics.value, __synapseDynamics.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}synapseDynamicsRef uses Python identifier synapseDynamicsRef
-    __synapseDynamicsRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), 'synapseDynamicsRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamicsRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 228, 16), )
+    __synapseDynamicsRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), 'synapseDynamicsRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamicsRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 219, 16), )
 
     
     synapseDynamicsRef = property(__synapseDynamicsRef.value, __synapseDynamicsRef.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}target uses Python identifier target
-    __target = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'target'), 'target', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBItarget', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 231, 12), )
+    __target = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'target'), 'target', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBItarget', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 12), )
 
     
     target = property(__target.value, __target.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}body uses Python identifier body
-    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 12), )
+    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 12), )
 
     
     body = property(__body.value, __body.set, None, None)
@@ -977,16 +977,16 @@ class DeviceChannel (pyxb.binding.basis.complexTypeDefinition):
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_name', pyxb.binding.datatypes.string, required=True)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 234, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 234, 8)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 224, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 224, 8)
     
     name = property(__name.value, __name.set, None, None)
 
     
     # Attribute type uses Python identifier type
     __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceChannel_type', DeviceType, required=True)
-    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 235, 8)
-    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 235, 8)
+    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 225, 8)
+    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 225, 8)
     
     type = property(__type.value, __type.set, None, None)
 
@@ -1013,55 +1013,55 @@ class DeviceGroupChannel (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'DeviceGroupChannel')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 238, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 228, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}neurons uses Python identifier neurons
-    __neurons = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'neurons'), 'neurons', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIneurons', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12), )
+    __neurons = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'neurons'), 'neurons', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIneurons', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 230, 12), )
 
     
     neurons = property(__neurons.value, __neurons.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}connector uses Python identifier connector
-    __connector = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connector'), 'connector', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIconnector', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 242, 16), )
+    __connector = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connector'), 'connector', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIconnector', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 16), )
 
     
     connector = property(__connector.value, __connector.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}connectorRef uses Python identifier connectorRef
-    __connectorRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), 'connectorRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIconnectorRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 243, 16), )
+    __connectorRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), 'connectorRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIconnectorRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 233, 16), )
 
     
     connectorRef = property(__connectorRef.value, __connectorRef.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}synapseDynamics uses Python identifier synapseDynamics
-    __synapseDynamics = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), 'synapseDynamics', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamics', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 247, 16), )
+    __synapseDynamics = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), 'synapseDynamics', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamics', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 236, 16), )
 
     
     synapseDynamics = property(__synapseDynamics.value, __synapseDynamics.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}synapseDynamicsRef uses Python identifier synapseDynamicsRef
-    __synapseDynamicsRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), 'synapseDynamicsRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamicsRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 249, 16), )
+    __synapseDynamicsRef = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), 'synapseDynamicsRef', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIsynapseDynamicsRef', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 237, 16), )
 
     
     synapseDynamicsRef = property(__synapseDynamicsRef.value, __synapseDynamicsRef.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}target uses Python identifier target
-    __target = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'target'), 'target', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBItarget', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 12), )
+    __target = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'target'), 'target', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBItarget', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 239, 12), )
 
     
     target = property(__target.value, __target.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}body uses Python identifier body
-    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 12), )
+    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12), )
 
     
     body = property(__body.value, __body.set, None, None)
@@ -1069,16 +1069,16 @@ class DeviceGroupChannel (pyxb.binding.basis.complexTypeDefinition):
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_name', pyxb.binding.datatypes.string, required=True)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 255, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 255, 8)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 242, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 242, 8)
     
     name = property(__name.value, __name.set, None, None)
 
     
     # Attribute type uses Python identifier type
     __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_DeviceGroupChannel_type', DeviceType, required=True)
-    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 256, 8)
-    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 256, 8)
+    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 243, 8)
+    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 243, 8)
     
     type = property(__type.value, __type.set, None, None)
 
@@ -1105,20 +1105,20 @@ class ChainSelector (NeuronGroupSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ChainSelector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 262, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 248, 4)
     _ElementMap = NeuronGroupSelector._ElementMap.copy()
     _AttributeMap = NeuronGroupSelector._AttributeMap.copy()
     # Base type is NeuronGroupSelector
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}neurons uses Python identifier neurons
-    __neurons = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'neurons'), 'neurons', '__httpschemas_humanbrainproject_euSP102014BIBI_ChainSelector_httpschemas_humanbrainproject_euSP102014BIBIneurons', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 266, 20), )
+    __neurons = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'neurons'), 'neurons', '__httpschemas_humanbrainproject_euSP102014BIBI_ChainSelector_httpschemas_humanbrainproject_euSP102014BIBIneurons', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 20), )
 
     
     neurons = property(__neurons.value, __neurons.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}connectors uses Python identifier connectors
-    __connectors = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectors'), 'connectors', '__httpschemas_humanbrainproject_euSP102014BIBI_ChainSelector_httpschemas_humanbrainproject_euSP102014BIBIconnectors', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 268, 20), )
+    __connectors = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'connectors'), 'connectors', '__httpschemas_humanbrainproject_euSP102014BIBI_ChainSelector_httpschemas_humanbrainproject_euSP102014BIBIconnectors', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 20), )
 
     
     connectors = property(__connectors.value, __connectors.set, None, None)
@@ -1140,20 +1140,20 @@ class MapSelector (NeuronGroupSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'MapSelector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 275, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 259, 4)
     _ElementMap = NeuronGroupSelector._ElementMap.copy()
     _AttributeMap = NeuronGroupSelector._AttributeMap.copy()
     # Base type is NeuronGroupSelector
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}source uses Python identifier source
-    __source = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'source'), 'source', '__httpschemas_humanbrainproject_euSP102014BIBI_MapSelector_httpschemas_humanbrainproject_euSP102014BIBIsource', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 279, 20), )
+    __source = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'source'), 'source', '__httpschemas_humanbrainproject_euSP102014BIBI_MapSelector_httpschemas_humanbrainproject_euSP102014BIBIsource', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 263, 20), )
 
     
     source = property(__source.value, __source.set, None, None)
 
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}pattern uses Python identifier pattern
-    __pattern = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'pattern'), 'pattern', '__httpschemas_humanbrainproject_euSP102014BIBI_MapSelector_httpschemas_humanbrainproject_euSP102014BIBIpattern', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 281, 20), )
+    __pattern = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'pattern'), 'pattern', '__httpschemas_humanbrainproject_euSP102014BIBI_MapSelector_httpschemas_humanbrainproject_euSP102014BIBIpattern', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 264, 20), )
 
     
     pattern = property(__pattern.value, __pattern.set, None, None)
@@ -1175,7 +1175,7 @@ class Index (NeuronSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Index')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 292, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 274, 4)
     _ElementMap = NeuronSelector._ElementMap.copy()
     _AttributeMap = NeuronSelector._AttributeMap.copy()
     # Base type is NeuronSelector
@@ -1184,8 +1184,8 @@ class Index (NeuronSelector):
     
     # Attribute index uses Python identifier index
     __index = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'index'), 'index', '__httpschemas_humanbrainproject_euSP102014BIBI_Index_index', pyxb.binding.datatypes.nonNegativeInteger, required=True)
-    __index._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 295, 16)
-    __index._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 295, 16)
+    __index._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 277, 16)
+    __index._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 277, 16)
     
     index = property(__index.value, __index.set, None, None)
 
@@ -1205,7 +1205,7 @@ class MultiNeuronSelector (NeuronSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'MultiNeuronSelector')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 300, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 282, 4)
     _ElementMap = NeuronSelector._ElementMap.copy()
     _AttributeMap = NeuronSelector._AttributeMap.copy()
     # Base type is NeuronSelector
@@ -1227,15 +1227,15 @@ class IndexTemplate (NeuronSelectorTemplate):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'IndexTemplate')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 343, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 324, 4)
     _ElementMap = NeuronSelectorTemplate._ElementMap.copy()
     _AttributeMap = NeuronSelectorTemplate._AttributeMap.copy()
     # Base type is NeuronSelectorTemplate
     
     # Attribute index uses Python identifier index
     __index = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'index'), 'index', '__httpschemas_humanbrainproject_euSP102014BIBI_IndexTemplate_index', TemplatePattern, required=True)
-    __index._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 346, 16)
-    __index._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 346, 16)
+    __index._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 327, 16)
+    __index._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 327, 16)
     
     index = property(__index.value, __index.set, None, None)
 
@@ -1255,31 +1255,31 @@ class RangeTemplate (NeuronSelectorTemplate):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'RangeTemplate')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 351, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 332, 4)
     _ElementMap = NeuronSelectorTemplate._ElementMap.copy()
     _AttributeMap = NeuronSelectorTemplate._AttributeMap.copy()
     # Base type is NeuronSelectorTemplate
     
     # Attribute from uses Python identifier from_
     __from = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'from'), 'from_', '__httpschemas_humanbrainproject_euSP102014BIBI_RangeTemplate_from', TemplatePattern, required=True)
-    __from._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 354, 16)
-    __from._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 354, 16)
+    __from._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 335, 16)
+    __from._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 335, 16)
     
     from_ = property(__from.value, __from.set, None, None)
 
     
     # Attribute to uses Python identifier to
     __to = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'to'), 'to', '__httpschemas_humanbrainproject_euSP102014BIBI_RangeTemplate_to', TemplatePattern, required=True)
-    __to._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 355, 16)
-    __to._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 355, 16)
+    __to._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 336, 16)
+    __to._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 336, 16)
     
     to = property(__to.value, __to.set, None, None)
 
     
     # Attribute step uses Python identifier step
     __step = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'step'), 'step', '__httpschemas_humanbrainproject_euSP102014BIBI_RangeTemplate_step', TemplatePattern)
-    __step._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 356, 16)
-    __step._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 356, 16)
+    __step._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 337, 16)
+    __step._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 337, 16)
     
     step = property(__step.value, __step.set, None, None)
 
@@ -1301,13 +1301,13 @@ class ListTemplate (NeuronSelectorTemplate):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ListTemplate')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 361, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 342, 4)
     _ElementMap = NeuronSelectorTemplate._ElementMap.copy()
     _AttributeMap = NeuronSelectorTemplate._AttributeMap.copy()
     # Base type is NeuronSelectorTemplate
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}element uses Python identifier element
-    __element = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'element'), 'element', '__httpschemas_humanbrainproject_euSP102014BIBI_ListTemplate_httpschemas_humanbrainproject_euSP102014BIBIelement', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 365, 20), )
+    __element = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'element'), 'element', '__httpschemas_humanbrainproject_euSP102014BIBI_ListTemplate_httpschemas_humanbrainproject_euSP102014BIBIelement', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 346, 20), )
 
     
     element = property(__element.value, __element.set, None, None)
@@ -1328,38 +1328,38 @@ class TopicChannel (pyxb.binding.basis.complexTypeDefinition):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'TopicChannel')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 385, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 366, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}body uses Python identifier body
-    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 12), )
+    __body = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'body'), 'body', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_httpschemas_humanbrainproject_euSP102014BIBIbody', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 368, 12), )
 
     
     body = property(__body.value, __body.set, None, None)
 
     
     # Attribute name uses Python identifier name
-    __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_name', pyxb.binding.datatypes.string)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 389, 8)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 389, 8)
+    __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_name', pyxb.binding.datatypes.string, required=True)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 370, 8)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 370, 8)
     
     name = property(__name.value, __name.set, None, None)
 
     
     # Attribute topic uses Python identifier topic
-    __topic = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'topic'), 'topic', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_topic', RobotTopicAddress)
-    __topic._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 390, 8)
-    __topic._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 390, 8)
+    __topic = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'topic'), 'topic', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_topic', RobotTopicAddress, required=True)
+    __topic._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 371, 8)
+    __topic._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 371, 8)
     
     topic = property(__topic.value, __topic.set, None, None)
 
     
     # Attribute type uses Python identifier type
-    __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_type', pyxb.binding.datatypes.string)
-    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 391, 8)
-    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 391, 8)
+    __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_TopicChannel_type', pyxb.binding.datatypes.string, required=True)
+    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 372, 8)
+    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 372, 8)
     
     type = property(__type.value, __type.set, None, None)
 
@@ -1381,22 +1381,22 @@ class Scale (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Scale')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 403, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 383, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}inner uses Python identifier inner
-    __inner = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'inner'), 'inner', '__httpschemas_humanbrainproject_euSP102014BIBI_Scale_httpschemas_humanbrainproject_euSP102014BIBIinner', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 407, 20), )
+    __inner = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'inner'), 'inner', '__httpschemas_humanbrainproject_euSP102014BIBI_Scale_httpschemas_humanbrainproject_euSP102014BIBIinner', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 20), )
 
     
     inner = property(__inner.value, __inner.set, None, None)
 
     
     # Attribute factor uses Python identifier factor
-    __factor = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'factor'), 'factor', '__httpschemas_humanbrainproject_euSP102014BIBI_Scale_factor', pyxb.binding.datatypes.double)
-    __factor._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 16)
-    __factor._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 16)
+    __factor = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'factor'), 'factor', '__httpschemas_humanbrainproject_euSP102014BIBI_Scale_factor', pyxb.binding.datatypes.double, required=True)
+    __factor._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 389, 16)
+    __factor._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 389, 16)
     
     factor = property(__factor.value, __factor.set, None, None)
 
@@ -1416,22 +1416,22 @@ class Call (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Call')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 414, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 394, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}argument uses Python identifier argument
-    __argument = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'argument'), 'argument', '__httpschemas_humanbrainproject_euSP102014BIBI_Call_httpschemas_humanbrainproject_euSP102014BIBIargument', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 418, 20), )
+    __argument = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'argument'), 'argument', '__httpschemas_humanbrainproject_euSP102014BIBI_Call_httpschemas_humanbrainproject_euSP102014BIBIargument', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 398, 20), )
 
     
     argument = property(__argument.value, __argument.set, None, None)
 
     
     # Attribute type uses Python identifier type
-    __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_Call_type', pyxb.binding.datatypes.string)
-    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 420, 16)
-    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 420, 16)
+    __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_Call_type', pyxb.binding.datatypes.string, required=True)
+    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 400, 16)
+    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 400, 16)
     
     type = property(__type.value, __type.set, None, None)
 
@@ -1451,13 +1451,13 @@ class Operator (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = True
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Operator')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 425, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 405, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}operand uses Python identifier operand
-    __operand = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'operand'), 'operand', '__httpschemas_humanbrainproject_euSP102014BIBI_Operator_httpschemas_humanbrainproject_euSP102014BIBIoperand', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20), )
+    __operand = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'operand'), 'operand', '__httpschemas_humanbrainproject_euSP102014BIBI_Operator_httpschemas_humanbrainproject_euSP102014BIBIoperand', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20), )
 
     
     operand = property(__operand.value, __operand.set, None, None)
@@ -1478,7 +1478,7 @@ class SimulationStep (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'SimulationStep')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 486, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 465, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
@@ -1498,23 +1498,23 @@ class ArgumentReference (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ArgumentReference')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 493, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 471, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
     
     # Attribute name uses Python identifier name
     __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_ArgumentReference_name', pyxb.binding.datatypes.string, required=True)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 496, 16)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 496, 16)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 474, 16)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 474, 16)
     
     name = property(__name.value, __name.set, None, None)
 
     
     # Attribute property uses Python identifier property_
     __property = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'property'), 'property_', '__httpschemas_humanbrainproject_euSP102014BIBI_ArgumentReference_property', pyxb.binding.datatypes.string)
-    __property._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 497, 16)
-    __property._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 497, 16)
+    __property._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 475, 16)
+    __property._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 475, 16)
     
     property_ = property(__property.value, __property.set, None, None)
 
@@ -1535,15 +1535,15 @@ class Constant (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Constant')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 502, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 480, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
     
     # Attribute value uses Python identifier value_
     __value = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'value'), 'value_', '__httpschemas_humanbrainproject_euSP102014BIBI_Constant_value', pyxb.binding.datatypes.double, required=True)
-    __value._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 505, 16)
-    __value._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 505, 16)
+    __value._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 483, 16)
+    __value._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 483, 16)
     
     value_ = property(__value.value, __value.set, None, None)
 
@@ -1563,15 +1563,15 @@ class ConstantString (FlowExpression):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ConstantString')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 510, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 488, 4)
     _ElementMap = FlowExpression._ElementMap.copy()
     _AttributeMap = FlowExpression._AttributeMap.copy()
     # Base type is FlowExpression
     
     # Attribute value uses Python identifier value_
     __value = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'value'), 'value_', '__httpschemas_humanbrainproject_euSP102014BIBI_ConstantString_value', pyxb.binding.datatypes.string, required=True)
-    __value._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 513, 16)
-    __value._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 513, 16)
+    __value._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 491, 16)
+    __value._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 491, 16)
     
     value_ = property(__value.value, __value.set, None, None)
 
@@ -1584,30 +1584,30 @@ class ConstantString (FlowExpression):
 Namespace.addCategoryObject('typeBinding', 'ConstantString', ConstantString)
 
 
-# Complex type {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Conf_File with content type EMPTY
-class Conf_File (pyxb.binding.basis.complexTypeDefinition):
-    """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Conf_File with content type EMPTY"""
+# Complex type {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}ConfFile with content type EMPTY
+class ConfFile (pyxb.binding.basis.complexTypeDefinition):
+    """Complex type {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}ConfFile with content type EMPTY"""
     _TypeDefinition = None
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
-    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Conf_File')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 68, 4)
+    _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'ConfFile')
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 64, 4)
     _ElementMap = {}
     _AttributeMap = {}
     # Base type is pyxb.binding.datatypes.anyType
     
     # Attribute src uses Python identifier src
-    __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014BIBI_Conf_File_src', pyxb.binding.datatypes.string)
-    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 69, 8)
-    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 69, 8)
+    __src = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'src'), 'src', '__httpschemas_humanbrainproject_euSP102014BIBI_ConfFile_src', pyxb.binding.datatypes.string, required=True)
+    __src._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 65, 8)
+    __src._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 65, 8)
     
     src = property(__src.value, __src.set, None, None)
 
     
     # Attribute type uses Python identifier type
-    __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_Conf_File_type', Conf_Type)
-    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 70, 8)
-    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 70, 8)
+    __type = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'type'), 'type', '__httpschemas_humanbrainproject_euSP102014BIBI_ConfFile_type', ConfType, required=True)
+    __type._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 66, 8)
+    __type._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 66, 8)
     
     type = property(__type.value, __type.set, None, None)
 
@@ -1618,7 +1618,7 @@ class Conf_File (pyxb.binding.basis.complexTypeDefinition):
         __src.name() : __src,
         __type.name() : __type
     })
-Namespace.addCategoryObject('typeBinding', 'Conf_File', Conf_File)
+Namespace.addCategoryObject('typeBinding', 'ConfFile', ConfFile)
 
 
 # Complex type {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}Robot2Neuron with content type ELEMENT_ONLY
@@ -1628,7 +1628,7 @@ class Robot2Neuron (BIBITransferFunction):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Robot2Neuron')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 119, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 113, 4)
     _ElementMap = BIBITransferFunction._ElementMap.copy()
     _AttributeMap = BIBITransferFunction._AttributeMap.copy()
     # Base type is BIBITransferFunction
@@ -1642,7 +1642,7 @@ class Robot2Neuron (BIBITransferFunction):
     # Element topic ({http://schemas.humanbrainproject.eu/SP10/2014/BIBI}topic) inherited from {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}BIBITransferFunction
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}returnValue uses Python identifier returnValue
-    __returnValue = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), 'returnValue', '__httpschemas_humanbrainproject_euSP102014BIBI_Robot2Neuron_httpschemas_humanbrainproject_euSP102014BIBIreturnValue', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 123, 20), )
+    __returnValue = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), 'returnValue', '__httpschemas_humanbrainproject_euSP102014BIBI_Robot2Neuron_httpschemas_humanbrainproject_euSP102014BIBIreturnValue', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 117, 20), )
 
     
     returnValue = property(__returnValue.value, __returnValue.set, None, None)
@@ -1665,7 +1665,7 @@ class Neuron2Monitor (BIBITransferFunction):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Neuron2Monitor')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 130, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 123, 4)
     _ElementMap = BIBITransferFunction._ElementMap.copy()
     _AttributeMap = BIBITransferFunction._AttributeMap.copy()
     # Base type is BIBITransferFunction
@@ -1677,9 +1677,9 @@ class Neuron2Monitor (BIBITransferFunction):
     # Attribute name is restricted from parent
     
     # Attribute name uses Python identifier name
-    __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_name', pyxb.binding.datatypes.string)
-    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 139, 16)
-    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 139, 16)
+    __name = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'name'), 'name', '__httpschemas_humanbrainproject_euSP102014BIBI_BIBITransferFunction_name', pyxb.binding.datatypes.string, required=True)
+    __name._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 132, 16)
+    __name._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 132, 16)
     
     name = property(__name.value, __name.set, None, None)
 
@@ -1699,7 +1699,7 @@ class Neuron2Robot (BIBITransferFunction):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Neuron2Robot')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 144, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 137, 4)
     _ElementMap = BIBITransferFunction._ElementMap.copy()
     _AttributeMap = BIBITransferFunction._AttributeMap.copy()
     # Base type is BIBITransferFunction
@@ -1713,7 +1713,7 @@ class Neuron2Robot (BIBITransferFunction):
     # Element topic ({http://schemas.humanbrainproject.eu/SP10/2014/BIBI}topic) inherited from {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}BIBITransferFunction
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}returnValue uses Python identifier returnValue
-    __returnValue = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), 'returnValue', '__httpschemas_humanbrainproject_euSP102014BIBI_Neuron2Robot_httpschemas_humanbrainproject_euSP102014BIBIreturnValue', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 148, 20), )
+    __returnValue = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), 'returnValue', '__httpschemas_humanbrainproject_euSP102014BIBI_Neuron2Robot_httpschemas_humanbrainproject_euSP102014BIBIreturnValue', False, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 141, 20), )
 
     
     returnValue = property(__returnValue.value, __returnValue.set, None, None)
@@ -1736,7 +1736,7 @@ class Range (MultiNeuronSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Range')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 306, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 288, 4)
     _ElementMap = MultiNeuronSelector._ElementMap.copy()
     _AttributeMap = MultiNeuronSelector._AttributeMap.copy()
     # Base type is MultiNeuronSelector
@@ -1745,24 +1745,24 @@ class Range (MultiNeuronSelector):
     
     # Attribute from uses Python identifier from_
     __from = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'from'), 'from_', '__httpschemas_humanbrainproject_euSP102014BIBI_Range_from', pyxb.binding.datatypes.nonNegativeInteger, required=True)
-    __from._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 309, 16)
-    __from._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 309, 16)
+    __from._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 291, 16)
+    __from._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 291, 16)
     
     from_ = property(__from.value, __from.set, None, None)
 
     
     # Attribute to uses Python identifier to
     __to = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'to'), 'to', '__httpschemas_humanbrainproject_euSP102014BIBI_Range_to', pyxb.binding.datatypes.nonNegativeInteger, required=True)
-    __to._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 310, 16)
-    __to._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 310, 16)
+    __to._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 292, 16)
+    __to._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 292, 16)
     
     to = property(__to.value, __to.set, None, None)
 
     
     # Attribute step uses Python identifier step
-    __step = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'step'), 'step', '__httpschemas_humanbrainproject_euSP102014BIBI_Range_step', pyxb.binding.datatypes.nonNegativeInteger)
-    __step._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 311, 16)
-    __step._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 311, 16)
+    __step = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'step'), 'step', '__httpschemas_humanbrainproject_euSP102014BIBI_Range_step', pyxb.binding.datatypes.positiveInteger)
+    __step._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 293, 16)
+    __step._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 293, 16)
     
     step = property(__step.value, __step.set, None, None)
 
@@ -1784,13 +1784,13 @@ class List (MultiNeuronSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'List')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 316, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 298, 4)
     _ElementMap = MultiNeuronSelector._ElementMap.copy()
     _AttributeMap = MultiNeuronSelector._AttributeMap.copy()
     # Base type is MultiNeuronSelector
     
     # Element {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}element uses Python identifier element
-    __element = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'element'), 'element', '__httpschemas_humanbrainproject_euSP102014BIBI_List_httpschemas_humanbrainproject_euSP102014BIBIelement', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 320, 20), )
+    __element = pyxb.binding.content.ElementDeclaration(pyxb.namespace.ExpandedName(Namespace, 'element'), 'element', '__httpschemas_humanbrainproject_euSP102014BIBI_List_httpschemas_humanbrainproject_euSP102014BIBIelement', True, pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 302, 20), )
 
     
     element = property(__element.value, __element.set, None, None)
@@ -1813,7 +1813,7 @@ class Population (MultiNeuronSelector):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_EMPTY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Population')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 326, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 308, 4)
     _ElementMap = MultiNeuronSelector._ElementMap.copy()
     _AttributeMap = MultiNeuronSelector._AttributeMap.copy()
     # Base type is MultiNeuronSelector
@@ -1821,9 +1821,9 @@ class Population (MultiNeuronSelector):
     # Attribute population inherited from {http://schemas.humanbrainproject.eu/SP10/2014/BIBI}NeuronSelector
     
     # Attribute count uses Python identifier count
-    __count = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'count'), 'count', '__httpschemas_humanbrainproject_euSP102014BIBI_Population_count', pyxb.binding.datatypes.nonNegativeInteger)
-    __count._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 329, 16)
-    __count._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 329, 16)
+    __count = pyxb.binding.content.AttributeUse(pyxb.namespace.ExpandedName(None, 'count'), 'count', '__httpschemas_humanbrainproject_euSP102014BIBI_Population_count', pyxb.binding.datatypes.positiveInteger, required=True)
+    __count._DeclarationLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 311, 16)
+    __count._UseLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 311, 16)
     
     count = property(__count.value, __count.set, None, None)
 
@@ -1843,7 +1843,7 @@ class Add (Operator):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Add')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 436, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 415, 4)
     _ElementMap = Operator._ElementMap.copy()
     _AttributeMap = Operator._AttributeMap.copy()
     # Base type is Operator
@@ -1865,7 +1865,7 @@ class Subtract (Operator):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Subtract')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 442, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 421, 4)
     _ElementMap = Operator._ElementMap.copy()
     _AttributeMap = Operator._AttributeMap.copy()
     # Base type is Operator
@@ -1887,7 +1887,7 @@ class Multiply (Operator):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Multiply')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 448, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 427, 4)
     _ElementMap = Operator._ElementMap.copy()
     _AttributeMap = Operator._AttributeMap.copy()
     # Base type is Operator
@@ -1909,7 +1909,7 @@ class Divide (Operator):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Divide')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 454, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 433, 4)
     _ElementMap = Operator._ElementMap.copy()
     _AttributeMap = Operator._AttributeMap.copy()
     # Base type is Operator
@@ -1931,7 +1931,7 @@ class Min (Operator):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Min')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 460, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 439, 4)
     _ElementMap = Operator._ElementMap.copy()
     _AttributeMap = Operator._AttributeMap.copy()
     # Base type is Operator
@@ -1953,7 +1953,7 @@ class Max (Operator):
     _ContentTypeTag = pyxb.binding.basis.complexTypeDefinition._CT_ELEMENT_ONLY
     _Abstract = False
     _ExpandedName = pyxb.namespace.ExpandedName(Namespace, 'Max')
-    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 466, 4)
+    _XSDLocation = pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 445, 4)
     _ElementMap = Operator._ElementMap.copy()
     _AttributeMap = Operator._AttributeMap.copy()
     # Base type is Operator
@@ -1977,17 +1977,17 @@ BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.Expanded
 
 BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'brainModel'), BrainModel, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 12, 12)))
 
-BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'bodyModel'), SDF_Filename, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 13, 12)))
+BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'bodyModel'), SDFFilename, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 13, 12)))
 
-BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'extRobotController'), Script_Filename, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 14, 12)))
+BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'extRobotController'), ScriptFilename, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 14, 12)))
 
-BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'configuration'), Conf_File, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 15, 12)))
+BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'configuration'), ConfFile, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 15, 12)))
 
-BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectors'), NeuronConnector, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12)))
+BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectors'), NeuronConnector, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 16, 12)))
 
-BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), SynapseDynamics, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 19, 12)))
+BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), SynapseDynamics, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12)))
 
-BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'transferFunction'), TransferFunction, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 21, 12)))
+BIBIConfiguration._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'transferFunction'), TransferFunction, scope=BIBIConfiguration, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 18, 12)))
 
 def _BuildAutomaton ():
     # Remove this helper function from the namespace after it is invoked
@@ -2002,11 +2002,11 @@ def _BuildAutomaton ():
     counters.add(cc_1)
     cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 15, 12))
     counters.add(cc_2)
-    cc_3 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12))
+    cc_3 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 16, 12))
     counters.add(cc_3)
-    cc_4 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 19, 12))
+    cc_4 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12))
     counters.add(cc_4)
-    cc_5 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 21, 12))
+    cc_5 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 18, 12))
     counters.add(cc_5)
     states = []
     final_update = None
@@ -2033,17 +2033,17 @@ def _BuildAutomaton ():
     states.append(st_4)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_3, False))
-    symbol = pyxb.binding.content.ElementUse(BIBIConfiguration._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectors')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12))
+    symbol = pyxb.binding.content.ElementUse(BIBIConfiguration._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectors')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 16, 12))
     st_5 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_5)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_4, False))
-    symbol = pyxb.binding.content.ElementUse(BIBIConfiguration._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 19, 12))
+    symbol = pyxb.binding.content.ElementUse(BIBIConfiguration._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 17, 12))
     st_6 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_6)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_5, False))
-    symbol = pyxb.binding.content.ElementUse(BIBIConfiguration._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'transferFunction')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 21, 12))
+    symbol = pyxb.binding.content.ElementUse(BIBIConfiguration._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'transferFunction')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 18, 12))
     st_7 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_7)
     transitions = []
@@ -2114,9 +2114,9 @@ BIBIConfiguration._Automaton = _BuildAutomaton()
 
 
 
-BrainModel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'file'), Brain_Filename, scope=BrainModel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 34, 12)))
+BrainModel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'file'), BrainFilename, scope=BrainModel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 30, 12)))
 
-BrainModel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'populations'), MultiNeuronSelector, scope=BrainModel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 35, 12)))
+BrainModel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'populations'), MultiNeuronSelector, scope=BrainModel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 31, 12)))
 
 def _BuildAutomaton_ ():
     # Remove this helper function from the namespace after it is invoked
@@ -2125,16 +2125,16 @@ def _BuildAutomaton_ ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 35, 12))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 31, 12))
     counters.add(cc_0)
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(BrainModel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'file')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 34, 12))
+    symbol = pyxb.binding.content.ElementUse(BrainModel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'file')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 30, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(BrainModel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'populations')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 35, 12))
+    symbol = pyxb.binding.content.ElementUse(BrainModel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'populations')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 31, 12))
     st_1 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     transitions = []
@@ -2151,7 +2151,7 @@ BrainModel._Automaton = _BuildAutomaton_()
 
 
 
-Argument._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'value'), FlowExpression, scope=Argument, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 474, 12)))
+Argument._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'value'), FlowExpression, scope=Argument, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 453, 12)))
 
 def _BuildAutomaton_2 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2162,7 +2162,7 @@ def _BuildAutomaton_2 ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(Argument._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'value')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 474, 12))
+    symbol = pyxb.binding.content.ElementUse(Argument._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'value')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 453, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2173,7 +2173,7 @@ Argument._Automaton = _BuildAutomaton_2()
 
 
 
-Local._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=Local, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 481, 12)))
+Local._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=Local, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 460, 12)))
 
 def _BuildAutomaton_3 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2184,7 +2184,7 @@ def _BuildAutomaton_3 ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(Local._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 481, 12))
+    symbol = pyxb.binding.content.ElementUse(Local._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 460, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2202,12 +2202,12 @@ def _BuildAutomaton_4 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 92, 20))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 87, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.WildcardUse(pyxb.binding.content.Wildcard(process_contents=pyxb.binding.content.Wildcard.PC_skip, namespace_constraint=(pyxb.binding.content.Wildcard.NC_not, 'http://schemas.humanbrainproject.eu/SP10/2014/BIBI')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 92, 20))
+    symbol = pyxb.binding.content.WildcardUse(pyxb.binding.content.Wildcard(process_contents=pyxb.binding.content.Wildcard.PC_skip, namespace_constraint=(pyxb.binding.content.Wildcard.NC_not, 'http://schemas.humanbrainproject.eu/SP10/2014/BIBI')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 87, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2220,13 +2220,13 @@ PythonTransferFunction._Automaton = _BuildAutomaton_4()
 
 
 
-BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'local'), Local, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20)))
+BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'local'), Local, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20)))
 
-BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'device'), DeviceChannel, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 24)))
+BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'device'), DeviceChannel, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 103, 24)))
 
-BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup'), DeviceGroupChannel, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 109, 24)))
+BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup'), DeviceGroupChannel, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 104, 24)))
 
-BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'topic'), TopicChannel, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20)))
+BIBITransferFunction._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'topic'), TopicChannel, scope=BIBITransferFunction, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20)))
 
 def _BuildAutomaton_5 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2235,31 +2235,31 @@ def _BuildAutomaton_5 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 107, 20))
+    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 102, 20))
     counters.add(cc_1)
-    cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20))
+    cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
     counters.add(cc_2)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
+    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 24))
+    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 103, 24))
     st_1 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 109, 24))
+    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 104, 24))
     st_2 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_2)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_2, False))
-    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'topic')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20))
+    symbol = pyxb.binding.content.ElementUse(BIBITransferFunction._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'topic')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
     st_3 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_3)
     transitions = []
@@ -2298,19 +2298,19 @@ BIBITransferFunction._Automaton = _BuildAutomaton_5()
 
 
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'neurons'), NeuronSelector, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 219, 12)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'neurons'), NeuronSelector, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 212, 12)))
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connector'), NeuronConnector, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 16)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connector'), NeuronConnector, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 214, 16)))
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), NeuronConnectorRef, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 16)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), NeuronConnectorRef, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 215, 16)))
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), SynapseDynamics, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 226, 16)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), SynapseDynamics, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 218, 16)))
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), SynapseDynamicsRef, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 228, 16)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), SynapseDynamicsRef, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 219, 16)))
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'target'), NeuronTarget, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 231, 12)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'target'), NeuronTarget, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 12)))
 
-DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 12)))
+DeviceChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=DeviceChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 12)))
 
 def _BuildAutomaton_6 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2319,47 +2319,47 @@ def _BuildAutomaton_6 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 220, 12))
+    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 213, 12))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 225, 12))
+    cc_1 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 217, 12))
     counters.add(cc_1)
-    cc_2 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 231, 12))
+    cc_2 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 12))
     counters.add(cc_2)
-    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 12))
+    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 12))
     counters.add(cc_3)
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'neurons')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 219, 12))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'neurons')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 212, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connector')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connector')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 214, 16))
     st_1 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectorRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectorRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 215, 16))
     st_2 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_2)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 226, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 218, 16))
     st_3 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_3)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 228, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 219, 16))
     st_4 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_4)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_2, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'target')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 231, 12))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'target')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 221, 12))
     st_5 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_5)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_3, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 12))
+    symbol = pyxb.binding.content.ElementUse(DeviceChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 222, 12))
     st_6 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_6)
     transitions = []
@@ -2440,19 +2440,19 @@ DeviceChannel._Automaton = _BuildAutomaton_6()
 
 
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'neurons'), NeuronGroupSelector, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'neurons'), NeuronGroupSelector, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 230, 12)))
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connector'), NeuronConnector, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 242, 16)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connector'), NeuronConnector, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 16)))
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), NeuronConnectorRef, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 243, 16)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectorRef'), NeuronConnectorRef, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 233, 16)))
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), SynapseDynamics, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 247, 16)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics'), SynapseDynamics, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 236, 16)))
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), SynapseDynamicsRef, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 249, 16)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef'), SynapseDynamicsRef, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 237, 16)))
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'target'), NeuronTarget, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 12)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'target'), NeuronTarget, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 239, 12)))
 
-DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 12)))
+DeviceGroupChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=DeviceGroupChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12)))
 
 def _BuildAutomaton_7 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2461,47 +2461,47 @@ def _BuildAutomaton_7 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 241, 12))
+    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 231, 12))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 246, 12))
+    cc_1 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 235, 12))
     counters.add(cc_1)
-    cc_2 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 12))
+    cc_2 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 239, 12))
     counters.add(cc_2)
-    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 12))
+    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12))
     counters.add(cc_3)
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'neurons')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'neurons')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 230, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connector')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 242, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connector')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 232, 16))
     st_1 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectorRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 243, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectorRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 233, 16))
     st_2 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_2)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 247, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamics')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 236, 16))
     st_3 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_3)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 249, 16))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'synapseDynamicsRef')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 237, 16))
     st_4 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_4)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_2, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'target')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 12))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'target')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 239, 12))
     st_5 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_5)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_3, False))
-    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 12))
+    symbol = pyxb.binding.content.ElementUse(DeviceGroupChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 240, 12))
     st_6 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_6)
     transitions = []
@@ -2582,9 +2582,9 @@ DeviceGroupChannel._Automaton = _BuildAutomaton_7()
 
 
 
-ChainSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'neurons'), NeuronSelector, scope=ChainSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 266, 20)))
+ChainSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'neurons'), NeuronSelector, scope=ChainSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 20)))
 
-ChainSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectors'), NeuronGroupSelector, scope=ChainSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 268, 20)))
+ChainSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'connectors'), NeuronGroupSelector, scope=ChainSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 20)))
 
 def _BuildAutomaton_8 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2593,19 +2593,19 @@ def _BuildAutomaton_8 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 266, 20))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 20))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 268, 20))
+    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 20))
     counters.add(cc_1)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(ChainSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'neurons')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 266, 20))
+    symbol = pyxb.binding.content.ElementUse(ChainSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'neurons')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 252, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(ChainSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectors')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 268, 20))
+    symbol = pyxb.binding.content.ElementUse(ChainSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'connectors')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 253, 20))
     st_1 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     transitions = []
@@ -2624,9 +2624,9 @@ ChainSelector._Automaton = _BuildAutomaton_8()
 
 
 
-MapSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'source'), MultiNeuronSelector, scope=MapSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 279, 20)))
+MapSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'source'), MultiNeuronSelector, scope=MapSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 263, 20)))
 
-MapSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'pattern'), NeuronSelectorTemplate, scope=MapSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 281, 20)))
+MapSelector._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'pattern'), NeuronSelectorTemplate, scope=MapSelector, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 264, 20)))
 
 def _BuildAutomaton_9 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2637,11 +2637,11 @@ def _BuildAutomaton_9 ():
     counters = set()
     states = []
     final_update = None
-    symbol = pyxb.binding.content.ElementUse(MapSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'source')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 279, 20))
+    symbol = pyxb.binding.content.ElementUse(MapSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'source')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 263, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(MapSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'pattern')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 281, 20))
+    symbol = pyxb.binding.content.ElementUse(MapSelector._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'pattern')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 264, 20))
     st_1 = fac.State(symbol, is_initial=False, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     transitions = []
@@ -2656,7 +2656,7 @@ MapSelector._Automaton = _BuildAutomaton_9()
 
 
 
-ListTemplate._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'element'), TemplatePattern, scope=ListTemplate, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 365, 20)))
+ListTemplate._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'element'), TemplatePattern, scope=ListTemplate, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 346, 20)))
 
 def _BuildAutomaton_10 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2667,7 +2667,7 @@ def _BuildAutomaton_10 ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(ListTemplate._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'element')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 365, 20))
+    symbol = pyxb.binding.content.ElementUse(ListTemplate._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'element')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 346, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2680,7 +2680,7 @@ ListTemplate._Automaton = _BuildAutomaton_10()
 
 
 
-TopicChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=TopicChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 12)))
+TopicChannel._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'body'), FlowExpression, scope=TopicChannel, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 368, 12)))
 
 def _BuildAutomaton_11 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2689,12 +2689,12 @@ def _BuildAutomaton_11 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 12))
+    cc_0 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 368, 12))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(TopicChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 12))
+    symbol = pyxb.binding.content.ElementUse(TopicChannel._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'body')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 368, 12))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2707,7 +2707,7 @@ TopicChannel._Automaton = _BuildAutomaton_11()
 
 
 
-Scale._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'inner'), FlowExpression, scope=Scale, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 407, 20)))
+Scale._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'inner'), FlowExpression, scope=Scale, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 20)))
 
 def _BuildAutomaton_12 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2718,7 +2718,7 @@ def _BuildAutomaton_12 ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(Scale._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'inner')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 407, 20))
+    symbol = pyxb.binding.content.ElementUse(Scale._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'inner')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 387, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2729,7 +2729,7 @@ Scale._Automaton = _BuildAutomaton_12()
 
 
 
-Call._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'argument'), Argument, scope=Call, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 418, 20)))
+Call._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'argument'), Argument, scope=Call, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 398, 20)))
 
 def _BuildAutomaton_13 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2740,7 +2740,7 @@ def _BuildAutomaton_13 ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(Call._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'argument')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 418, 20))
+    symbol = pyxb.binding.content.ElementUse(Call._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'argument')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 398, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2753,7 +2753,7 @@ Call._Automaton = _BuildAutomaton_13()
 
 
 
-Operator._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'operand'), FlowExpression, scope=Operator, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20)))
+Operator._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'operand'), FlowExpression, scope=Operator, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20)))
 
 def _BuildAutomaton_14 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2762,12 +2762,12 @@ def _BuildAutomaton_14 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Operator._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Operator._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -2780,7 +2780,7 @@ Operator._Automaton = _BuildAutomaton_14()
 
 
 
-Robot2Neuron._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), DeviceChannel, scope=Robot2Neuron, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 123, 20)))
+Robot2Neuron._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), DeviceChannel, scope=Robot2Neuron, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 117, 20)))
 
 def _BuildAutomaton_15 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2789,38 +2789,38 @@ def _BuildAutomaton_15 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 107, 20))
+    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 102, 20))
     counters.add(cc_1)
-    cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20))
+    cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
     counters.add(cc_2)
-    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 123, 20))
+    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 117, 20))
     counters.add(cc_3)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
+    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 24))
+    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 103, 24))
     st_1 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 109, 24))
+    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 104, 24))
     st_2 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_2)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_2, False))
-    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'topic')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20))
+    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'topic')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
     st_3 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_3)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_3, False))
-    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'returnValue')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 123, 20))
+    symbol = pyxb.binding.content.ElementUse(Robot2Neuron._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'returnValue')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 117, 20))
     st_4 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_4)
     transitions = []
@@ -2878,19 +2878,19 @@ def _BuildAutomaton_16 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 134, 20))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 127, 20))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 135, 20))
+    cc_1 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 128, 20))
     counters.add(cc_1)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Monitor._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 134, 20))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Monitor._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 127, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Monitor._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 136, 24))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Monitor._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 129, 24))
     st_1 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     transitions = []
@@ -2909,7 +2909,7 @@ Neuron2Monitor._Automaton = _BuildAutomaton_16()
 
 
 
-Neuron2Robot._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), TopicChannel, scope=Neuron2Robot, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 148, 20)))
+Neuron2Robot._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'returnValue'), TopicChannel, scope=Neuron2Robot, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 141, 20)))
 
 def _BuildAutomaton_17 ():
     # Remove this helper function from the namespace after it is invoked
@@ -2918,38 +2918,38 @@ def _BuildAutomaton_17 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
+    cc_0 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20))
     counters.add(cc_0)
-    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 107, 20))
+    cc_1 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 102, 20))
     counters.add(cc_1)
-    cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20))
+    cc_2 = fac.CounterCondition(min=0, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
     counters.add(cc_2)
-    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 148, 20))
+    cc_3 = fac.CounterCondition(min=0, max=1, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 141, 20))
     counters.add(cc_3)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'local')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 101, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 108, 24))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'device')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 103, 24))
     st_1 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_1)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_1, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 109, 24))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'deviceGroup')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 104, 24))
     st_2 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_2)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_2, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'topic')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 111, 20))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'topic')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 106, 20))
     st_3 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_3)
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_3, False))
-    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'returnValue')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 148, 20))
+    symbol = pyxb.binding.content.ElementUse(Neuron2Robot._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'returnValue')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 141, 20))
     st_4 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_4)
     transitions = []
@@ -3000,7 +3000,7 @@ Neuron2Robot._Automaton = _BuildAutomaton_17()
 
 
 
-List._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'element'), pyxb.binding.datatypes.nonNegativeInteger, scope=List, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 320, 20)))
+List._AddElement(pyxb.binding.basis.element(pyxb.namespace.ExpandedName(Namespace, 'element'), pyxb.binding.datatypes.nonNegativeInteger, scope=List, location=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 302, 20)))
 
 def _BuildAutomaton_18 ():
     # Remove this helper function from the namespace after it is invoked
@@ -3011,7 +3011,7 @@ def _BuildAutomaton_18 ():
     counters = set()
     states = []
     final_update = set()
-    symbol = pyxb.binding.content.ElementUse(List._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'element')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 320, 20))
+    symbol = pyxb.binding.content.ElementUse(List._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'element')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 302, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -3031,12 +3031,12 @@ def _BuildAutomaton_19 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Add._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Add._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -3056,12 +3056,12 @@ def _BuildAutomaton_20 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Subtract._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Subtract._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -3081,12 +3081,12 @@ def _BuildAutomaton_21 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Multiply._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Multiply._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -3106,12 +3106,12 @@ def _BuildAutomaton_22 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Divide._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Divide._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -3131,12 +3131,12 @@ def _BuildAutomaton_23 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Min._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Min._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
@@ -3156,12 +3156,12 @@ def _BuildAutomaton_24 ():
     import pyxb.utils.fac as fac
 
     counters = set()
-    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    cc_0 = fac.CounterCondition(min=2, max=None, metadata=pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     counters.add(cc_0)
     states = []
     final_update = set()
     final_update.add(fac.UpdateInstruction(cc_0, False))
-    symbol = pyxb.binding.content.ElementUse(Max._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 429, 20))
+    symbol = pyxb.binding.content.ElementUse(Max._UseForTag(pyxb.namespace.ExpandedName(Namespace, 'operand')), pyxb.utils.utility.Location('/home/kenny/Desktop/HBP/Experiments/bibi_configuration.xsd', 409, 20))
     st_0 = fac.State(symbol, is_initial=True, final_update=final_update, is_unordered_catenation=False)
     states.append(st_0)
     transitions = []
