@@ -398,7 +398,7 @@ class TestROSCLEServer(unittest.TestCase):
         mock_tf.params = []
         mock_tf.source = "tf_source node_name"
         tfs = [mock_tf]
-        ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(MagicMock(),MagicMock(), MagicMock(), tfs, MagicMock())
+        ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(MagicMock(),MagicMock(), MagicMock(), tfs)
         # check nothing has changed
         self.assertEqual(mock_tf.source, "tf_source node_name")
 
@@ -412,19 +412,17 @@ class TestROSCLEServer(unittest.TestCase):
         mock_params.spec = mock_spec
         mock_tf.params = ["t", mock_params] # for some reason the real data has a t as in the list
 
-        old_changed = ["node_name"]
         tfs = [mock_tf]
-        self.assertEqual(ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(srv.SetBrainRequest.ASK_RENAME_POPULATION, old_changed, MagicMock(), tfs, 0), ["we ask the user if we change TFs", 0, 0, 1])
+        self.assertEqual(ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(srv.SetBrainRequest.ASK_RENAME_POPULATION, "node_name", MagicMock(), tfs), ["we ask the user if we change TFs", 0, 0, 1])
         self.assertEqual(mock_tf.source, "tf_source node_name")
 
-        mock_new_added = ["new_node_name"]
         mock_mapping.name = ""
         mock_parent = MagicMock()
         mock_parent.name = "node_name"
         mock_mapping.parent = mock_parent
 
-        ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(srv.SetBrainRequest.DO_RENAME_POPULATION, old_changed, mock_new_added, tfs, 0)
-        self.assertEqual(mock_parent.name, mock_new_added[0])
+        ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(srv.SetBrainRequest.DO_RENAME_POPULATION, "node_name", "new_node_name", tfs)
+        self.assertEqual(mock_parent.name, "new_node_name")
         self.assertEqual(mock_tf.source, "tf_source new_node_name")
 
     def test_rospy_spin_is_called(self):

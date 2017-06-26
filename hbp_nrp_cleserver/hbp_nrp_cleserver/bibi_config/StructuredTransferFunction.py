@@ -25,7 +25,7 @@ from cle_ros_msgs.msg import TransferFunction, Device, Topic, Variable, Experime
 from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, \
     poisson, population_rate, leaky_integrator_alpha, leaky_integrator_exp, fixed_frequency,\
     nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber,\
-    MapCSVRecorder, MapRetina, config
+    MapCSVRecorder, MapRetina, MapSpikeSink, MapSpikeSource, MapVariable, config
 from hbp_nrp_cle.tf_framework._PropertyPath import IndexPathSegment
 import logging
 import textwrap
@@ -179,7 +179,9 @@ def __extract_devices(tf):
             type=device_types[d.device_type],
             neurons=_extract_neurons(d.neurons)
         )
-        for d in __get_specs(tf) if d.is_brain_connection
+        # Variable mappings may be reset in case their initial value depends on the brain
+        # Therefore, we cannot use d.is_brain_connection
+        for d in __get_specs(tf) if isinstance(d, (MapSpikeSink, MapSpikeSource))
     ]
 
 
@@ -251,25 +253,24 @@ def __extract_variables(tf):
     """
     variables = []
     for v in __get_specs(tf):
-        if not v.is_robot_connection and not v.is_brain_connection:
-            if isinstance(v, MapRetina):
-                variables.append(Variable(
-                    name=v.name,
-                    type="retina",
-                    initial_value=v.retina_config_file
-                ))
-            elif isinstance(v, MapCSVRecorder):
-                variables.append(Variable(
-                    name=v.name,
-                    type="csv",
-                    initial_value=json.dumps({'filename': v.filename, 'headers': v.headers})
-                ))
-            else:
-                variables.append(Variable(
-                    name=v.name,
-                    type=type(v.initial_value).__name__,
-                    initial_value=str(v.initial_value)
-                ))
+        if isinstance(v, MapRetina):
+            variables.append(Variable(
+                name=v.name,
+                type="retina",
+                initial_value=v.retina_config_file
+            ))
+        elif isinstance(v, MapCSVRecorder):
+            variables.append(Variable(
+                name=v.name,
+                type="csv",
+                initial_value=json.dumps({'filename': v.filename, 'headers': v.headers})
+            ))
+        elif isinstance(v, MapVariable):
+            variables.append(Variable(
+                name=v.name,
+                type=type(v.initial_value).__name__,
+                initial_value=str(v.initial_value)
+            ))
     return variables
 
 

@@ -417,12 +417,18 @@ class ROSCLEServer(object):
         return [old_changed, new_added]
 
     @staticmethod
-    def change_transfer_function_for_population(change_population, old_changed, new_added,
-                                                transferFunctions, changed_i):
+    def change_transfer_function_for_population(change_population_mode, old_population_name,
+                                                new_population_name, transfer_functions):
         """
         Modifies a single population name. Returns a value if needs user input.
+
+        :param change_population_mode: The change population mode (as defined in SetBrainRequest)
+        :param old_population_name: The old name of the population
+        :param new_population_name: The new name of the population
+        :param transfer_functions: The transfer functions to which the population change should be
+        applied to
         """
-        for tf in transferFunctions:
+        for tf in transfer_functions:
 
             tfHasChanged = False
 
@@ -436,26 +442,25 @@ class ROSCLEServer(object):
                         if mapping is not None:
                             node = None
                             # required item is either neurons or its parent
-                            if str(mapping.name) == str(old_changed[changed_i]):
+                            if str(mapping.name) == old_population_name:
                                 node = mapping
-                            elif str(mapping.parent.name) == str(old_changed[changed_i]):
+                            elif str(mapping.parent.name) == old_population_name:
                                 node = mapping.parent
-                            if node:
-                                if change_population == \
+                            if node is not None:
+                                if change_population_mode == \
                                         srv.SetBrainRequest.ASK_RENAME_POPULATION:
                                     # here we send a reply to the frontend to ask
                                     # the user a permission to change TFs
                                     return ["we ask the user if we change TFs", 0, 0, 1]
-                                elif change_population == \
+                                elif change_population_mode == \
                                         srv.SetBrainRequest.DO_RENAME_POPULATION:
                                     # permission granted, so we change TFs
-                                    node.name = new_added[changed_i]
+                                    node.name = new_population_name
                                     tfHasChanged = True
             if tfHasChanged:
                 source = tf.source
-                pattern = re.compile(r'(?:(?<=\W)|^)(' +
-                                        str(old_changed[changed_i]) + r')(?:(?=\W)|$)')
-                modified_source = pattern.sub(str(new_added[changed_i]), source)
+                pattern = re.compile(r'(?:(?<=\W)|^)(' + old_population_name + r')(?:(?=\W)|$)')
+                modified_source = pattern.sub(new_population_name, source)
                 if not modified_source == source:
                     tf.source = modified_source
 
@@ -463,13 +468,17 @@ class ROSCLEServer(object):
                                     transferFunctions):
         """
         Modifies population names. Returns a value if needs user input.
-        """
 
+        :param change_population: The change population mode (as defined in SetBrainRequest)
+        :param old_changed: A list of old population names
+        :param new_added: A list of new population names
+        :param transferFunctions: The transfer functions to which the changes should be applied to
+        """
         for changed_i in range(len(old_changed)):
-            r = self.change_transfer_function_for_population(change_population, old_changed,
-                                                                new_added,
-                                                                transferFunctions,
-                                                                changed_i)
+            r = self.change_transfer_function_for_population(change_population,
+                                                             str(old_changed[changed_i]),
+                                                             str(new_added[changed_i]),
+                                                             transferFunctions)
             if r is not None:
                 return r
 
@@ -533,10 +542,13 @@ class ROSCLEServer(object):
                 self.__cle.load_network_from_file(
                     tmp.name, **json.loads(brain_populations))
         except ValueError, e:
+            logger.exception(e)
             returnValue = ["Population format is invalid: " + str(e), 0, 0, 0]
         except SyntaxError, e:
+            logger.exception(e)
             returnValue = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
         except Exception, e:
+            logger.exception(e)
             returnValue = ["Error changing neuronal network: " + str(e), 0, 0, 0]
 
         return returnValue
