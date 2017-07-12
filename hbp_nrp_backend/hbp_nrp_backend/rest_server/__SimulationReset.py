@@ -135,11 +135,13 @@ class SimulationReset(Resource):
 
         for par in SimulationReset.ResetRequest.required:
             if par not in body:
-                raise NRPServicesClientErrorException('Missing parameter %s' % (par, ))
+                raise NRPServicesClientErrorException(
+                    'Missing parameter %s' % (par, ))
 
         for par in body:
             if par not in SimulationReset.ResetRequest.resource_fields:
-                raise NRPServicesClientErrorException('Invalid parameter %s' % (par, ))
+                raise NRPServicesClientErrorException(
+                    'Invalid parameter %s' % (par, ))
 
         try:
             resetType = body.get('resetType')
@@ -174,16 +176,16 @@ class SimulationReset(Resource):
 
         state_machine_paths = {}
         if experiment.experimentControl is not None:
-            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
-                                        for sm in
-                                        experiment.experimentControl.stateMachine
-                                        if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
+            state_machine_paths.update({
+                sm.id: os.path.join(os.path.dirname(experiment_basepath), sm.src)
+                for sm in experiment.experimentControl.stateMachine
+                if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
         if experiment.experimentEvaluation is not None:
-            state_machine_paths.update({sm.id: os.path.join(sm_base_path, sm.src)
-                                        for sm in
-                                        experiment.experimentEvaluation.stateMachine
-                                        if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
+            state_machine_paths.update({
+                sm.id: os.path.join(os.path.dirname(experiment_basepath), sm.src)
+                for sm in experiment.experimentEvaluation.stateMachine
+                if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
         sim.state_machine_manager.add_all(state_machine_paths, sim.sim_id)
         sim.state_machine_manager.initialize_all()
@@ -194,13 +196,15 @@ class SimulationReset(Resource):
         Reset populations
         """
 
-        experiments_basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        experiments_basepath = os.path.join(
+            get_experiment_basepath(), sim.experiment_conf)
         models_basepath = get_model_basepath()
         _, bibi_conf = get_experiment_data(str(experiments_basepath))
         if bibi_conf is None:
             return
 
-        neurons_config = get_all_neurons_as_dict(bibi_conf.brainModel.populations)
+        neurons_config = get_all_neurons_as_dict(
+            bibi_conf.brainModel.populations)
 
         # Convert the populations to a JSON dictionary
 
@@ -239,13 +243,15 @@ class SimulationReset(Resource):
         for tf in old_tfs:
             sim.cle.delete_simulation_transfer_function(get_tf_name(tf))
 
-        experiment_basepath = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        experiment_basepath = os.path.join(
+            get_experiment_basepath(), sim.experiment_conf)
         _, bibi_conf = get_experiment_data(str(experiment_basepath))
         if bibi_conf is None:
             return
 
         # Reset Transfer functions
-        import_referenced_python_tfs(bibi_conf, os.path.dirname(experiment_basepath))
+        import_referenced_python_tfs(
+            bibi_conf, os.path.dirname(experiment_basepath))
 
         for tf in bibi_conf.transferFunction:
             tf_code = generate_tf(tf, bibi_conf)
