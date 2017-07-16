@@ -244,6 +244,7 @@ class LuganoVizClusterGazebo(LuganoVizCluster, IGazeboServerInstance):
             '--pause ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_api_plugin.so ' +
             '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_paths_plugin.so ' +
+            '-s $ROS_HBP_PACKAGES_LIB_DIR/libgazebo_ros_recording_plugin.so ' +
             '--verbose')
 
         result = self._gazebo_remote_process.expect(['Gazebo multi-robot simulator',

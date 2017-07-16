@@ -59,6 +59,7 @@ from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
 from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboBridgeInstance, \
     LocalGazeboServerInstance
 from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
+from hbp_nrp_cleserver.server.GazeboSimulationRecorder import GazeboSimulationRecorder
 from hbp_nrp_cle.robotsim.GazeboHelper import GazeboHelper
 
 # These imports start NEST.
@@ -118,6 +119,7 @@ class CLELauncher(object):
         self.models_path = None
         self.gzweb = None
         self.gzserver = None
+        self.gazebo_recorder = None
         self.ros_launcher = None
 
     def __handle_gazebo_shutdown(self):
@@ -190,7 +192,7 @@ class CLELauncher(object):
         self.models_path = get_model_basepath()
 
         # Number of subtasks for notificator logic
-        number_of_subtasks = 12
+        number_of_subtasks = 13
         if self.__exd_conf.rosLaunch is not None:
             number_of_subtasks = number_of_subtasks + 1
         if self.__bibi_conf.extRobotController is not None:
@@ -262,6 +264,9 @@ class CLELauncher(object):
 
         self.__notify("Connecting to Gazebo robotic simulator")
         self.__gazebo_helper = GazeboHelper()
+
+        self.__notify("Connecting to Gazebo simulation recorder")
+        self.gazebo_recorder = GazeboSimulationRecorder(self.__sim_id)
 
         self.__notify("Starting Gazebo web client")
         os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
@@ -430,7 +435,7 @@ class CLELauncher(object):
         # and we can clean after ourselves.
 
         # Clean up gazebo after ourselves
-        number_of_subtasks = 2
+        number_of_subtasks = 3
         if self.__exd_conf.rosLaunch is not None:
             number_of_subtasks = number_of_subtasks + 1
         if self.__bibi_conf.extRobotController is not None:
@@ -447,6 +452,14 @@ class CLELauncher(object):
                 logger.error("Could not send notifications")
                 logger.exception(e)
                 notifications = False
+
+            # Call the recorder plugin to shutdown before shutting down Gazebo
+            if self.gazebo_recorder is not None:
+                try:
+                    self.gazebo_recorder.shutdown()
+                except Exception, e:
+                    logger.warning("Gazebo recorder could not be shutdown successfully")
+                    logger.exception(e)
 
             # Do not empty Gazebo since Gazebo will be restarted anyhow
             if self.gzweb is not None:

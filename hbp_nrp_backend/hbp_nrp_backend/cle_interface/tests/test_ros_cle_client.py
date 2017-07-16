@@ -33,7 +33,7 @@ from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES
+    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIMULATION_RECORDER
 from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation, ResetSimulationRequest
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, EditTransferFunction, \
@@ -68,7 +68,8 @@ class TestROSCLEClient(unittest.TestCase):
             SERVICE_SIM_RESET_ID(0), SERVICE_GET_TRANSFER_FUNCTIONS(0),
             SERVICE_EDIT_TRANSFER_FUNCTION(0), SERVICE_ADD_TRANSFER_FUNCTION(0),
             SERVICE_DELETE_TRANSFER_FUNCTION(0), SERVICE_GET_BRAIN(0), SERVICE_SET_BRAIN(0),
-            SERVICE_GET_POPULATIONS(0), SERVICE_GET_CSV_RECORDERS_FILES(0)
+            SERVICE_GET_POPULATIONS(0), SERVICE_GET_CSV_RECORDERS_FILES(0),
+            SERVICE_SIMULATION_RECORDER(0)
         ]
         self.assertNotIn(False, [x in listened_services for x in expected_services])
 
@@ -232,6 +233,17 @@ class TestROSCLEClient(unittest.TestCase):
 
         client.stop_communication("Test stop")
         self.assertEqual(client.get_simulation_CSV_recorders_files(), files.files)
+
+    def test_command_simulation_recorder(self):
+        client = ROSCLEClient.ROSCLEClient(0)
+
+        client._ROSCLEClient__simulation_recorder = Mock(return_value=['foo', 'bar'])
+        self.assertEqual(client.command_simulation_recorder(0), ['foo', 'bar'])
+        client._ROSCLEClient__simulation_recorder.assert_called_once_with(0)
+
+        client.stop_communication("Test stop")
+        with self.assertRaises(ROSCLEClientException):
+            client.command_simulation_recorder(0)
 
 if __name__ == '__main__':
     unittest.main()

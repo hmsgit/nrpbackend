@@ -32,6 +32,8 @@ SERVICE_GET_CSV_RECORDERS_FILES = lambda sim_id:\
     '/%s/%d/get_CSV_recorders_files' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_CLEAN_CSV_RECORDERS_FILES = lambda sim_id:\
     '/%s/%d/clean_CSV_recorders_files' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_SIMULATION_RECORDER = lambda sim_id:\
+    '/%s/%d/simulation_recorder' % (ROS_CLE_NODE_NAME, sim_id)
 
 TOPIC_STATUS = '/%s/status' % ROS_CLE_NODE_NAME
 TOPIC_LIFECYCLE = lambda sim_id: '/%s/%d/lifecycle' % (ROS_CLE_NODE_NAME, sim_id)

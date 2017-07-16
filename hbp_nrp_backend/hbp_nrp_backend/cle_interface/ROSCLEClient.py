@@ -37,9 +37,8 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
-    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
-    # duplicated from CLE.__init__
-from cle_ros_msgs.srv import ResetSimulation
+    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION, \
+    SERVICE_SIMULATION_RECORDER
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -155,8 +154,8 @@ class ROSCLEClient(object):
 
         :param sim_id: The simulation id
         """
-        self.__cle_reset = ROSCLEServiceWrapper(SERVICE_SIM_RESET_ID(sim_id), ResetSimulation,
-                                                self)
+        self.__cle_reset = ROSCLEServiceWrapper(
+            SERVICE_SIM_RESET_ID(sim_id), srv.ResetSimulation, self)
 
         self.__cle_extend_timeout = ROSCLEServiceWrapper(
             SERVICE_SIM_EXTEND_TIMEOUT_ID(sim_id), srv.ExtendTimeout, self)
@@ -186,9 +185,11 @@ class ROSCLEClient(object):
         self.__cle_get_populations = ROSCLEServiceWrapper(SERVICE_GET_POPULATIONS(sim_id),
                                                           srv.GetPopulations, self)
         self.__cle_get_CSV_recorders_files = ROSCLEServiceWrapper(
-            SERVICE_GET_CSV_RECORDERS_FILES(sim_id),
-            srv.GetCSVRecordersFiles, self
-        )
+            SERVICE_GET_CSV_RECORDERS_FILES(sim_id), srv.GetCSVRecordersFiles, self)
+
+        self.__simulation_recorder = ROSCLEServiceWrapper(
+            SERVICE_SIMULATION_RECORDER(sim_id), srv.SimulationRecorder, self)
+
         self.__stop_reason = None
 
     def stop_communication(self, reason):
@@ -214,6 +215,12 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         # TODO: Uniform response from ROS CLE services so that this could be done directly
         # in the wrapper class
+
+        # cancel any simulation recording in progress, discard all if this is a full reset
+        # since the recorders/playback will break with simulator time reset
+        self.__simulation_recorder(srv.SimulationRecorderRequest.CANCEL)
+        if reset_type == srv.ResetSimulationRequest.RESET_FULL:
+            self.__simulation_recorder(srv.SimulationRecorderRequest.RESET)
 
         if populations is not None:
             for pop in populations:
@@ -388,3 +395,14 @@ class ROSCLEClient(object):
         :returns: "" if the call to ROS is successful
         """
         return self.__cle_extend_timeout(str(timeout)).success
+
+    def command_simulation_recorder(self, command):
+        """
+        Issue a request/command to the simulation recorder
+
+        :param command: the command to issue, see SimulationRecorder.srv definition for types
+        :return: boolean value/success and message if provided
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        return self.__simulation_recorder(command)

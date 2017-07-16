@@ -96,6 +96,7 @@ from hbp_nrp_backend.rest_server.__SimulationStructuredTransferFunctions import 
     SimulationStructuredTransferFunctions
 from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
+from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 
 # Register /collab
 api.add_resource(CollabHandler, '/collab/configuration/<string:context_id>')
@@ -137,6 +138,7 @@ api.add_resource(SimulationCSVRecorders, '/simulation/<int:sim_id>/csv-recorders
 api.add_resource(SimulationStructuredTransferFunctions,
                  '/simulation/<int:sim_id>/simulation-structured-transfer-functions')
 api.add_resource(SimulationTopics, '/simulation/topics')
+api.add_resource(SimulationRecorder, '/simulation/<int:sim_id>/recorder/<string:command>')
 
 # This should not be on the /simulation path ... as it does not apply to a running simulation
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
