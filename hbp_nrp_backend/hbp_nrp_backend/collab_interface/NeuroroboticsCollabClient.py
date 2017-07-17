@@ -584,7 +584,7 @@ class _FlattenedExperimentDirectory(object):
             robot_sdf_file = os.path.join(self.__models_folder, bibi_configuration_dom.bodyModel)
         robot_sdf_file_name = os.path.basename(robot_sdf_file)
         shutil.copyfile(robot_sdf_file, os.path.join(self.__temp_directory, robot_sdf_file_name))
-        bibi_configuration_dom.bodyModel = bibi_api_gen.SDF_Filename(robot_sdf_file_name)
+        bibi_configuration_dom.bodyModel = bibi_api_gen.SDFFilename(robot_sdf_file_name)
         # Get the PyNN file path and copy it into the flattened experiment directory
         if self.__models_paths is not None and self.__models_paths['brainPath'] is not None:
             brain_file = \
@@ -593,7 +593,7 @@ class _FlattenedExperimentDirectory(object):
             brain_file = os.path.join(self.__models_folder, bibi_configuration_dom.brainModel.file)
         brain_file_name = os.path.basename(brain_file)
         shutil.copyfile(brain_file, os.path.join(self.__temp_directory, brain_file_name))
-        bibi_configuration_dom.brainModel.file = bibi_api_gen.Python_Filename(brain_file_name)
+        bibi_configuration_dom.brainModel.file = bibi_api_gen.PythonFilename(brain_file_name)
 
         # Copy 'flattened' dependencies to temporary folder
         # and update file paths of TF python scripts
