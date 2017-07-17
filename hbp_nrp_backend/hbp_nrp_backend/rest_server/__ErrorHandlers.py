@@ -84,4 +84,5 @@ def error2json(error):
     """
     logger.exception(error)
     return json.dumps({'message': error.message,
-                       'type': error.error_type}), error.error_code
+                       'type': error.error_type,
+                       'data': error.data}), error.error_code

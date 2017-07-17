@@ -66,13 +66,13 @@ class TestSimulationRecorder(RestTest):
         # invalid command / request path
         response = self.client.get('/simulation/0/recorder/foo')
         self.assertEqual(404, response.status_code)
-        self.assertEqual('{"message": "Invalid recorder query: foo", "type": "Client error"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "Invalid recorder query: foo", "type": "Client error"}', response.data.strip())
 
         # raise an exception for bad service call
         simulations[0].cle.command_simulation_recorder.side_effect = ROSCLEClientException('foo')
         response = self.client.get('/simulation/0/recorder/is-recording')
         self.assertEqual(500, response.status_code)
-        self.assertEqual('{"message": "foo", "type": "CLE error"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "foo", "type": "CLE error"}', response.data.strip())
 
     def test_post(self):
 
@@ -87,13 +87,13 @@ class TestSimulationRecorder(RestTest):
             self.assertEqual('"success"', response.data.strip())
 
         # call returns an error message
-        simulations[0].cle.command_simulation_recorder.return_value.value = False 
+        simulations[0].cle.command_simulation_recorder.return_value.value = False
         simulations[0].cle.command_simulation_recorder.return_value.message = "error"
         simulations[0].cle.command_simulation_recorder.side_effect = None
 
         response = self.client.post('/simulation/0/recorder/start')
         self.assertEqual(400, response.status_code)
-        self.assertEqual('{"message": "error", "type": "Client error"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "error", "type": "Client error"}', response.data.strip())
 
     def test_post_failure(self):
 
@@ -107,16 +107,16 @@ class TestSimulationRecorder(RestTest):
         # incorrect owner
         response = self.client.post('/simulation/1/recorder/start')
         self.assertEqual(401, response.status_code)
-        self.assertEqual('{"message": "You need to be the simulation owner to apply your changes.                If you are the owner, try leaving and then re-joining the experiment.", "type": "Wrong user"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "You need to be the simulation owner to apply your changes.                If you are the owner, try leaving and then re-joining the experiment.", "type": "Wrong user"}', response.data.strip())
 
         # invalid command / request path
         response = self.client.post('/simulation/0/recorder/foo')
         self.assertEqual(404, response.status_code)
-        self.assertEqual('{"message": "Invalid recorder command: foo", "type": "Client error"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "Invalid recorder command: foo", "type": "Client error"}', response.data.strip())
 
         # raise an exception for bad service call
         simulations[0].cle.command_simulation_recorder.side_effect = ROSCLEClientException('foo')
         response = self.client.post('/simulation/0/recorder/start')
         self.assertEqual(500, response.status_code)
-        self.assertEqual('{"message": "foo", "type": "CLE error"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "foo", "type": "CLE error"}', response.data.strip())
 

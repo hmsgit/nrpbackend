@@ -33,11 +33,12 @@ class NRPServicesGeneralException(Exception):
     :param error_type: Type of error (like 'CLE Error')
     :param error_code: The HTTP error code to send to the frontend.
     """
-    def __init__(self, message, error_type, error_code=500):
+    def __init__(self, message, error_type, error_code=500, data=None):
         super(NRPServicesGeneralException, self).__init__(message)
         # These fields are handled by the front-end JS code.
         self.error_type = error_type
         self.error_code = error_code
+        self.data = data
 
     def __str__(self):
         return "{0} ({1})".format(repr(self.message), self.error_type)

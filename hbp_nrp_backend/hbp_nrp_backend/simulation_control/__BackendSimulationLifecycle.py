@@ -160,6 +160,11 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             raise NRPServicesGeneralException(
                 "Error while communicating with the CLE (" + e.message + ")",
                 "CLE error")
+        except rospy.ServiceException as e:
+            raise NRPServicesGeneralException(
+                "Error starting the simulation.",
+                "rospy.ServiceException",
+                data=e.message)
 
     def start(self, state_change):
         """

@@ -137,6 +137,11 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.factory_mock.side_effect = rospy.ROSException
         self.assertRaises(NRPServicesGeneralException, self.lifecycle.initialize, Mock())
 
+    def test_backend_initialize_service_problem(self):
+        self.rospy_mock.ServiceException = rospy.ServiceException
+        self.factory_mock.side_effect = rospy.ServiceException
+        self.assertRaises(NRPServicesGeneralException, self.lifecycle.initialize, Mock())
+
     def test_backend_start(self):
         self.lifecycle.start(Mock())
 
