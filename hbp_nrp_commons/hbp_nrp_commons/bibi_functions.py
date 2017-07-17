@@ -452,3 +452,19 @@ def find_changed_strings(list_a, list_b):
         if element_a not in list_b:
             changed.append(element_a)
     return changed
+
+
+def docstring_parameter(*sub):
+    """
+    Helper functions to include variables in docstrings using the @docstring_parameter decorator
+
+    :param sub: List of variables to be included in the docstring.
+    """
+    def dec(obj):
+        """
+        Reformat docstring with variables.
+        """
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+
+    return dec

@@ -34,10 +34,13 @@ from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_a
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
                                         NRPServicesGeneralException, \
-                                        NRPServicesWrongUserException
+                                        NRPServicesWrongUserException, \
+                                        ErrorMessages
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from cle_ros_msgs.srv import SimulationRecorderRequest
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 import string
 
@@ -70,19 +73,20 @@ class SimulationRecorder(Resource):
         ],
         responseMessages=[
             {
-                'code': 200,
-                'message': 'Recorder status retrieved successfully'
+                'code': 500,
+                'message': ErrorMessages.SERVER_ERROR_500
             },
             {
                 'code': 404,
-                'message': 'The simulation was not found or recorder is unavailable'
+                'message': ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
-                'code': 500,
-                'message': 'The query failed due to an internal server error'
+                'code': 200,
+                'message': 'Recorder status retrieved successfully'
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500, ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id, command):
         """
         Queries the simulation recorder for a value/status. See parameter description for
@@ -90,9 +94,10 @@ class SimulationRecorder(Resource):
 
         :param sim_id: The simulation ID to command.
         :param command: The command to query, supported: [is-recording]
+
+        :status 500: {0}
+        :status 404: {1}
         :status 200: Success. The query was issued and value returned.
-        :status 404: The simulation with given ID was not found.
-        :status 500: Internal server error, the query was not issued.
         """
 
         # validate simulation id, allow any users/viewers to query recorder
@@ -133,23 +138,24 @@ class SimulationRecorder(Resource):
         ],
         responseMessages=[
             {
-                'code': 200,
-                'message': 'Recorder command issued successfully'
+                'code': 500,
+                'message': ErrorMessages.SERVER_ERROR_500
+            },
+            {
+                'code': 404,
+                'message': ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 'code': 400,
                 'message': 'Invalid/refused command based on recorder state'
             },
             {
-                'code': 404,
-                'message': 'The simulation was not found or recorder is unavailable'
-            },
-            {
-                'code': 500,
-                'message': 'The query failed due to an internal server error.'
+                'code': 200,
+                'message': 'Recorder command issued successfully'
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500, ErrorMessages.SIMULATION_NOT_FOUND_404)
     def post(self, sim_id, command):
         """
         Issue user commands to the simulator recorder. See parameter description for
@@ -157,10 +163,11 @@ class SimulationRecorder(Resource):
 
         :param sim_id: The simulation ID to command.
         :param command: The command to issue, supported: [start, stop, cancel, reset]
-        :status 200: Success. The command was issued.
+
+        :status 500: {0}
+        :status 404: {1}
         :status 400: The command is invalid/refused by recorder - see message returned.
-        :status 404: The simulation with given ID was not found.
-        :status 500: Internal server error, the command was not issued.
+        :status 200: Success. The command was issued.
         """
 
         # validate simulation id

@@ -38,7 +38,8 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException
+    NRPServicesWrongUserException, NRPServicesClientErrorException, \
+    NRPServicesTransferFunctionException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
@@ -48,11 +49,11 @@ from hbp_nrp_backend.rest_server.__ExperimentService import get_model_basepath
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
-    generate_tf, import_referenced_python_tfs, correct_indentation, get_tf_name
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf, \
+    import_referenced_python_tfs, correct_indentation, get_tf_name
 
-from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException
 from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 logger = logging.getLogger(__name__)
 
@@ -93,42 +94,44 @@ class SimulationReset(Resource):
         ],
         responseMessages=[
             {
-                "code": 200,
-                "message": "Success. The reset type requested was performed on the given "
-                "simulation."
+                "code": 500,
+                "message": ErrorMessages.SERVER_ERROR_500
+            },
+            {
+                "code": 404,
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 400,
                 "message": "Invalid request, the JSON parameters are incorrect."
             },
             {
-                "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "code": 200,
+                "message": "Success. The reset type requested was performed on the given simulation"
             },
-            {
-                "code": 404,
-                "message": "The simulation was not found."
-            },
-            {
-                "code": 500,
-                "message": "Reset unsuccessful due to a server error, better specified by the"
-                "error message."
-            }
         ]
     )
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id):
         """
         Calls the CLE for resetting a given simulation.
 
         :param sim_id: The simulation ID.
-        :>json resetType: the reset type the user wants to be performed, details about possible
+
+        :> json resetType: the reset type the user wants to be performed, details about possible
             values are given in GazeboRosPackages/src/cle_ros_msgs/srv/ResetSimulation.srv
-        :status 200: The requested reset was performed successfully.
-        :status 400: Invalid request, the JSON parameters are incorrect.
-        :status 401: Operation only allowed by simulation owner.
-        :status 404: The simulation with the given ID was not found.
-        :status 500: Reset unsuccessful due to a server error, better specified by the error
-            message.
+
+        :status 500: {0}
+        :status 404: {1}
+        :status 401: {2}
+        :status 400: Invalid request, the JSON parameters are incorrect
+        :status 200: The requested reset was performed successfully
         """
 
         sim = _get_simulation_or_abort(sim_id)
@@ -149,16 +152,16 @@ class SimulationReset(Resource):
                     'Invalid parameter %s' % (par, ))
 
         try:
-            resetType = body.get('resetType')
-            if resetType == ResetSimulationRequest.RESET_FULL:
-                SimulationReset.resetBrain(sim)
-                SimulationReset.resetTransferFunctions(sim)
-                SimulationReset.resetStateMachines(sim)
-                sim.cle.reset(resetType)
-            elif resetType == ResetSimulationRequest.RESET_BRAIN:
-                SimulationReset.resetBrain(sim)
+            reset_type = body.get('resetType')
+            if reset_type == ResetSimulationRequest.RESET_FULL:
+                SimulationReset.reset_brain(sim)
+                SimulationReset.reset_transfer_functions(sim)
+                SimulationReset.reset_state_machines(sim)
+                sim.cle.reset(reset_type)
+            elif reset_type == ResetSimulationRequest.RESET_BRAIN:
+                SimulationReset.reset_brain(sim)
             else:
-                sim.cle.reset(resetType)
+                sim.cle.reset(reset_type)
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
@@ -166,7 +169,7 @@ class SimulationReset(Resource):
         return {}, 200
 
     @staticmethod
-    def resetStateMachines(sim):
+    def reset_state_machines(sim):
         """
         Reset states machines
         """
@@ -196,25 +199,24 @@ class SimulationReset(Resource):
         sim.state_machine_manager.initialize_all()
 
     @staticmethod
-    def resetBrain(sim):
+    def reset_brain(sim):
         """
         Reset populations
+
+        :param sim:
         """
 
-        experiments_basepath = os.path.join(
-            get_experiment_basepath(), sim.experiment_conf)
-        models_basepath = get_model_basepath()
-        _, bibi_conf = get_experiment_data(str(experiments_basepath))
+        experiments_base_path = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        models_base_path = get_model_basepath()
+        _, bibi_conf = get_experiment_data(str(experiments_base_path))
         if bibi_conf is None:
             return
 
-        neurons_config = get_all_neurons_as_dict(
-            bibi_conf.brainModel.populations)
+        neurons_config = get_all_neurons_as_dict(bibi_conf.brainModel.populations)
 
         # Convert the populations to a JSON dictionary
-
         for (name, s) in neurons_config.iteritems():
-            v = {}
+            v = dict()
             v['from'] = s.start
             v['to'] = s.stop
             if s.step <= 0:
@@ -225,8 +227,8 @@ class SimulationReset(Resource):
             neurons_config[name] = v
 
         neurons_config = json.dumps(neurons_config)
-        brainPath = os.path.join(models_basepath, bibi_conf.brainModel.file)
-        with open(brainPath, 'r') as myfile:
+        brain_path = os.path.join(models_base_path, bibi_conf.brainModel.file)
+        with open(brain_path, 'r') as myfile:
             data = myfile.read()
             DO_CHANGE_POPULATION = 1
             result = sim.cle.set_simulation_brain('py', data, "text", neurons_config,
@@ -239,7 +241,7 @@ class SimulationReset(Resource):
                                                     result.handle_population_change))
 
     @staticmethod
-    def resetTransferFunctions(sim):
+    def reset_transfer_functions(sim):
         """
         Reset transfer functions
         """
@@ -266,7 +268,7 @@ class SimulationReset(Resource):
             error_message = sim.cle.add_simulation_transfer_function(
                 str(tf_code)
             )
-            if (error_message):
+            if error_message:
                 raise NRPServicesTransferFunctionException(
                     "Transfer function patch failed: "
                     + str(error_message) + "\n"

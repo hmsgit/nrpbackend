@@ -44,9 +44,9 @@ def _get_level(number_of_errors, number_of_simulations):
     """
     Helper function that returns a string containing CRITICAL, WARNING and OK.
     """
-    if (number_of_errors <= 0):
+    if number_of_errors <= 0:
         return "OK"
-    elif (number_of_errors <= number_of_simulations / 2):
+    elif number_of_errors <= number_of_simulations / 2:
         return "WARNING"
     else:
         return "CRITICAL"
@@ -71,8 +71,7 @@ class Last24HoursErrorCheck(Resource):
     @RestSyncMiddleware.threadsafe
     def get(self):
         """
-        Get a nagios status regarding the number of errors that happened in the last
-        24 hours.
+        Get a nagios status regarding the number of errors that happened in the last 24 hours.
         """
         has_simulation_been_run_in_the_last_24h = lambda simulation: (datetime.now(
                 tz=timezone('Europe/Zurich')) - simulation.creation_datetime) < timedelta(1)
@@ -104,8 +103,7 @@ class TotalErrorCheck(Resource):
     @RestSyncMiddleware.threadsafe
     def get(self):
         """
-        Get a nagios status regarding the number of errors that happened since
-        the server started.
+        Get a nagios status regarding the number of errors that happened since the server started.
         """
         number_of_errors = sum(simulation.errors for simulation in simulations)
         number_of_simulation = len(simulations)

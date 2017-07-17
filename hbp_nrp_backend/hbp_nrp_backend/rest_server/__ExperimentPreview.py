@@ -26,18 +26,19 @@ This module contains the REST implementation
 for loading (and someday writing) experiment preview images
 """
 
-
 __author__ = 'Bernd Eckstein'
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_rel, \
-    get_experiment_basepath, ErrorMessages
+    get_experiment_basepath
 
 from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
+
 from pyxb import ValidationError
 
 import mimetypes
@@ -95,16 +96,20 @@ class ExperimentPreview(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
+                         ErrorMessages.EXPERIMENT_NOT_FOUND_404,
+                         ErrorMessages.EXPERIMENT_PREVIEW_NOT_FOUND_404)
     @RestSyncMiddleware.threadsafe
     def get(self, exp_id):
         """
         Get preview image of the experiment specified with experiment ID.
 
         :param exp_id: The experiment ID
-        :>json image_as_base64: The PNG image as base64
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 404: The experiment with the given ID was not found
-        :status 404: The experiment has no preview image
+
+        :> json image_as_base64: The PNG image as base64
+
+        :status 500: {0}
+        :status 404: {1} or {2}
         :status 200: Success. The preview image is returned
         """
 

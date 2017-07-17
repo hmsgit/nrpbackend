@@ -32,11 +32,13 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from transitions import MachineError
+
+from hbp_nrp_backend.rest_server import NRPServicesStateException, NRPServicesWrongUserException, \
+    ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server import NRPServicesStateException, \
-    NRPServicesWrongUserException
-from hbp_nrp_backend.rest_server.__UserAuthentication import \
-    UserAuthentication
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 # pylint: disable=R0201
 
@@ -76,7 +78,7 @@ class SimulationState(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -84,15 +86,17 @@ class SimulationState(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id):
         """
         Gets the state of the simulation with the specified simulation id. Possible values are:
         created, initialized, started, paused, stopped
 
         :param sim_id: The simulation id
-        :>json string state: The state of the simulation
-        :>json string timeout: The timeout set for the simulation
-        :status 404: The simulation with the given ID was not found
+
+        :> json string state: The state of the simulation
+
+        :status 404: {0}
         :status 200: The state of the simulation with the given ID was successfully retrieved
         """
         simulation = _get_simulation_or_abort(sim_id)
@@ -121,15 +125,15 @@ class SimulationState(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 400,
                 "message": "The state transition is invalid"
-            },
-            {
-                "code": 401,
-                "message": "Operation only allowed by simulation owner"
             },
             {
                 "code": 200,
@@ -137,18 +141,22 @@ class SimulationState(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id):
         """
         Sets the simulation with the given name into a new state. Allowed values are:
         created, initialized, started, paused, stopped
 
         :param sim_id: The simulation id
-        :<json string state: The state of the simulation to set
-        :>json string state: The state of the simulation
-        :>json string timeout: The timeout set for the simulation
+
+        :< json string state: The state of the simulation to set
+
+        :> json string state: The state of the simulation
+
+        :status 404: {0}
+        :status 401: {1}
         :status 400: The state transition is invalid
-        :status 401: Operation only allowed by simulation owner
-        :status 404: The simulation with the given ID was not found
         :status 200: The state of the simulation with the given ID was successfully set
         """
         simulation = _get_simulation_or_abort(sim_id)

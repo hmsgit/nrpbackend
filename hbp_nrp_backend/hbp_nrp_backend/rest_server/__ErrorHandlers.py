@@ -66,6 +66,7 @@ def internal_error(error):
 def internal_error(error):
     """
     Handles ROSCLEClientException errors
+
     :param error: The error object
     """
     logger.exception(error)
@@ -80,6 +81,7 @@ def internal_error(error):
 def error2json(error):
     """
     Handles NRPServicesGeneralException errors
+
     :param error: The error object
     """
     logger.exception(error)

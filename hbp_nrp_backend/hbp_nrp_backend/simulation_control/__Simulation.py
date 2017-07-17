@@ -58,9 +58,11 @@ class Simulation(object):
         :param experiment_conf: The experiment configuration (Path to ExD configuration)
         :param environment_conf: The environment configuration (Path to environment configuration)
         :param owner: The name of the user owning the simulation
-        :param sim_gzserver_host: Denotes where the simulation will run once started. Set to
+        :param sim_gzserver_host: Denotes where the simulation will run once started. Set to 'local'
+                                  for localhost and 'lugano' for a dedicated machine on the Lugano
+                                  viz cluster.
+        :param reservation: the name of the cluster reservation subsequently used to allocate a job
         :param sim_brain_processes: Number of brain processes to use (overrides ExD configuration)
-        'local' for localhost and 'lugano' for a dedicated machine on the Lugano viz cluster.
         :param context_id: The context ID if the experiment is declared in the collab portal
         :param state: The initial state (created by default)
         :param playback_path: The simulation recording to playback (Path to recording root)
@@ -96,7 +98,7 @@ class Simulation(object):
     @creationUniqueID.setter
     def creationUniqueID(self, new_ID):
         """
-        Sets the simulation unique creation UD (used by Frontend to identify this simulation)
+        Sets the simulation unique creation ID (used by Frontend to identify this simulation)
 
         :param new_ID: The new ID
         """
@@ -375,9 +377,10 @@ class Simulation(object):
         'creationUniqueID': fields.String(attribute='creationUniqueID'),
         'playbackPath': fields.String(attribute='playback_path')
     }
-    required = [
-        'state', 'simulationID', 'experimentConfiguration', 'gzserverHost'
-    ]
+
+    required = ['state', 'simulationID', 'experimentConfiguration', 'environmentConfiguration',
+                'owner', 'creationDate', 'gzserverHost', 'reservation', 'contextID',
+                'brainProcesses', 'creationUniqueID']
 
 
 class InvalidStateTransitionException(Exception):

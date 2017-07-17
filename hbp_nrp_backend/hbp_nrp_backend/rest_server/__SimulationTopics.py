@@ -40,10 +40,9 @@ class SimulationTopics(Resource):
     def get(self):
         """
         Gets a list of topics available in the current simulation
-        :return:
         """
         m = master.Master('masterapi')
-        filtereddict = {
+        filtered_dict = {
             k: v for k, v in m.getTopicTypes()
             if not k.startswith('/monitor') and
             not k.startswith('/gazebo') and
@@ -59,12 +58,12 @@ class SimulationTopics(Resource):
             for topic_info in topic_list:
                 topic_name = topic_info[0]
                 if (
-                    topic_name in filtereddict and
+                    topic_name in filtered_dict and
                     not topic_name in topic_names
                 ):
                     topic_e = {
                         'topic': topic_name,  # e.g., '/husky/cmd'
-                        'topicType': filtereddict[topic_name]  # e.g., '/gazebo'
+                        'topicType': filtered_dict[topic_name]  # e.g., '/gazebo'
                     }
                     topics.append(topic_e)
                     topic_names.append(topic_name)

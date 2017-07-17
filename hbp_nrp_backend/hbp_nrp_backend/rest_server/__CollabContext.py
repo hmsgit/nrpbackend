@@ -32,9 +32,8 @@ from sqlalchemy import exc
 
 def get_or_raise(context_id):
     """
-    Get the collab object (containing the experiment ID and the document
-    services folder) from the database or raise an NRPServicesDatabaseException
-    if the get query raised an exception.
+    Get the collab object (containing the experiment ID and the document services folder) from the
+    database or raise an NRPServicesDatabaseException if the get query raised an exception.
 
     :param context_id: The Collab context UUID of Navigation Item's client
     :return: the experiment ID associated to the given context UUID

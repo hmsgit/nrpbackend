@@ -39,11 +39,13 @@ from lxml import etree as ET
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+
 from gazebo_msgs.srv import ExportWorldSDF
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesUnavailableROSService
+    NRPServicesUnavailableROSService, ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 logger = logging.getLogger(__name__)
 
@@ -72,16 +74,19 @@ class ExperimentWorldSDF(Resource):
                 "message": ErrorMessages.ERROR_SAVING_FILE_500
             },
             {
-                "code": 200
+                "code": 200,
+                "message": "Success. File written."
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500)
     def put(self, context_id):
         """
         Save the current running experiment SDF back to the collab storage
 
         :param context_id: The collab context ID
-        :status 500: Error saving file
+
+        :status 500: {0}
         :status 200: Success. File written.
         """
 

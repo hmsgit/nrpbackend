@@ -38,11 +38,11 @@ from threading import Thread
 from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
-from hbp_nrp_backend.rest_server.__ExperimentService import \
-    ErrorMessages
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
 from hbp_nrp_commons.generated import bibi_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,6 @@ class ExperimentBrainFile(Resource):
     def parsePopulations(self, brain_populations, bibi):
         """
         Parse a population from the received brain_populations object and add it to bibi.
-
         """
 
         if isinstance(brain_populations, list):
@@ -131,19 +130,23 @@ class ExperimentBrainFile(Resource):
             },
             {
                 "code": 200,
+                "message": "Success."
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500, ErrorMessages.COLLAB_NOT_FOUND_404)
     def put(self, context_id):
         """
-         Save a brain model PyNN of an experiment to the collab.
+        Save a brain model PyNN of an experiment to the collab.
 
         :param path context_id: The context UUID of the Collab where the transfer functions
-         will be saved
-        :<json body json string data: PyNN script of the model
-        :<json body json string brain_populations: neuron populations
-        :status 500: Error saving file
-        :status 404: The collab with the given context ID was not found
+                                will be saved
+
+        :< json body json string data: PyNN script of the model
+        :< json body json string brain_populations: neuron populations
+
+        :status 500: {0}
+        :status 404: {1}
         :status 400: The request body is malformed
         :status 200: Success. File written.
         """

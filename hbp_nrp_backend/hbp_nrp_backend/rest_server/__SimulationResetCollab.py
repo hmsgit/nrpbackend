@@ -45,14 +45,17 @@ from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException
+    NRPServicesWrongUserException, NRPServicesClientErrorException, \
+    NRPServicesTransferFunctionException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
-from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException
+
 from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
+
 from distutils.dir_util import copy_tree  # pylint: disable=F0401,E0611
 
 logger = logging.getLogger(__name__)
@@ -94,43 +97,47 @@ class SimulationResetCollab(Resource):
         ],
         responseMessages=[
             {
-                "code": 200,
-                "message": "Success. The reset type requested was performed on the given "
-                    "simulation."
-            },
-            {
-                "code": 400,
-                "message": "Invalid request, the JSON parameters are incorrect."
-            },
-            {
-                "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "code": 500,
+                "message": ErrorMessages.SERVER_ERROR_500
             },
             {
                 "code": 404,
-                "message": "The simulation was not found."
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
-                "code": 500,
-                "message": "Reset unsuccessful due to a server error, better specified by the"
-                    "error message."
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
+                "code": 400,
+                "message": "Invalid request, the JSON parameters are incorrect"
+            },
+            {
+                "code": 200,
+                "message": "Success. The reset type requested was performed on the given "
+                           "simulation"
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id, context_id):
         """
         Calls the CLE for resetting a given simulation to the last saved state in the Collab.
 
         :param sim_id: The simulation ID.
         :param context_id: The collab context ID
-        :>json resetType: the reset type the user wants to be performed, details about possible
-            values are given in GazeboRosPackages/src/cle_ros_msgs/srv/ResetSimulation.srv
-        :status 200: The requested reset was performed successfully.
-        :status 400: Invalid request, the JSON parameters are incorrect.
-        :status 401: Operation only allowed by simulation owner.
-        :status 404: The simulation with the given ID was not found.
-        :status 500: Reset unsuccessful due to a server error, better specified by the error
-            message.
+
+        :> json resetType: the reset type the user wants to be performed, details about possible
+                          values are given in
+                          GazeboRosPackages/src/cle_ros_msgs/srv/ResetSimulation.srv
+
+        :status 500: {0}
+        :status 404: {1}
+        :status 401: {2}
+        :status 400: Invalid request, the JSON parameters are incorrect
+        :status 200: The requested reset was performed successfully
         """
 
         sim = _get_simulation_or_abort(sim_id)
@@ -204,16 +211,16 @@ class SimulationResetCollab(Resource):
     def resetBrain(simulation):
         """
         Reset brain
+
         :param simulation: simulation object
         """
 
-        brainPath, _, neurons_config = \
-                        SimulationResetCollab._get_brain_info_from_collab(simulation.context_id)
+        brain_path, _, neurons_config = \
+            SimulationResetCollab._get_brain_info_from_collab(simulation.context_id)
 
-      # Convert the populations to a JSON dictionary
-
+        # Convert the populations to a JSON dictionary
         for (name, s) in neurons_config.iteritems():
-            v = {}
+            v = dict()
             v['from'] = s.start
             v['to'] = s.stop
             if s.step <= 0:
@@ -225,7 +232,7 @@ class SimulationResetCollab(Resource):
 
         neurons_config = json.dumps(neurons_config)
 
-        with open(brainPath, 'r') as myfile:
+        with open(brain_path, 'r') as myfile:
             data = myfile.read()
             DO_CHANGE_POPULATION = 1
             result = simulation.cle.set_simulation_brain('py', data, "text", neurons_config,
@@ -241,6 +248,8 @@ class SimulationResetCollab(Resource):
     def resetStateMachines(sim, experiment, sm_base_path):
         """
         Reset states machines
+
+        :param sim:
         :param experiment: experiment conf
         :param sm_base_path: base path of the experiment
         """
@@ -267,6 +276,7 @@ class SimulationResetCollab(Resource):
     def resetTransferFunctions(simulation, bibi_conf, base_path):
         """
         Reset transfer functions
+
         :param simulation: simulation object
         :param bibi_conf: BIBI conf
         :param base_path: base path of the experiment

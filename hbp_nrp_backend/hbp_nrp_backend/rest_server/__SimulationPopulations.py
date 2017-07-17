@@ -30,7 +30,10 @@ __author__ = "Bernd Eckstein"
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
+from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 # pylint: disable=no-self-use
 
@@ -58,16 +61,17 @@ class Population(object):
     """
 
     resource_fields = {
+        'indices': fields.List(fields.Integer),
         'name': fields.String,
         'neuron_model': fields.String,
         'parameters': fields.List(fields.Nested(NeuronParameter.resource_fields)),
         'gids': fields.List(fields.Integer),
     }
-    required = ['neuron_model', 'name', 'gids', 'parameters']
+    required = ['indices', 'name', 'neuron_model', 'parameters', 'gids']
 
 
 @swagger.model
-@swagger.nested(neurons=Population.__name__)
+@swagger.nested(populations=Population.__name__)
 class Populations(object):
     """
     Populations
@@ -82,8 +86,8 @@ class Populations(object):
 
 class SimulationPopulations(Resource):
     """
-    This resource handles getting the populations of a brain in a simulation,
-    by retreiving the neurons of the respective CLE instance.
+    This resource handles getting the populations of a brain in a simulation by retrieving the
+    neurons of the respective CLE instance.
     """
 
     @swagger.operation(
@@ -92,7 +96,7 @@ class SimulationPopulations(Resource):
         parameters=[
             {
                 "name": "sim_id",
-                "description": "The ID of the simulation whose neurons shall be retrieved",
+                "description": "The simulation ID",
                 "required": True,
                 "paramType": "path",
                 "dataType": int.__name__
@@ -101,7 +105,7 @@ class SimulationPopulations(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -109,28 +113,17 @@ class SimulationPopulations(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id):
         """
         Gets the neurons of the brain in a simulation with the specified simulation id.
 
-        :param sim_id: The simulation id
-        :>json dict Populations: The populations as json: \
-          {\
-             populations: [
-                 { \
-                    name: "string", \
-                    neuron_model: "string", \
-                    gids: [0, 8, 15], \
-                    parameters: [ \
-                        { \
-                          parameterName:  "string", \
-                          value: 0.0 \
-                        }
-                    ] \
-                 } \
-              ] \
-          }
-        :status 404: The simulation with the given ID was not found
+        :param sim_id: The simulation ID
+
+        :> json array Populations: array of population dictionaries. Each dict contains population
+                                   name, neuron indices, neuron model, parameters and gids
+
+        :status 404: {0}
         :status 200: The neurons of the simulation with the given ID where successfully retrieved
         """
         simulation = _get_simulation_or_abort(sim_id)

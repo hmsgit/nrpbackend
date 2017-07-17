@@ -244,7 +244,7 @@ class ROSCLEClient(object):
         """
         Get the brain of the running simulation
 
-        :return: dict with brain_data, brain_type, data_type
+        :return: dict with brain_data, brain_type, brain_populations and data_type
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
@@ -279,8 +279,7 @@ class ROSCLEClient(object):
         """
         Get the simulation transfer functions.
 
-        :returns: An array of strings containing the source code of the transfer
-                  functions.
+        :returns: An array of strings containing the source code of the transfer functions.
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)

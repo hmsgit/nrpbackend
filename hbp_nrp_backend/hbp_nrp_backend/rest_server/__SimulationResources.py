@@ -29,22 +29,24 @@ for retrieving the simulation resource file list
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
+
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 import os
 import logging
+
 LOG = logging.getLogger(__name__)
+
 
 # pylint: disable=no-self-use
 
 
 @swagger.model
 class SimulationResource(object):
-
     """
     Simulation resource
     Only used for swagger documentation
@@ -61,7 +63,6 @@ class SimulationResource(object):
 @swagger.model
 @swagger.nested(resources=SimulationResource.__name__)
 class SimulationResourceList(object):
-
     """
     Simulation resource list
     Only used for swagger documentation
@@ -75,7 +76,6 @@ class SimulationResourceList(object):
 
 
 class SimulationResources(Resource):
-
     """
     The simulation resource files
     """
@@ -99,11 +99,8 @@ class SimulationResources(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404
-            },
-            {
-                "code": 404,
-                "message": ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404
+                "message": ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404 +
+                           ". Or, " + ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -111,15 +108,20 @@ class SimulationResources(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
+                         ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+                         ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404)
     @RestSyncMiddleware.threadsafe
     def get(self, sim_id):
         """
         Gets simulation resource files of the experiment running for the simulation ID
 
         :param sim_id: The simulation ID
-        :>json string resources: Resource files
-        :status 404: The simulation with the given ID was not found
-        :status 404: The simulation BIBI file was not found
+
+        :> json string resources: Resource files
+
+        :status 500: {0}
+        :status 404: {1}. Or, {2}.
         :status 200: Success. The simulation BIBI configuration files were retrieved
         """
 

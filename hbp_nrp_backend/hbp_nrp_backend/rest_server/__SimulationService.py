@@ -30,10 +30,8 @@ __author__ = 'GeorgHinkel'
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import api, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
-from hbp_nrp_backend.rest_server.__SimulationControl import \
-    SimulationControl
-from hbp_nrp_backend.rest_server.__UserAuthentication import \
-    UserAuthentication
+from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from flask import request
 from flask_restful import Resource, fields, marshal, marshal_with
 from flask_restful_swagger import swagger
@@ -68,24 +66,6 @@ class SimulationService(Resource):
         notes='This is the entry point for the NRP REST server since'
               ' this is where you actually create simulations',
         responseClass=Simulation.__name__,
-        responseMessages=[
-            {
-                "code": 400,
-                "message": "Experiment configuration is not valid"
-            },
-            {
-                "code": 401,
-                "message": "gzserverHost is not valid"
-            },
-            {
-                "code": 402,
-                "message": "Another simulation is already running on the server."
-            },
-            {
-                "code": 201,
-                "message": "Simulation created successfully"
-            }
-        ],
         parameters=[
             {
                 "name": "body",
@@ -93,29 +73,55 @@ class SimulationService(Resource):
                 "dataType": _Experiment.__name__,
                 "required": True
             }
-        ]
+        ],
+        responseMessages=[
+            {
+                "code": 402,
+                "message": "Another simulation is already running on the server"
+            },
+            {
+                "code": 401,
+                "message": "gzserverHost is not valid"
+            },
+            {
+                "code": 400,
+                "message": "Experiment configuration is not valid"
+            },
+            {
+                "code": 201,
+                "message": "Simulation created successfully"
+            }
+        ],
     )
     def post(self):
         """
         Creates a new simulation which is neither 'initialized' nor 'started'.
 
-        :<json string experimentConfiguration: Path and name of the experiment configuration file
-        :<json string environmentConfiguration: Path of the custom SDF environment (optional)
-        :>json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
-        :>json string state: The current state of the simulation (always 'created')
-        :>json integer simulationID: The id of the simulation (needed for further REST calls)
-        :>json string experimentConfiguration: Path and name of the experiment configuration file
-        :>json string creationDate: Date of creation of this simulation
-        :>json string gzserverHost: The host where gzserver will be run: local for using the \
-        same machine of the backend, lugano to use a dedicated instance on the Lugano viz cluster.
-        :>json string reservation: the name of the cluster reservation \
-        subsequently used to allocate a job.
-        :>json integer brainProcesses: Number of brain processes for simulation, overrides the \
-        :>json string playbackPath: Path to simulation recording to play (optional)
-        number specified in the experiment configuration file
-        :status 400: Experiment configuration is not valid
-        :status 401: gzserverHost is not valid
+        :< json string experimentConfiguration: Path and name of the experiment configuration file
+        :< json string environmentConfiguration: Path of the custom SDF environment (optional)
+        :< json string gzserverHost: The host where gzserver will be run: local for using the same
+                                     machine of the backend
+
+        :> json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
+        :> json string state: The current state of the simulation (always 'created')
+        :> json integer simulationID: The id of the simulation (needed for further REST calls)
+        :> json string experimentConfiguration: Path and name of the experiment configuration file
+        :> json string environmentConfiguration: Path and name of the environment configuration file
+        :> json string creationDate: Date of creation of this simulation
+        :> json string gzserverHost: The host where gzserver will be run: local for using the same
+                                     machine of the backend, lugano to use a dedicated instance on
+                                     the Lugano viz cluster
+        :> json string reservation: the name of the cluster reservation subsequently used to
+                                    allocate a job
+        :> json string contextID: The context ID if the experiment is declared in the collab portal
+        :> json integer brainProcesses: Number of brain processes for simulation, overrides the
+                                        number specified in the experiment configuration file
+        :> json string creationUniqueID: The simulation unique creation ID that is used by the
+                                         Frontend to identify this simulation
+
         :status 402: Another simulation is already running on the server
+        :status 401: gzserverHost is not valid
+        :status 400: Experiment configuration is not valid
         :status 201: Simulation created successfully
         """
 
@@ -180,13 +186,20 @@ class SimulationService(Resource):
         """
         Gets the list of simulations on this server.
 
-        :>jsonarr string owner: The simulation owner (Unified Portal user name or 'hbp-default')
-        :>jsonarr string state: The current state of the simulation
-        :>jsonarr integer simulationID: The id of the simulation (needed for further REST calls)
-        :>jsonarr string experimentConfiguration: Path and name of the experiment configuration file
-        :>jsonarr string gzserverHost: Denotes where the gzserver will run once the simulation is \
-        started, local for localhost, lugano for a remote execution on the Lugano viz cluster.
-        :>json string creationDate: Date of creation of this simulation
+        :> json int contextID:
+        :> json int brainProcesses:
+        :> json int environmentConfiguration:
+        :> json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
+        :> json int reservation:
+        :> json string creationDate: Date of creation of this simulation
+        :> json string creationUniqueID:
+        :> json string gzserverHost: Denotes where the gzserver will run once the simulation is
+                                     started, local for localhost, lugano for a remote execution on
+                                     the Lugano viz cluster.
+        :> json string experimentConfiguration: Path and name of the experiment configuration file
+        :> json string state: The current state of the simulation
+        :> json int simulationID: The id of the simulation (needed for further REST calls)
+
         :status 200: Simulations retrieved successfully
         """
         return simulations, 200

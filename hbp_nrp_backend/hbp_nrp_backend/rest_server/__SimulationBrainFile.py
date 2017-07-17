@@ -32,12 +32,11 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from flask import request
 
-from hbp_nrp_backend.rest_server.__ExperimentService import \
-    ErrorMessages
+from hbp_nrp_backend.rest_server import NRPServicesWrongUserException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server import NRPServicesWrongUserException
-from hbp_nrp_backend.rest_server.__UserAuthentication import \
-    UserAuthentication
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 import json
 
@@ -46,41 +45,88 @@ import json
 # pylint: disable=pointless-string-statement
 
 
+@swagger.model
+class PopulationIndices(object):
+    """
+    Swagger documentation object
+    """
+    resource_fields = {
+        'to': fields.Integer,
+        'step': fields.Integer,
+        'from': fields.Integer
+    }
+    required = ['to', 'step', 'from']
+
+
+@swagger.model
+@swagger.nested(population_name=PopulationIndices.__name__)
+class PopulationDictionary(object):
+    """
+    Swagger documentation object
+    Population dictionary
+    """
+    resource_fields = {
+        'population_name': fields.Nested(PopulationIndices.resource_fields)
+    }
+    required = ['population_name']
+
+
 class SimulationBrainFile(Resource):
     """
     The resource to get and set brain files in the running simulation
     """
 
     @swagger.model
-    class _brain_(object):
+    @swagger.nested(additional_populations=PopulationDictionary.__name__)
+    class GetBrain(object):
         """
-        Get and Set Experiment brain
+        Get Experiment Brain
         Only used for swagger documentation
         """
 
         resource_fields = {
             'brain_type': fields.String(),
             'data_type': fields.String(),
-            'data': fields.String()
+            'data': fields.String(),
+            'additional_populations': fields.Nested(PopulationDictionary.resource_fields)
         }
-        required = ['brain_type', 'data_type', 'data']
+        required = ['brain_type', 'data_type', 'data', 'additional_populations']
 
-    class _error(object):
+    @swagger.model
+    @swagger.nested(additional_populations=PopulationDictionary.__name__)
+    class SetBrain(object):
         """
-        Get and Set Experiment brain
+        Set Experiment Brain
+        Only used for swagger documentation
+        """
+        resource_fields = {
+            'brain_type': fields.String(),
+            'data_type': fields.String(),
+            'data': fields.String(),
+            'additional_populations': fields.Nested(PopulationDictionary.resource_fields),
+            'change_population': fields.Integer
+        }
+        required = ['brain_type', 'data_type', 'data', 'additional_populations',
+                    'change_population']
+
+    @swagger.model
+    class BrainError(object):
+        """
+        Set Experiment Brain
         Only used for swagger documentation
         """
 
         resource_fields = {
             'error_message': fields.String(),
             'error_line': fields.String(),
-            'error_column': fields.String()
+            'error_column': fields.String(),
+            'handle_population_change': fields.Boolean
         }
         required = []
 
     @swagger.operation(
         notes='Get the brain file of the given simulation.',
-        responseClass=_brain_.__name__,
+        responseClass=GetBrain.__name__,
         parameters=[
             {
                 "name": "sim_id",
@@ -97,7 +143,7 @@ class SimulationBrainFile(Resource):
             },
             {
                 "code": 404,
-                "message": "The simulation with the given ID was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -105,20 +151,22 @@ class SimulationBrainFile(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id):
         """
         Get brain data of the simulation specified with simulation ID.
 
         :param sim_id: The simulation ID
-        :>json string brain_type: Type of the brain file ('h5' or 'py')
-        :>json string data_type: type of the data field ('text' or 'base64')
-        :>json string data: Contents of the brain file. Encoding given in field data_type
-        :>json brain_populations:  A dictionary indexed by population names and
-        containing neuron indices. Neuron indices could be defined by individual integers,
-        lists of integers or python slices. Python slices are defined by a
-        dictionary containing the 'from', 'to' and 'step' values.
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 404: The simulation with the given ID was not found
+
+        :> json string brain_type: Type of the brain file ('h5' or 'py')
+        :> json string data_type: type of the data field ('text' or 'base64')
+        :> json string data: Contents of the brain file. Encoding given in field data_type
+        :> json dict additional_populations: A dictionary indexed by population names and containing
+                                             neuron indices.
+
+        :status 500: {0}
+        :status 404: {1}
         :status 200: Success. The experiment brain file was retrieved
         """
 
@@ -130,12 +178,12 @@ class SimulationBrainFile(Resource):
             'data': result.brain_data,
             'brain_type': result.brain_type,
             'data_type': result.data_type,
-            'additional_populations': json.loads(result.brain_populations)
+            'additional_populations': json.loads(result.brain_populations),
         }, 200
 
     @swagger.operation(
         notes='Get the brain file of the given simulation.',
-        responseClass=_error.__name__,
+        responseClass=BrainError.__name__,
         parameters=[
             {
                 "name": "sim_id",
@@ -149,7 +197,7 @@ class SimulationBrainFile(Resource):
                 "description": "The brain data",
                 "required": True,
                 "paramType": "body",
-                "dataType": _brain_.__name__
+                "dataType": SetBrain.__name__
             }
         ],
         responseMessages=[
@@ -159,15 +207,15 @@ class SimulationBrainFile(Resource):
             },
             {
                 "code": 404,
-                "message": "The simulation with the given ID was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
-                "code": 300,
-                "message": "Failed. Error found in given brain file"
+                "code": 400,
+                "message": ErrorMessages.SOURCE_CODE_ERROR_400
             },
             {
                 "code": 200,
@@ -175,6 +223,10 @@ class SimulationBrainFile(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401,
+                         ErrorMessages.SOURCE_CODE_ERROR_400)
     def put(self, sim_id):
         """
         Set brain file of the simulation specified with simulation ID.
@@ -182,20 +234,24 @@ class SimulationBrainFile(Resource):
         as base64 (given in the field data_type)
 
         :param sim_id: The simulation ID
-        :<json string brain_type: Type of the brain file ('h5' or 'py')
-        :<json string data_type: type of the data field ('text' or 'base64')
-        :<json string data: Contents of the brain file. Encoding given in field data_type
-        :<json brain_populations:  A dictionary indexed by body['additional_populations'] names
-        and containing neuron indices. Neuron indices could be defined by individual integers,
-        lists of integers or python slices. Python slices are defined by a
-        dictionary containing the 'from', 'to' and 'step' values.
-        :>json string error_message: Error Message if there is a syntax error in the code
-        :>json int error_line: Line of code, where error occurred
-        :>json int error_column: Column, where error occurred (if available)
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 404: The simulation with the given ID was not found
-        :status 401: Operation only allowed by simulation owner
-        :status 300: Error in given brain file
+
+        :< json string brain_type: Type of the brain file ('h5' or 'py')
+        :< json string data_type: type of the data field ('text' or 'base64')
+        :< json string data: Contents of the brain file. Encoding given in field data_type
+        :< json dict additional_populations: A dictionary indexed by population names and containing
+                                             neuron indices
+        :< json int change_population: A flag to select an action on population name change
+
+        :> json string error_message: Error Message if there is a syntax error in the code
+        :> json int error_line: Line of code, where error occurred
+        :> json int error_column: Column, where error occurred (if available)
+        :> json bool handle_population_change: a flag indicating if user wants to change transfer
+                                               functions according to population changes.
+
+        :status 500: {0}
+        :status 404: {1}
+        :status 401: {2}
+        :status 400: {3}
         :status 200: Success. The experiment brain file was replaced
         """
 
@@ -215,7 +271,7 @@ class SimulationBrainFile(Resource):
             return {'error_message': result.error_message,
                     'error_line': result.error_line,
                     'error_column': result.error_column,
-                    'handle_population_change': result.handle_population_change}, 300
+                    'handle_population_change': result.handle_population_change}, 400
 
         # Success
         return {'message': "Success"}, 200

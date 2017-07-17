@@ -282,8 +282,7 @@ class ROSCLESimulationFactory(object):
 
 def get_experiment_basepath(experiment_file_path):
     """
-    Get the name of the folder containing the experiment configuration
-    path.
+    Get the name of the folder containing the experiment configuration path.
 
     :param: experiment_file_path: path to the experiment configuration file
     :return: path to the directory that contains the experiment configuration

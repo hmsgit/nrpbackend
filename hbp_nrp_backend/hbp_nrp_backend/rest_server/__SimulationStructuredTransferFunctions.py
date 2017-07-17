@@ -30,10 +30,13 @@ import json
 from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
-from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+
 from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException, \
-    NRPServicesWrongUserException
+    NRPServicesWrongUserException, ErrorMessages
+from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 
 __author__ = "Georg Hinkel"
@@ -170,7 +173,7 @@ class SimulationStructuredTransferFunctions(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -178,12 +181,15 @@ class SimulationStructuredTransferFunctions(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id):
         """
         Gets the structured transfer functions
 
         :param sim_id: The simulation id
-        :return: A list of structured transfer functions
+
+        :status 404: {0}
+        :status 200: Success. The transfer functions were returned
         """
         simulation = _get_simulation_or_abort(sim_id)
 
@@ -253,19 +259,19 @@ class SimulationStructuredTransferFunctions(Resource):
         responseMessages=[
             {
                 "code": 500,
-                "message": "Simulation in state [STATE]. Can't update transfer function."
+                "message": "Simulation in state [STATE]. Can't update transfer function"
             },
             {
                 "code": 404,
-                "message": "The simulation with the given ID was not found"
-            },
-            {
-                "code": 400,
-                "message": "The passed transfer function is invalid"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
+                "code": 400,
+                "message": ErrorMessages.SOURCE_CODE_ERROR_400
             },
             {
                 "code": 200,
@@ -273,11 +279,20 @@ class SimulationStructuredTransferFunctions(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401,
+                         ErrorMessages.SOURCE_CODE_ERROR_400)
     def put(self, sim_id):
         """
         Puts the structured transfer functions
 
         :param sim_id: The simulation id
+
+        :status 500: Simulation in state [STATE]. Can't update transfer function
+        :status 404: {0}
+        :status 401: {1}
+        :status 400: {2}
+        :status 200: Success. The transfer function was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
 
