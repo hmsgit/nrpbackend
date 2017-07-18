@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 # ---LICENSE-BEGIN - DO NOT CHANGE OR MOVE THIS HEADER
 # This file is part of the Neurorobotics Platform software
 # Copyright (C) 2014,2015,2016,2017 Human Brain Project
@@ -21,7 +22,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ---LICENSE-END
-# pylint: disable=C0302
 
 """
 ROS wrapper around the CLE
