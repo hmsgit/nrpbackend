@@ -1,11 +1,6 @@
 '''setup.py'''
 
-# pylint: disable=F0401,E0611,W0142
-
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
 import hbp_nrp_backend
 import pip
@@ -29,6 +24,16 @@ else:
         options=options
     )
 reqs = [str(ir.req) for ir in install_reqs]
+
+# ensure we install numpy before the main list of requirements, ignore
+# failures if numpy/cython are not requirements and just proceed (future proof)
+try:
+    cython_req = next(r for r in reqs if r.startswith('cython'))
+    numpy_req = next(r for r in reqs if r.startswith('numpy'))
+    pip.main(['install', '--no-clean', cython_req, numpy_req])
+# pylint: disable=bare-except
+except:
+    pass
 
 config = {
     'description': 'Experiment Backend for HBP SP10',

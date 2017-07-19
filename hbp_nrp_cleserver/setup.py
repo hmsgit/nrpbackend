@@ -1,5 +1,4 @@
 '''setup.py'''
-# pylint: disable=R0801
 import os
 
 from setuptools import setup
@@ -32,6 +31,16 @@ def parse_reqs(reqs_file):
 
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 REQS = parse_reqs(os.path.join(BASEDIR, 'requirements.txt'))
+
+# ensure we install numpy before the main list of requirements, ignore
+# failures if numpy/cython are not requirements and just proceed (futureproof)
+try:
+    cython_req = next(r for r in REQS if r.startswith('cython'))
+    numpy_req = next(r for r in REQS if r.startswith('numpy'))
+    pip.main(['install', '--no-clean', cython_req, numpy_req])
+# pylint: disable=bare-except
+except:
+    pass
 
 EXTRA_REQS_PREFIX = 'requirements_'
 EXTRA_REQS = {}
