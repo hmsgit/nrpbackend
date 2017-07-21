@@ -78,7 +78,7 @@ class SimulationServerLifecycle(SimulationLifecycle):
             self.__cle.start()
         except TFException, e:
             self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, e.error_type,
-                                        str(e), e.tf_name)
+                                        str(e), function_name=e.tf_name)
         except Exception, e:
             self.__server.publish_error("CLE", "General Error", str(e),
                                         severity=CLEError.SEVERITY_CRITICAL)
