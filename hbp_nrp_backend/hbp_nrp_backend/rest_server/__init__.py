@@ -26,8 +26,10 @@ class NRPServicesDatabaseException(NRPServicesGeneralException):
 
     :param message: message displayed to the end user.
     """
+
     def __init__(self, message):
-        super(NRPServicesDatabaseException, self).__init__(message, "Database error")
+        super(NRPServicesDatabaseException, self).__init__(
+            message, "Database error")
 
 
 class NRPServicesDatabaseTimeoutException(NRPServicesDatabaseException):
@@ -35,8 +37,10 @@ class NRPServicesDatabaseTimeoutException(NRPServicesDatabaseException):
     Database exception class that can be used in the case when the database
     is not reachable (connection timeout)
     """
+
     def __init__(self):
-        super(NRPServicesDatabaseTimeoutException, self).__init__("Database connection timeout")
+        super(NRPServicesDatabaseTimeoutException, self).__init__(
+            "Database connection timeout")
 
 
 class NRPServicesExtendedApi(Api):
@@ -44,6 +48,7 @@ class NRPServicesExtendedApi(Api):
     Extend Flask Restful error handling mechanism so that we can still use original Flask error
     handlers (defined in __ErrorHandlers.py)
     """
+
     def error_router(self, original_handler, e):
         """
         Route the error
@@ -64,7 +69,7 @@ class ErrorMessages(object):
     ERROR_SAVING_FILE_500 = "Error saving file"
     SERVER_ERROR_500 = "The query failed due to an internal server error"
 
-    COLLAB_NOT_FOUND_404 = "The collab with the given context ID was not found"
+    STORAGE_NOT_FOUND_404 = "The storage with the given context ID was not found"
     EXPERIMENT_NOT_FOUND_404 = "The experiment with the given ID was not found"
     EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
     EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
@@ -100,15 +105,14 @@ db = SQLAlchemy(app)
 import hbp_nrp_backend.rest_server.__ErrorHandlers
 
 from hbp_nrp_backend import hbp_nrp_backend_config
-from hbp_nrp_backend.rest_server.__CollabHandler import CollabHandler
 from hbp_nrp_backend.rest_server.__SimulationResources import SimulationResources
 from hbp_nrp_backend.rest_server.__ExperimentBibiTransferFunctions import \
     ExperimentBibiTransferFunctions
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
-from hbp_nrp_backend.rest_server.__ExperimentService import Experiment, CollabExperiment
+from hbp_nrp_backend.rest_server.__ExperimentService import Experiment, StorageExperiment
 from hbp_nrp_backend.rest_server.__ExperimentStateMachines import ExperimentGetStateMachines, \
-    ExperimentPutStateMachine, ExperimentCollabStateMachine
+    ExperimentPutStateMachine, ExperimentStorageStateMachine
 from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
 from hbp_nrp_backend.rest_server.__ExperimentWorldSDF import ExperimentWorldSDF
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
@@ -116,7 +120,7 @@ from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFil
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
     MaterialControl
 from hbp_nrp_backend.rest_server.__SimulationReset import SimulationReset
-from hbp_nrp_backend.rest_server.__SimulationResetCollab import SimulationResetCollab
+from hbp_nrp_backend.rest_server.__SimulationResetStorage import SimulationResetStorage
 from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunction, \
@@ -133,49 +137,57 @@ from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
 from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 
-# Register /collab
-api.add_resource(CollabHandler, '/collab/configuration/<string:context_id>')
-api.add_resource(MaterialControl, '/simulation/<int:sim_id>/interaction/material_change')
-
 # Register /experiment
 api.add_resource(Experiment, '/experiment')
-api.add_resource(CollabExperiment, '/experiment/<string:context_id>')
+api.add_resource(StorageExperiment, '/experiment/<string:experiment_id>')
 api.add_resource(ExperimentBibiTransferFunctions,
                  '/experiment/<string:exp_id>/bibi-transfer-functions')
-api.add_resource(ExperimentBrainFile, '/experiment/<string:context_id>/brain')
-api.add_resource(ExperimentGetStateMachines, '/experiment/<string:exp_id>/state-machines')
+api.add_resource(ExperimentBrainFile,
+                 '/experiment/<string:experiment_id>/brain')
+api.add_resource(ExperimentGetStateMachines,
+                 '/experiment/<string:exp_id>/state-machines')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
 api.add_resource(ExperimentPutStateMachine,
                  '/experiment/<string:exp_id>/state-machines/<string:state_machine_name>')
-api.add_resource(ExperimentCollabStateMachine,
-                 '/experiment/<string:context_id>/state-machines')
-api.add_resource(ExperimentTransferfunctions, '/experiment/<string:context_id>/transfer-functions')
-api.add_resource(ExperimentWorldSDF, '/experiment/<string:context_id>/sdf_world')
+api.add_resource(ExperimentStorageStateMachine,
+                 '/experiment/<string:experiment_id>/state-machines')
+api.add_resource(ExperimentTransferfunctions,
+                 '/experiment/<string:experiment_id>/transfer-functions')
+api.add_resource(ExperimentWorldSDF,
+                 '/experiment/<string:experiment_id>/sdf_world')
 
 # Register /simulation
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
+api.add_resource(
+    MaterialControl, '/simulation/<int:sim_id>/interaction/material_change')
 api.add_resource(SimulationBrainFile, '/simulation/<int:sim_id>/brain')
 api.add_resource(SimulationResources, '/simulation/<int:sim_id>/resources')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
 api.add_resource(SimulationPopulations, '/simulation/<int:sim_id>/populations')
 api.add_resource(SimulationReset, '/simulation/<int:sim_id>/reset')
-api.add_resource(SimulationResetCollab, '/simulation/<int:sim_id>/<string:context_id>/reset')
+api.add_resource(SimulationResetStorage,
+                 '/simulation/<int:sim_id>/<string:experiment_id>/reset')
 api.add_resource(SimulationService, '/simulation')
 api.add_resource(SimulationState, '/simulation/<int:sim_id>/state')
 api.add_resource(SimulationTimeout, '/simulation/<int:sim_id>/extend_timeout')
 api.add_resource(SimulationStateMachine,
                  '/simulation/<int:sim_id>/state-machines/<string:state_machine_name>')
-api.add_resource(SimulationStateMachines, '/simulation/<int:sim_id>/state-machines')
+api.add_resource(SimulationStateMachines,
+                 '/simulation/<int:sim_id>/state-machines')
 api.add_resource(SimulationTransferFunction,
                  '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
-api.add_resource(SimulationTransferFunctions, '/simulation/<int:sim_id>/transfer-functions')
-api.add_resource(SimulationCSVRecorders, '/simulation/<int:sim_id>/csv-recorders')
+api.add_resource(SimulationTransferFunctions,
+                 '/simulation/<int:sim_id>/transfer-functions')
+api.add_resource(SimulationCSVRecorders,
+                 '/simulation/<int:sim_id>/csv-recorders')
 api.add_resource(SimulationStructuredTransferFunctions,
                  '/simulation/<int:sim_id>/simulation-structured-transfer-functions')
 api.add_resource(SimulationTopics, '/simulation/topics')
-api.add_resource(SimulationRecorder, '/simulation/<int:sim_id>/recorder/<string:command>')
+api.add_resource(SimulationRecorder,
+                 '/simulation/<int:sim_id>/recorder/<string:command>')
 
-# This should not be on the /simulation path ... as it does not apply to a running simulation
+# This should not be on the /simulation path ... as it does not apply to a
+# running simulation
 api.add_resource(WorldSDFService, '/simulation/sdf_world')
 
 # Register /health

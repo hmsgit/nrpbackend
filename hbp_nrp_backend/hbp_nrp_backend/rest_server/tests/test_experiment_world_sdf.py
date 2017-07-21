@@ -67,16 +67,16 @@ class MockServiceResponse:
 class TestExperimentWorldSDF(RestTest):
 
     def setUp(self):
-        patch_CollabClient = patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
-        self.addCleanup(patch_CollabClient.stop)
-        self.mock_CollabClient = patch_CollabClient.start()
-        self.mock_collabClient_instance = self.mock_CollabClient.return_value
+        patch_StorageClient = patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+        self.addCleanup(patch_StorageClient.stop)
+        self.mock_StorageClient = patch_StorageClient.start()
+        self.mock_storageClient_instance = self.mock_StorageClient.return_value
         self.test_directory = os.path.split(__file__)[0]
         self.temp_directory = tempfile.mkdtemp()
 
     @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
     def test_experiment_world_sdf_put(self, mocked_rospy):
-        context_id = '123456'
+        experiment_id = '123456'
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
 
@@ -85,38 +85,27 @@ class TestExperimentWorldSDF(RestTest):
         shutil.copyfile(exd_conf_original_path, exd_conf_temp_path)
         with open(exd_conf_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
-        self.mock_collabClient_instance.clone_exp_file_from_collab_context.return_value = exp, exd_conf_temp_path, "remote_path"
-
-        response = self.client.put('/experiment/' + context_id + '/sdf_world')
+        def empty(a,b,c,d,e):
+            return
+        self.mock_storageClient_instance.clone_file.return_value =  exd_conf_temp_path
+        self.mock_storageClient_instance.create_or_update = empty
+        response = self.client.post('/experiment/' + experiment_id + '/sdf_world')
         self.assertEqual(response.status_code, 200)
-        print self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[0][0]
-        arg1 = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[0][0]
-        self.assertFalse("THIS SHOULD NOT BE SAVED" in arg1)
-
-        arg1, arg2 = self.mock_collabClient_instance.replace_file_content_in_collab.call_args_list[1][0]
-        experiment_configuration = exp_conf_api_gen.CreateFromDocument(arg1)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.x, 1)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.y, 2)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.z, 3)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.ux, 0.)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.uy, 0.)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.uz, 0.)
-        self.assertEqual(experiment_configuration.environmentModel.robotPose.theta, 1.)
 
 
     @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
     def test_experiment_world_sdf_wrong_xml_1(self, mocked_rospy):
-        context_id = '123456'
+        experiment_id = '123456'
         MockServiceResponse.sdf_dump = "<invalid xml><><><<,,.asdf"
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
-        response = self.client.put('/experiment/' + context_id + '/sdf_world')
+        response = self.client.post('/experiment/' + experiment_id + '/sdf_world')
         self.assertEqual(response.status_code, 500)
 
     @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
     def test_experiment_world_sdf_wrong_xml_2(self, mocked_rospy):
-        context_id = '123456'
+        experiment_id = '123456'
         MockServiceResponse.sdf_dump = "<sdf/>"
         mocked_rospy.wait_for_service.side_effect = rospy.ROSException('Mocked ROSException')
-        response = self.client.put('/experiment/' + context_id + '/sdf_world')
+        response = self.client.post('/experiment/' + experiment_id + '/sdf_world')
         self.assertEqual(response.status_code, 500)

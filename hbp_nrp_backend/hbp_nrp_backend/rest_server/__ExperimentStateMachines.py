@@ -29,8 +29,6 @@ for loading and saving experiment state machine files
 
 __author__ = 'Bernd Eckstein'
 import os
-import tempfile
-import shutil
 import logging
 from threading import Thread
 from flask import request
@@ -140,7 +138,8 @@ class ExperimentGetStateMachines(Resource):
         ctrl_ret = dict()
         eval_ret = dict()
 
-        # So we can iterate over it and don't have to copy-paste the for-loop below: create Arrays
+        # So we can iterate over it and don't have to copy-paste the for-loop
+        # below: create Arrays
         file_names = [ctrl_file_names, eval_file_names]
         ret = [ctrl_ret, eval_ret]
 
@@ -239,17 +238,17 @@ class ExperimentPutStateMachine(Resource):
         return {'message': "Success. File written: {0}".format(filename)}, 200
 
 
-class ExperimentCollabStateMachine(Resource):
+class ExperimentStorageStateMachine(Resource):
     """
     The resource to save experiment state machine files
     """
     @swagger.operation(
-        notes='Saves state machines of an experiment to the collab',
+        notes='Saves state machines of an experiment to the storage',
         parameters=[
             {
-                "name": "context_id",
+                "name": "experiment_id",
                 "required": True,
-                "description": "The context_id of the collab.",
+                "description": "The experiment_id of the experiment.",
                 "paramType": "path",
                 "dataType": basestring.__name__
             },
@@ -277,24 +276,17 @@ class ExperimentCollabStateMachine(Resource):
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500)
-    def put(self, context_id):
+    def put(self, experiment_id):
         """
-        Save state machines to collab
+        Save state machines to the storage
 
-        :param path context_id: The context id of the collab
-
-        :< json string state_machines: The state machine code
-
-        :status 500: {0}
-        :status 400: State machine code should be sent in the body under the 'state_machines' key
+        :param path experiment_id: The experiment_id id of the experiment
+        :param body source_code: Source code of the state machine as string.
+        :status 500: The experiment xml either could not be found or read
         :status 200: Success. File written.
         """
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module.
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-            import NeuroroboticsCollabClient
-
         body = request.get_json(force=True)
         if 'state_machines' not in body:
             raise NRPServicesClientErrorException(
@@ -302,37 +294,55 @@ class ExperimentCollabStateMachine(Resource):
                 "the body under the 'state_machines' key"
             )
 
-        client = NeuroroboticsCollabClient(
-            UserAuthentication.get_header_token(request),
-            context_id
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
+
+        client = StorageClient()
+
+        exp_xml_file_path = client.clone_file('experiment_configuration.exc',
+                                              UserAuthentication.get_header_token(
+                                                  request),
+                                              experiment_id)
+
+        if not exp_xml_file_path:
+            return {"message": "Failed to clone experiment configuration file"}, 500
+
+        experiment = client.parse_and_check_file_is_valid(
+            exp_xml_file_path,
+            exp_conf_api_gen.CreateFromDocument,
+            exp_conf_api_gen.ExD_
         )
-        exp, exp_xml_file_path, exp_uuid = client.clone_exp_file_from_collab_context()
+
+        if not experiment:
+            return {"message": "Failed to parse experiment configuration file"}, 500
+
         threads = []
         for sm_name in body['state_machines']:
             sm_node = exp_conf_api_gen.SMACHStateMachine()
             sm_node.id = os.path.splitext(sm_name)[0]
-            sm_node.src = sm_name if sm_name.endswith(".exd") else sm_name + ".exd"
+            sm_node.src = sm_name if sm_name.endswith(
+                ".exd") else sm_name + ".exd"
             exp_control = exp_conf_api_gen.ExperimentControl()
             exp_control.stateMachine.append(sm_node)
-            exp.experimentControl = exp_control
-            t = Thread(target=client.replace_file_content_in_collab,
-                       kwargs={'content': body['state_machines'][sm_name],
-                               'mimetype': client.STATE_MACHINE_PY_MIMETYPE,
-                               'filename': sm_node.src
-                               })
+            experiment.experimentControl = exp_control
+            t = Thread(target=client.create_or_update, kwargs={
+                'token': UserAuthentication.get_header_token(request),
+                'experiment': experiment_id,
+                'filename': sm_node.src,
+                'content': body['state_machines'][sm_name],
+                'content_type': "application/hbp-neurorobotics.sm+python"})
             t.start()
             threads.append(t)
 
-        if tempfile.gettempdir() in exp_xml_file_path:
-            logger.debug(
-                "removing the temporary experiment xml file %s",
-                exp_xml_file_path
-            )
-            shutil.rmtree(os.path.dirname(exp_xml_file_path))
-        t = Thread(target=client.replace_file_content_in_collab,
-                   args=(exp.toxml("utf-8"), exp_uuid))
+        t = Thread(target=client.create_or_update,
+                   kwargs={
+                       'token': UserAuthentication.get_header_token(request),
+                       'experiment': experiment_id,
+                       'filename': 'experiment_configuration.exc',
+                       'content': experiment.toxml("utf-8"),
+                       'content_type': "application/hbp-neurorobotics+xml"})
         t.start()
         threads.append(t)
         for thread in threads:
             thread.join()
-        return {"message": "Success. Files written to collab"}, 200
+        return {"message": "Success. Files written to the storage"}, 200

@@ -82,33 +82,33 @@ class TestExperimentService(RestTest):
         assert(isinstance(response, Response))
         self.assertEqual(response.status_code, 200)
 
-    # TEST getCollabExperiment
-    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
-    def test_collab_experiment_get_ok(self, collab_mock, mock_bp0):
+    # TEST getStorageExperiment
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+    def test_storage_experiment_get_ok(self, storage_mock, mock_bp0):
         client_mock = MagicMock()
         exp_temp_path = os.path.join(os.path.split(__file__)[0], "experiments", "experiment_data", "test_1.exc")
         with open(exp_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
-        client_mock.clone_exp_file_from_collab_context.return_value = exp, exp_temp_path, "remote_path"
-
-        collab_mock.return_value = client_mock
+        client_mock.clone_file.return_value = exp_temp_path
+        client_mock.parse_and_check_file_is_valid.return_value = exp
+        storage_mock.return_value = client_mock
         mock_bp0.return_value = PATH
 
-        response = self.client.get('/experiment/test_context')
+        response = self.client.get('/experiment/experiment_id')
         assert(isinstance(response, Response))
         self.assertEqual(response.status_code, 200)
         self.assertNotEqual(response.get_data(), {})
 
-    # TEST getCollabExperiment
-    @patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
-    def test_collab_experiment_get_not_ok(self, collab_mock, mock_bp0):
+    # TEST getStorageExperiment
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+    def test_storage_experiment_get_not_ok(self, storage_mock, mock_bp0):
         client_mock = MagicMock()
-        client_mock.clone_exp_file_from_collab_context.side_effect = NRPServicesGeneralException(
+        client_mock.clone_file.side_effect = NRPServicesGeneralException(
             ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
-            "Experiment xml not found in the collab storage"
+            "Experiment xml not found in the storage"
         )
 
-        collab_mock.return_value = client_mock
+        storage_mock.return_value = client_mock
         mock_bp0.return_value = PATH
 
         response = self.client.get('/experiment/test_context')

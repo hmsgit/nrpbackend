@@ -41,7 +41,7 @@ class MockedSimulationLifeCycle:
 class MockedSimulation:
 
     lifecycle = MockedSimulationLifeCycle()
-    context_id = False
+    experiment_id = False
 
 
 class TestSimulationResources(RestTest):

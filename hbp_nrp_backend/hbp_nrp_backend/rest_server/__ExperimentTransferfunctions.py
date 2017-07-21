@@ -29,9 +29,6 @@ for loading and saving experiment transfer functions
 
 __author__ = 'Bernd Eckstein'
 
-import os
-import tempfile
-import shutil
 import logging
 from threading import Thread
 from flask_restful import Resource, request, fields
@@ -40,9 +37,7 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import get_tf_name
-
-from hbp_nrp_commons.generated import bibi_api_gen
-from hbp_nrp_commons.bibi_functions import docstring_parameter
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
 logger = logging.getLogger(__name__)
 # pylint: disable=no-self-use
@@ -77,7 +72,7 @@ class ExperimentTransferfunctions(Resource):
         required = ['base64']
 
     @swagger.operation(
-        notes='Save transfer functions of an experiment to the collab',
+        notes='Save transfer functions of an experiment to the storage',
         parameters=[
             {
                 "name": "transfer_functions",
@@ -94,7 +89,7 @@ class ExperimentTransferfunctions(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.COLLAB_NOT_FOUND_404
+                "message": ErrorMessages.STORAGE_NOT_FOUND_404
             },
             {
                 "code": 400,
@@ -107,27 +102,24 @@ class ExperimentTransferfunctions(Resource):
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500, ErrorMessages.COLLAB_NOT_FOUND_404)
-    def put(self, context_id):
+    def put(self, experiment_id):
         """
-        Save transfer functions of an experiment to the collab.
+        Save transfer functions of an experiment to the storage.
 
-        :param path context_id: The context UUID of the Collab where the transfer functions will be
-                                saved
-
-        :< json string transfer_functions: the transfer functions as python
-
-        :status 500: {0}
-        :status 404: {1}
-        :status 400: Transfer functions code should be sent in the body under the
-                     'transfer_functions' key
-        :status 200: Success. File written
+        :param path experiment_id: The experiment_id of the experiment where the transfer functions
+         will be saved
+        :<json body json array of string transfer_functions: the transfer functions as python
+        :status 500: BIBI configuration file not found
+        :status 500: Error saving file
+        :status 404: The experiment_id with the given expreiment ID was not found
+        :status 404: The request body is malformed
+        :status 200: Success. File written.
         """
 
         # Done here in order to avoid circular dependencies introduced by the
-        # way we __init__ the rest_server module.
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-            import NeuroroboticsCollabClient
+        # way we __init__ the rest_server module
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
 
         body = request.get_json(force=True)
         if 'transfer_functions' not in body:
@@ -136,37 +128,55 @@ class ExperimentTransferfunctions(Resource):
                 "the body under the 'transfer_functions' key"
             )
 
-        client = NeuroroboticsCollabClient(
+        client = StorageClient()
+
+        experiment_file = client.get_file(
             UserAuthentication.get_header_token(request),
-            context_id
+            experiment_id,
+            'experiment_configuration.exc',
+            byname=True)
+
+        bibi_filename = exp_conf_api_gen.CreateFromDocument(
+            experiment_file).bibiConf.src
+
+        bibi_file_path = client.clone_file(bibi_filename,
+                                           UserAuthentication.get_header_token(
+                                               request),
+                                           experiment_id)
+
+        bibi = client.parse_and_check_file_is_valid(
+            bibi_file_path,
+            bibi_api_gen.CreateFromDocument,
+            bibi_api_gen.BIBIConfiguration
         )
-        bibi, bibi_file_path, bibi_uuid = client.clone_bibi_file_from_collab_context()
-        # Remove all transfer functions from BIBI. Then we save them in a separate python file.
+        # Remove all transfer functions from BIBI. Then we save them in a
+        # separate python file.
         del bibi.transferFunction[:]
         threads = []
         for transfer_function in body['transfer_functions']:
             transfer_function_name = get_tf_name(transfer_function)
             if transfer_function_name is not None:
-                transfer_function_filename = transfer_function_name + ".py"
                 transfer_function_node = bibi_api_gen.PythonTransferFunction()
-                transfer_function_node.src = transfer_function_filename
+                transfer_function_node.src = transfer_function_name + ".py"
                 bibi.transferFunction.append(transfer_function_node)
 
-                t = Thread(target=client.replace_file_content_in_collab,
-                           kwargs={'content': transfer_function,
-                                   'mimetype': client.TRANSFER_FUNCTIONS_PY_MIMETYPE,
-                                   'filename': transfer_function_filename})
+                t = Thread(target=client.create_or_update,
+                           kwargs={
+                               'token': UserAuthentication.get_header_token(request),
+                               'experiment': experiment_id,
+                               'filename': transfer_function_name + ".py",
+                               'content': transfer_function,
+                               'content_type': 'text/plain'})
                 t.start()
                 threads.append(t)
 
-        if tempfile.gettempdir() in bibi_file_path:
-            logger.debug(
-                "removing the temporary bibi configuration file %s",
-                bibi_file_path
-            )
-            shutil.rmtree(os.path.dirname(bibi_file_path))
-        t = Thread(target=client.replace_file_content_in_collab,
-                   args=(bibi.toxml("utf-8"), bibi_uuid))
+        t = Thread(target=client.create_or_update,
+                   kwargs={
+                       'token': UserAuthentication.get_header_token(request),
+                       'experiment': experiment_id,
+                       'filename': bibi_filename,
+                       'content': bibi.toxml("utf-8"),
+                       'content_type': 'text/plain'})
         t.start()
         threads.append(t)
         for x in threads:

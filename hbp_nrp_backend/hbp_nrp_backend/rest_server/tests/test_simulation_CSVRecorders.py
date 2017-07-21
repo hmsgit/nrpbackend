@@ -28,7 +28,8 @@ __author__ = 'LucGuyot'
 
 import os
 import json
-from mock import patch, MagicMock
+import csv
+from mock import patch, MagicMock, mock_open
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest
 
@@ -36,36 +37,43 @@ from hbp_nrp_backend.rest_server.tests import RestTest
 class TestSimulationCSVRecorders(RestTest):
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
+        simulations.append(Simulation(
+            0, 'experiment1', None, 'default-owner', 'created'))
         simulations[0].cle = MagicMock()
-        self.files = [
-          MagicMock(name='left_wheel_join_position.csv', temporary_path='/tmp/csv_recorders/left_wheel_join_position.csv'),
-          MagicMock(name='right_wheel_join_position.csv', temporary_path='/tmp/csv_recorders/right_wheel_join_position.csv')
-        ]
-        simulations[0].cle.get_simulation_CSV_recorders_files = MagicMock(return_value=self.files)
-        patch_CollabClient = patch('hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient')
-        self.addCleanup(patch_CollabClient.stop)
-        self.mock_CollabClient = patch_CollabClient.start()
-        self.mock_collabClient_instance = self.mock_CollabClient.return_value
+        self.test_directory = os.path.split(__file__)[0]
+        csv_path = os.path.join(self.test_directory,
+                                "csv_mock", "csv_mock.csv")
+        self.files = MagicMock(name='left_wheel_join_position.csv',
+                               temporary_path=csv_path)
+
+        simulations[0].cle.get_simulation_CSV_recorders_files = MagicMock(
+            return_value=self.files)
+        patch_StorageClient = patch(
+            'hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+        self.addCleanup(patch_StorageClient.stop)
+        self.mock_StorageClient = patch_StorageClient.start()
+        self.mock_storageClient_instance = self.mock_StorageClient.return_value
 
     @patch('hbp_nrp_backend.rest_server.__SimulationCSVRecorders.get_date_and_time_string')
     def test_simulation_CSV_recorders_put_OK(self, mock_get_date_and_time_string):
-        time = '2016-04-11_13-15-34'
-        mock_get_date_and_time_string.return_value = time
-        context_id = '123456'
-        sim_id = 0
-        subfolder_uuid = '123-456-789-e'
-        self.mock_collabClient_instance.populate_subfolder_in_collab.return_value = subfolder_uuid
-        response = self.client.put('/simulation/' + str(sim_id) + '/csv-recorders')
-        self.assertEqual(self.mock_collabClient_instance.populate_subfolder_in_collab.call_count, 1)
-        self.assertEqual(self.mock_collabClient_instance.populate_subfolder_in_collab.call_args[0][0],
-                   'csv_records_' + time)
-        self.assertEqual(self.mock_collabClient_instance.populate_subfolder_in_collab.call_args[0][1],
-                    self.files)
-        self.assertEqual(self.mock_collabClient_instance.populate_subfolder_in_collab.call_args[0][2],
-                    'text/csv')
-        self.assertEqual(response.status_code, 200)
+        with patch("__builtin__.open", mock_open(read_data="data")) as mock_file:
+            time = '2016-04-11_13-15-34'
+            mock_get_date_and_time_string.return_value = time
+            sim_id = 0
+
+            self.mock_storageClient_instance.create_and_update.side_effect = None
+            self.mock_storageClient_instance.create_folder.return_value = {
+                "uuid": "mockUUID"}
+            response = self.client.put(
+                '/simulation/' + str(sim_id) + '/csv-recorders')
+            self.assertEqual(response.status_code, 200)
 
     def test_simulation_CSV_recorders_put_sim_not_found(self):
         response = self.client.put('/simulation/1/123456/csv-recorders')
         self.assertEqual(404, response.status_code)
+
+    def test_simulation_CSV_recorders_get_ok(self):
+        sim_id = 0
+        response = self.client.get(
+            '/simulation/' + str(sim_id) + '/csv-recorders')
+        self.assertEqual(response.status_code, 200)

@@ -49,8 +49,8 @@ class Simulation(object):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 reservation=None, sim_brain_processes=1, context_id=None, state='created',
-                 playback_path=None):
+                 reservation=None, sim_brain_processes=1, experiment_id=None,
+                 state='created', private=False, playback_path=None):
         """
         Creates a new simulation
 
@@ -63,22 +63,24 @@ class Simulation(object):
                                   viz cluster.
         :param reservation: the name of the cluster reservation subsequently used to allocate a job
         :param sim_brain_processes: Number of brain processes to use (overrides ExD configuration)
-        :param context_id: The context ID if the experiment is declared in the collab portal
+        :param experiment_id: The experiment ID of the experiment
         :param state: The initial state (created by default)
         :param playback_path: The simulation recording to playback (Path to recording root)
+        :param private: Defines whether the simulation is based on a private experiment
         """
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
         self.__environment_conf = environment_conf
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
-        self.__context_id = context_id
+        self.__experiment_id = experiment_id
         self.__reservation = reservation
         self.__brain_processes = sim_brain_processes
         self.__creation_datetime = datetime.datetime.now(tz=timezone)
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
-        self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
+        self.__kill_datetime = self.__creation_datetime + \
+            datetime.timedelta(minutes=30)
         self.__creationUniqueID = None
         self.__playback_path = playback_path
 
@@ -87,6 +89,8 @@ class Simulation(object):
             self.__lifecycle = BackendSimulationLifecycle(self, state)
         else:
             self.__lifecycle = PlaybackSimulationLifecycle(self, state)
+
+        self.__private = private
 
     @property
     def creationUniqueID(self):
@@ -178,14 +182,23 @@ class Simulation(object):
         return self.__creation_datetime.isoformat()
 
     @property
-    def context_id(self):
+    def experiment_id(self):
         """
-        The context ID of the navigation item of the collab portal used
+        The experiment ID of the navigation item of the collab portal used
         to create the experiment
 
-        :return: The associated navigation item context_id
+        :return: The associated navigation item experiment_id
         """
-        return self.__context_id
+        return self.__experiment_id
+
+    @property
+    def private(self):
+        """
+        Defines whether the simulation is based on a private experiment
+
+        :return: A boolean defining whether the sim is private
+        """
+        return self.__private
 
     @property
     def lifecycle(self):
@@ -287,11 +300,13 @@ class Simulation(object):
             with tmp.file as sm_file:
                 file_path = tmp.name
                 sm_file.write(python_code)
-        logger.info("Creating new file for state machine {0}: {1}".format(name, file_path))
+        logger.info(
+            "Creating new file for state machine {0}: {1}".format(name, file_path))
 
         sm = self.get_state_machine(name)
         if sm is None:
-            sm = self.state_machine_manager.create_state_machine(name, self.sim_id)
+            sm = self.state_machine_manager.create_state_machine(
+                name, self.sim_id)
 
         sm.sm_path = file_path
 
@@ -372,14 +387,14 @@ class Simulation(object):
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
         'gzserverHost': fields.String(attribute='gzserver_host'),
         'reservation': fields.String(attribute='reservation'),
-        'contextID': fields.String(attribute='context_id'),
+        'experimentID': fields.String(attribute='experiment_id'),
         'brainProcesses': fields.Integer(attribute='brain_processes'),
         'creationUniqueID': fields.String(attribute='creationUniqueID'),
         'playbackPath': fields.String(attribute='playback_path')
     }
 
     required = ['state', 'simulationID', 'experimentConfiguration', 'environmentConfiguration',
-                'owner', 'creationDate', 'gzserverHost', 'reservation', 'contextID',
+                'owner', 'creationDate', 'gzserverHost', 'reservation', 'experimentID',
                 'brainProcesses', 'creationUniqueID']
 
 

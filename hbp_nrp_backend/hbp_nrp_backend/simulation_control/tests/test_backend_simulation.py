@@ -45,9 +45,10 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.simulation.sim_id = 42
         self.simulation.experiment_conf = "ExDXMLExample.xml"
         self.simulation.environment_conf = None
-        self.simulation.context_id = None
+        self.simulation.experiment_id = None
         self.simulation.state_machines = []
         self.simulation.playback_path = None
+        self.simulation.private = None
 
         caller_id = patch("hbp_nrp_commons.simulation_lifecycle.get_caller_id", return_value="test_client")
         caller_id.start()
@@ -83,7 +84,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         lifecycle = BackendSimulationLifecycle(self.simulation)
         self.playback_mock.assert_callled_once_with(42)
 
-    def test_backend_initialize_non_collab(self):
+    def test_backend_initialize_non_storage(self):
         self.lifecycle.initialize(Mock())
 
         # Assert state machines have been initialized
@@ -111,25 +112,23 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.assertEqual(os.path.join(directory, "SM1.py"), state_machines["SM1"])
         self.assertEqual(os.path.join(directory, "SM2.py"), state_machines["SM2"])
 
-    def test_backend_initialize_collab(self):
-        self.simulation.context_id = "Foobar"
+    def test_backend_initialize_storage(self):
+        self.simulation.experiment_id = "Foobar"
         self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
         directory = PATH
-        with patch("hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient.NeuroroboticsCollabClient") as collab_client:
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
             with patch("hbp_nrp_backend.rest_server.__UserAuthentication.UserAuthentication") as user_auth:
 
-                collab_paths = {
+                storage_paths = {
                     'experiment_conf': os.path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
                     'environment_conf': "Neverland.sdf"
                 }
 
-                collab_client().clone_experiment_template_from_collab.return_value = collab_paths
+                storage_client.clone_all_experiment_files.return_value = directory, storage_paths
 
                 self.lifecycle.initialize(Mock())
 
-                self.assertTrue(user_auth.get_header_token.called)
-                self.assertEqual("Foobar", collab_client.call_args[0][1])
-                self.assertTrue(collab_client().clone_experiment_template_from_collab)
+                self.assertTrue(storage_client.clone_all_experiment_files)
 
         # Assert that the state machine experiment has been called
         state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]

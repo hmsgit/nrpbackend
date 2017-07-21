@@ -30,19 +30,16 @@ for loading and saving experiment brain files
 __author__ = 'Bernd Eckstein'
 
 import os
-import tempfile
-import shutil
 import logging
-from threading import Thread
 
 from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-
-from hbp_nrp_commons.generated import bibi_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_commons.bibi_functions import docstring_parameter
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 class ExperimentBrainFile(Resource):
     """
-    The resource to save experiment brain files to the collab
+    The resource to save experiment brain files to the storage
     """
 
     def parsePopulations(self, brain_populations, bibi):
@@ -104,7 +101,7 @@ class ExperimentBrainFile(Resource):
         required = ['data']
 
     @swagger.operation(
-        notes='Save a brain model PyNN of an experiment to the collab.',
+        notes='Save a brain model PyNN of an experiment to the storage.',
         parameters=[
             {
                 "name": "brain_model",
@@ -121,7 +118,7 @@ class ExperimentBrainFile(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.COLLAB_NOT_FOUND_404
+                "message": ErrorMessages.STORAGE_NOT_FOUND_404
             },
             {
                 "code": 400,
@@ -134,13 +131,11 @@ class ExperimentBrainFile(Resource):
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500, ErrorMessages.COLLAB_NOT_FOUND_404)
-    def put(self, context_id):
+    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500, ErrorMessages.STORAGE_NOT_FOUND_404)
+    def put(self, experiment_id):
         """
-        Save a brain model PyNN of an experiment to the collab.
-
-        :param path context_id: The context UUID of the Collab where the transfer functions
-                                will be saved
+        Save a brain model PyNN of an experiment to the storage.
+        :param path experiment_id: The experiment id
 
         :< json body json string data: PyNN script of the model
         :< json body json string brain_populations: neuron populations
@@ -150,46 +145,68 @@ class ExperimentBrainFile(Resource):
         :status 400: The request body is malformed
         :status 200: Success. File written.
         """
-
-        # Done here in order to avoid circular dependencies introduced by the
-        # way we __init__ the rest_server module.
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-            import NeuroroboticsCollabClient
-
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
         body = request.get_json(force=True)
         if 'data' not in body:
             raise NRPServicesClientErrorException(
                 "Neural network python code should be sent in the body under the 'data' key"
             )
-
+        # no need to rewrite a get_header function since the user
+        # authentication already has one
+        # Read the request data
+        content_type = UserAuthentication.get_header(
+            request,
+            'Content-type',
+            'text/plain'
+        )
         data = body['data']
         brain_populations = body.get('additional_populations')
 
-        client = NeuroroboticsCollabClient(
-            UserAuthentication.get_header_token(request),
-            context_id
-        )
+        # Instantiate the storage client
+        client = StorageClient()
 
-        replace_brain = Thread(target=client.replace_file_content_in_collab,
-                               kwargs={'content': data,
-                                       'mimetype': client.BRAIN_PYNN_MIMETYPE})
-        replace_brain.start()
-        bibi, bibi_file_path, bibi_uuid = client.clone_bibi_file_from_collab_context()
-        # Remove all populations from BIBI.
-        del bibi.brainModel.populations[:]
+        # find the bibi filename from the .exc
+        experiment_file = client.get_file(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            'experiment_configuration.exc',
+            byname=True)
+
+        bibi_filename = exp_conf_api_gen.CreateFromDocument(
+            experiment_file).bibiConf.src
+
+        # find the brain filename from the bibi
+        bibi_file = client.get_file(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            bibi_filename,
+            byname=True
+        )
+        bibi_file_obj = bibi_api_gen.CreateFromDocument(bibi_file)
+        brain_filename = os.path.split(bibi_file_obj.brainModel.file)[-1]
+
+        # replace the brain in the storage (Threaded function)
+        client.create_or_update(UserAuthentication.get_header_token(request),
+                                experiment_id,
+                                brain_filename,
+                                data,
+                                content_type)
+
+        # remove all the populations
+        del bibi_file_obj.brainModel.populations[:]
 
         if brain_populations is not None:
-            self.parsePopulations(brain_populations, bibi)
+            self.parsePopulations(brain_populations, bibi_file_obj)
 
-        if tempfile.gettempdir() in bibi_file_path:
-            logger.debug(
-                "removing the temporary bibi configuration file %s",
-                bibi_file_path
-            )
-            shutil.rmtree(os.path.dirname(bibi_file_path))
-        client.replace_file_content_in_collab(
-            bibi.toxml("utf-8"),
-            bibi_uuid
+        # replace the bibi contents in the storage to match the new brain
+        # definition
+        client.create_or_update(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            bibi_filename,
+            bibi_file_obj.toxml("utf-8"),
+            "text/plain"
         )
-        replace_brain.join()
+
         return 200

@@ -45,7 +45,7 @@ class UserAuthentication(object):
     HEADER_TOKEN = "Authorization"
 
     @staticmethod
-    def __get_header(request, header_name, default_value):
+    def get_header(request, header_name, default_value):
         """
         Gets the value of the headername header from the given HTTP request
         :param request: The request
@@ -69,7 +69,7 @@ class UserAuthentication(object):
         :param request: The request
         :return: The value of the 'X-User-Name' header or if not found 'default-owner'
         """
-        return UserAuthentication.__get_header(request,
+        return UserAuthentication.get_header(request,
                                                UserAuthentication.HTTP_HEADER_USER_NAME,
                                                "default-owner")
 
@@ -80,7 +80,7 @@ class UserAuthentication(object):
         :param request: The request
         :return: The value of the 'Authorization' header or if not found 'no-token'
         """
-        token_field = UserAuthentication.__get_header(request,
+        token_field = UserAuthentication.get_header(request,
                                                       UserAuthentication.HEADER_TOKEN,
                                                       "no_token")
         if (token_field != "no_token"):

@@ -145,7 +145,8 @@ class CLELauncher(object):
         logger.info("Path is " + self.__experiment_path)
         os.chdir(self.__experiment_path)
 
-        # determine the Gazebo simulator target, due to dependencies this must happen here
+        # determine the Gazebo simulator target, due to dependencies this must
+        # happen here
         if self.__gzserver_host == 'local':
             self.gzserver = LocalGazeboServerInstance()
         elif self.__gzserver_host == 'lugano':
@@ -153,7 +154,8 @@ class CLELauncher(object):
                 timeout.tzinfo if timeout is not None else None, self.__reservation
             )
         else:
-            raise Exception("The gzserver location '{0}' is not supported.", self.__gzserver_host)
+            raise Exception(
+                "The gzserver location '{0}' is not supported.", self.__gzserver_host)
 
         # Create backend->frontend/client ROS notificator
         logger.info("Setting up backend Notificator")
@@ -173,15 +175,18 @@ class CLELauncher(object):
         # active simulations, load robot and brain simulator, CLE, and TFs
         if not self.__playback_path:
 
-            # create the CLE server and lifecycle first to report any failures properly
+            # create the CLE server and lifecycle first to report any failures
+            # properly
             logger.info("Creating CLE Server")
             self.cle_server = ROSCLEServer(self.__sim_id, timeout, self.gzserver,
                                            self.ros_notificator)
 
-            # RNG seed for components, use config value if specified or generate a new one
+            # RNG seed for components, use config value if specified or
+            # generate a new one
             rng_seed = self.__exd_conf.rngSeed
             if rng_seed is None:
-                logger.warn('No RNG seed specified, generating a random value.')
+                logger.warn(
+                    'No RNG seed specified, generating a random value.')
                 rng_seed = random.randint(1, sys.maxint)
             logger.info('RNG seed = %i', rng_seed)
 
@@ -189,10 +194,12 @@ class CLELauncher(object):
             self.__start_gazebo(rng_seed)
 
             # load environment and robot models
-            roscontrol, roscomm, robot_pose, models, lights = self.__load_environment(world_file)
+            roscontrol, roscomm, robot_pose, models, lights = self.__load_environment(
+                world_file)
 
             # load the brain
-            braincontrol, braincomm, brainfile, brainconf = self.__load_brain(rng_seed)
+            braincontrol, braincomm, brainfile, brainconf = self.__load_brain(
+                rng_seed)
 
             # load the interactive CLE
             cle = self.__load_cle(roscontrol, roscomm, braincontrol, braincomm,
@@ -205,7 +212,8 @@ class CLELauncher(object):
             # load transfer functions
             self.__load_tfs()
 
-            # Wait for the backend rendering environment to load (for any sensors/cameras)
+            # Wait for the backend rendering environment to load (for any
+            # sensors/cameras)
             self.__notify("Waiting for Gazebo simulated sensors to be ready")
             self.__gazebo_helper.wait_for_backend_rendering()
 
@@ -214,7 +222,8 @@ class CLELauncher(object):
 
             # TODO: validate playback path / download with storage server API
 
-            # create the CLE server and lifecycle first to report any failures properly
+            # create the CLE server and lifecycle first to report any failures
+            # properly
             logger.info("Creating Playback Server")
             self.cle_server = PlaybackServer(self.__sim_id, timeout, self.gzserver,
                                              self.ros_notificator)
@@ -222,12 +231,14 @@ class CLELauncher(object):
             # disable roslaunch for playback
             self.__exd_conf.rosLaunch = None
 
-            # start Gazebo simulator and bridge (RNG seed is irrelevant for playback)
+            # start Gazebo simulator and bridge (RNG seed is irrelevant for
+            # playback)
             self.__start_gazebo(123456)
 
             # create playback CLE server
             logger.info("Preparing Playback Server")
-            self.cle_server.prepare_simulation(self.__playback_path, except_hook)
+            self.cle_server.prepare_simulation(
+                self.__playback_path, except_hook)
 
         # Loading is completed.
         self.__notify("Finished")
@@ -249,7 +260,8 @@ class CLELauncher(object):
             self.cle_server.lifecycle.stopped()
             # Avoid further notice
             self.gzserver.gazebo_died_callback = None
-        # in case the simulation is still being started, we abort the initialization
+        # in case the simulation is still being started, we abort the
+        # initialization
         self.__abort_initialization = "Gazebo died unexpectedly"
 
     def __notify(self, message):
@@ -257,7 +269,8 @@ class CLELauncher(object):
         Checks whether the simulation should abort immediately
         """
         if self.__abort_initialization is not None:
-            raise Exception("The simulation must abort due to: " + self.__abort_initialization)
+            raise Exception("The simulation must abort due to: " +
+                            self.__abort_initialization)
         Notificator.notify(message, True)
 
     def __start_gazebo(self, rng_seed):
@@ -269,21 +282,27 @@ class CLELauncher(object):
 
         # Gazebo configuration and launch
         self.__notify("Starting Gazebo robotic simulator")
-        ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
+        ifaddress = netifaces.ifaddresses(
+            config.config.get('network', 'main-interface'))
         local_ip = ifaddress[netifaces.AF_INET][0]['addr']
-        ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
+        ros_master_uri = os.environ.get(
+            "ROS_MASTER_URI").replace('localhost', local_ip)
 
         self.gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
 
-        # Physics engine selection from ExDConfig; pass as -e <physics_engine> to gzserver
+        # Physics engine selection from ExDConfig; pass as -e <physics_engine>
+        # to gzserver
         physics_engine = self.__exd_conf.physicsEngine
         logger.info("Looking for physicsEngine tag value in ExDConfig")
         if physics_engine is not None:
-            logger.info("Physics engine specified in ExDConfig: " + str(repr(physics_engine)))
+            logger.info("Physics engine specified in ExDConfig: " +
+                        str(repr(physics_engine)))
             if physics_engine not in ['ode', 'opensim']:
-                raise Exception("Invalid physics_engine value '" + physics_engine + "' supplied.")
+                raise Exception("Invalid physics_engine value '" +
+                                physics_engine + "' supplied.")
         else:
-            logger.info("No physics engine specified explicitly. Using default setting 'ode'")
+            logger.info(
+                "No physics engine specified explicitly. Using default setting 'ode'")
             physics_engine = "ode"
 
         # experiment specific gzserver command line arguments
@@ -297,7 +316,8 @@ class CLELauncher(object):
 
         # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
         # information that is useful to know for the user.
-        # In here, we forward any info message sent to this logger to the notificator
+        # In here, we forward any info message sent to this logger to the
+        # notificator
         gazebo_logger = logging.getLogger('hbp_nrp_cle.user_notifications')
         gazebo_logger.setLevel(logging.INFO)
         gazebo_logger.handlers.append(NotificatorHandler())
@@ -307,14 +327,17 @@ class CLELauncher(object):
 
             # NRRPLT-5134, only local installs are currently supported
             if self.__gzserver_host != 'local':
-                raise Exception('roslaunch is currently only supported on local installs.')
+                raise Exception(
+                    'roslaunch is currently only supported on local installs.')
 
-            self.__notify("Launching experiment ROS nodes and configuring parameters")
+            self.__notify(
+                "Launching experiment ROS nodes and configuring parameters")
             self.ros_launcher = ROSLaunch(self.__exd_conf.rosLaunch.src)
 
         try:
             logger.info("gzserver arguments: " + gzserver_args)
-            self.gzserver.start(ros_master_uri, self.__tmp_robot_dir, gzserver_args)
+            self.gzserver.start(
+                ros_master_uri, self.__tmp_robot_dir, gzserver_args)
         except XvfbXvnError as exception:
             logger.error(exception)
             error = "Recoverable error occurred. Please try again. Reason: {0}".format(
@@ -329,7 +352,8 @@ class CLELauncher(object):
 
         self.__notify("Starting Gazebo web client")
         os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
-        # We do not know here in which state the previous user did let us gzweb.
+        # We do not know here in which state the previous user did let us
+        # gzweb.
         self.gzweb = LocalGazeboBridgeInstance()
         self.gzweb.restart()
 
@@ -343,7 +367,8 @@ class CLELauncher(object):
         # load the world file if provided first
         self.__notify("Loading experiment environment")
         self.__gazebo_helper.empty_gazebo_world()
-        w_models, w_lights = self.__gazebo_helper.load_gazebo_world_file(world_file)
+        w_models, w_lights = self.__gazebo_helper.load_gazebo_world_file(
+            world_file)
 
         # Create interfaces to Gazebo
         self.__notify("Loading robot")
@@ -391,7 +416,8 @@ class CLELauncher(object):
                 self.__notify("Loading external robot controllers")  # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
                 if res > 0:
-                    logger.error("The external robot controller could not be loaded")
+                    logger.error(
+                        "The external robot controller could not be loaded")
                     self.shutdown()
                     return
 
@@ -420,10 +446,12 @@ class CLELauncher(object):
         brainfilepath = self.__bibi_conf.brainModel.file
         if self.__is_collab_hack():
             if self.__experiment_path is not None:
-                brainfilepath = os.path.join(self.__experiment_path, brainfilepath)
+                brainfilepath = os.path.join(
+                    self.__experiment_path, brainfilepath)
         else:
             brainfilepath = os.path.join(self.models_path, brainfilepath)
-        neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
+        neurons_config = get_all_neurons_as_dict(
+            self.__bibi_conf.brainModel.populations)
 
         return braincontrol, braincomm, brainfilepath, neurons_config
 
@@ -460,14 +488,28 @@ class CLELauncher(object):
         for dep in self.__dependencies:
             importlib.import_module(dep[:dep.rfind('.')])
 
-        # integration timestep between simulators, convert from ms to s (default to CLE value)
+        self.__notify("Loading brain and population configuration")
+        # load brain
+        brainfilepath = self.__bibi_conf.brainModel.file
+        if self.__is_collab_hack():
+            if self.__experiment_path is not None:
+                brainfilepath = os.path.join(
+                    self.__experiment_path, os.path.basename(brainfilepath))
+        else:
+            brainfilepath = os.path.join(self.models_path, brainfilepath)
+        neurons_config = get_all_neurons_as_dict(
+            self.__bibi_conf.brainModel.populations)
+
+        # integration timestep between simulators, convert from ms to s
+        # (default to CLE value)
         timestep = ClosedLoopEngine.DEFAULT_TIMESTEP
         if self.__bibi_conf.timestep is not None:
             timestep = float(self.__bibi_conf.timestep) / 1000.0
 
         # initialize CLE
         self.__notify("Initializing CLE")
-        cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, timestep)
+        cle = ClosedLoopEngine(roscontrol, roscomm,
+                               braincontrol, braincomm, tfmanager, timestep)
         cle.initialize(brain_file_path, **neurons_config)
 
         # Set initial pose
@@ -513,7 +555,8 @@ class CLELauncher(object):
         :return: the absolute path to the robot file
         """
         if self.__is_collab_hack():
-            abs_file = os.path.join(self.__experiment_path, robot_file)
+            abs_file = os.path.join(
+                self.__experiment_path, os.path.basename(robot_file))
         else:
             abs_file = os.path.join(self.models_path, robot_file)
         name, ext = os.path.splitext(abs_file)
@@ -568,7 +611,8 @@ class CLELauncher(object):
                 try:
                     self.gazebo_recorder.shutdown()
                 except Exception, e:
-                    logger.warning("Gazebo recorder could not be shutdown successfully")
+                    logger.warning(
+                        "Gazebo recorder could not be shutdown successfully")
                     logger.exception(e)
 
             # Shutdown the CLE and any hooks before shutting down Gazebo
@@ -600,7 +644,8 @@ class CLELauncher(object):
                                                          update_progress=True, block_ui=False)
                     self.gzserver.stop()
                 except Exception, e:
-                    logger.warning("gzserver could not be stopped successfully")
+                    logger.warning(
+                        "gzserver could not be stopped successfully")
                     logger.exception(e)
 
             # Stop any external robot controllers
@@ -637,7 +682,8 @@ class CLELauncher(object):
                 logger.exception(e)
 
         # Cleanup ROS core nodes, services, and topics (the command should be almost
-        # instant and exit, but wrap it in a timeout since it's semi-officially supported)
+        # instant and exit, but wrap it in a timeout since it's semi-officially
+        # supported)
         logger.info("Cleaning up ROS nodes and services")
 
         try:
@@ -654,11 +700,13 @@ class CLELauncher(object):
         except Exception, e:
             logger.exception(e)
 
-        os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup >/dev/null 2>&1")
+        os.system(
+            "echo 'y' | timeout -s SIGKILL 10s rosnode cleanup >/dev/null 2>&1")
 
         # Delete temporary robot folder, if any
         if self.__tmp_robot_dir is not None:
-            logger.info("Deleting temporary directory {temp}".format(temp=self.__tmp_robot_dir))
+            logger.info("Deleting temporary directory {temp}".format(
+                temp=self.__tmp_robot_dir))
             shutil.rmtree(self.__tmp_robot_dir, ignore_errors=True)
 
     def __is_collab_hack(self):
@@ -695,7 +743,8 @@ def get_experiment_basepath():
 
 
 if __name__ == '__main__':  # pragma: no cover
-    # TODO: This should be separated into its own method such that we can unit test this code
+    # TODO: This should be separated into its own method such that we can unit
+    # test this code
     cle_launcher = None
     try:
         if os.environ["ROS_MASTER_URI"] == "":
@@ -748,7 +797,8 @@ if __name__ == '__main__':  # pragma: no cover
             # exit code, 0 for success and -1 for any failures
             mpi_returncode = 0
 
-            # write pid to lock file so launcher can always terminate us (failsafe)
+            # write pid to lock file so launcher can always terminate us
+            # (failsafe)
             pid = os.getpid()
             with open('{}.lock'.format(pid), 'w') as pf:
                 pf.write('{}'.format(pid))
@@ -772,7 +822,8 @@ if __name__ == '__main__':  # pragma: no cover
             get_experiment_basepath as rcsf_get_experiment_basepath
 
         # reconfigure the logger to stdout as done in ROSCLESimulationFactory.py otherwise all
-        # output will be trapped by the ROS logger after the first ROS node is initialized
+        # output will be trapped by the ROS logger after the first ROS node is
+        # initialized
         rospy.init_node(ROS_CLE_NODE_NAME, anonymous=True)
         set_up_logger(None, args.verbose)
 
@@ -796,7 +847,8 @@ if __name__ == '__main__':  # pragma: no cover
                                    None)
         cle_launcher.cle_function_init(args.environment_file, timeout_parsed)
         if cle_launcher.cle_server is None:
-            raise Exception("Error in cle_function_init. Cannot start simulation.")
+            raise Exception(
+                "Error in cle_function_init. Cannot start simulation.")
 
         # FIXME: This should be done more cleanly within the adapter, see [NRRPLT-4858]
         # the tag is a magic number to avoid circular build/release dependency for now but
@@ -811,15 +863,17 @@ if __name__ == '__main__':  # pragma: no cover
 
         logger.info('Starting CLE.')
         cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
-                                       # threading.Thread.start
+        # threading.Thread.start
 
     except Exception as e:  # pylint: disable=broad-except
 
         # if running through MPI, catch Exception and terminate below to ensure brain processes
         # are also killed
         if args.music:
-            logger.error('CLE aborted with message {}, terminating.'.format(e.message))
-            print 'CLE aborted with message {}, terminating.'.format(e.message)  # if no logger
+            logger.error(
+                'CLE aborted with message {}, terminating.'.format(e.message))
+            # if no logger
+            print 'CLE aborted with message {}, terminating.'.format(e.message)
             logger.exception(e)
             mpi_returncode = -1
 

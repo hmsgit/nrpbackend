@@ -105,7 +105,7 @@ class SimulationControl(Resource):
                                      the Lugano viz cluster
         :> json string reservation: the name of the cluster reservation subsequently used to
                                     allocate a job
-        :> json string contextID: The context ID if the experiment is declared in the collab portal
+        :> json string experimentID: The expeirment ID if the experiment is using the storage
         :> json integer brainProcesses: Number of brain processes to use (overrides ExD conf.)
         :> json string creationUniqueID: unique creation ID (used by Frontend to identify this sim.)
 
