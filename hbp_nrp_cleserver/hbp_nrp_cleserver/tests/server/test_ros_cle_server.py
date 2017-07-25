@@ -29,7 +29,7 @@ from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
 from cle_ros_msgs.msg import CSVRecordedFile, ExperimentPopulationInfo
 from hbp_nrp_cleserver.server import ROSCLEServer
 import logging
-from mock import patch, MagicMock, Mock, PropertyMock
+from mock import patch, MagicMock, Mock, PropertyMock, mock_open
 from testfixtures import log_capture
 from os import path
 import base64
@@ -89,31 +89,15 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_cle.brainsim_elapsed_time = Mock(return_value=0)
         self.__mocked_cle.robotsim_elapsed_time = Mock(return_value=0)
         self.__mocked_rospy = rospy_patcher.start()
+        self.__mocked_notificator = Mock()
+        self.__mocked_notificator.task_notifier = mock_open()
 
         with patch('hbp_nrp_cleserver.server.ROSCLEServer.threading') as threading_patch:
             # Set up our object under test and get sure it calls rospy.init in its
             # constructor.
             threading_patch.Thread = lambda target: target()
-            self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0)
+            self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0, None, None, self.__mocked_notificator)
             self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
-
-        # Be sure we create as many publishers as required.
-        from hbp_nrp_cleserver.server import *
-        number_of_publishers = 0
-        for var_name in vars().keys():
-            if (var_name.startswith("TOPIC_")):
-                number_of_publishers += 1
-        # Lifecycle topic not published by ROSCLEServer
-        number_of_publishers -= 1
-
-        self.assertEqual(number_of_publishers, self.__mocked_rospy.Publisher.call_count)
-
-        # Assure that also the publish method of the rospy.Publisher is
-        # injected as a mock here so that we can use it later in our single
-        # test methods
-        self.__mocked_ros_status_pub = ROSCLEServer.rospy.Publisher()
-        self.__mocked_ros_status_pub.publish = MagicMock()
-        self.__mocked_rospy.Publisher.return_value = self.__mocked_ros_status_pub
 
     def tearDown(self):
         # remove all handlers after each test!
@@ -441,32 +425,6 @@ class TestROSCLEServer(unittest.TestCase):
         # Assert that rospy.spin has been called when the roscleserver has been created
         self.assertEqual(1, self.__mocked_rospy.spin.call_count)
 
-    def test_notify_start_task(self):
-        task_name = 'test_name'
-        subtask_name = 'test_subtaskname'
-        number_of_subtasks = 1
-        block_ui = False
-        self.__ros_cle_server.notify_start_task(
-            task_name, subtask_name, number_of_subtasks, block_ui)
-        self.assertEqual(1, self.__mocked_ros_status_pub.publish.call_count)
-        message = {'progress': {'task': task_name,
-                                'subtask': subtask_name,
-                                'number_of_subtasks': number_of_subtasks,
-                                'subtask_index': 0,
-                                'block_ui': block_ui}}
-        self.__mocked_ros_status_pub.publish.assert_called_with(
-            json.dumps(message))
-
-    def test_task(self):
-        mock_publisher = Mock()
-        self.__ros_cle_server._ROSCLEServer__ros_status_pub = mock_publisher
-        self.__ros_cle_server.notify_start_task('task', 'subtask', 1, False)
-        self.assertEquals(mock_publisher.publish.call_count, 1)
-        self.__ros_cle_server.notify_current_task('new_subtask', True, False)
-        self.assertEquals(mock_publisher.publish.call_count, 2)
-        self.__ros_cle_server.notify_finish_task()
-        self.assertEquals(mock_publisher.publish.call_count, 3)
-
     def test_shutdown(self):
         z = self.__ros_cle_server._ROSCLEServer__cle = MagicMock()
         a = self.__ros_cle_server._ROSCLEServer__service_reset  = MagicMock()
@@ -483,29 +441,10 @@ class TestROSCLEServer(unittest.TestCase):
         l = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = MagicMock()
         m = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = MagicMock()
         n = self.__ros_cle_server._ROSCLEServer__service_delete_transfer_function = MagicMock()
-        o = self.__ros_cle_server._ROSCLEServer__ros_cle_error_pub = MagicMock()
-        p = self.__ros_cle_server._ROSCLEServer__ros_status_pub = MagicMock()
 
         self.__ros_cle_server.shutdown()
         for x in [a, c, d, e, f, g, h, i, j, k, l, m, n, z]:
             self.assertEquals(x.shutdown.call_count, 1)
-        self.assertEquals(o.unregister.call_count, 1)
-        self.assertEquals(p.unregister.call_count, 1)
-
-    @log_capture(level=logging.WARNING)
-    def test_notify_current_task(self, logcapture):
-        self.__ros_cle_server.notify_current_task("new_subtask", True, True)
-        logcapture.check(
-            (self.LOGGER_NAME, 'WARNING', "Can't update a non existing task.")
-        )
-
-    @log_capture(level=logging.WARNING)
-    def test_notify_finish_task_no_task(self, logcapture):
-        self.__ros_cle_server.notify_finish_task()
-        logcapture.check(
-            (self.LOGGER_NAME, 'WARNING', "Can't finish a non existing task.")
-        )
-
 
 if __name__ == '__main__':
     unittest.main()

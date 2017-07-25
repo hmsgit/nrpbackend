@@ -35,7 +35,6 @@ import numpy
 import datetime
 import time
 
-from std_msgs.msg import String
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import SetBrainRequest
 
@@ -49,7 +48,7 @@ from RestrictedPython import compile_restricted
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
-from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, TOPIC_STATUS, TOPIC_CLE_ERROR, \
+from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
     SERVICE_SIM_RESET_ID, SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
@@ -63,7 +62,6 @@ from hbp_nrp_cle.tf_framework import TFLoadingException
 import base64
 from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
-import contextlib
 from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
 import dateutil.parser as datetime_parser
 
@@ -100,12 +98,14 @@ class ROSCLEServer(object):
     """
     STATUS_UPDATE_INTERVAL = 1.0
 
-    def __init__(self, sim_id, timeout=None, gzserver=None):
+    def __init__(self, sim_id, timeout, gzserver, notificator):
         """
         Create the wrapper server
 
         :param sim_id: The simulation id
         :param timeout: The datetime when the simulation runs into a timeout
+        :param gzserver: Gazebo simulator launch/control instance
+        :param notificator: ROS state/error notificator interface
         """
 
         # ROS allows multiple calls to init_node, as long as the arguments are the same.
@@ -133,18 +133,9 @@ class ROSCLEServer(object):
                                    self.publish_state_update)
         self.__timeout = timeout
         self.__gzserver = gzserver
+        self.__notificator = notificator
 
         self.__simulation_id = sim_id
-
-        # Not expecting more that 10hz
-        self.__ros_status_pub = rospy.Publisher(TOPIC_STATUS, String, queue_size=10)
-
-        # Not expecting more that 10hz
-        self.__ros_cle_error_pub = rospy.Publisher(TOPIC_CLE_ERROR, CLEError, queue_size=10)
-
-        self.__current_task = None
-        self.__current_subtask_count = 0
-        self.__current_subtask_index = 0
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
 
@@ -162,7 +153,7 @@ class ROSCLEServer(object):
                       severity=CLEError.SEVERITY_ERROR, function_name="",
                       line_number=-1, offset=-1, line_text="", file_name=""):
         """
-        Publishes an error message
+        Publishes an error and takes appropriate action if necessary
 
         :param source_type: The module the error message comes from, e.g. "Transfer Function"
         :param error_type: The error type, e.g. "Compile"
@@ -176,7 +167,7 @@ class ROSCLEServer(object):
         """
         if severity >= CLEError.SEVERITY_ERROR:
             logger.exception("Error in {0} ({1}): {2}".format(source_type, error_type, message))
-        self.__ros_cle_error_pub.publish(
+        self.__notificator.publish_error(
             CLEError(severity, source_type, error_type, message,
                      function_name, line_number, offset, line_text, file_name))
         if severity == CLEError.SEVERITY_CRITICAL and self.__lifecycle is not None:
@@ -764,7 +755,7 @@ class ROSCLEServer(object):
                 'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
             }
             logger.debug(json.dumps(message))
-            self.__ros_status_pub.publish(json.dumps(message))
+            self.__notificator.publish_state(json.dumps(message))
         # pylint: disable=broad-except
         except Exception as e:
             logger.exception(e)
@@ -816,75 +807,9 @@ class ROSCLEServer(object):
             self.__service_clean_CSV_recorders_files.shutdown()
             time.sleep(1)
 
-        # shutdown topics and items initialized in the constructor
-        logger.info("Unregister error/transfer_function topic")
-        self.__ros_cle_error_pub.unregister()
-        logger.info("Unregister status topic")
-        self.__ros_status_pub.unregister()
+        # items initialized in the constructor
         self.__lifecycle = None
         self.__timer.cancel_all()
-
-    def notify_start_task(self, task_name, subtask_name, number_of_subtasks, block_ui):
-        """
-        Sends a status notification that a task starts on the ROS status topic.
-        This method will save the task name and the task size in class members so that
-        it could be reused in subsequent call to the notify_current_task method.
-
-        :param: task_name: Title of the task (example: initializing experiment).
-        :param: subtask_name: Title of the first subtask. Could be empty
-                (example: loading Virtual Room).
-        :param: number_of_subtasks: Number of expected subsequent calls to
-                notify_current_task(_, True, _).
-        :param: block_ui: Indicate that the client should block any user interaction.
-        """
-        if self.__current_task is not None:
-            logger.warn(
-                "Previous task was not closed properly, closing it now.")
-            self.notify_finish_task()
-        self.__current_task = task_name
-        self.__current_subtask_count = number_of_subtasks
-        message = {'progress': {'task': task_name,
-                                'subtask': subtask_name,
-                                'number_of_subtasks': number_of_subtasks,
-                                'subtask_index': self.__current_subtask_index,
-                                'block_ui': block_ui}}
-        self.__ros_status_pub.publish(json.dumps(message))
-
-    def notify_current_task(self, new_subtask_name, update_progress, block_ui):
-        """
-        Sends a status notification that the current task is updated with a new subtask.
-
-        :param: subtask_name: Title of the first subtask. Could be empt
-                (example: loading Virtual Room).
-        :param: update_progress: Boolean indicating if the index of the current subtask
-                should be updated (usually yes).
-        :param: block_ui: Indicate that the client should block any user interaction.
-        """
-        if self.__current_task is None:
-            logger.warn("Can't update a non existing task.")
-            return
-        if update_progress:
-            self.__current_subtask_index += 1
-        message = {'progress': {'task': self.__current_task,
-                                'subtask': new_subtask_name,
-                                'number_of_subtasks': self.__current_subtask_count,
-                                'subtask_index': self.__current_subtask_index,
-                                'block_ui': block_ui}}
-        self.__ros_status_pub.publish(json.dumps(message))
-
-    def notify_finish_task(self):
-        """
-        Sends a status notification that the current task is finished.
-        """
-        if self.__current_task is None:
-            logger.warn("Can't finish a non existing task.")
-            return
-        message = {'progress': {'task': self.__current_task,
-                                'done': True}}
-        self.__ros_status_pub.publish(json.dumps(message))
-        self.__current_subtask_count = 0
-        self.__current_subtask_index = 0
-        self.__current_task = None
 
     def _reset_world(self, request):
         """
@@ -893,7 +818,7 @@ class ROSCLEServer(object):
         :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
         """
 
-        with self.task_notifier("Resetting Environment", "Emptying 3D world"):
+        with self.__notificator.task_notifier("Resetting Environment", "Emptying 3D world"):
             if request.world_sdf is not None and request.world_sdf is not "":
                 sdf_world_string = request.world_sdf
                 self.__cle.reset_world(sdf_world_string)
@@ -932,16 +857,16 @@ class ROSCLEServer(object):
             network_conf_orig = {
                 p.name: self._get_population_value(p) for p in neurons_conf
                 }
-            with self.task_notifier("Resetting the simulation", ""):
-                self.notify_current_task("Restoring the 3D world", False, True)
+            with self.__notificator.task_notifier("Resetting the simulation", ""):
+                self.__notificator.update_task("Restoring the 3D world", False, True)
                 self.__cle.reset_world(sdf_world_string)
-                self.notify_current_task("Restoring the brain", False, True)
+                self.__notificator.update_task("Restoring the brain", False, True)
                 self.__cle.reset_brain(brain_temp_path, network_conf_orig)
         else:
-            with self.task_notifier("Resetting the simulation", ""):
-                self.notify_current_task("Restoring the 3D world", False, True)
+            with self.__notificator.task_notifier("Resetting the simulation", ""):
+                self.__notificator.update_task("Restoring the 3D world", False, True)
                 self.__cle.reset_world()
-                self.notify_current_task("Restoring the brain", False, True)
+                self.__notificator.update_task("Restoring the brain", False, True)
                 self.__cle.reset_brain()
 
         # Member added by transitions library
@@ -954,8 +879,9 @@ class ROSCLEServer(object):
         """
         gazebo_logger.handlers.append(notificator_handler)
         Notificator.register_notification_function(
-            lambda subtask, update_progress: self.notify_current_task(subtask, update_progress,
-                                                                      True)
+            lambda subtask, update_progress: self.__notificator.update_task(subtask,
+                                                                            update_progress,
+                                                                            True)
         )
 
     def stop_fetching_gazebo_logs(self):
@@ -996,21 +922,6 @@ class ROSCLEServer(object):
                 self.stop_fetching_gazebo_logs()
 
         return True, ""
-
-    @contextlib.contextmanager
-    def task_notifier(self, task_name, subtask_name):
-        """
-        Task notifier context manager
-
-        :param task_name:
-        :param subtask_name:
-        """
-
-        self.notify_start_task(task_name, subtask_name, number_of_subtasks=0, block_ui=True)
-        try:
-            yield
-        finally:
-            self.notify_finish_task()
 
     @staticmethod
     def _get_population_value(population_info):

@@ -61,6 +61,7 @@ class SomeWeiredTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLELauncher.instantiate_control_adapter", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.os", new=MockOs)
 @patch("hbp_nrp_cleserver.server.CLELauncher.CLELauncher._get_robot_abs_path", new=Mock(return_value="/a/robot/under/the/rainbow/model.sdf"))
+@patch("hbp_nrp_cleserver.server.CLELauncher.ROSNotificator", new=Mock())
 class TestCLELauncherInit(unittest.TestCase):
     def setUp(self):
         dir = os.path.split(__file__)[0]

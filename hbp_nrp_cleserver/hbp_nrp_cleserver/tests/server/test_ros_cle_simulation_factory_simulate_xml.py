@@ -68,6 +68,7 @@ class MockOs(object):
 
 @patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
+@patch("hbp_nrp_cleserver.server.CLELauncher.ROSNotificator", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLEServer", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)

@@ -53,6 +53,7 @@ from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
 from hbp_nrp_commons.generated import bibi_api_gen
 from hbp_nrp_commons.generated import exp_conf_api_gen
 
+from hbp_nrp_cleserver.server.ROSNotificator import ROSNotificator
 from hbp_nrp_cleserver.server.ROSLaunch import ROSLaunch
 from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
 from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
@@ -115,6 +116,7 @@ class CLELauncher(object):
         self.__gazebo_helper = None  # Will be instantiated after gazebo is started
         self.__tmp_robot_dir = None
 
+        self.ros_notificator = None
         self.cle_server = None
         self.models_path = None
         self.gzweb = None
@@ -169,14 +171,17 @@ class CLELauncher(object):
         else:
             raise Exception("The gzserver location '{0}' is not supported.", self.__gzserver_host)
 
-        # Create ROS server
-        logger.info("Creating ROSCLEServer")
-        self.cle_server = ROSCLEServer(self.__sim_id, timeout, self.gzserver)
+        # Create backend->frontend/client ROS notificator
         logger.info("Setting up backend Notificator")
+        self.ros_notificator = ROSNotificator()
         Notificator.register_notification_function(
             lambda subtask, update_progress:
-            self.cle_server.notify_current_task(subtask, update_progress, True)
+            self.ros_notificator.update_task(subtask, update_progress, True)
         )
+
+        # Create ROS server
+        logger.info("Creating ROSCLEServer")
+        self.cle_server = ROSCLEServer(self.__sim_id, timeout, self.gzserver, self.ros_notificator)
 
         # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
         # information that is useful to know for the user.
@@ -200,10 +205,10 @@ class CLELauncher(object):
         if self.__bibi_conf.transferFunction is not None:
             number_of_subtasks = number_of_subtasks + 2 * len(self.__bibi_conf.transferFunction)
 
-        self.cle_server.notify_start_task("Neurorobotics Closed Loop Engine",
-                                          "Starting Neurorobotics Closed Loop Engine",
-                                          number_of_subtasks=number_of_subtasks,
-                                          block_ui=True)
+        self.ros_notificator.start_task("Neurorobotics Closed Loop Engine",
+                                        "Starting Neurorobotics Closed Loop Engine",
+                                        number_of_subtasks=number_of_subtasks,
+                                        block_ui=True)
 
         # RNG seed for components, use config value if explicitly specified or generated a new one
         rng_seed = self.__exd_conf.rngSeed
@@ -402,7 +407,7 @@ class CLELauncher(object):
 
         # Loading is completed.
         self.__notify("Finished")
-        self.cle_server.notify_finish_task()
+        self.ros_notificator.finish_task()
 
         logger.info("CLELauncher Finished.")
 
@@ -444,18 +449,20 @@ class CLELauncher(object):
         # and we can clean after ourselves.
 
         # Clean up gazebo after ourselves
-        number_of_subtasks = 3
+        number_of_subtasks = 4
         if self.__exd_conf.rosLaunch is not None:
             number_of_subtasks = number_of_subtasks + 1
         if self.__bibi_conf.extRobotController is not None:
             number_of_subtasks = number_of_subtasks + 1
 
         try:
+
+            # Check if notifications to clients are currently working
             try:
-                self.cle_server.notify_start_task("Stopping simulation",
-                                                  "Shutting down Gazebo robotic simulator",
-                                                  number_of_subtasks=number_of_subtasks,
-                                                  block_ui=False)
+                self.ros_notificator.start_task("Stopping simulation",
+                                                "Shutting down simulation recorder",
+                                                number_of_subtasks=number_of_subtasks,
+                                                block_ui=False)
                 notifications = True
             except Exception, e:
                 logger.error("Could not send notifications")
@@ -470,15 +477,33 @@ class CLELauncher(object):
                     logger.warning("Gazebo recorder could not be shutdown successfully")
                     logger.exception(e)
 
-            # Do not empty Gazebo since Gazebo will be restarted anyhow
+            # Shutdown the CLE and any hooks before shutting down Gazebo
+            try:
+                if notifications:
+                    self.ros_notificator.update_task("Shutting down Closed Loop Engine",
+                                                     update_progress=True, block_ui=False)
+
+                self.cle_server.shutdown()
+            except Exception, e:
+                logger.error("The cle server could not be shut down")
+                logger.exception(e)
+
+            # Shutdown gzweb before shutting down Gazebo
             if self.gzweb is not None:
                 try:
+                    if notifications:
+                        self.ros_notificator.update_task("Shutting down Gazebo web client",
+                                                         update_progress=True, block_ui=False)
                     self.gzweb.stop()
                 except Exception, e:
                     logger.warning("gzweb could not be stopped successfully")
                     logger.exception(e)
+
             if self.gzserver is not None:
                 try:
+                    if notifications:
+                        self.ros_notificator.update_task("Shutting down Gazebo robotic simulator",
+                                                         update_progress=True, block_ui=False)
                     self.gzserver.stop()
                 except Exception, e:
                     logger.warning("gzserver could not be stopped successfully")
@@ -490,35 +515,31 @@ class CLELauncher(object):
                                                          self.__bibi_conf.extRobotController)
                 if os.path.isfile(robot_controller_filepath):
                     if notifications:
-                        self.cle_server.notify_current_task("Stopping external robot controllers",
-                                                            update_progress=True, block_ui=False)
+                        self.ros_notificator.update_task("Stopping external robot controllers",
+                                                         update_progress=True, block_ui=False)
                     subprocess.check_call([robot_controller_filepath, 'stop'])
 
             # Stop any ROS nodes launched via roslaunch
             if self.__exd_conf.rosLaunch is not None and self.ros_launcher is not None:
                 if notifications:
-                    self.cle_server.notify_current_task("Shutting down launched ROS nodes",
-                                                        update_progress=True, block_ui=False)
+                    self.ros_notificator.update_task("Shutting down launched ROS nodes",
+                                                     update_progress=True, block_ui=False)
                 self.ros_launcher.shutdown()
 
-            # if the notification that shutdown was initiated did not work, there is no point
-            # performing trying to notify the frontend here, either, since it is unlikely that this
-            # works
+            # try to notify for task completion, notificator should be valid until
+            # the finally block below
             if notifications:
-                # Shutdown CLE
-                Notificator.register_notification_function(
-                    lambda subtask, update_progress:
-                    self.cle_server.notify_current_task(subtask, update_progress, False)
-                )
-                self.cle_server.notify_current_task("Shutting down Closed Loop Engine",
-                                                    update_progress=True, block_ui=False)
+                self.ros_notificator.finish_task()
 
-                self.cle_server.notify_finish_task()
         finally:
+
+            # always shut down the notificator ROS topics when done, no status for this
+            # as there is no mechanism to deliver further updates
             try:
-                self.cle_server.shutdown()
+                if self.ros_notificator:
+                    self.ros_notificator.shutdown()
             except Exception, e:
-                logger.error("The cle server could not be shut down")
+                logger.error("The ROS notificator could not be shut down")
                 logger.exception(e)
 
         # Cleanup ROS core nodes, services, and topics (the command should be almost
