@@ -622,6 +622,8 @@ if __name__ == '__main__':  # pragma: no cover
                             help='the simulation id to use', required=True)
         parser.add_argument('--timeout', dest='timeout',
                             help='the simulation default time allocated', required=True)
+        parser.add_argument('--rng-seed', dest='rng_seed',
+                            help='the global experiment RNG seed', required=True)
         parser.add_argument('-v', '--verbose', action='store_true',
                             help='increase output verbosity')
 
@@ -689,6 +691,9 @@ if __name__ == '__main__':  # pragma: no cover
         # check the reservation argument, if empty default to None
         if args.reservation == '':
             args.reservation = None
+
+        # override the experiment RNG seed with the command line value
+        exd.rngSeed = int(args.rng_seed)
 
         cle_launcher = CLELauncher(exd,
                                    bibi,

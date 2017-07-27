@@ -202,7 +202,7 @@ class ROSCLESimulationFactory(object):
                                                  sim_id,
                                                  timeout)
                     try:
-                        cle_launcher.init(bibi, exd.bibiConf.processes)
+                        cle_launcher.init(bibi, exd)
                     # pylint: disable=broad-except
                     except Exception:
                         cle_launcher.shutdown()
