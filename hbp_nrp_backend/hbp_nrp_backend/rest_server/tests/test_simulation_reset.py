@@ -60,7 +60,7 @@ class TestSimulationReset(RestTest):
         self.assertEqual(200, response.status_code)
         simulations[0].cle.reset.assert_called()
 
-        # Invalid request, too much parameters
+        # Invalid request, too many parameters
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE,
             'randomInvalidParameter': False
@@ -91,6 +91,8 @@ class TestSimulationReset(RestTest):
     def test_reset_is_called_properly(self, mock_get_model_path, mock_get_experiment_path):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
+        simulations[0].cle.set_simulation_brain.return_value = Mock(error_message="")
+        simulations[0].cle.add_simulation_transfer_function.return_value = None
 
         mock_get_experiment_path.return_value = PATH
         mock_get_model_path.return_value = os.path.join(PATH, 'models')
@@ -103,10 +105,8 @@ class TestSimulationReset(RestTest):
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_FULL
         }))
-        # this test will fail once the reset functionality is working again (see issue report NRRPLT-4860)
-        # at that moment, 500 should be replaced by 200 and RESET_ROBOT_POSE should be replaced by RESET_FULL in the next lines
-        self.assertEqual(500, response.status_code)
-        simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_ROBOT_POSE)
+        self.assertEqual(200, response.status_code)
+        simulations[0].cle.reset.assert_called_with(ResetSimulationRequest.RESET_FULL)
 
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_WORLD
