@@ -23,3 +23,4 @@ __generated_experiment*
 /.coverage.hbp_nrp_commons_hbp_nrp_commons
 user_makefile
 config.json.sample
+hbp-flask-restful-swagger-master/flask_restful_swagger/static/config.json*
