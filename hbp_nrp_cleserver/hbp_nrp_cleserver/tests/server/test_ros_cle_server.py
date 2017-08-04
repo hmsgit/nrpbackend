@@ -35,7 +35,6 @@ from os import path
 import base64
 import unittest
 import json
-import threading
 from functools import wraps
 from multiprocessing import Process
 
@@ -92,12 +91,8 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_notificator = Mock()
         self.__mocked_notificator.task_notifier = mock_open()
 
-        with patch('hbp_nrp_cleserver.server.ROSCLEServer.threading') as threading_patch:
-            # Set up our object under test and get sure it calls rospy.init in its
-            # constructor.
-            threading_patch.Thread = lambda target: target()
-            self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0, None, None, self.__mocked_notificator)
-            self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
+        self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0, None, None, self.__mocked_notificator)
+        self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
 
     def tearDown(self):
         # remove all handlers after each test!
@@ -420,10 +415,6 @@ class TestROSCLEServer(unittest.TestCase):
         ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(srv.SetBrainRequest.DO_RENAME_POPULATION, "node_name", "new_node_name", tfs)
         self.assertEqual(mock_parent.name, "new_node_name")
         self.assertEqual(mock_tf.source, "tf_source new_node_name")
-
-    def test_rospy_spin_is_called(self):
-        # Assert that rospy.spin has been called when the roscleserver has been created
-        self.assertEqual(1, self.__mocked_rospy.spin.call_count)
 
     def test_shutdown(self):
         z = self.__ros_cle_server._ROSCLEServer__cle = MagicMock()
