@@ -29,7 +29,6 @@ ROS wrapper around the CLE
 
 import json
 import logging
-import threading
 import rospy
 import numpy
 import datetime
@@ -138,15 +137,6 @@ class ROSCLEServer(object):
         self.__simulation_id = sim_id
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
-
-        # Start another thread calling rospy.spin
-        # This line has been put here because it has to be called before prepare_simulation,
-        # where all the 'rospy.Service's are initialized.
-        # This is the best place I managed to found, as it doesn't seem to hurt anybody.
-        # Any enhancement is warmly welcomed.
-        rospy_thread = threading.Thread(target=rospy.spin)
-        rospy_thread.setDaemon(True)
-        rospy_thread.start()
 
     # pylint: disable=too-many-arguments
     def publish_error(self, source_type, error_type, message,
