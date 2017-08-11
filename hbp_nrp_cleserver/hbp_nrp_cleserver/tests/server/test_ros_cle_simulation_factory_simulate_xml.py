@@ -50,6 +50,7 @@ class MockedServiceRequest(object):
     sim_id = 0
     timeout = str(datetime.now(tz) + timedelta(minutes=5))
     reservation = 'user_workshop'
+    playback_path = None
 
 
 class MockedGazeboHelper(object):

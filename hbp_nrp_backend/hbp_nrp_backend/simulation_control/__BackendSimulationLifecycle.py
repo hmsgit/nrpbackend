@@ -29,6 +29,7 @@ from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.cle_interface import TOPIC_LIFECYCLE
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
+from hbp_nrp_backend.cle_interface.PlaybackClient import PlaybackClient
 from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient \
     import ROSCLESimulationFactoryClient
 import logging
@@ -87,13 +88,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
 
         state_machine_paths = {}
-        if experiment.experimentControl is not None:
+        if experiment.experimentControl is not None and not self.simulation.playback_path:
             state_machine_paths.update({sm.id: os.path.join(self.__simulation_root_folder, sm.src)
                                         for sm in
                                         experiment.experimentControl.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
-        if experiment.experimentEvaluation is not None:
+        if experiment.experimentEvaluation is not None and not self.simulation.playback_path:
             state_machine_paths.update({sm.id: os.path.join(self.__simulation_root_folder, sm.src)
                                         for sm in
                                         experiment.experimentEvaluation.stateMachine
@@ -147,9 +148,12 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             simulation_factory_client.create_new_simulation(
                 environment_path, self.__experiment_path,
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
-                simulation.sim_id, str(simulation.kill_datetime)
+                simulation.sim_id, str(simulation.kill_datetime), simulation.playback_path
             )
-            simulation.cle = ROSCLEClient(simulation.sim_id)
+            if not simulation.playback_path:
+                simulation.cle = ROSCLEClient(simulation.sim_id)
+            else:
+                simulation.cle = PlaybackClient(simulation.sim_id)
             logger.info("simulation initialized")
 
         except IOError as e:

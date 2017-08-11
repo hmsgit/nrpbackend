@@ -47,6 +47,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.simulation.environment_conf = None
         self.simulation.context_id = None
         self.simulation.state_machines = []
+        self.simulation.playback_path = None
 
         caller_id = patch("hbp_nrp_commons.simulation_lifecycle.get_caller_id", return_value="test_client")
         caller_id.start()
@@ -60,6 +61,10 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.cle_factory_mock = cle_factory_client.start()
         self.addCleanup(cle_factory_client.stop)
 
+        playback_client = patch("hbp_nrp_backend.cle_interface.PlaybackClient.PlaybackClient")
+        self.playback_mock = playback_client.start()
+        self.addCleanup(playback_client.stop)
+
         rospy_patch = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.rospy")
         self.rospy_mock = rospy_patch.start()
         self.addCleanup(rospy_patch.stop)
@@ -72,6 +77,11 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.lifecycle.models_path = PATH
         self.lifecycle.experiment_path = PATH
         self.assertEqual("", self.lifecycle.simulation_root_folder)
+
+    def test_init_playback(self):
+        self.simulation.playback_path = 'foo'
+        lifecycle = BackendSimulationLifecycle(self.simulation)
+        self.playback_mock.assert_callled_once_with(42)
 
     def test_backend_initialize_non_collab(self):
         self.lifecycle.initialize(Mock())
@@ -156,7 +166,17 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.assertTrue(self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_stop(self):
-        self.lifecycle.stop(Mock())
+        self.simulation.context_id = "Foobar"
+
+        with patch('tempfile.gettempdir', return_value='foo') as mock_tempfile,\
+             patch('os.path.split', return_value=['foo', 'bar']) as mock_split, \
+             patch('shutil.rmtree') as mock_rmtree:
+
+            self.lifecycle.stop(Mock())
+            mock_tempfile.assert_called_once()
+            mock_split.assert_called_once()
+            mock_rmtree.assert_called_once()
+          
 
         # Assert State Machines have been terminated
         self.assertTrue(self.simulation.state_machine_manager.shutdown.called)

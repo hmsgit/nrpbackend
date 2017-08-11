@@ -31,6 +31,8 @@ from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_excontrol.StateMachineManager import StateMachineManager
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import \
     BackendSimulationLifecycle
+from hbp_nrp_backend.simulation_control.__PlaybackSimulationLifecycle import \
+    PlaybackSimulationLifecycle
 from tempfile import NamedTemporaryFile
 from flask_restful import fields
 from flask_restful_swagger import swagger
@@ -47,7 +49,8 @@ class Simulation(object):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 reservation=None, sim_brain_processes=1, context_id=None, state='created'):
+                 reservation=None, sim_brain_processes=1, context_id=None, state='created',
+                 playback_path=None):
         """
         Creates a new simulation
 
@@ -60,6 +63,7 @@ class Simulation(object):
         'local' for localhost and 'lugano' for a dedicated machine on the Lugano viz cluster.
         :param context_id: The context ID if the experiment is declared in the collab portal
         :param state: The initial state (created by default)
+        :param playback_path: The simulation recording to playback (Path to recording root)
         """
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
@@ -73,8 +77,14 @@ class Simulation(object):
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
         self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
-        self.__lifecycle = BackendSimulationLifecycle(self, state)
         self.__creationUniqueID = None
+        self.__playback_path = playback_path
+
+        # enable the full dynamic backend lifecycle for non-playback launches
+        if playback_path is None:
+            self.__lifecycle = BackendSimulationLifecycle(self, state)
+        else:
+            self.__lifecycle = PlaybackSimulationLifecycle(self, state)
 
     @property
     def creationUniqueID(self):
@@ -343,6 +353,14 @@ class Simulation(object):
         """
         return self.__brain_processes
 
+    @property
+    def playback_path(self):
+        """
+        Gets the simulation recording path being used to playback this simulation, None if this is
+        a live simulation
+        """
+        return self.__playback_path
+
     resource_fields = {
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
@@ -354,7 +372,8 @@ class Simulation(object):
         'reservation': fields.String(attribute='reservation'),
         'contextID': fields.String(attribute='context_id'),
         'brainProcesses': fields.Integer(attribute='brain_processes'),
-        'creationUniqueID': fields.String(attribute='creationUniqueID')
+        'creationUniqueID': fields.String(attribute='creationUniqueID'),
+        'playbackPath': fields.String(attribute='playback_path')
     }
     required = [
         'state', 'simulationID', 'experimentConfiguration', 'gzserverHost'

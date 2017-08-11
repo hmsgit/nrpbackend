@@ -22,28 +22,31 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ---LICENSE-END
 """
-Unit tests for the ROSCLESimulationFactoryClient
+This module contains the implementation of the playback simulation lifecycle
 """
-from mock import patch, Mock
-from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
 
-__author__ = 'Alessandro Ambrosano, Georg'
-
-import unittest
+from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle \
+    import BackendSimulationLifecycle
 
 
-class TestROSCLESimulationFactoryClient(unittest.TestCase):
+class PlaybackSimulationLifecycle(BackendSimulationLifecycle):
+    """
+    This class implements the playback simulation lifecycle
+    """
 
-    @patch('hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient.rospy.ServiceProxy')
-    def test_create_new_simulation(self, mock_service_proxy):
-        roscle = ROSCLESimulationFactoryClient()
-        service_proxy = mock_service_proxy()
-        self.assertTrue(service_proxy.wait_for_service.called)
-        self.assertIsNone(roscle.create_new_simulation(1, 2, 3, 4, 5, 6, 7, 8))
-        service_proxy.assert_once_called_with(1, 2, 3, 4, 5, 6, 7, 8)
-        service_proxy.side_effect = Exception
-        self.assertRaises(Exception, roscle.create_new_simulation, 1, 2, 3, 4, 5, 6, 7, 8)
+    def __init__(self, simulation, initial_state='created'):
+        """
+        Creates a new playback simulation lifecycle
 
+        :param simulation: The simulation for which the simulation lifecycle is created
+        """
+        super(PlaybackSimulationLifecycle, self).__init__(simulation, initial_state)
 
-if __name__ == '__main__':
-    unittest.main()
+    def start(self, state_change):
+        """
+        Starts the simulation playback, do not start state machines in parent
+        BackendSimulationLifecycle
+
+        :param state_change: The state change that lead to starting the simulation
+        """
+        pass

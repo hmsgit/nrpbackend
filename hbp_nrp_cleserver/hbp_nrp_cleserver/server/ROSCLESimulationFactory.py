@@ -148,6 +148,7 @@ class ROSCLESimulationFactory(object):
             sim_id = service_request.sim_id
             exd_config_file = service_request.exd_config_file
             timeout = self.__get_timeout(service_request)
+            playback_path = service_request.playback_path
 
             logger.info(
                 "Preparing new simulation with environment file: %s "
@@ -169,7 +170,7 @@ class ROSCLESimulationFactory(object):
                     exd.bibiConf.processes = service_request.brain_processes
 
                 # single brain process launch
-                if exd.bibiConf.processes == 1:
+                if exd.bibiConf.processes == 1 or playback_path:
                     # This import starts NEST. Don't move it to the imports at the top of the file,
                     # because NEST shall be started on the simulation thread.
                     logger.info("Creating local CLELauncher object")
@@ -177,7 +178,7 @@ class ROSCLESimulationFactory(object):
                     cle_launcher = CLELauncher(exd,
                                                bibi,
                                                get_experiment_basepath(exd_config_file),
-                                               gzserver_host, reservation, sim_id)
+                                               gzserver_host, reservation, sim_id, playback_path)
                     try:
                         cle_launcher.cle_function_init(environment_file, timeout, self.except_hook)
                     # pylint: disable=broad-except

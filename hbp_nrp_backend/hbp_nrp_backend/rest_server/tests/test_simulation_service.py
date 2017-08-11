@@ -74,7 +74,8 @@ class TestSimulationService(RestTest):
             'contextID': None,
             'brainProcesses': 1,
             'creationUniqueID': '0',
-            'reservation': 'user_workshop'
+            'reservation': 'user_workshop',
+            'playbackPath': None
         }
         erd = json.dumps(expected_response_data)
         self.assertEqual(response.data.strip(), erd)
@@ -129,6 +130,17 @@ class TestSimulationService(RestTest):
         response = self.client.post('/simulation', data=json.dumps(rqdata))
 
         self.assertEqual(response.status_code, 401)
+        self.assertEqual(len(simulations), 0)
+
+    def test_simulation_service_wrong_brain_processes(self):
+        rqdata = {
+            "experimentConfiguration": "MyExample.xml",
+            "gzserverHost": "local",
+            "brainProcesses": -1
+        }
+        response = self.client.post('/simulation', data=json.dumps(rqdata))
+
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(len(simulations), 0)
 
     def test_simulation_service_another_sim_running(self):

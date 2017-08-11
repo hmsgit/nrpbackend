@@ -72,6 +72,8 @@ import hbp_nrp_cle.tf_framework as nrp
 import hbp_nrp_cle.brainsim.config as brainconfig
 # End of NEST-starting imports
 
+from hbp_nrp_cleserver.server.PlaybackServer import PlaybackServer
+
 logger = logging.getLogger(__name__)
 
 # pylint: disable = too-many-locals
@@ -84,7 +86,8 @@ class CLELauncher(object):
     CLELauncher substitutes generated cle
     """
 
-    def __init__(self, exd_conf, bibi_conf, experiment_path, gzserver_host, reservation, sim_id):
+    def __init__(self, exd_conf, bibi_conf, experiment_path, gzserver_host, reservation, sim_id,
+                 playback_path):
         """
         Constructor of CLELauncher
 
@@ -111,6 +114,8 @@ class CLELauncher(object):
         self.__gzserver_host = gzserver_host
         self.__reservation = reservation
         self.__sim_id = sim_id
+        self.__playback_path = playback_path
+
         self.__abort_initialization = None
         self.__dependencies = compute_dependencies(bibi_conf)
         self.__gazebo_helper = None  # Will be instantiated after gazebo is started
@@ -118,11 +123,117 @@ class CLELauncher(object):
 
         self.ros_notificator = None
         self.cle_server = None
-        self.models_path = None
+        self.models_path = get_model_basepath()
+
         self.gzweb = None
         self.gzserver = None
         self.gazebo_recorder = None
         self.ros_launcher = None
+
+    def cle_function_init(self, world_file, timeout=None, except_hook=None):
+        """
+        Initialize the Close Loop Engine. We still need the "world file" parameter
+        in case the user is starting the experiment from the old web interface
+        with the "Upload custom environment" button
+
+        :param world_file: The environment (SDF) world file.
+        :param timeout: The datetime object when the simulation timeouts or None
+        :param except_hook: A handler method for critical exceptions
+        """
+
+        # Change working directory to experiment directory
+        logger.info("Path is " + self.__experiment_path)
+        os.chdir(self.__experiment_path)
+
+        # determine the Gazebo simulator target, due to dependencies this must happen here
+        if self.__gzserver_host == 'local':
+            self.gzserver = LocalGazeboServerInstance()
+        elif self.__gzserver_host == 'lugano':
+            self.gzserver = LuganoVizClusterGazebo(
+                timeout.tzinfo if timeout is not None else None, self.__reservation
+            )
+        else:
+            raise Exception("The gzserver location '{0}' is not supported.", self.__gzserver_host)
+
+        # Create backend->frontend/client ROS notificator
+        logger.info("Setting up backend Notificator")
+        self.ros_notificator = ROSNotificator()
+        Notificator.register_notification_function(
+            lambda subtask, update_progress:
+            self.ros_notificator.update_task(subtask, update_progress, True)
+        )
+
+        # Number of subtasks is not used in frontend notificator logic
+        self.ros_notificator.start_task("Neurorobotics Platform",
+                                        "Neurorobotics Platform",
+                                        number_of_subtasks=1,
+                                        block_ui=True)
+        self.__notify("Starting Neurorobotics Platform")
+
+        # active simulations, load robot and brain simulator, CLE, and TFs
+        if not self.__playback_path:
+
+            # create the CLE server and lifecycle first to report any failures properly
+            logger.info("Creating CLE Server")
+            self.cle_server = ROSCLEServer(self.__sim_id, timeout, self.gzserver,
+                                           self.ros_notificator)
+
+            # RNG seed for components, use config value if specified or generate a new one
+            rng_seed = self.__exd_conf.rngSeed
+            if rng_seed is None:
+                logger.warn('No RNG seed specified, generating a random value.')
+                rng_seed = random.randint(1, sys.maxint)
+            logger.info('RNG seed = %i', rng_seed)
+
+            # start Gazebo simulator and bridge
+            self.__start_gazebo(rng_seed)
+
+            # load environment and robot models
+            roscontrol, roscomm, robot_pose, models, lights = self.__load_environment(world_file)
+
+            # load the brain
+            braincontrol, braincomm, brainfile, brainconf = self.__load_brain(rng_seed)
+
+            # load the interactive CLE
+            cle = self.__load_cle(roscontrol, roscomm, braincontrol, braincomm,
+                                  brainfile, brainconf, robot_pose, models, lights)
+
+            # initialize the cle server and services
+            logger.info("Preparing CLE Server")
+            self.cle_server.prepare_simulation(cle, except_hook)
+
+            # load transfer functions
+            self.__load_tfs()
+
+            # Wait for the backend rendering environment to load (for any sensors/cameras)
+            self.__notify("Waiting for Gazebo simulated sensors to be ready")
+            self.__gazebo_helper.wait_for_backend_rendering()
+
+        # simulation playback, load the robot simulator and playback CLE
+        else:
+
+            # TODO: validate playback path / download with storage server API
+
+            # create the CLE server and lifecycle first to report any failures properly
+            logger.info("Creating Playback Server")
+            self.cle_server = PlaybackServer(self.__sim_id, timeout, self.gzserver,
+                                             self.ros_notificator)
+
+            # disable roslaunch for playback
+            self.__exd_conf.rosLaunch = None
+
+            # start Gazebo simulator and bridge (RNG seed is irrelevant for playback)
+            self.__start_gazebo(123456)
+
+            # create playback CLE server
+            logger.info("Preparing Playback Server")
+            self.cle_server.prepare_simulation(self.__playback_path, except_hook)
+
+        # Loading is completed.
+        self.__notify("Finished")
+        self.ros_notificator.finish_task()
+
+        logger.info("CLELauncher Finished.")
 
     def __handle_gazebo_shutdown(self):
         """
@@ -149,39 +260,35 @@ class CLELauncher(object):
             raise Exception("The simulation must abort due to: " + self.__abort_initialization)
         Notificator.notify(message, True)
 
-    def cle_function_init(self, world_file, timeout=None, except_hook=None):
+    def __start_gazebo(self, rng_seed):
         """
-        Initialize the Close Loop Engine. We still need the "world file" parameter
-        in case the user is starting the experiment from the old web interface
-        with the "Upload custom environment" button
+        Configures and starts the Gazebo simulator and backend services
 
-        :param world_file: The environment (SDF) world file.
-        :param timeout: The datetime object when the simulation timeouts or None
-        :param except_hook: A handler method for critical exceptions
+        :param rng_seed RNG seed to spawn Gazebo with
         """
-        logger.info("Path is " + self.__experiment_path)
-        os.chdir(self.__experiment_path)
 
-        if self.__gzserver_host == 'local':
-            self.gzserver = LocalGazeboServerInstance()
-        elif self.__gzserver_host == 'lugano':
-            self.gzserver = LuganoVizClusterGazebo(
-                timeout.tzinfo if timeout is not None else None, self.__reservation
-            )
+        # Gazebo configuration and launch
+        self.__notify("Starting Gazebo robotic simulator")
+        ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
+        local_ip = ifaddress[netifaces.AF_INET][0]['addr']
+        ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
+
+        self.gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
+
+        # Physics engine selection from ExDConfig; pass as -e <physics_engine> to gzserver
+        physics_engine = self.__exd_conf.physicsEngine
+        logger.info("Looking for physicsEngine tag value in ExDConfig")
+        if physics_engine is not None:
+            logger.info("Physics engine specified in ExDConfig: " + str(repr(physics_engine)))
+            if physics_engine not in ['ode', 'opensim']:
+                raise Exception("Invalid physics_engine value '" + physics_engine + "' supplied.")
         else:
-            raise Exception("The gzserver location '{0}' is not supported.", self.__gzserver_host)
+            logger.info("No physics engine specified explicitly. Using default setting 'ode'")
+            physics_engine = "ode"
 
-        # Create backend->frontend/client ROS notificator
-        logger.info("Setting up backend Notificator")
-        self.ros_notificator = ROSNotificator()
-        Notificator.register_notification_function(
-            lambda subtask, update_progress:
-            self.ros_notificator.update_task(subtask, update_progress, True)
-        )
-
-        # Create ROS server
-        logger.info("Creating ROSCLEServer")
-        self.cle_server = ROSCLEServer(self.__sim_id, timeout, self.gzserver, self.ros_notificator)
+        # experiment specific gzserver command line arguments
+        gzserver_args = '--seed {rng_seed} -e {engine}'.format(rng_seed=rng_seed,
+                                                               engine=physics_engine)
 
         # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
         # information that is useful to know for the user.
@@ -189,46 +296,6 @@ class CLELauncher(object):
         gazebo_logger = logging.getLogger('hbp_nrp_cle.user_notifications')
         gazebo_logger.setLevel(logging.INFO)
         gazebo_logger.handlers.append(NotificatorHandler())
-
-        # Needed in order to cleanup global static variables
-        nrp.start_new_tf_manager()
-
-        # set models path variable
-        self.models_path = get_model_basepath()
-
-        # Number of subtasks for notificator logic
-        number_of_subtasks = 13
-        if self.__exd_conf.rosLaunch is not None:
-            number_of_subtasks = number_of_subtasks + 1
-        if self.__bibi_conf.extRobotController is not None:
-            number_of_subtasks = number_of_subtasks + 1
-        if self.__bibi_conf.transferFunction is not None:
-            number_of_subtasks = number_of_subtasks + 2 * len(self.__bibi_conf.transferFunction)
-
-        self.ros_notificator.start_task("Neurorobotics Closed Loop Engine",
-                                        "Starting Neurorobotics Closed Loop Engine",
-                                        number_of_subtasks=number_of_subtasks,
-                                        block_ui=True)
-
-        # RNG seed for components, use config value if explicitly specified or generated a new one
-        rng_seed = self.__exd_conf.rngSeed
-        if rng_seed is None:
-            logger.warn('No RNG seed specified, generating a random value.')
-            rng_seed = random.randint(1, sys.maxint)
-        logger.info('RNG seed = %i', rng_seed)
-        # Physics engine selection from ExDConfig; pass as -e <physics_engine> to gzserver
-        physics_engine = self.__exd_conf.physicsEngine
-        physics_engine_arg = ""
-        logger.info("Looking for physicsEngine tag value in ExDConfig")
-        if physics_engine is not None:
-            logger.info("Physics engine specified in ExDConfig: " + str(repr(physics_engine)))
-            if physics_engine == "ode" or physics_engine == "opensim":
-                physics_engine_arg = " -e " + physics_engine
-            else:
-                raise Exception("Invalid physics_engine value '" + physics_engine + "' supplied.")
-        else:
-            logger.info("No physics engine specified explicitly. Using default setting 'ode'")
-            physics_engine_arg = " -e ode"
 
         # optional roslaunch support prior to Gazebo launch
         if self.__exd_conf.rosLaunch is not None:
@@ -239,24 +306,6 @@ class CLELauncher(object):
 
             self.__notify("Launching experiment ROS nodes and configuring parameters")
             self.ros_launcher = ROSLaunch(self.__exd_conf.rosLaunch.src)
-
-        # Gazebo configuration and launch
-        self.__notify("Starting Gazebo robotic simulator")
-        ifaddress = netifaces.ifaddresses(config.config.get('network', 'main-interface'))
-        local_ip = ifaddress[netifaces.AF_INET][0]['addr']
-        ros_master_uri = os.environ.get("ROS_MASTER_URI").replace('localhost', local_ip)
-
-        self.gzserver.gazebo_died_callback = self.__handle_gazebo_shutdown
-
-        # find robot
-        robot_file = self.__bibi_conf.bodyModel
-        logger.info("Robot: " + robot_file)
-        robot_file_abs = self._get_robot_abs_path(robot_file)
-
-        # experiment specific gzserver command line arguments
-        gzserver_args = '--seed {rng_seed}'.format(rng_seed=rng_seed)
-        # Pass along the physics engine command line switch
-        gzserver_args += physics_engine_arg
 
         try:
             logger.info("gzserver arguments: " + gzserver_args)
@@ -279,12 +328,25 @@ class CLELauncher(object):
         self.gzweb = LocalGazeboBridgeInstance()
         self.gzweb.restart()
 
+    def __load_environment(self, world_file):
+        """
+        Loads the environment and robot in Gazebo
+
+        :param world_file Backwards compatibility for world file specified through webpage
+        """
+
+        # load the world file if provided first
         self.__notify("Loading experiment environment")
         self.__gazebo_helper.empty_gazebo_world()
         w_models, w_lights = self.__gazebo_helper.load_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
         self.__notify("Loading robot")
+
+        # find robot
+        robot_file = self.__bibi_conf.bodyModel
+        logger.info("Robot: " + robot_file)
+        robot_file_abs = self._get_robot_abs_path(robot_file)
 
         robot_initial_pose = self.__exd_conf.environmentModel.robotPose
         if robot_initial_pose is not None:
@@ -313,12 +375,8 @@ class CLELauncher(object):
         self.__gazebo_helper \
             .load_gazebo_model_file('robot', robot_file_abs, rpose, retina_config_path)
 
-        # control adapter
-        roscontrol = RosControlAdapter()
-        # communication adapter
-        roscomm = RosCommunicationAdapter()
-
-        if self.__bibi_conf.extRobotController is not None:  # load external robot controller
+        # load external robot controller
+        if self.__bibi_conf.extRobotController is not None:
             robot_controller_filepath = os.path.join(self.models_path,
                                                      self.__bibi_conf.extRobotController)
             if not os.path.isfile(robot_controller_filepath) and self.__tmp_robot_dir is not None:
@@ -332,23 +390,25 @@ class CLELauncher(object):
                     self.shutdown()
                     return
 
+        # control adapter
+        roscontrol = RosControlAdapter()
+        # communication adapter
+        roscomm = RosCommunicationAdapter()
+
+        return roscontrol, roscomm, rpose, w_models, w_lights
+
+    def __load_brain(self, rng_seed):
+        """
+        Loads the neural simulator, interfaces, and configuration
+
+        :param rng_seed RNG seed to spawn Nest with
+        """
+
         # Create interfaces to brain
         self.__notify("Loading Nest brain simulator")
         brainconfig.rng_seed = rng_seed
         braincontrol = instantiate_control_adapter()
         braincomm = instantiate_communication_adapter()
-
-        # Create transfer functions manager
-        self.__notify("Connecting brain simulator to robot")
-        tfmanager = nrp.config.active_node
-
-        # set adapters
-        tfmanager.robot_adapter = roscomm
-        tfmanager.brain_adapter = braincomm
-
-        # Import dependencies
-        for dep in self.__dependencies:
-            importlib.import_module(dep[:dep.rfind('.')])
 
         self.__notify("Loading brain and population configuration")
         # load brain
@@ -360,6 +420,41 @@ class CLELauncher(object):
             brainfilepath = os.path.join(self.models_path, brainfilepath)
         neurons_config = get_all_neurons_as_dict(self.__bibi_conf.brainModel.populations)
 
+        return braincontrol, braincomm, brainfilepath, neurons_config
+
+    # pylint: disable=too-many-arguments
+    def __load_cle(self, roscontrol, roscomm, braincontrol, braincomm,
+                   brain_file_path, neurons_config,
+                   robot_pose, models, lights):
+        """
+        Load the ClosedLoopEngine and initializes all interfaces
+
+        :param roscontrol Robot Control Adapter to use
+        :param roscomm Robot Communication Adapter to use
+        :param braincontrol Brain Control Adapter to use
+        :param braincomm Brain Communication Adapter to use
+        :param brain_file_path Accessible path to brain file
+        :param neurons_config Neuron configuration specified in the BIBI
+        :param robot_post Initial robot pose
+        :param models Initial models loaded into the environment
+        :param lights Initial lights loaded into the environment
+        """
+
+        # Needed in order to cleanup global static variables
+        self.__notify("Connecting brain simulator to robot")
+        nrp.start_new_tf_manager()
+
+        # Create transfer functions manager
+        tfmanager = nrp.config.active_node
+
+        # set adapters
+        tfmanager.robot_adapter = roscomm
+        tfmanager.brain_adapter = braincomm
+
+        # Import dependencies
+        for dep in self.__dependencies:
+            importlib.import_module(dep[:dep.rfind('.')])
+
         # integration timestep between simulators, convert from ms to s (default to 20ms)
         if self.__bibi_conf.timestep is None:
             self.__bibi_conf.timestep = 20
@@ -368,16 +463,20 @@ class CLELauncher(object):
         # initialize CLE
         self.__notify("Initializing CLE")
         cle = ClosedLoopEngine(roscontrol, roscomm, braincontrol, braincomm, tfmanager, timestep)
-        cle.initialize(brainfilepath, **neurons_config)
+        cle.initialize(brain_file_path, **neurons_config)
 
         # Set initial pose
-        cle.initial_robot_pose = rpose
+        cle.initial_robot_pose = robot_pose
         # Set initial models and lights
-        cle.initial_models = w_models
-        cle.initial_lights = w_lights
+        cle.initial_models = models
+        cle.initial_lights = lights
 
-        # Now that we have everything ready, we could prepare the simulation
-        self.cle_server.prepare_simulation(cle, except_hook)
+        return cle
+
+    def __load_tfs(self):
+        """
+        Loads and connects all transfer functions
+        """
 
         self.__notify("Loading transfer functions")
 
@@ -400,16 +499,6 @@ class CLELauncher(object):
                 logger.error("Error while loading new transfer function")
                 logger.error(e)
                 raise
-
-        # Wait for the backend rendering environment to load (for any sensors/cameras)
-        self.__notify("Waiting for Gazebo simulated sensors to be ready")
-        self.__gazebo_helper.wait_for_backend_rendering()
-
-        # Loading is completed.
-        self.__notify("Finished")
-        self.ros_notificator.finish_task()
-
-        logger.info("CLELauncher Finished.")
 
     def _get_robot_abs_path(self, robot_file):
         """
@@ -698,7 +787,8 @@ if __name__ == '__main__':  # pragma: no cover
         cle_launcher = CLELauncher(exd,
                                    bibi,
                                    rcsf_get_experiment_basepath(args.exd_file),
-                                   args.gzserver_host, args.reservation, args.sim_id)
+                                   args.gzserver_host, args.reservation, args.sim_id,
+                                   None)
         cle_launcher.cle_function_init(args.environment_file, timeout_parsed)
         if cle_launcher.cle_server is None:
             raise Exception("Error in cle_function_init. Cannot start simulation.")

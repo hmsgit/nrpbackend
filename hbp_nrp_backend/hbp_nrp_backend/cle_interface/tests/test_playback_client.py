@@ -22,28 +22,39 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ---LICENSE-END
 """
-Unit tests for the ROSCLESimulationFactoryClient
+PlaybackClient unit test
 """
-from mock import patch, Mock
-from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient import ROSCLESimulationFactoryClient
 
-__author__ = 'Alessandro Ambrosano, Georg'
-
+import rospy
+from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState
+from hbp_nrp_backend.cle_interface import PlaybackClient, \
+    SERVICE_SIM_RESET_ID, SERVICE_SIM_EXTEND_TIMEOUT_ID
+from mock import patch, MagicMock, Mock
 import unittest
 
+from cle_ros_msgs import srv
 
-class TestROSCLESimulationFactoryClient(unittest.TestCase):
 
-    @patch('hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient.rospy.ServiceProxy')
-    def test_create_new_simulation(self, mock_service_proxy):
-        roscle = ROSCLESimulationFactoryClient()
-        service_proxy = mock_service_proxy()
-        self.assertTrue(service_proxy.wait_for_service.called)
-        self.assertIsNone(roscle.create_new_simulation(1, 2, 3, 4, 5, 6, 7, 8))
-        service_proxy.assert_once_called_with(1, 2, 3, 4, 5, 6, 7, 8)
-        service_proxy.side_effect = Exception
-        self.assertRaises(Exception, roscle.create_new_simulation, 1, 2, 3, 4, 5, 6, 7, 8)
+class TestPlaybackClient(unittest.TestCase):
 
+    LOGGER_NAME = PlaybackClient.__name__
+    NUMBER_OF_SERVICE_PROXIES = 2
+
+    def setUp(self):
+        patcher = patch('rospy.ServiceProxy')
+        self.addCleanup(patcher.stop)
+        self.serviceProxyMock = patcher.start()
+        self.serviceProxyMocks = [MagicMock() for _ in range(self.NUMBER_OF_SERVICE_PROXIES)]
+        self.serviceProxyMock.side_effect = self.serviceProxyMocks
+
+    @patch('hbp_nrp_backend.cle_interface.PlaybackClient.ROSCLEServiceWrapper')
+    def test_roscleclient_constructor(self, service_wrapper_mock):
+        client = PlaybackClient.PlaybackClient(0)
+        listened_services = [x[0][0] for x in service_wrapper_mock.call_args_list]
+        expected_services = [
+            SERVICE_SIM_RESET_ID(0), SERVICE_SIM_EXTEND_TIMEOUT_ID(0),
+        ]
+        self.assertNotIn(False, [x in listened_services for x in expected_services])
 
 if __name__ == '__main__':
     unittest.main()

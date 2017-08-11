@@ -31,6 +31,11 @@ from mock import patch, Mock
 from hbp_nrp_cleserver.server import CLELauncher
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
+MockOs = Mock()
+MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
+                  'ROS_MASTER_URI': "localhost:0815"}
+MockOs.path.join.return_value = "/a/really/nice/place"
+
 class TestCLELauncher(unittest.TestCase):
     def setUp(self):
         dir = os.path.split(__file__)[0]
@@ -38,7 +43,8 @@ class TestCLELauncher(unittest.TestCase):
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
         with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-        self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "gz_host", None, 42)
+        with patch("hbp_nrp_cleserver.server.CLELauncher.os", MockOs):
+            self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "gz_host", None, 42, None)
         self.launcher.models_path ="models_path"
 
     def test_robot_path_sdf(self):
