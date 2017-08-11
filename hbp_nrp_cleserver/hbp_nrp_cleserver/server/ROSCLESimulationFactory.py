@@ -279,6 +279,7 @@ class ROSCLESimulationFactory(object):
                 self.simulation_terminate_event.set()
                 gc.collect()  # NRRPLT-5374
 
+
 def get_experiment_basepath(experiment_file_path):
     """
     Get the name of the folder containing the experiment configuration

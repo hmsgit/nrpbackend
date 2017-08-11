@@ -435,3 +435,20 @@ def print_connector(connector):
         return "{{'mode':'Fixed', 'n':{2}, 'weights':{0}, 'delays':{1}}}".format(
             connector.weights, connector.delays, connector.count)
     raise Exception("Don't know how to print connector of type " + str(type(connector)))
+
+
+def find_changed_strings(list_a, list_b):
+    """
+    Returns a list that contains changed population names,
+    i.e. stings from list_a are searched for in list_b. Not found strings are returned.
+
+    :param list_a: looked up strings to be found in list_b
+    :param list_b: looked up strings are compared against strings in list_a
+
+    :return: a list of strings
+    """
+    changed = []
+    for element_a in list_a:
+        if element_a not in list_b:
+            changed.append(element_a)
+    return changed

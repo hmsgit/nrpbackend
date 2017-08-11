@@ -255,16 +255,18 @@ class ROSCLEClient(object):
         """
         Set the brain of the running simulation (will pause the simulation)
 
-        :param data: brain data, data type defined in data_type
-        :param brain_type: currently "py" or "h5"
-        :param data_type: data type ("text" or "base64")
-        :param brain_populations: A dictionary indexed by population names and
-        containing neuron indices. Neuron indices could be defined by individual integers,
-        lists of integers or python slices. Python slices are defined by a
-        dictionary containing the 'from', 'to' and 'step' values.
-        :param change_population: a flag to select an action on population name change,
-        currently possible values are: 0 ask user for permission to replace;
-        1 (permission granted) replace old name with a new one; 2 proceed with no replace action
+        :param brain_type: Type of the brain file ('h5' or 'py')
+        :param data: Contents of the brain file. Encoding given in field data_type
+        :param data_type: Type of the data field ('text' or 'base64')
+        :param brain_populations: A dictionary indexed by population names and containing neuron
+                                  indices. Neuron indices could be defined by individual integers,
+                                  lists of integers or python slices. Python slices are defined by a
+                                  dictionary containing the 'from', 'to' and 'step' values.
+        :param change_population: a flag to select an action on population name change, currently
+                                  possible values are: 0 ask user for permission to replace;
+                                  1 (permission granted) replace old name with a new one;
+                                  2 proceed with no replace action
+
         :return: response of the cle
         """
         if self.__stop_reason is not None:
