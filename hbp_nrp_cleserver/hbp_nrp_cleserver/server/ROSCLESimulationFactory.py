@@ -43,7 +43,7 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMUL
 
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from pyxb import ValidationError, NamespaceError
-
+import gc
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
@@ -276,7 +276,7 @@ class ROSCLESimulationFactory(object):
                 self.running_simulation_thread = None
                 self.__is_running_simulation_terminating = False
                 self.simulation_terminate_event.set()
-
+                gc.collect()  # NRRPLT-5374
 
 def get_experiment_basepath(experiment_file_path):
     """
