@@ -98,7 +98,6 @@ class TestLifecycle(unittest.TestCase):
     def test_created_simulation_must_be_initialized(self):
         self.assertRaises(MachineError, self.lifecycle.accept_command, "started")
         self.assertRaises(MachineError, self.lifecycle.accept_command, "paused")
-        self.assertRaises(MachineError, self.lifecycle.accept_command, "stopped")
         self.assertIsNone(self.lifecycle.last_state_change)
         self.lifecycle.accept_command("initialized")
         self.assertEqual("initialize", self.lifecycle.last_transition)

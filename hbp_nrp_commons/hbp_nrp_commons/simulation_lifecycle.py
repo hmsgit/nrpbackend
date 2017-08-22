@@ -130,7 +130,7 @@ class SimulationLifecycle(object):
                               dest='paused',
                               before='pause')
         self._add_transition(trigger='stopped',
-                              source=['paused', 'started'],
+                              source=['created', 'paused', 'started'],
                               dest='stopped',
                               before='stop')
         self._add_transition(trigger='failed',
