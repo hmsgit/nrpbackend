@@ -455,10 +455,10 @@ class CLELauncher(object):
         for dep in self.__dependencies:
             importlib.import_module(dep[:dep.rfind('.')])
 
-        # integration timestep between simulators, convert from ms to s (default to 20ms)
-        if self.__bibi_conf.timestep is None:
-            self.__bibi_conf.timestep = 20
-        timestep = float(self.__bibi_conf.timestep) / 1000.0
+        # integration timestep between simulators, convert from ms to s (default to CLE value)
+        timestep = ClosedLoopEngine.DEFAULT_TIMESTEP
+        if self.__bibi_conf.timestep is not None:
+            timestep = float(self.__bibi_conf.timestep) / 1000.0
 
         # initialize CLE
         self.__notify("Initializing CLE")

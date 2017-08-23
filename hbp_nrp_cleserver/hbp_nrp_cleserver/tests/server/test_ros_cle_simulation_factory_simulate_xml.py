@@ -62,6 +62,11 @@ class MockedGazeboHelper(object):
         return Mock()
 
 
+class MockedClosedLoopEngine(Mock):
+
+    DEFAULT_TIMESTEP = 0.02
+
+
 class MockOs(object):
     environ = os.environ
     system = Mock()
@@ -86,7 +91,7 @@ class MockOs(object):
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
-@patch("hbp_nrp_cleserver.server.CLELauncher.ClosedLoopEngine", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLELauncher.ClosedLoopEngine", new=MockedClosedLoopEngine())
 @patch("hbp_nrp_cleserver.server.CLELauncher.nrp", new=Mock())
 class SimulationTestCase(unittest.TestCase):
 

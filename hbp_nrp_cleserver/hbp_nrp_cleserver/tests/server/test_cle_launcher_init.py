@@ -42,6 +42,10 @@ class MockedGazeboHelper(object):
     def __getattr__(self, x):
         return Mock()
 
+class MockedClosedLoopEngine(Mock):
+
+    DEFAULT_TIMESTEP = 0.02
+
 
 MockOs = Mock()
 MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
@@ -56,7 +60,7 @@ class SomeWeiredTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
-@patch("hbp_nrp_cleserver.server.CLELauncher.ClosedLoopEngine", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLELauncher.ClosedLoopEngine", new=MockedClosedLoopEngine())
 @patch("hbp_nrp_cleserver.server.CLELauncher.instantiate_communication_adapter", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.instantiate_control_adapter", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLELauncher.os", new=MockOs)
