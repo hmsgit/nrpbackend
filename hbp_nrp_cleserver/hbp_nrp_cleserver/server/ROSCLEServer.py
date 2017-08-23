@@ -62,6 +62,7 @@ import base64
 from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
+from hbp_nrp_commons.bibi_functions import find_changed_strings
 import dateutil.parser as datetime_parser
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
@@ -351,52 +352,6 @@ class ROSCLEServer(object):
         return [braintype, brain_code, data_type, json.dumps(tf_framework.get_brain_populations())]
 
     @staticmethod
-    def findChangedStrings(list_a, list_b):
-        """
-        Returns a list that contains changed population names,
-        i.e. stings from list_a are searched in list_b, not found strings are
-        returned
-
-        :param list_a: looked up strings to be found in list_b
-        :param list_b: looked up strings are compared against strings in list_b
-        :return: a list of strings
-        """
-        changed = []
-        for element_a in list_a:
-            element_a = str(element_a)
-            found = False
-            for element_b in list_b:
-                element_b = str(element_b)
-                if element_a == element_b:
-                    found = True
-                    break
-            if not found:
-                changed.append(element_a)
-        return changed
-
-    def check_population_names(self, brain_populations):
-        """
-        Extracts and returns population names that were changed, plus new population names from
-        request.
-
-        :return: tuple with first existing names list,
-                 then new names list, i.e. [old_changed, new_added]
-        """
-        old_popls = []
-        existingPopls = tf_framework.get_brain_populations()
-        for p in existingPopls:
-            old_popls.append(str(p))
-
-        new_popls = []
-        for popl in json.loads(brain_populations):
-            new_popls.append(str(popl))
-
-        old_changed = self.findChangedStrings(old_popls, new_popls)
-        new_added = self.findChangedStrings(new_popls, old_popls)
-
-        return [old_changed, new_added]
-
-    @staticmethod
     def change_transfer_function_for_population(change_population_mode, old_population_name,
                                                 new_population_name, transfer_functions):
         """
@@ -406,7 +361,7 @@ class ROSCLEServer(object):
         :param old_population_name: The old name of the population
         :param new_population_name: The new name of the population
         :param transfer_functions: The transfer functions to which the population change should be
-        applied to
+                                   applied to.
         """
         for tf in transfer_functions:
 
@@ -445,21 +400,21 @@ class ROSCLEServer(object):
                     tf.source = modified_source
 
     def change_transfer_functions(self, change_population, old_changed, new_added,
-                                  transferFunctions):
+                                  transfer_functions):
         """
         Modifies population names. Returns a value if needs user input.
 
         :param change_population: The change population mode (as defined in SetBrainRequest)
         :param old_changed: A list of old population names
         :param new_added: A list of new population names
-        :param transferFunctions: The transfer functions to which the changes should be applied to
+        :param transfer_functions: The transfer functions to which the changes should be applied
         """
 
         for changed_i in range(len(old_changed)):
             r = self.change_transfer_function_for_population(change_population,
                                                              str(old_changed[changed_i]),
                                                              str(new_added[changed_i]),
-                                                             transferFunctions)
+                                                             transfer_functions)
             if r is not None:
                 return r
 
@@ -471,38 +426,52 @@ class ROSCLEServer(object):
         :param request: The mandatory rospy request parameter
         """
         previous_valid_brain = self.__get_brain(None)
-        returnValue = self.__set_brain(request.brain_populations, request.brain_type,
-                                       request.brain_data, request.data_type,
-                                       request.change_population)
+        return_value = self.__set_brain(request.brain_populations, request.brain_type,
+                                        request.brain_data, request.data_type,
+                                        request.change_population)
 
-        if returnValue[0] != "":
+        if return_value[0] != "":
             # failed to set new brain, we re set previous valid brain
             self.__set_brain(previous_valid_brain[3], previous_valid_brain[0],
                              previous_valid_brain[1], previous_valid_brain[2],
                              SetBrainRequest.ASK_RENAME_POPULATION)
-        return returnValue
+        return return_value
 
     def __set_brain(self, brain_populations, brain_type, brain_data, data_type, change_population):
         """
         Sets the neuronal network according to the given parameters
+
+        :param brain_populations: A dictionary indexed by population names and containing neuron
+                                  indices. Neuron indices could be defined by individual integers,
+                                  lists of integers or python slices. Python slices are defined by a
+                                  dictionary containing the 'from', 'to' and 'step' values.
+        :param brain_type: Type of the brain file ('h5' or 'py')
+        :param brain_data: Contents of the brain file. Encoding given in field data_type
+        :param data_type: Type of the brain_data field ('text' or 'base64')
+        :param change_population: a flag to select an action on population name change, currently
+                                  possible values are: 0 ask user for permission to replace;
+                                  1 (permission granted) replace old name with a new one;
+                                  2 proceed with no replace action
         """
         # pylint: disable-msg=R0914
         try:
-            [old_changed, new_added] = self.check_population_names(brain_populations)
-            returnValue = ["", 0, 0, 0]
+            return_value = ["", 0, 0, 0]
 
-            n_old_changed = len(old_changed)
-            n_new_changed = len(new_added)
+            new_populations = [str(item) for item in json.loads(brain_populations).keys()]
+            old_populations = [str(item) for item in tf_framework.get_brain_populations().keys()]
 
-            if (n_old_changed >= 1) and (n_new_changed >= 1) and n_new_changed == n_old_changed:
-                transferFunctions = tf_framework.get_transfer_functions()
-                checkVarNameRe = re.compile(r'^([a-zA-Z_]+\w*)$')
-                match = checkVarNameRe.match(str(new_added[0]))
-                if not match:
-                    return ["Provided name \"" + str(new_added[0]) +
-                            "\" is not a valid population name", 0, 0, 0]
+            old_changed = find_changed_strings(old_populations, new_populations)
+            new_added = find_changed_strings(new_populations, old_populations)
+
+            if len(new_added) == len(old_changed) >= 1:
+                transfer_functions = tf_framework.get_transfer_functions()
+                check_var_name_re = re.compile(r'^([a-zA-Z_]+\w*)$')
+                for item in new_added:
+                    if not check_var_name_re.match(item):
+                        return ["Provided name \"" + item + "\" is not a valid population name",
+                                0, 0, 0]
                 r = self.change_transfer_functions(change_population, old_changed, new_added,
-                                                   transferFunctions)
+                                                   transfer_functions)
                 if r is not None:
                     return r
             if self.__lifecycle.state != 'paused':
@@ -518,19 +487,18 @@ class ROSCLEServer(object):
                     else:
                         tmp.delete = True
                         return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
-                self.__cle.load_network_from_file(
-                    tmp.name, **json.loads(brain_populations))
+                self.__cle.load_network_from_file(tmp.name, **json.loads(brain_populations))
         except ValueError, e:
             logger.exception(e)
-            returnValue = ["Population format is invalid: " + str(e), 0, 0, 0]
+            return_value = ["Population format is invalid: " + str(e), 0, 0, 0]
         except SyntaxError, e:
             logger.exception(e)
-            returnValue = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
+            return_value = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
         except Exception, e:
             logger.exception(e)
-            returnValue = ["Error changing neuronal network: " + str(e), 0, 0, 0]
+            return_value = ["Error changing neuronal network: " + str(e), 0, 0, 0]
 
-        return returnValue
+        return return_value
 
     # pylint: disable=unused-argument
     @staticmethod
