@@ -290,6 +290,11 @@ class CLELauncher(object):
         gzserver_args = '--seed {rng_seed} -e {engine}'.format(rng_seed=rng_seed,
                                                                engine=physics_engine)
 
+        # If playback is specified, load the first log/world file in the recording at Gazebo launch
+        # TODO: when storage server is available this should be updated
+        if self.__playback_path:
+            gzserver_args += ' --play {path}/gzserver/1.log'.format(path=self.__playback_path)
+
         # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
         # information that is useful to know for the user.
         # In here, we forward any info message sent to this logger to the notificator
