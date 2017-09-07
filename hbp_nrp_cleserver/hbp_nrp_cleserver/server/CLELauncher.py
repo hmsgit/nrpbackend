@@ -199,7 +199,7 @@ class CLELauncher(object):
             logger.info('RNG seed = %i', rng_seed)
 
             # start Gazebo simulator and bridge
-            self.__start_gazebo(rng_seed)
+            self.__start_gazebo(rng_seed, world_file)
 
             # load environment and robot models
             roscontrol, roscomm, robot_pose, models, lights = self.__load_environment(
@@ -239,9 +239,8 @@ class CLELauncher(object):
             # disable roslaunch for playback
             self.__exd_conf.rosLaunch = None
 
-            # start Gazebo simulator and bridge (RNG seed is irrelevant for
-            # playback)
-            self.__start_gazebo(123456)
+            # start Gazebo simulator and bridge (RNG seed is irrelevant for playback)
+            self.__start_gazebo(123456, world_file)
 
             # create playback CLE server
             logger.info("Preparing Playback Server")
@@ -281,7 +280,7 @@ class CLELauncher(object):
                             self.__abort_initialization)
         Notificator.notify(message, True)
 
-    def __start_gazebo(self, rng_seed):
+    def __start_gazebo(self, rng_seed, world_file):
         """
         Configures and starts the Gazebo simulator and backend services
 
@@ -314,8 +313,9 @@ class CLELauncher(object):
             physics_engine = "ode"
 
         # experiment specific gzserver command line arguments
-        gzserver_args = '--seed {rng_seed} -e {engine}'.format(rng_seed=rng_seed,
-                                                               engine=physics_engine)
+        gzserver_args = '--seed {rng_seed} -e {engine} {world_file}'.format(rng_seed=rng_seed,
+                                                                            engine=physics_engine,
+                                                                            world_file=world_file)
 
         # If playback is specified, load the first log/world file in the recording at Gazebo launch
         # TODO: when storage server is available this should be updated
@@ -404,9 +404,7 @@ class CLELauncher(object):
 
         # load the world file if provided first
         self.__notify("Loading experiment environment")
-        self.__gazebo_helper.empty_gazebo_world()
-        w_models, w_lights = self.__gazebo_helper.load_gazebo_world_file(
-            world_file)
+        w_models, w_lights = self.__gazebo_helper.parse_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
         self.__notify("Loading robot")

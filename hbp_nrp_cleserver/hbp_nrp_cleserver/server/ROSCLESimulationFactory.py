@@ -179,10 +179,13 @@ class ROSCLESimulationFactory(object):
                     from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
                     cle_launcher = CLELauncher(exd,
                                                bibi,
-                                               get_experiment_basepath(
-                                                   exd_config_file),
-                                               gzserver_host, reservation, sim_id, playback_path,
-                                               token, ctx_id)
+                                               get_experiment_basepath(exd_config_file),
+                                               gzserver_host,
+                                               reservation,
+                                               sim_id,
+                                               playback_path,
+                                               token,
+                                               ctx_id)
                     try:
                         cle_launcher.cle_function_init(
                             environment_file, timeout, self.except_hook)

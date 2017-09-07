@@ -39,6 +39,10 @@ class MockedGazeboHelper(object):
     def load_gazebo_world_file(self, world):
         return {}, {}
 
+    @staticmethod
+    def parse_gazebo_world_file(world):
+        return {}, {}
+
     def __getattr__(self, x):
         return Mock()
 
