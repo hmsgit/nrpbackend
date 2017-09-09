@@ -24,19 +24,20 @@
 """
 This module contains the REST implementation for the simulation control
 """
+__author__ = 'GeorgHinkel'
+
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesWrongUserException, NRPServicesUnavailableROSService, \
-    NRPServicesGeneralException
+    NRPServicesGeneralException, ErrorMessages
 
-__author__ = 'GeorgHinkel'
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 from flask import request
 from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_backend.rest_server.__UserAuthentication import \
-    UserAuthentication
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 
 from std_msgs.msg import ColorRGBA
 from gazebo_msgs.srv import SetVisualProperties, SetLightProperties, GetLightProperties
@@ -48,6 +49,7 @@ import rospy
 def _get_simulation_or_abort(sim_id):
     """
     Gets the simulation with the given simulation id or aborts the simulation otherwise
+
     :param sim_id: The simulation id
     """
     if sim_id < 0 or sim_id >= len(simulations):
@@ -76,7 +78,7 @@ class SimulationControl(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -84,20 +86,30 @@ class SimulationControl(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
     @marshal_with(Simulation.resource_fields)
     def get(self, sim_id):
         """
         Gets the simulation with the specified simulation id
 
         :param sim_id: The simulation id
-        :>json string owner: The simulation owner (Unified Portal user id or 'hbp-default')
-        :>json string state: The current state of the simulation
-        :>json integer simulationID: The id of the simulation (needed for further REST calls)
-        :>json string experimentConfiguration: Path and name of the experiment configuration file
-        :>json string creationDate: Date of creation of this simulation
-        :>json string gzserverHost: Denotes where the simulation will run once started. Set to \
-        'local' for localhost and 'lugano' for a dedicate machine on the Lugano viz cluster.
-        :status 404: The simulation with the given ID was not found
+
+        :> json string state: The current state of the simulation
+        :> json integer simulationID: The id of the simulation (needed for further REST calls)
+        :> json string experimentConfiguration: Path and name of the experiment configuration file
+        :> json string environmentConfiguration: Path and name of the environment configuration file
+        :> json string owner: The simulation owner (Unified Portal user id or 'hbp-default')
+        :> json string creationDate: Date of creation of this simulation
+        :> json string gzserverHost: Denotes where the simulation will run once started. Set to
+                                     'local' for localhost and 'lugano' for a dedicate machine on
+                                     the Lugano viz cluster
+        :> json string reservation: the name of the cluster reservation subsequently used to
+                                    allocate a job
+        :> json string contextID: The context ID if the experiment is declared in the collab portal
+        :> json integer brainProcesses: Number of brain processes to use (overrides ExD conf.)
+        :> json string creationUniqueID: unique creation ID (used by Frontend to identify this sim.)
+
+        :status 404: {0}
         :status 200: The simulation with the given ID is successfully retrieved
         """
         return _get_simulation_or_abort(sim_id), 200
@@ -120,7 +132,7 @@ class _LightDescription(object):
     """
     Describe a light
 
-    :<json string name: name of the light
+    :< json string name: name of the light
     """
     resource_fields = {
         'name': fields.String,
@@ -129,6 +141,7 @@ class _LightDescription(object):
         'attenuation_linear': fields.Float,
         'attenuation_quadratic': fields.Float,
     }
+    required = ['name']
 
 
 class LightControl(Resource):
@@ -157,15 +170,15 @@ class LightControl(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation with the given ID was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 400,
                 "message": "The parameters are invalid"
-            },
-            {
-                "code": 401,
-                "message": "Only allowed by simulation owner"
             },
             {
                 "code": 200,
@@ -173,19 +186,23 @@ class LightControl(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id):
         """
         Raises a light event
 
-        :param sim_id: The simulation id
-        :<json string name: The light to change
-        :<json RGBADescription diffuse: the diffuse color
-        :<json float attenuation_constant: the attenuation constant
-        :<json float attenuation_linear: the attenuation linear
-        :<json float attenuation_quadratic: the attenuation quadratic
+        :param sim_id: The simulation ID
+
+        :< json string name: The light to change
+        :< json RGBADescription diffuse: the diffuse color
+        :< json float attenuation_constant: the attenuation constant
+        :< json float attenuation_linear: the attenuation linear
+        :< json float attenuation_quadratic: the attenuation quadratic
+
+        :status 404: {0}
+        :status 401: {1}
         :status 400: The parameters are invalid
-        :status 401: Operation only allowed by simulation owner
-        :status 404: The simulation with the given ID was not found
         :status 200: Successfully raised event
         """
         simulation = _get_simulation_or_abort(sim_id)
@@ -213,7 +230,6 @@ class LightControl(Resource):
 
         if in_diffuse is None or in_attenuation_constant is None \
                 or in_attenuation_linear is None or in_attenuation_quadratic is None:
-
             try:
                 rospy.wait_for_service('/gazebo/get_light_properties', 3)
             except rospy.ROSException as exc:
@@ -253,8 +269,7 @@ class LightControl(Resource):
                                  attenuation_linear=in_attenuation_linear,
                                  attenuation_quadratic=in_attenuation_quadratic)
         except rospy.ServiceException as exc:
-            raise NRPServicesClientErrorException(
-                "Service did not process request: " + str(exc))
+            raise NRPServicesClientErrorException("Service did not process request: " + str(exc))
 
         return "Changed light intensity", 200
 
@@ -301,8 +316,10 @@ class MaterialControl(Resource):
     def __set_material(self, visual_path, material):
         """
         Sets the material of a particular visual
-        :param visual_path: The visual path in the world description, e.g.,
-        'left_screen::body::screen_glass', i.e., model_name::link_name::visual_name.
+
+        :param visual_path: The visual path in the world description,
+                            e.g., 'left_screen::body::screen_glass',
+                            i.e., model_name::link_name::visual_name.
         :param material: The material
         :return: The response
         """
@@ -335,10 +352,11 @@ class MaterialControl(Resource):
                 "Service did not process request: " + str(exc),
                 "rospy service exception"
             )
-        return {'message': 'Material changed sucessfully'}, 200
+        return {'message': 'Material changed successfully'}, 200
 
     @swagger.operation(
-        notes='Currently, only the change of screen materials is implemented',
+        notes='Change the material of a given visual. Currently, only the change of screen'
+              'materials is implemented',
         parameters=[
             {
                 "name": "sim_id",
@@ -358,15 +376,15 @@ class MaterialControl(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation with the given ID was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 400,
                 "message": "The parameters are invalid"
-            },
-            {
-                "code": 401,
-                "message": "Operation only allowed by simulation owner"
             },
             {
                 "code": 200,
@@ -374,18 +392,22 @@ class MaterialControl(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id):
         """
-        Change the material of a given visual
+        Change the material of a given visual. Currently, only the change of screen materials is
+        implemented
 
-        :param sim_id: The simulation id
-        :<json string visual_path: The path to the visual for which
-        a change in material is requested
-        :<json string material_name: The name of the material that will
-        be applied
+        :param sim_id: The simulation ID
+
+        :< json string visual_path: The path to the visual for which a change in material is
+                                    requested
+        :< json string material_name: The name of the material that will be applied
+
+        :status 404: {0}
+        :status 401: {1}
         :status 400: The parameters are invalid
-        :status 401: Operation only allowed by simulation owner
-        :status 404: The simulation with the given ID was not found
         :status 200: Material applied successfully
         """
         simulation = _get_simulation_or_abort(sim_id)

@@ -37,12 +37,14 @@ from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.__ExperimentService import save_file, \
-    ErrorMessages, get_control_state_machine_files, get_evaluation_state_machine_files
+    get_control_state_machine_files, get_evaluation_state_machine_files
 
 from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
+
 logger = logging.getLogger(__name__)
 
 # pylint: disable=no-self-use
@@ -113,17 +115,21 @@ class ExperimentGetStateMachines(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
+                         ErrorMessages.EXPERIMENT_NOT_FOUND_404)
     def get(self, exp_id):
         """
         Gets state machine files of the experiment specified with experiment ID.
 
         :param exp_id: The experiment ID
-        :>json dict control: Contains control state machines as dictionary ('name': 'source_code')
-        :>json dict evaluation: Contains evaluation state machines as dictionary \
-        ('name': 'source_code')
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
+
+        :> json dict control: Contains control state machines as dictionary ('name': 'source_code')
+        :> json dict evaluation: Contains evaluation state machines as dictionary
+                                ('name': 'source_code')
+
+        :status 500: {0}
         :status 404: State machine file not found: [filename]
-        :status 404: The experiment with the given ID was not found
+        :status 404: {1}
         :status 200: Success. The experiment state machine files where retrieved
         """
         # Get ID, absolute path of state machine files
@@ -198,17 +204,20 @@ class ExperimentPutStateMachine(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
+                         ErrorMessages.EXPERIMENT_NOT_FOUND_404)
     def put(self, exp_id, state_machine_name):
         """
         Send a state machine of an experiment to the server
         (currently, the file will be written with the ending "_new")
 
-        :param path exp_id: The experiment ID
-        :param path state_machine_name: The name of the state machine to be written
-        :param body source_code: Source code of the state machine as string.
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 404: The experiment with the given ID was not found
-        :status 404: State machine not found: [state_machine_name]
+        :param exp_id: The experiment ID
+        :param state_machine_name: The name of the state machine to be written
+
+        :< json string source: Source code of the state machine
+
+        :status 500: {0}
+        :status 404: {1}
         :status 200: Success. File written.
         """
 
@@ -243,6 +252,13 @@ class ExperimentCollabStateMachine(Resource):
                 "description": "The context_id of the collab.",
                 "paramType": "path",
                 "dataType": basestring.__name__
+            },
+            {
+                "name": "state_machines",
+                "required": True,
+                "description": "The state machine code",
+                "paramType": "body",
+                "dataType": basestring.__name__
             }
         ],
         responseMessages=[
@@ -252,21 +268,26 @@ class ExperimentCollabStateMachine(Resource):
             },
             {
                 "code": 400,
-                "message": "State machine code should be sent in"
-                           "the body under the 'state_machines' key"
+                "message": "State machine code should be sent in the body under the"
+                           "'state_machines' key"
             },
             {
-                "code": 200
+                "code": 200,
+                "message": "Success. File written."
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500)
     def put(self, context_id):
         """
         Save state machines to collab
 
         :param path context_id: The context id of the collab
-        :param body source_code: Source code of the state machine as string.
-        :status 500: The experiment xml either could not be found or read
+
+        :< json string state_machines: The state machine code
+
+        :status 500: {0}
+        :status 400: State machine code should be sent in the body under the 'state_machines' key
         :status 200: Success. File written.
         """
         # Done here in order to avoid circular dependencies introduced by the
@@ -275,7 +296,7 @@ class ExperimentCollabStateMachine(Resource):
             import NeuroroboticsCollabClient
 
         body = request.get_json(force=True)
-        if not 'state_machines' in body:
+        if 'state_machines' not in body:
             raise NRPServicesClientErrorException(
                 "State machine code should be sent in "
                 "the body under the 'state_machines' key"

@@ -32,11 +32,15 @@ import logging
 from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
-from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesStateMachineException, NRPServicesWrongUserException
+    NRPServicesStateMachineException, NRPServicesWrongUserException, ErrorMessages
+from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
 from hbp_nrp_backend.simulation_control.__Simulation import Simulation
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 from sys import exc_info
 
 # pylint: disable=no-self-use
@@ -48,6 +52,7 @@ def pause_simulation_or_raise(simulation):
     """
     Pauses the simulation and raise an exception in case of failure.
     This is needed before an update of a state machine code
+
     :param simulation: The simulation to be reset
     """
     state = simulation.state
@@ -103,7 +108,7 @@ class SimulationStateMachines(Resource):
             {
                 "name": "sim_id",
                 "required": True,
-                "description": "The ID of the simulation whose state machine will be modified",
+                "description": "The ID of the simulation whose state machines will be retrieved",
                 "paramType": "path",
                 "dataType": int.__name__
             }
@@ -111,7 +116,7 @@ class SimulationStateMachines(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
@@ -119,22 +124,21 @@ class SimulationStateMachines(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id):
         """
-        Get code of all state machines.
-        This works in all simulation states except 'created', where it will deliver an empty
-        dictionary.
+        Get code of all state machines. This works in all simulation states except 'created', where
+        it will deliver an empty dictionary.
 
-        :param sim_id: The simulation id
-        :>json dict data: Dictionary containing all state machines ('name': 'source')
-        :status 404: The simulation with the given ID was not found
-        :status 200: Success. The state machines where returned
+        :param sim_id: The simulation ID
+
+        :> json dict data: Dictionary containing all state machines ('name': 'source')
+
+        :status 404: {0}
+        :status 200: Success. The state machines were returned
         """
-
         simulation = _get_simulation_or_abort(sim_id)
-
         state_machines = dict()
-
         for sm in simulation.state_machines:
             state_machines[sm.sm_id] = simulation.get_state_machine_code(sm.sm_id)
 
@@ -159,13 +163,13 @@ class SimulationStateMachine(Resource):
             },
             {
                 "name": "state_machine_name",
-                "description": "The name of the state machine",
+                "description": "The name of the state machine to be modified",
                 "required": True,
                 "paramType": "path",
                 "dataType": str.__name__
             },
             {
-                "name": "source_code",
+                "name": "data",
                 "description": "The state machine source code to patch",
                 "required": True,
                 "paramType": "body",
@@ -175,19 +179,19 @@ class SimulationStateMachine(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation with the given ID was not found"
-            },
-            {
-                "code": 400,
-                "message": "The source code is invalid: [ERROR-MESSAGE]"
-            },
-            {
-                "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 403,
-                "message": "The operation is forbidden while the simulation is in its current state"
+                "message": ErrorMessages.OPERATION_INVALID_IN_CURRENT_STATE_403
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
+                "code": 400,
+                "message": ErrorMessages.SOURCE_CODE_ERROR_400
             },
             {
                 "code": 200,
@@ -195,20 +199,25 @@ class SimulationStateMachine(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.OPERATION_INVALID_IN_CURRENT_STATE_403,
+                         ErrorMessages.SIMULATION_PERMISSION_401,
+                         ErrorMessages.SOURCE_CODE_ERROR_400)
     def put(self, sim_id, state_machine_name):
         """
         Applies user changes to state machine code.
         If the simulation is paused or started, it will be paused.
         A stopped, created or failed simulation will fail the request with error code 403
 
-        :param path sim_id: The simulation id
-        :param path state_machine_name: The state machine name
-        :param body source_code: The source code of the state machine
+        :param sim_id: The simulation ID
+        :param state_machine_name: The name of the state machine to be modified
 
-        :status 400: The source code is invalid: [ERROR-MESSAGE]
-        :status 401: Operation only allowed by simulation owner
-        :status 403: The operation is forbidden while the simulation is in its current state
-        :status 404: The simulation with the given ID was not found
+        :< json string data: The source code of the state machine
+
+        :status 404: {0}
+        :status 403: {1}
+        :status 401: {2}
+        :status 400: {3}
         :status 200: Success. The code was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
@@ -262,7 +271,7 @@ class SimulationStateMachine(Resource):
             },
             {
                 "name": "state_machine_name",
-                "description": "The name of the state machine to delete",
+                "description": "The name of the state machine to be deleted",
                 "required": True,
                 "paramType": "path",
                 "dataType": str.__name__
@@ -270,12 +279,16 @@ class SimulationStateMachine(Resource):
         ],
         responseMessages=[
             {
+                "code": 500,
+                "message": ErrorMessages.SERVER_ERROR_500
+            },
+            {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 200,
@@ -285,17 +298,21 @@ class SimulationStateMachine(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def delete(self, sim_id, state_machine_name):
         """
         Delete a state machine
 
-        :param sim_id: The simulation id
-        :param state_machine_name: The name of the transfer function to delete
-        :status 401: Insufficient permissions to apply changes
-        :status 404: The simulation with the given ID was not found
-        :status 404: The state machine with the given name was not found
-        :status 500: Server error with specific message.
-        :status 200: The delete operation was successfully called
+        :param sim_id: The simulation ID
+        :param state_machine_name: The name of the state machine to be deleted
+
+        :status 500: {0}
+        :status 404: {1}
+        :status 401: {2}
+        :status 200: The delete operation was successfully called. This does not imply that the
+                     state machine function was correctly deleted though.
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
@@ -315,8 +332,4 @@ class SimulationStateMachine(Resource):
                 "State machine error",
             ), None, info[2]
 
-        raise NRPServicesStateMachineException(
-            failure_message + "\n" +
-            response_message,
-            404
-        )
+        raise NRPServicesStateMachineException(failure_message + "\n" + response_message, 404)

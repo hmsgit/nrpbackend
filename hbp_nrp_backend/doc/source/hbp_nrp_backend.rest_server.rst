@@ -83,7 +83,7 @@ For documentation of high level REST API, see :doc:`REST-API`.
 :mod:`__SimulationTransferFunction` Module
 ------------------------------------------
 
-.. automodule:: hbp_nrp_backend.rest_server.__SimulationTransferFunction
+.. automodule:: hbp_nrp_backend.rest_server.__SimulationTransferFunctions
     :members:
     :undoc-members:
     :show-inheritance:

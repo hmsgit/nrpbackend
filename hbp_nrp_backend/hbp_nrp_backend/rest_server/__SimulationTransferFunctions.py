@@ -30,10 +30,13 @@ import logging
 from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
-from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+
 from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException, \
-    NRPServicesWrongUserException, NRPServicesDuplicateNameException
+    NRPServicesWrongUserException, NRPServicesDuplicateNameException, ErrorMessages
+from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 __author__ = 'LucGuyot, DanielPeppicelli'
 
@@ -60,12 +63,9 @@ def get_tf_name(source):
 class TransferFunctionDictionary(object):
     """
     Swagger documentation object
-    TransferFunctionDict ... tried to make it look like a dictionary for the swagger doc
     """
     resource_fields = {
-        'tf_id_1': str.__name__,
-        'tf_id_2': str.__name__,
-        'tf_id_n': str.__name__
+        'tf_name': fields.String()
     }
 
 
@@ -93,25 +93,37 @@ class SimulationTransferFunctions(Resource):
     @swagger.operation(
         notes='Gets all transfer functions',
         responseClass=TransferFunctionData.__name__,
+        parameters=[
+            {
+                "name": "sim_id",
+                "required": True,
+                "description": "The ID of the simulation whose transfer function will be retrieved",
+                "paramType": "path",
+                "dataType": int.__name__
+            }
+        ],
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 200,
-                "message": "Transfer functions retrieved successfully"
+                "message": "Success. Transfer functions retrieved successfully"
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
     def get(self, sim_id):
         """
-        Gets all transfer functions
-        (robot to neuron and neuron to robot) in a dictionary with string values.
+        Gets all transfer functions (robot to neuron and neuron to robot) in a dictionary with
+        string values.
 
-        :param sim_id: The simulation ID whose transfer functions are retrieved
-        :>json dict data: Dictionary containing all transfer functions ('name': 'source')
-        :status 404: The simulation with the given ID was not found
+        :param sim_id: The simulation ID
+
+        :> json dict data: Dictionary containing all transfer functions ('name': 'source')
+
+        :status 404: {0}
         :status 200: Transfer functions retrieved successfully
         """
 
@@ -137,7 +149,7 @@ class SimulationTransferFunctions(Resource):
                 "dataType": int.__name__
             },
             {
-                "name": "source",
+                "name": "data",
                 "description": "The transfer function source code to patch",
                 "required": True,
                 "paramType": "body",
@@ -146,20 +158,44 @@ class SimulationTransferFunctions(Resource):
         ],
         responseMessages=[
             {
+                "code": 404,
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
                 "code": 403,
-                "message": "Transfer function name already exists"
+                "message": ErrorMessages.DUPLICATE_NAME_403
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
+                "code": 400,
+                "message": ErrorMessages.SOURCE_CODE_ERROR_400
             },
             {
                 "code": 200,
-                "message": "Success. The code was successfully patched"
+                "message": "Success. The transfer function was successfully patched"
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.DUPLICATE_NAME_403,
+                         ErrorMessages.SIMULATION_PERMISSION_401,
+                         ErrorMessages.SOURCE_CODE_ERROR_400)
     def post(self, sim_id):
         """
         Adds a new transfer function
 
         :param sim_id: The simulation ID
+
+        :< string data: The source code of the transfer function
+
+        :status 404: {0}
+        :status 403: {1}
+        :status 401: {2}
+        :status 400: {3}
+        :status 200: Success. The transfer function was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
@@ -206,13 +242,13 @@ class SimulationTransferFunction(Resource):
             },
             {
                 "name": "transfer_function_name",
-                "description": "The original name of the transfer function",
+                "description": "The name of the transfer function to be modified",
                 "required": True,
                 "paramType": "path",
                 "dataType": str.__name__
             },
             {
-                "name": "source",
+                "name": "data",
                 "description": "The transfer function source code to patch",
                 "required": True,
                 "paramType": "body",
@@ -222,29 +258,44 @@ class SimulationTransferFunction(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 403,
-                "message": "Transfer function name already exists"
-            },
-            {
-                "code": 400,
-                "message": "The source code is invalid"
+                "message": ErrorMessages.DUPLICATE_NAME_403
             },
             {
                 "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
+                "code": 400,
+                "message": ErrorMessages.SOURCE_CODE_ERROR_400
             },
             {
                 "code": 200,
-                "message": "Success. The code was successfully patched"
+                "message": "Success. The transfer function was successfully patched"
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.DUPLICATE_NAME_403,
+                         ErrorMessages.SIMULATION_PERMISSION_401,
+                         ErrorMessages.SOURCE_CODE_ERROR_400)
     def put(self, sim_id, transfer_function_name):
         """
         Applies user changes to transfer function code
+
+        :param sim_id: The simulation ID
+        :param transfer_function_name: The name of the transfer function to be modified
+
+        :< string data: The source code of the transfer function
+
+        :status 404: {0}
+        :status 403: {1}
+        :status 401: {2}
+        :status 400: {3}
+        :status 200: Success. The transfer function was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
@@ -283,7 +334,7 @@ class SimulationTransferFunction(Resource):
             },
             {
                 "name": "transfer_function_name",
-                "description": "The name of the transfer function to delete",
+                "description": "The name of the transfer function to be deleted",
                 "required": True,
                 "paramType": "path",
                 "dataType": str.__name__
@@ -292,11 +343,11 @@ class SimulationTransferFunction(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 200,
@@ -306,17 +357,24 @@ class SimulationTransferFunction(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def delete(self, sim_id, transfer_function_name):
         """
         Delete a transfer function
+
+        :param sim_id: The simulation ID
+        :param transfer_function_name: The name of the transfer function to be deleted
+
+        :status 404: {0}
+        :status 401: {1}
+        :status 200: Success. The code was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
             raise NRPServicesWrongUserException()
 
-        response = simulation.cle.delete_simulation_transfer_function(
-            transfer_function_name
-        )
+        response = simulation.cle.delete_simulation_transfer_function(transfer_function_name)
 
         if response is False:
             raise NRPServicesTransferFunctionException(

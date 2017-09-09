@@ -31,10 +31,15 @@ import string
 import csv
 from flask_restful_swagger import swagger
 from flask_restful import Resource, request, fields
+
 from hbp_nrp_backend import get_date_and_time_string
 from hbp_nrp_backend import NRPServicesWrongUserException
+
+from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 __author__ = 'LucGuyot, DanielPeppicelli'
 
@@ -96,7 +101,11 @@ class SimulationCSVRecorders(Resource):
             },
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 200,
@@ -104,12 +113,20 @@ class SimulationCSVRecorders(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def get(self, sim_id):
         """
         Gets the simulation CSV recorders' content
 
         :param sim_id: The simulation ID whose transfer functions are retrieved will be saved
-        :status 404: The simulation with the given ID was not found
+
+        :> json string file: CSV file name
+        :> json array data: CSV data as a list of strings
+
+        :status 500: Error when retrieving recorder files
+        :status 404: {0}
+        :status 401: {1}
         :status 200: Returns a list of recorded csv files and data
         """
         simulation = _get_simulation_or_abort(sim_id)
@@ -147,23 +164,30 @@ class SimulationCSVRecorders(Resource):
             },
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 200,
-                "message": "Recorders content saved successfully into Collab storage"
+                "message": "Success. Files saved into Collab storage"
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id):
         """
         Save the simulation CSV recorders' content to the Collab storage.
 
-        :param sim_id: The simulation ID whose transfer functions are retrieved
-         will be saved
-        :status 500: Error when saving files
-        :status 404: The simulation with the given ID was not found
-        :status 200: Success. Files saved into Collab storage.
+        :param sim_id: The simulation ID
+
+        :status 500: Error when saving recorder files
+        :status 404: {0}
+        :status 401: {1}
+        :status 200: Success. Files saved into Collab storage
         """
 
         simulation = _get_simulation_or_abort(sim_id)

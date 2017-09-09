@@ -30,11 +30,11 @@ __author__ = 'Georg Hinkel'
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 from hbp_nrp_commons.generated import bibi_api_gen
-from hbp_nrp_commons.bibi_functions import print_expression, print_neurons, get_default_property
+from hbp_nrp_commons.bibi_functions import print_expression, print_neurons, get_default_property, \
+    docstring_parameter
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
-from hbp_nrp_backend.rest_server.__ExperimentService import \
-    ErrorMessages, get_bibi_file
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
+from hbp_nrp_backend.rest_server.__ExperimentService import get_bibi_file
 
 import os
 
@@ -131,11 +131,8 @@ class ExperimentBibiTransferFunctions(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.EXPERIMENT_NOT_FOUND_404
-            },
-            {
-                "code": 404,
-                "message": ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404
+                "message": "The experiment with the given ID was not found or the experiment BIBI "
+                           "file was not found"
             },
             {
                 "code": 200,
@@ -143,16 +140,19 @@ class ExperimentBibiTransferFunctions(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR)
     def get(self, exp_id):
         """
         Gets bibi file of the experiment specified with experiment ID.
 
         :param exp_id: The experiment ID
-        :>json string filename: Name of the experiment file
-        :>json string base64: Contents of the BIBI file encoded as base64
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 404: The experiment with the given ID was not found
-        :status 404: The experiment BIBI file was not found
+
+        :> json string filename: Name of the experiment file
+        :> json string base64: Contents of the BIBI file encoded as base64
+
+        :status 500: {0}
+        :status 404: The experiment with the given ID was not found or the experiment BIBI file was
+                     not found
         :status 200: Success. The experiment BIBI file was retrieved
         """
         # pylint: disable=too-many-locals

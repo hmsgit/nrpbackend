@@ -87,6 +87,14 @@ class Version(Resource):
         """
         Returns the versions of all NRP python packages.
 
+        :> json string hbp_nrp_cle:
+        :> json string hbp_nrp_backend:
+        :> json string hbp_nrp_cleserver:
+        :> json string hbp_nrp_commons:
+        :> json string hbp_nrp_excontrol:
+        :> json string hbp_nrp_music_xml:
+        :> json string hbp_nrp_music_interface:
+
         :status 200: Success. The versions were retrieved
         """
 

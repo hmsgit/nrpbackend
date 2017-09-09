@@ -58,8 +58,8 @@ class CollabHandler(Resource):
     class _CollabHandler(object):
         """
         Experiment configuration that links a context UUID with an experiment ID.
-        When the user selects an experiment to clone from the collab edit page,
-        we store the ID of that experiment in a database
+        When the user selects an experiment to clone from the collab edit page, we store the ID of
+        that experiment in a database.
         Only used for swagger documentation
         """
 
@@ -78,8 +78,8 @@ class CollabHandler(Resource):
         parameters=[
             {
                 "name": "context_id",
-                "description": "The UUID of the Collab context paired with \
-                the requested experiment ID",
+                "description": "The UUID of the Collab context paired with the requested experiment"
+                               "ID",
                 "required": True,
                 "paramType": "path",
                 "dataType": str.__name__
@@ -88,7 +88,7 @@ class CollabHandler(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The experiment ID was not found"
+                "message": "The experiment ID associated with the given context UUID was not found"
             },
             {
                 "code": 200,
@@ -98,9 +98,13 @@ class CollabHandler(Resource):
     )
     def get(self, context_id):
         """
-        Gets the experiment ID
+        Retrieves an experiment ID based on a Collab context UUID
 
-        :param context_id: The Collab context UUID
+        :param context_id: The UUID of the Collab context paired with the requested experiment ID
+
+        :> dict collab_handler: The object containing the contextID, experimentID and the
+                                experimentFolderUUID
+
         :status 404: The experiment ID associated with the given context UUID was not found
         :status 200: The experiment ID was successfully retrieved
         """
@@ -124,14 +128,14 @@ class CollabHandler(Resource):
         parameters=[
             {
                 "name": "context_id",
-                "description": "The UUID of the Collab context to be paired with \
-                the ID of the selected experiment",
+                "description": "The UUID of the Collab context to be paired with the ID of the"
+                               "selected experiment",
                 "required": True,
                 "paramType": "path",
                 "dataType": str.__name__
             },
             {
-                "name": "body",
+                "name": "collab_handler",
                 "description": "the paths to the models files, and the experiment ID",
                 "paramType": "body",
                 "required": True,
@@ -145,22 +149,22 @@ class CollabHandler(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. The context UUID and its \
-                associated experiment ID have been saved."
+                "message": "Success. The context UUID and its associated experiment ID were"
+                           "successfully retrieved."
             }
         ]
     )
     def put(self, context_id):
         """
-        Saves a key-value pair associating a Collab context UUID and \
-        an experiment ID
+        Saves a key-value pair associating a Collab context UUID and an experiment ID
 
         :param context_id: The Collab context UUID
-        :param env_path: The object containing the paths to the environment
-        :param brain_path: The object containing the paths to the brain
-        :param robot_path: The object containing the paths to the robot
-        :status 400: No experimentID given.
-        :status 200: The Collab context and its associated experiment ID were successfully retrieved
+
+        :< dict collab_handler: The object containing paths to the environment, brain and robot.
+
+        :status 400: No experiment ID given.
+        :status 200: Success. The context UUID and its associated experiment ID were successfully
+                     retrieved
         """
         # pylint: disable=no-member
         collab_context = get_or_raise_collab_context(context_id)
@@ -177,18 +181,17 @@ class CollabHandler(Resource):
         # way we __init__ the rest_server module.
         from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
             import NeuroroboticsCollabClient
-        client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request),
-                                           context_id)
+        client = NeuroroboticsCollabClient(UserAuthentication.get_header_token(request), context_id)
         paths = None
         if 'envPath' in body and 'robotPath' in body and 'brainPath' in body:
-            paths = {}
+            paths = dict()
             paths['envPath'] = body['envPath']
             paths['robotPath'] = body['robotPath']
             paths['brainPath'] = body['brainPath']
         exd_configuration = get_experiment_conf(experiment_id)
         experiment_folder_uuid = client.clone_experiment_template_to_collab(
-            client.generate_unique_folder_name(client.get_context_app_name()),
-                                                   exd_configuration, paths)
+            client.generate_unique_folder_name(client.get_context_app_name()), exd_configuration,
+            paths)
 
         db.session.add(CollabContext(context_id, experiment_id, experiment_folder_uuid))
         db.session.commit()

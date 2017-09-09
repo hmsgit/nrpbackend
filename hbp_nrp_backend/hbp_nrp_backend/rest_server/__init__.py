@@ -41,9 +41,8 @@ class NRPServicesDatabaseTimeoutException(NRPServicesDatabaseException):
 
 class NRPServicesExtendedApi(Api):
     """
-    Extend Flask Restful error handling mechanism so that we
-    can still use original Flask error handlers (defined in
-    __ErrorHandlers.py)
+    Extend Flask Restful error handling mechanism so that we can still use original Flask error
+    handlers (defined in __ErrorHandlers.py)
     """
     def error_router(self, original_handler, e):
         """
@@ -53,6 +52,42 @@ class NRPServicesExtendedApi(Api):
         :param e: Error
         """
         return original_handler(e)
+
+
+class ErrorMessages(object):
+    """
+    Definition of error strings
+    """
+    EXPERIMENT_BRAIN_FILE_NOT_FOUND_500 = "The experiment brain file was not found"
+    EXPERIMENT_CONF_FILE_INVALID_500 = "The experiment configuration file is not valid"
+    EXPERIMENT_PREVIEW_INVALID_500 = "The experiment preview image is not valid"
+    ERROR_SAVING_FILE_500 = "Error saving file"
+    SERVER_ERROR_500 = "The query failed due to an internal server error"
+
+    COLLAB_NOT_FOUND_404 = "The collab with the given context ID was not found"
+    EXPERIMENT_NOT_FOUND_404 = "The experiment with the given ID was not found"
+    EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
+    EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
+    EXPERIMENT_CONF_FILE_NOT_FOUND_404 = "The experiment configuration file was not found"
+    SIMULATION_NOT_FOUND_404 = "The simulation with the given ID was not found"
+
+    DUPLICATE_NAME_403 = "Name already exists"
+    OPERATION_INVALID_IN_CURRENT_STATE_403 = "The operation is forbidden while the simulation is " \
+                                             "in its current state"
+
+    SIMULATION_PERMISSION_401 = "Insufficient permissions to apply changes. Operation only allowed"\
+                                " by simulation owner"
+
+    INVALID_PARAMETERS_400 = "Provided parameters are invalid"
+    SOURCE_CODE_ERROR_400 = "The source code is invalid: [ERROR-MESSAGE]"
+    ERROR_IN_BASE64_400 = "Error in base64: {0}"
+
+    EXP_VARIABLE_ERROR = """Error on server: environment variable: \
+        'NRP_EXPERIMENTS_DIRECTORY' is empty"""
+    MOD_VARIABLE_ERROR = """Error on server: environment variable: \
+        'NRP_MODELS_DIRECTORY' is empty"""
+    MODEXP_VARIABLE_ERROR = """Error on server: environment variable: \
+        'NRP_MODELS_DIRECTORY' or 'NRP_EXPERIMENTS_DIRECTORY' is empty"""
 
 
 app = Flask(__name__, static_folder='')
@@ -156,10 +191,11 @@ def db_create_and_check(database, timeout=1):
     Populates the database based on the configuration provided by the
     SQLAlchemy object and checks, if the database url can be reached
     within the defined timeout.
+
     :param database: SQLAlchemy database object to be addressed
     :param timeout: timeout for the connection (in s)
-    :raises NRPServicesDatabaseTimeoutException: if the database
-    connection attempt exceeds the timeout
+    :raises NRPServicesDatabaseTimeoutException: if the database connection attempt exceeds the
+                                                 timeout
     """
 
     db_proc = multiprocessing.Process(target=database.create_all)

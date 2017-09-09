@@ -30,11 +30,11 @@ from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
-
+from hbp_nrp_backend.rest_server import NRPServicesWrongUserException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server import NRPServicesWrongUserException
-from hbp_nrp_backend.rest_server.__UserAuthentication import \
-    UserAuthentication
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 import datetime
 # pylint: disable=R0201
@@ -63,7 +63,7 @@ class SimulationTimeout(Resource):
         responseMessages=[
             {
                 "code": 404,
-                "message": "The simulation was not found"
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
                 "code": 402,
@@ -71,7 +71,7 @@ class SimulationTimeout(Resource):
             },
             {
                 "code": 401,
-                "message": "Operation only allowed by simulation owner"
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
                 "code": 200,
@@ -79,15 +79,18 @@ class SimulationTimeout(Resource):
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def post(self, sim_id):
         """
         Extends the simulation timeout
 
         :param sim_id: The simulation id
+
+        :status 404: {0}
         :status 402: Failed to extend the timeout
-        :status 401: Operation only allowed by simulation owner
-        :status 404: The simulation with the given ID was not found
-        :status 200: The simulation timeout has been extended
+        :status 401: {1}
+        :status 200: Success. The simulation timeout has been extended
         """
         simulation = _get_simulation_or_abort(sim_id)
 

@@ -37,45 +37,20 @@ from threading import Thread
 from flask_restful import Resource, request, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import get_tf_name
+
 from hbp_nrp_commons.generated import bibi_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 logger = logging.getLogger(__name__)
 # pylint: disable=no-self-use
 
 
-@swagger.model
-class TransferFunctionDictionary(object):
-    """
-    Swagger documentation object
-    TransferFunctionDict ... tried to make it look like a dictionary for the swagger doc
-    """
-    resource_fields = {
-        'tf_id_1': str.__name__,
-        'tf_id_2': str.__name__,
-        'tf_id_n': str.__name__
-    }
-
-
-@swagger.model
-@swagger.nested(data=TransferFunctionDictionary.__name__)
-class TransferFunctionData(object):
-    """
-    Swagger documentation object
-    Main Data Attribute for parsing convenience on the front-end side.
-    """
-    resource_fields = {
-        'data': fields.Nested(TransferFunctionDictionary.resource_fields)
-    }
-    required = ['data']
-
-
 class ExperimentTransferfunctions(Resource):
     """
-    The resource to load and save experiment transferfunction files
+    The resource to load and save experiment transfer function files
     """
 
     @swagger.model
@@ -107,7 +82,7 @@ class ExperimentTransferfunctions(Resource):
             {
                 "name": "transfer_functions",
                 "required": True,
-                "description": "List of Transferfunctions in Python (list of strings)",
+                "description": "List of Transfer functions in Python (list of strings)",
                 "paramType": "body",
                 "dataType": _TransferFunction.__name__
             },
@@ -128,21 +103,25 @@ class ExperimentTransferfunctions(Resource):
             },
             {
                 "code": 200,
+                "message": "Success. File written"
             }
         ]
     )
+    @docstring_parameter(ErrorMessages.ERROR_SAVING_FILE_500, ErrorMessages.COLLAB_NOT_FOUND_404)
     def put(self, context_id):
         """
         Save transfer functions of an experiment to the collab.
 
-        :param path context_id: The context UUID of the Collab where the transfer functions
-         will be saved
-        :<json body json array of string transfer_functions: the transfer functions as python
-        :status 500: BIBI configuration file not found
-        :status 500: Error saving file
-        :status 404: The collab with the given context ID was not found
-        :status 404: The request body is malformed
-        :status 200: Success. File written.
+        :param path context_id: The context UUID of the Collab where the transfer functions will be
+                                saved
+
+        :< json string transfer_functions: the transfer functions as python
+
+        :status 500: {0}
+        :status 404: {1}
+        :status 400: Transfer functions code should be sent in the body under the
+                     'transfer_functions' key
+        :status 200: Success. File written
         """
 
         # Done here in order to avoid circular dependencies introduced by the
@@ -151,7 +130,7 @@ class ExperimentTransferfunctions(Resource):
             import NeuroroboticsCollabClient
 
         body = request.get_json(force=True)
-        if not 'transfer_functions' in body:
+        if 'transfer_functions' not in body:
             raise NRPServicesClientErrorException(
                 "Transfer functions code should be sent in "
                 "the body under the 'transfer_functions' key"

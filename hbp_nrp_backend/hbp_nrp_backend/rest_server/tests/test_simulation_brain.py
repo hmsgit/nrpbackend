@@ -144,7 +144,7 @@ class TestSimulationBrain(RestTest):
 
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_error)
         response = self.client.put('/simulation/0/brain', data=json.dumps(send_data))
-        self.assertEqual(response.status_code, 300)
+        self.assertEqual(response.status_code, 400)
 
         response = self.client.put('/simulation/4/brain')
         self.assertEqual(response.status_code, 404)
@@ -181,7 +181,7 @@ class TestSimulationBrain(RestTest):
         request['additional_populations'] = new_brain_populations_json
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_popl_change_handle)
         response = self.client.put('/simulation/0/brain', data=json.dumps(request))
-        self.assertEqual(response.status_code, 300)
+        self.assertEqual(response.status_code, 400)
 
 
 if __name__ == '__main__':

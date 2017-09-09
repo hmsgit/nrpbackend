@@ -31,7 +31,7 @@ __author__ = 'UgoAlbanese'
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
      NRPServicesUnavailableROSService
 from gazebo_msgs.srv import ExportWorldSDF
-from flask_restful import Resource
+from flask_restful import fields, Resource
 from flask_restful_swagger import swagger
 import logging
 import rospy
@@ -47,16 +47,33 @@ class WorldSDFService(Resource):
     The sdf world file download service
     """
 
+    @swagger.model
+    class sdfData(object):
+        """
+        Represents environment sdf file
+        Only used for swagger documentation
+        """
+        resource_fields = {
+            'sdf': fields.String()
+        }
+
+        required = ['sdf']
+
     @swagger.operation(
         notes='Returns the SDF file describing the world without robots',
+        responseClass=sdfData.__name__,
         responseMessages=[
             {
-                "code": 200,
-                "message": "SDF successfully returned"
+                "code": 500,
+                "message": "ROS service not available"
             },
             {
                 "code": 400,
                 "message": "A ROS error occurred"
+            },
+            {
+                "code": 200,
+                "message": "SDF successfully returned"
             }
         ]
     )
@@ -64,9 +81,11 @@ class WorldSDFService(Resource):
         """
         Returns the SDF file describing the world in which the simulation is carried out
 
-        :>json string sdf: the SDF string describing the world excluding the robots involved
-        :status 200: SDF file successfully returned
+        :> json string sdf: the SDF string describing the world excluding the robots involved
+
+        :status 500: ROS service not available
         :status 400: A ROS error occurred
+        :status 200: SDF file successfully returned
         """
 
         try:

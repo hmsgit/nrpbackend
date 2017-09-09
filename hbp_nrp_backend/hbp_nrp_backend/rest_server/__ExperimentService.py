@@ -37,15 +37,18 @@ import shutil
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
+
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesGeneralException
-from hbp_nrp_commons.generated import exp_conf_api_gen
-from hbp_nrp_commons.generated import bibi_api_gen
+    NRPServicesGeneralException, ErrorMessages
+from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
+
+from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen
+from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 from flask import request
 from pyxb import ValidationError
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
+
 
 # pylint: disable=no-self-use
 # because pylint detects experiment.get_bibiConf() as no member:
@@ -53,28 +56,6 @@ from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 
 
 LOG = logging.getLogger(__name__)
-
-
-class ErrorMessages(object):
-    """
-    Definition of error strings
-    """
-    COLLAB_NOT_FOUND_404 = "The collab with the given context ID was not found"
-    EXPERIMENT_NOT_FOUND_404 = "The experiment with the given ID was not found"
-    EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
-    EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
-    EXPERIMENT_CONF_FILE_NOT_FOUND_404 = "The experiment configuration file was not found"
-    EXPERIMENT_BRAIN_FILE_NOT_FOUND_500 = "The experiment brain file was not found"
-    EXPERIMENT_CONF_FILE_INVALID_500 = "The experiment configuration file is not valid"
-    EXPERIMENT_PREVIEW_INVALID_500 = "The experiment preview image is not valid"
-    EXP_VARIABLE_ERROR = """Error on server: environment variable: \
-        'NRP_EXPERIMENTS_DIRECTORY' is empty"""
-    MOD_VARIABLE_ERROR = """Error on server: environment variable: \
-        'NRP_MODELS_DIRECTORY' is empty"""
-    MODEXP_VARIABLE_ERROR = """Error on server: environment variable: \
-        'NRP_MODELS_DIRECTORY' or 'NRP_EXPERIMENTS_DIRECTORY' is empty"""
-    ERROR_SAVING_FILE_500 = "Error saving file"
-    ERROR_IN_BASE64_400 = "Error in base64: {0}"
 
 
 @swagger.model
@@ -94,25 +75,21 @@ class ExperimentObject(object):
         "visualModelParams": fields.List(fields.Float),
         "brainProcesses": fields.Integer()
     }
-    required = ['name', 'experimentConfiguration', 'description',
-                'timeout', 'maturity', 'cameraPose',
-                'visualModel', 'visualModelParams', 'brainProcesses']
+    required = ['name', 'experimentConfiguration', 'description', 'timeout', 'maturity',
+                'cameraPose', 'visualModel', 'visualModelParams', 'brainProcesses']
 
 
 @swagger.model
-@swagger.nested(exp_id_1=ExperimentObject.__name__,
-                exp_id_2=ExperimentObject.__name__,
-                exp_id_n=ExperimentObject.__name__)
+@swagger.nested(exp_id=ExperimentObject.__name__)
 class ExperimentDictionary(object):
     """
     Swagger documentation object
     ExperimentDictionary ... tried to make it look like a dictionary for the swagger doc
     """
     resource_fields = {
-        'exp_id_1': fields.Nested(ExperimentObject.resource_fields),
-        'exp_id_2': fields.Nested(ExperimentObject.resource_fields),
-        'exp_id_n': fields.Nested(ExperimentObject.resource_fields)
+        'exp_id': fields.Nested(ExperimentObject.resource_fields)
     }
+    required = ['exp_id']
 
 
 @swagger.model
@@ -140,7 +117,7 @@ class Experiment(Resource):
         responseMessages=[
             {
                 "code": 500,
-                "message": "Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty"
+                "message": ErrorMessages.MOD_VARIABLE_ERROR
             },
             {
                 "code": 200,
@@ -149,13 +126,15 @@ class Experiment(Resource):
         ]
     )
     @RestSyncMiddleware.threadsafe
+    @docstring_parameter(ErrorMessages.MOD_VARIABLE_ERROR)
     def get(self):
         """
         Gets dictionary of experiments stored on the server.
 
         :return: Dictionary with experiments
-        :status 500: Error on server: environment variable: 'NRP_MODELS_DIRECTORY' is empty
-        :status 200: Success. The dictionary was returned
+
+        :status 500: {0}
+        :status 200: Success. The experiment list was sent
         """
         experiments = dict(data=get_experiments())
         return experiments, 200
@@ -163,8 +142,7 @@ class Experiment(Resource):
 
 class CollabExperiment(Resource):
     """
-    Implements the REST service for retrieving a collab experiment
-    as a dictionary
+    Implements the REST service for retrieving a collab experiment as a dictionary
     """
 
     @swagger.operation(
@@ -186,6 +164,7 @@ class CollabExperiment(Resource):
         Gets dictionary of the experiment stored on the collab
 
         :return: Dictionary with experiment
+
         :status 500: Error on server: collab experiment file not found
         :status 200: Success. The dictionary was returned
         """
@@ -195,6 +174,7 @@ class CollabExperiment(Resource):
 def get_experiments(empty_experiment=False):
     """
     Read all available Experiments from disk, and add to dictionary
+
     :return dictionary: with string: ID, string: ExDConfig File
     """
     experiment_names = os.listdir(get_experiment_basepath())
@@ -222,6 +202,7 @@ def get_experiments(empty_experiment=False):
 def parse_exp(experiment_conf):
     """
     Parse an experiment xml file.
+
     :param experiment_conf: the experiment configuration file to parse
     :return the parsed xml
     """
@@ -236,11 +217,11 @@ def parse_exp(experiment_conf):
 def get_collab_experiment(context_id):
     """
     Retrieve the collab experiment from the collab, and add to dictionary
+
     :param context_id: The context id of the collab
     :return dictionary: with string: ID, string: ExDConfig File
     """
-    from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-        import NeuroroboticsCollabClient
+    from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import NeuroroboticsCollabClient
     client = NeuroroboticsCollabClient(
         UserAuthentication.get_header_token(request),
         context_id
@@ -260,6 +241,7 @@ def get_collab_experiment(context_id):
 def _make_experiment(experiment, experiment_file='', experiment_dir=''):
     """
     Creates and returns an dictionary with the experiment data
+
     :param experiment_file: filename of the XML containing the experiment
     :param experiment: the parsed experiment
     :param experiment_dir: the directory containing the XML file of the experiment
@@ -312,6 +294,7 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
 def save_file(base64_data, filename_abs, data=None):
     """
     Save a file, encoded as base64_data to specified filename_abs
+
     :param base64_data:  base64 encoded data
     :param filename_abs: the absolute filename
     :param data: use instead of base64_data, when you wand to write a string as-is to the disk
@@ -371,16 +354,17 @@ def get_model_basepath():
 
 def get_experiment_rel(exp_id):
     """
-    Given an experiment id it returns the experiment dictionary containing the experiment
-    files' paths and returns the experiment configuration rel path.
-    In case we are launching a new experiment we are returning the path
-    to the empty template experiment
+    Given an experiment id it returns the experiment dictionary containing the experiment files'
+    paths and returns the experiment configuration relative path.
+    In case we are launching a new experiment we are returning the path to the empty template
+    experiment.
+
     :return: relative name of the experiment xml
     """
     if exp_id == 'newExperiment':
         empty_experiment_dict = get_experiments(empty_experiment=True)
         empty_experiment_file_path = \
-          empty_experiment_dict['TemplateEmpty']['experimentConfiguration']
+            empty_experiment_dict['TemplateEmpty']['experimentConfiguration']
         return empty_experiment_file_path
 
     experiment_dict = get_experiments()
