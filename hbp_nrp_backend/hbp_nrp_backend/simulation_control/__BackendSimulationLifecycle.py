@@ -182,11 +182,11 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         Starts the simulation
 
-        :param state_change: The state change that lead to starting the simulation
+        :param state_change: The state change that led to starting the simulation
         """
         logger.info("starting State Machines...")
         try:
-            self.simulation.state_machine_manager.start_all()
+            self.simulation.state_machine_manager.start_all(False)
         # pylint: disable=broad-except
         except Exception, e:
             logger.error("Starting State Machines Failed")
@@ -198,8 +198,10 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         Stops the simulation and releases all resources
 
-        :param state_change: The state change that lead to releasing simulation resources
+        :param state_change: The state change that led to releasing simulation resources
         """
+        self.simulation.kill_datetime = None
+
         if self.simulation.cle is not None:
             self.simulation.cle.stop_communication(
                 "Simulation server released")
@@ -207,7 +209,6 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             sm.sm_id, str(sm.result)) for sm in self.simulation.state_machines))
 
         self.simulation.state_machine_manager.shutdown()
-        self.simulation.kill_datetime = None
 
         using_storage = self.simulation.experiment_id is not None
 
@@ -227,7 +228,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that paused the simulation
         """
-        self.simulation.state_machine_manager.terminate_all()
+        # From the backend side, there is nothing to do because state machines keep running
+        pass
 
     def fail(self, state_change):
         """
@@ -235,16 +237,16 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change which resulted in failing the simulation
         """
+        self.simulation.kill_datetime = None
         if self.simulation.cle is not None:
             self.simulation.cle.stop_communication("Simulation has failed")
         self.simulation.state_machine_manager.terminate_all()
-        self.simulation.kill_datetime = None
 
     def reset(self, state_change):
         """
         Resets the simulation
 
-        :param state_change: The state change that lead to reseting the simulation
+        :param state_change: The state change that led to reseting the simulation
         """
         logger.info("State machine outcomes: %s", ", "
                     .join("%s: %s" % (sm.sm_id, str(sm.result))
