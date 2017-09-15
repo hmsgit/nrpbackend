@@ -687,13 +687,10 @@ class ROSCLEServer(object):
         Delete an existing transfer function
 
         :param request: The mandatory rospy request parameter
-        :return: always True as this command is executed asynchronously.
-                 ROS forces us to return a value.
+        :return: True if the delete was successful, False if the transfer function does not exist.
         """
         self.__cle.stop()
-        tf_framework.delete_transfer_function(request.transfer_function_name)
-
-        return True
+        return tf_framework.delete_transfer_function(request.transfer_function_name)
 
     def publish_state_update(self):
         """
