@@ -57,7 +57,7 @@ from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
 from hbp_nrp_watchdog import Timer
 import hbp_nrp_cle.tf_framework as tf_framework
-from hbp_nrp_cle.tf_framework import TFLoadingException
+from hbp_nrp_cle.tf_framework import TFLoadingException, BrainParameterException
 import base64
 from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
@@ -494,6 +494,9 @@ class ROSCLEServer(object):
         except SyntaxError, e:
             logger.exception(e)
             return_value = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
+        except BrainParameterException as e:
+            logger.exception(e)
+            return_value = [e.message, -1, -1, 0]
         except Exception, e:
             logger.exception(e)
             return_value = ["Error changing neuronal network: " + str(e), 0, 0, 0]

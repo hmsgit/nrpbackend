@@ -27,6 +27,7 @@ ROSCLEServer unit test
 
 from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
 from cle_ros_msgs.msg import CSVRecordedFile, ExperimentPopulationInfo
+from hbp_nrp_cle.tf_framework import BrainParameterException
 from hbp_nrp_cleserver.server import ROSCLEServer
 import logging
 from mock import patch, MagicMock, Mock, PropertyMock, mock_open
@@ -282,6 +283,43 @@ class TestROSCLEServer(unittest.TestCase):
             mock_b64.side_effect = Exception
             response = set_brain_implementation(request)
             self.assertNotEqual("", response[0])
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.SimulationServerLifecycle')
+    def test_handling_BrainParameterException(self, mock_tempfile, mock_lifecycle):
+
+        # any caught BrainParameterException exception should return [{msg}, -1, -1, 0]
+        mock_tempfile.name = 'random_name_tempfile'
+
+        self.__mocked_cle.load_network_from_file.side_effect = BrainParameterException("BrainParameterException")
+
+        with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
+
+            slice1 = { 'from': 1, 'to': 2, 'step': 1}
+            populations_json_slice = {
+              'index1': 1,
+              'slice_1': slice1,
+              'list1': [1, 2, 3]
+            }
+            mocked_tf_framework.get_brain_populations = MagicMock(return_value=populations_json_slice)
+
+            ros_callbacks = self.__get_handlers_for_testing_main()
+            self.__mocked_cle.network_file = PropertyMock()
+            set_brain_implementation = ros_callbacks['set_brain']
+
+            request = Mock()
+            request.data_type = "text"
+            request.brain_type = "py"
+            request.brain_data = "Dummy = None"
+            request.brain_populations = json.dumps(populations_json_slice)
+            request.change_population = srv.SetBrainRequest.ASK_RENAME_POPULATION
+            response = set_brain_implementation(request)
+
+            self.assertEqual(response[0], 'BrainParameterException')
+            self.assertEqual(response[1], -1)
+            self.assertEqual(response[2], -1)
+            self.assertEqual(response[3], 0)
+
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_CSV_recorders_functions(self, mocked_tf_framework):
