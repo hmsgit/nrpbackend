@@ -137,12 +137,12 @@ def init_logging(args): # pragma: no cover
 try:
     init()
     db_create_and_check(db) # 1 s timeout
-except NRPServicesDatabaseTimeoutException as e:
+except NRPServicesDatabaseTimeoutException as e:  # pragma: no cover
     root_logger.warn("Database connection timeout ( " + str(e) +
                      " ). You are probably in the local mode. ")
 
 # Detect uwsgi, start ros and initialize multithreading support
-if __name__.find("uwsgi_file") == 0:
+if __name__.find("uwsgi_file") == 0:  # pragma: no cover
     start_ros()
     app.wsgi_app = RestSyncMiddleware(app.wsgi_app, app)
     _args = __process_args()

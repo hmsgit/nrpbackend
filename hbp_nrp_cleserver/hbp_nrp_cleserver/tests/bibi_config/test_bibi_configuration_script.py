@@ -43,6 +43,9 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(remove_extension("foo.bar.txt"), "foo.bar")
         self.assertEqual(remove_extension("foo/bar.txt"), "foo/bar")
 
+    def test_get_tf_name(self):
+        self.assertEqual(get_tf_name("def hello_world():"), "hello_world")
+
 class TestEyeSensorTransmit(unittest.TestCase):
 
     def setUp(self):

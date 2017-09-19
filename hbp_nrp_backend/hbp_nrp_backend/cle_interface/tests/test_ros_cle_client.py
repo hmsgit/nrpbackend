@@ -34,12 +34,13 @@ from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIMULATION_RECORDER
-from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation, ResetSimulationRequest
+from cle_ros_msgs.srv import DeleteTransferFunction, ResetSimulation, ResetSimulationRequest, \
+    SimulationRecorderRequest
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import GetSimulationState, GetTransferFunctions, EditTransferFunction, \
     AddTransferFunction, DeleteTransferFunction, GetBrain, SetBrain
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
-from mock import patch, MagicMock, Mock
+from mock import patch, MagicMock, Mock, call
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 import unittest
 
@@ -219,6 +220,40 @@ class TestROSCLEClient(unittest.TestCase):
                 }
             ]
         })
+
+    def test_reset(self):
+        client = ROSCLEClient.ROSCLEClient(0)
+
+        simulation_recorder = Mock()
+        reset_resp = Mock()
+        reset_resp.success = True
+        reset = Mock(return_value=reset_resp)
+        client._ROSCLEClient__simulation_recorder = simulation_recorder
+        client._ROSCLEClient__cle_reset = reset
+
+        pop1 = Mock()
+        pop2 = Mock()
+
+        pop1.name = u'foo'
+        pop1.step = 1
+        pop2.name = 'bar'
+        pop2.step = 0
+        client.reset(ResetSimulationRequest.RESET_FULL, populations=[pop1, pop2])
+
+        simulation_recorder.assert_has_calls(call(SimulationRecorderRequest.CANCEL))
+        simulation_recorder.assert_has_calls(call(SimulationRecorderRequest.RESET))
+        self.assertEqual(pop1.name, 'foo')
+        self.assertEqual(pop2.name, 'bar')
+        self.assertEqual(pop1.step, 1)
+        self.assertEqual(pop2.step, 1)
+        self.assertTrue(reset.called)
+
+        reset_resp.success = False
+        reset_resp.error_message = "Foobar"
+        self.assertRaises(ROSCLEClientException, client.reset, ResetSimulationRequest.RESET_FULL)
+
+        client.stop_communication("Test stop")
+        self.assertRaises(ROSCLEClientException, client.reset, ResetSimulationRequest.RESET_FULL)
 
     def test_get_csv_files(self):
         client = ROSCLEClient.ROSCLEClient(0)

@@ -68,6 +68,14 @@ class TestSimulationCSVRecorders(RestTest):
                 '/simulation/' + str(sim_id) + '/csv-recorders')
             self.assertEqual(response.status_code, 200)
 
+    def test_simulation_CSV_recorders_get_OK(self):
+        with patch("__builtin__.open", mock_open(read_data="data")) as mock_file:
+            sim_id = 0
+            response = self.client.get(
+                '/simulation/' + str(sim_id) + '/csv-recorders')
+            self.assertEqual(response.status_code, 200)
+
+
     def test_simulation_CSV_recorders_put_sim_not_found(self):
         response = self.client.put('/simulation/1/123456/csv-recorders')
         self.assertEqual(404, response.status_code)

@@ -36,7 +36,7 @@ __author__ = 'Georg Hinkel'
 logger = logging.getLogger(__name__)
 
 
-def clean_simulations():
+def clean_simulations():  # pragma: no cover
     """
     Wakes up every ten minutes and stops expired simulations
 
