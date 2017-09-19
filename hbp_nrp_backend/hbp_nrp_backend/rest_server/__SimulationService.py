@@ -96,7 +96,6 @@ class SimulationService(Resource):
     def post(self):
         """
         Creates a new simulation which is neither 'initialized' nor 'started'.
-
         :< json string experimentConfiguration: Path and name of the experiment configuration file
         :< json string environmentConfiguration: Path of the custom SDF environment (optional)
         :< json string gzserverHost: The host where gzserver will be run: local for using the same
@@ -113,15 +112,17 @@ class SimulationService(Resource):
                                      the Lugano viz cluster
         :> json string reservation: the name of the cluster reservation subsequently used to
                                     allocate a job
-        :> json string contextID: The context ID if the experiment is declared in the collab portal
+        :> json string experimentID: The experiment ID if the experiment is using the storage
         :> json integer brainProcesses: Number of brain processes for simulation, overrides the
                                         number specified in the experiment configuration file
         :> json string creationUniqueID: The simulation unique creation ID that is used by the
                                          Frontend to identify this simulation
-
-        :status 402: Another simulation is already running on the server
-        :status 401: gzserverHost is not valid
+        :>json string playbackPath: Path to simulation recording to play (optional)
+        number specified in the experiment configuration file
+        :>json boolean private: Simulation is based on a private experiment
         :status 400: Experiment configuration is not valid
+        :status 401: gzserverHost is not valid
+        :status 402: Another simulation is already running on the server
         :status 201: Simulation created successfully
         """
 
@@ -129,10 +130,12 @@ class SimulationService(Resource):
         sim_id = len(simulations)
 
         if 'experimentConfiguration' not in body:
-            raise NRPServicesClientErrorException('Experiment configuration not given.')
+            raise NRPServicesClientErrorException(
+                'Experiment configuration not given.')
 
         if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
-            raise NRPServicesClientErrorException('Invalid gazebo server host.', error_code=401)
+            raise NRPServicesClientErrorException(
+                'Invalid gazebo server host.', error_code=401)
 
         if True in [s.state not in ['stopped', 'failed'] for s in simulations]:
             raise NRPServicesClientErrorException(
@@ -140,15 +143,22 @@ class SimulationService(Resource):
 
         if 'brainProcesses' in body and \
            (not isinstance(body.get('brainProcesses'), int) or body.get('brainProcesses') < 1):
-            raise NRPServicesClientErrorException('Invalid number of brain processes.')
+            raise NRPServicesClientErrorException(
+                'Invalid number of brain processes.')
 
         sim_gzserver_host = body.get('gzserverHost', 'local')
         sim_reservation = body.get('reservation', None)
-        sim_context_id = body.get('contextID', None)
+        sim_experiment_id = body.get('experimentID', None)
         sim_state = body.get('state', 'created')
         playback_path = body.get('playbackPath', None)
         sim_owner = UserAuthentication.get_x_user_name_header(request)
         sim_brain_processes = body.get('brainProcesses', 1)
+
+        if 'private' not in body:
+            private = None
+        else:
+            private = body['private']
+
         sim = Simulation(sim_id,
                          body['experimentConfiguration'],
                          body.get('environmentConfiguration', None),
@@ -156,11 +166,14 @@ class SimulationService(Resource):
                          sim_gzserver_host,
                          sim_reservation,
                          sim_brain_processes,
-                         sim_context_id,
+                         sim_experiment_id,
                          sim_state,
-                         playback_path)
+                         playback_path=playback_path,
+                         private=private)
 
-        sim.creationUniqueID = body.get('creationUniqueID', str(time.time() + random.random()))
+        sim.creationUniqueID = body.get(
+            'creationUniqueID', str(time.time() + random.random()))
+
         sim.state = "initialized"
         simulations.append(sim)
 
@@ -186,7 +199,7 @@ class SimulationService(Resource):
         """
         Gets the list of simulations on this server.
 
-        :> json int contextID:
+        :> json int experimentID:
         :> json int brainProcesses:
         :> json int environmentConfiguration:
         :> json string owner: The simulation owner (Unified Portal user name or 'hbp-default')

@@ -23,7 +23,7 @@
 # ---LICENSE-END
 """
 This module contains the REST implementation
-for saving to the Collab storage
+for saving to the storage
 the content of the CSV recorders of the simulation.
 """
 
@@ -140,14 +140,15 @@ class SimulationCSVRecorders(Resource):
                 file_data = []
                 response.append({"file": csv_file.name, "data": file_data})
                 with open(csv_file.temporary_path) as csvfile:
-                    spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+                    spamreader = csv.reader(
+                        csvfile, delimiter=' ', quotechar='|')
                     for row in spamreader:
                         file_data.append(', '.join(row))
 
         return response, 200
 
     @swagger.operation(
-        notes='Save the simulation CSV recorders\' content to the Collab storage',
+        notes='Save the simulation CSV recorders\' content to the storage',
         parameters=[
             {
                 "name": "sim_id",
@@ -172,7 +173,7 @@ class SimulationCSVRecorders(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. Files saved into Collab storage"
+                "message": "Success. Files saved into storage"
             }
         ]
     )
@@ -180,14 +181,13 @@ class SimulationCSVRecorders(Resource):
                          ErrorMessages.SIMULATION_PERMISSION_401)
     def put(self, sim_id):
         """
-        Save the simulation CSV recorders' content to the Collab storage.
+        Save the simulation CSV recorders' content to the storage.
 
         :param sim_id: The simulation ID
-
         :status 500: Error when saving recorder files
         :status 404: {0}
         :status 401: {1}
-        :status 200: Success. Files saved into Collab storage
+        :status 200: Success. Files saved into storage
         """
 
         simulation = _get_simulation_or_abort(sim_id)
@@ -198,15 +198,29 @@ class SimulationCSVRecorders(Resource):
 
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module.
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-            import NeuroroboticsCollabClient
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
 
-        client = NeuroroboticsCollabClient(
-            UserAuthentication.get_header_token(request),
-            simulation.context_id
-        )
+        client = StorageClient()
+
         time_string = get_date_and_time_string()
         subfolder_name = string.join(['csv_records', time_string], '_')
-        client.populate_subfolder_in_collab(subfolder_name, csv_files, 'text/csv')
 
+        folder_uuid = client.create_folder(UserAuthentication.get_header_token(request),
+                                           simulation.experiment_id,
+                                           subfolder_name)['uuid']
+
+        if csv_files:
+            for csv_file in csv_files:
+                file_data = []
+                with open(csv_file.temporary_path) as csvfile:
+                    spamreader = csv.reader(
+                        csvfile, delimiter=' ', quotechar='|')
+                    for row in spamreader:
+                        file_data.append(', '.join(row))
+                client.create_or_update(UserAuthentication.get_header_token(request),
+                                        folder_uuid,
+                                        csv_file.name,
+                                        str(file_data),
+                                        'text/plain')
         return 200

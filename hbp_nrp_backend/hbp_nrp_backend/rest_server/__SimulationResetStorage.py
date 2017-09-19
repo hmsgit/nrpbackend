@@ -23,10 +23,10 @@
 # ---LICENSE-END
 """
 This module contains REST services for handling simulations reset,
-Using the Collab as storage
+Using the storage
 """
 
-__author__ = "Alessandro Ambrosano, Ugo Albanese, Georg Hinkel"
+__author__ = "Alessandro Ambrosano, Ugo Albanese, Georg Hinkel, Manos Angelidis"
 
 import os
 import tempfile
@@ -39,9 +39,6 @@ from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
-    generate_tf, import_referenced_python_tfs, correct_indentation
-
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
@@ -49,13 +46,12 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesTransferFunctionException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
+from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf, \
+    import_referenced_python_tfs, correct_indentation, get_tf_name, get_all_neurons_as_dict
 
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
-
-from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_commons.bibi_functions import docstring_parameter
-
+from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen
 from distutils.dir_util import copy_tree  # pylint: disable=F0401,E0611
 
 logger = logging.getLogger(__name__)
@@ -63,7 +59,7 @@ logger = logging.getLogger(__name__)
 # pylint: disable=no-self-use
 
 
-class SimulationResetCollab(Resource):
+class SimulationResetStorage(Resource):
     """
     This resource handles the reset of a simulation, forwarding all the reset requests to the
     respective CLE instance.
@@ -72,7 +68,7 @@ class SimulationResetCollab(Resource):
     @swagger.model
     class ResetRequest(object):
         """
-        Represents a request for the API implemented by SimulationResetCollab
+        Represents a request for the API implemented by SimulationResetStorage
         """
 
         resource_fields = {'resetType': fields.Integer}
@@ -122,12 +118,12 @@ class SimulationResetCollab(Resource):
     @docstring_parameter(ErrorMessages.SERVER_ERROR_500,
                          ErrorMessages.SIMULATION_NOT_FOUND_404,
                          ErrorMessages.SIMULATION_PERMISSION_401)
-    def put(self, sim_id, context_id):
+    def put(self, sim_id, experiment_id):
         """
-        Calls the CLE for resetting a given simulation to the last saved state in the Collab.
+        Calls the CLE for resetting a given simulation to the last saved state in the storage.
 
         :param sim_id: The simulation ID.
-        :param context_id: The collab context ID
+        :param experiment_id: The experiment ID
 
         :> json resetType: the reset type the user wants to be performed, details about possible
                           values are given in
@@ -139,7 +135,6 @@ class SimulationResetCollab(Resource):
         :status 400: Invalid request, the JSON parameters are incorrect
         :status 200: The requested reset was performed successfully
         """
-
         sim = _get_simulation_or_abort(sim_id)
 
         if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
@@ -147,26 +142,28 @@ class SimulationResetCollab(Resource):
 
         body = request.get_json(force=True)
 
-        for par in SimulationResetCollab.ResetRequest.required:
+        for par in SimulationResetStorage.ResetRequest.required:
             if par not in body:
-                raise NRPServicesClientErrorException('Missing parameter %s' % (par, ))
+                raise NRPServicesClientErrorException(
+                    'Missing parameter %s' % (par, ))
 
         for par in body:
-            if par not in SimulationResetCollab.ResetRequest.resource_fields:
-                raise NRPServicesClientErrorException('Invalid parameter %s' % (par, ))
+            if par not in SimulationResetStorage.ResetRequest.resource_fields:
+                raise NRPServicesClientErrorException(
+                    'Invalid parameter %s' % (par, ))
 
         reset_type = body.get('resetType')
 
-        world_sdf, brain_file, populations = SimulationResetCollab\
-            ._compute_payload(reset_type, context_id)
+        world_sdf, brain_file, populations = SimulationResetStorage\
+            ._compute_payload(reset_type, experiment_id)
         try:
             rsr = srv.ResetSimulationRequest
             if reset_type == rsr.RESET_FULL:
-                SimulationResetCollab.resetFromCollabAll(sim)
+                SimulationResetStorage.resetFromStorageAll(sim, experiment_id)
                 sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
                               populations=populations)
             elif reset_type == rsr.RESET_BRAIN:
-                SimulationResetCollab.resetBrain(sim)
+                SimulationResetStorage.resetBrain(sim, experiment_id)
             else:
                 sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
                               populations=populations)
@@ -177,19 +174,24 @@ class SimulationResetCollab(Resource):
         return {}, 200
 
     @staticmethod
-    def resetFromCollabAll(simulation):
+    def resetFromStorageAll(simulation, experiment_id):
         """
         Reset states machines and transfer functions
+
+        :param: the simulation id
+        :param: the experiment id
         """
 
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import \
-            NeuroroboticsCollabClient
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
 
-        client = NeuroroboticsCollabClient(
-            UserAuthentication.get_header_token(request), simulation.context_id)
+        client = StorageClient()
 
-        collab_paths = client.clone_experiment_template_from_collab()
-        cloned_base_path = os.path.dirname(collab_paths['experiment_conf'])
+        _, experiment_file_paths = client.clone_all_experiment_files(
+            UserAuthentication.get_header_token(request),
+            experiment_id, new_folder=True)
+        cloned_base_path = os.path.dirname(
+            experiment_file_paths['experiment_conf'])
 
         current_experiment_path = simulation.lifecycle.experiment_path
         current_base_path = os.path.dirname(current_experiment_path)
@@ -200,23 +202,25 @@ class SimulationResetCollab(Resource):
 
         exp_conf, bibi_conf = get_experiment_data(current_experiment_path)
 
-        SimulationResetCollab.resetBrain(simulation)
+        SimulationResetStorage.resetBrain(simulation, experiment_id)
 
-        SimulationResetCollab.resetTransferFunctions(simulation,
-                                                     bibi_conf,
-                                                     current_base_path)
-        SimulationResetCollab.resetStateMachines(simulation, exp_conf, current_base_path)
+        SimulationResetStorage.resetTransferFunctions(simulation,
+                                                      bibi_conf,
+                                                      current_base_path)
+        SimulationResetStorage.resetStateMachines(
+            simulation, exp_conf, current_base_path)
 
     @staticmethod
-    def resetBrain(simulation):
+    def resetBrain(simulation, experiment_id):
         """
         Reset brain
 
         :param simulation: simulation object
+        :param experiment_id: the related experiment id
         """
-
         brain_path, _, neurons_config = \
-            SimulationResetCollab._get_brain_info_from_collab(simulation.context_id)
+            SimulationResetStorage._get_brain_info_from_storage(
+                experiment_id)
 
         # Convert the populations to a JSON dictionary
         for (name, s) in neurons_config.iteritems():
@@ -281,6 +285,9 @@ class SimulationResetCollab(Resource):
         :param bibi_conf: BIBI conf
         :param base_path: base path of the experiment
         """
+        old_tfs = simulation.cle.get_simulation_transfer_functions()
+        for tf in old_tfs:
+            simulation.cle.delete_simulation_transfer_function(get_tf_name(tf))
 
         import_referenced_python_tfs(bibi_conf, base_path)
 
@@ -302,53 +309,74 @@ class SimulationResetCollab(Resource):
                 )
 
     @staticmethod
-    def _compute_payload(reset_type, context_id):
+    def _compute_payload(reset_type, experiment_id):
         """
         Compute the payload corresponding to a certain reset type
 
         :param reset_type:
-        :param context_id: the collab context_id needed by RESET_WORLD
+        :param experiment_id: the experiment needed by RESET_WORLD
         :return: the payload for the reset request: a tuple of (world_sdf, brain_path, populations)
         """
 
         rsr = srv.ResetSimulationRequest
 
         if reset_type == rsr.RESET_WORLD:
-            return SimulationResetCollab._get_sdf_world_from_collab(context_id), None, None
+            return SimulationResetStorage._get_sdf_world_from_storage(experiment_id), None, None
         elif reset_type == rsr.RESET_BRAIN:
-            brain, populations, _ = SimulationResetCollab._get_brain_info_from_collab(context_id)
+            brain, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
+                experiment_id)
             return None, brain, populations
         else:
             return None, None, None
 
     @staticmethod
-    def _get_brain_info_from_collab(context_id):
+    def _get_brain_info_from_storage(experiment_id):
         """
-        Gathers from the collab the brain script and the populations by getting the BIBI
+        Gathers from the storage the brain script and the populations by getting the BIBI
         configuration file.
 
-        :param context_id: the UUID of the collab in which to look for the brain information
+        :param experiment_id: the id of the experiment in which to look for the brain information
         :return: A tuple with the path to the brain file and a list of populations
         """
 
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-            import NeuroroboticsCollabClient
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
 
-        header_token = UserAuthentication.get_header_token(request)
-        client = NeuroroboticsCollabClient(header_token, context_id)
+        client = StorageClient()
 
-        brain_dst_path = client.clone_file_from_collab(
-            NeuroroboticsCollabClient.BRAIN_PYNN_MIMETYPE)[0]
+        experiment_file = client.get_file(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            'experiment_configuration.exc',
+            byname=True)
 
-        bibi = client.clone_bibi_file_from_collab_context()[0]
-        neurons_config = get_all_neurons_as_dict(bibi.brainModel.populations)
+        bibi_filename = exp_conf_api_gen.CreateFromDocument(
+            experiment_file).bibiConf.src
+
+        # find the brain filename from the bibi
+        bibi_file = client.get_file(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            bibi_filename,
+            byname=True
+        )
+        bibi_file_obj = bibi_api_gen.CreateFromDocument(bibi_file)
+        brain_filename = os.path.split(bibi_file_obj.brainModel.file)[-1]
+
+        brain_file_path = client.clone_file(
+            brain_filename,
+            UserAuthentication.get_header_token(request),
+            experiment_id
+        )
+
+        neurons_config = get_all_neurons_as_dict(
+            bibi_file_obj.brainModel.populations)
 
         neurons_config_clean = [
-            SimulationResetCollab._get_experiment_population(name, v)
+            SimulationResetStorage._get_experiment_population(name, v)
             for (name, v) in neurons_config.iteritems()
         ]
-
-        return brain_dst_path, neurons_config_clean, neurons_config
+        return brain_file_path, neurons_config_clean, neurons_config
 
     @staticmethod
     def _get_experiment_population(name, value):
@@ -369,25 +397,34 @@ class SimulationResetCollab(Resource):
                                                 stop=0, step=0)
 
     @staticmethod
-    def _get_sdf_world_from_collab(context_id):
+    def _get_sdf_world_from_storage(experiment_id):
         """
-        Download from the collab an sdf world file as a string.
-        The file belongs to the collab identified by context_id
+        Download from the storage an sdf world file as a string.
+        The file belongs to the experiment identified by experiment_id
 
-        :param context_id: the UUID of the collab in which to look for the world sdf
-        :return: The content of the world sdf file as a string
+        :param experiment_id: the ID of the experiment in which to look for the world sdf
+        :return: The content of the world sdf file
         """
 
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module.
-        from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient \
-            import NeuroroboticsCollabClient
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import StorageClient
 
-        header_token = UserAuthentication.get_header_token(request)
+        client = StorageClient()
 
-        client = NeuroroboticsCollabClient(header_token, context_id)
+        # find the sdf filename from the .exc
+        experiment_file = client.get_file(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            'experiment_configuration.exc',
+            byname=True)
 
-        file_path_world_sdf = client.clone_file_from_collab(
-            NeuroroboticsCollabClient.SDF_WORLD_MIMETYPE)[0]
-        with open(file_path_world_sdf) as f:
-            return f.read()
+        world_file_name = exp_conf_api_gen.CreateFromDocument(
+            experiment_file).environmentModel.src
+
+        return client.get_file(
+            UserAuthentication.get_header_token(request),
+            experiment_id,
+            world_file_name,
+            byname=True)

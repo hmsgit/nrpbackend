@@ -100,12 +100,14 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                                         experiment.experimentEvaluation.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
-        self.simulation.state_machine_manager.add_all(state_machine_paths, self.simulation.sim_id)
+        self.simulation.state_machine_manager.add_all(
+            state_machine_paths, self.simulation.sim_id)
         self.simulation.state_machine_manager.initialize_all()
         logger.info("Requesting simulation resources")
 
         if environment_path is None or environment_path.strip() == '':
-            environment_path = os.path.join(self.models_path, str(experiment.environmentModel.src))
+            environment_path = os.path.join(
+                self.models_path, str(experiment.environmentModel.src))
 
         return experiment, environment_path
 
@@ -117,24 +119,29 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         simulation = self.simulation
         try:
-            using_collab_storage = simulation.context_id is not None
-            if using_collab_storage:
-                # TODO: fix dependencies so these import are not necessary anymore
+            using_storage = simulation.private is not None
+            if using_storage:
+                # TODO: fix dependencies so these import are not necessary
+                # anymore
                 from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-                from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import \
-                    NeuroroboticsCollabClient
-                client = NeuroroboticsCollabClient(
-                    UserAuthentication.get_header_token(request), simulation.context_id)
-                collab_paths = client.clone_experiment_template_from_collab()
-                self.__experiment_path = collab_paths['experiment_conf']
-                self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
-                environment_path = collab_paths['environment_conf']
+                from hbp_nrp_backend.storage_client_api.StorageClient import \
+                    StorageClient
+
+                client = StorageClient()
+                clone_folder, experiment_paths = client.clone_all_experiment_files(
+                    UserAuthentication.get_header_token(request),
+                    simulation.experiment_id)
+                self.__experiment_path = experiment_paths['experiment_conf']
+                self.__simulation_root_folder = clone_folder
+
+                environment_path = experiment_paths['environment_conf']
             else:
                 self.__experiment_path = os.path.join(
                     self.__experiment_path, simulation.experiment_conf
                 )
                 logger.info(self.__experiment_path)
-                self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
+                self.__simulation_root_folder = os.path.dirname(
+                    self.__experiment_path)
                 environment_path = simulation.environment_conf
             experiment, environment_path = \
                 self._parse_exp_and_initialize_paths(self.__experiment_path,
@@ -148,7 +155,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             simulation_factory_client.create_new_simulation(
                 environment_path, self.__experiment_path,
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
-                simulation.sim_id, str(simulation.kill_datetime), simulation.playback_path
+                simulation.sim_id, str(
+                    simulation.kill_datetime), simulation.playback_path
             )
             if not simulation.playback_path:
                 simulation.cle = ROSCLEClient(simulation.sim_id)
@@ -193,17 +201,19 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param state_change: The state change that lead to releasing simulation resources
         """
         if self.simulation.cle is not None:
-            self.simulation.cle.stop_communication("Simulation server released")
-        logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (sm.sm_id, str(sm.result))
-                    for sm in self.simulation.state_machines))
+            self.simulation.cle.stop_communication(
+                "Simulation server released")
+        logger.info("State machine outcomes: %s", ", ".join("%s: %s" % (
+            sm.sm_id, str(sm.result)) for sm in self.simulation.state_machines))
 
         self.simulation.state_machine_manager.shutdown()
         self.simulation.kill_datetime = None
 
-        using_collab_storage = self.simulation.context_id is not None
+        using_storage = self.simulation.experiment_id is not None
 
-        if using_collab_storage:
-            path_to_cloned_configuration_folder = os.path.split(self.__experiment_path)[0]
+        if using_storage:
+            path_to_cloned_configuration_folder = os.path.split(
+                self.__experiment_path)[0]
             if tempfile.gettempdir() in path_to_cloned_configuration_folder:
                 logger.debug(
                     "removing the temporary configuration folder %s",

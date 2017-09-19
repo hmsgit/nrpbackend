@@ -63,6 +63,10 @@ class TestConfig(Config):
         'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
     }
 
+    LOCAL_STORAGE_URI = {
+        'storage_uri': 'http://localhost:8000'
+    }
+
 
 class DeploymentConfig(Config):
     """
@@ -76,6 +80,10 @@ class DeploymentConfig(Config):
         'collab_server': 'https://services.humanbrainproject.eu/collab/v0',
         'oidc_server': 'https://services.humanbrainproject.eu/oidc/',
         'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
+    }
+
+    LOCAL_STORAGE_URI = {
+        'storage_uri': 'http://localhost:8000'
     }
 
 
@@ -97,6 +105,10 @@ class LocalConfig(Config):
         'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
     }
 
+    LOCAL_STORAGE_URI = {
+        'storage_uri': 'http://localhost:8000'
+    }
+
 
 class NoDBConfig(Config):
 
@@ -115,4 +127,8 @@ class NoDBConfig(Config):
         'collab_server': 'https://services.humanbrainproject.eu/collab/v0',
         'oidc_server': 'https://services.humanbrainproject.eu/oidc/',
         'document_server': 'https://services.humanbrainproject.eu/document/v0/api'
+    }
+
+    LOCAL_STORAGE_URI = {
+        'storage_uri': 'http://localhost:8000'
     }

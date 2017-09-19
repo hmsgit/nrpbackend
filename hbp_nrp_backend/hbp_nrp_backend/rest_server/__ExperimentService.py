@@ -32,8 +32,6 @@ __author__ = "Bernd Eckstein"
 import os
 import base64
 import logging
-import tempfile
-import shutil
 
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
@@ -140,18 +138,18 @@ class Experiment(Resource):
         return experiments, 200
 
 
-class CollabExperiment(Resource):
+class StorageExperiment(Resource):
     """
-    Implements the REST service for retrieving a collab experiment as a dictionary
+    Implements the REST service for retrieving a storage experiment
+    as a dictionary
     """
-
     @swagger.operation(
         notes="Gets dictionary of experiment",
         responseClass=ExperimentData.__name__,
         responseMessages=[
             {
                 "code": 500,
-                "message": "Error on server: collab experiment not found."
+                "message": "Error on server: storage experiment not found."
             },
             {
                 "code": 200,
@@ -159,16 +157,15 @@ class CollabExperiment(Resource):
             }
         ]
     )
-    def get(self, context_id):
+    def get(self, experiment_id):
         """
-        Gets dictionary of the experiment stored on the collab
-
+        Gets dictionary of the experiment stored on the storage
+        :param: experiment_id the id of the storage experiment
         :return: Dictionary with experiment
-
-        :status 500: Error on server: collab experiment file not found
+        :status 500: Error on server: storage experiment file not found
         :status 200: Success. The dictionary was returned
         """
-        return dict(data=get_collab_experiment(context_id)), 200
+        return dict(data=get_storage_experiment(experiment_id)), 200
 
 
 def get_experiments(empty_experiment=False):
@@ -179,9 +176,11 @@ def get_experiments(empty_experiment=False):
     """
     experiment_names = os.listdir(get_experiment_basepath())
     if empty_experiment:
-        filtered_experiment_names = [x for x in experiment_names if x.startswith('.')]
+        filtered_experiment_names = [
+            x for x in experiment_names if x.startswith('.')]
     else:
-        filtered_experiment_names = [x for x in experiment_names if not x.startswith('.')]
+        filtered_experiment_names = [
+            x for x in experiment_names if not x.startswith('.')]
     experiment_dict = {}
 
     for current_dir in filtered_experiment_names:
@@ -214,27 +213,29 @@ def parse_exp(experiment_conf):
                      "error: %s", experiment_conf, str(ve))
 
 
-def get_collab_experiment(context_id):
+def get_storage_experiment(experiment_id):
     """
-    Retrieve the collab experiment from the collab, and add to dictionary
-
-    :param context_id: The context id of the collab
+    Retrieve the storage experiment from the storage, and add to dictionary
+    :param experiment_id: The experiment id
     :return dictionary: with string: ID, string: ExDConfig File
     """
-    from hbp_nrp_backend.collab_interface.NeuroroboticsCollabClient import NeuroroboticsCollabClient
-    client = NeuroroboticsCollabClient(
-        UserAuthentication.get_header_token(request),
-        context_id
+    from hbp_nrp_backend.storage_client_api.StorageClient \
+        import StorageClient
+
+    client = StorageClient()
+
+    exp_xml_file_path = client.clone_file('experiment_configuration.exc',
+                                          UserAuthentication.get_header_token(
+                                              request),
+                                          experiment_id)
+    experiment = client.parse_and_check_file_is_valid(
+        exp_xml_file_path,
+        exp_conf_api_gen.CreateFromDocument,
+        exp_conf_api_gen.ExD_
     )
-    ex, exp_xml_file_path = client.clone_exp_file_from_collab_context()[:-1]
-    current_exp = _make_experiment(ex)
-    result = {os.path.splitext(os.path.split(exp_xml_file_path)[-1])[0]: current_exp}
-    if tempfile.gettempdir() in exp_xml_file_path:
-        LOG.debug(
-            "removing the temporary experiment xml file %s",
-            exp_xml_file_path
-        )
-        shutil.rmtree(os.path.dirname(exp_xml_file_path))
+    current_exp = _make_experiment(experiment)
+    result = {os.path.splitext(os.path.split(
+        exp_xml_file_path)[-1])[0]: current_exp}
     return result
 
 
@@ -281,7 +282,8 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
 
     current_exp = dict(name=_name,
                        description=_description,
-                       experimentConfiguration=os.path.join(experiment_dir, experiment_file),
+                       experimentConfiguration=os.path.join(
+                           experiment_dir, experiment_file),
                        timeout=_timeout,
                        maturity=_maturity,
                        cameraPose=_cameraPose,
@@ -335,7 +337,8 @@ def get_experiment_basepath():
 
     path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
     if path is None:
-        raise NRPServicesGeneralException(ErrorMessages.EXP_VARIABLE_ERROR, "Server Error", 500)
+        raise NRPServicesGeneralException(
+            ErrorMessages.EXP_VARIABLE_ERROR, "Server Error", 500)
 
     return path
 
@@ -347,7 +350,8 @@ def get_model_basepath():
 
     path = os.environ.get('NRP_MODELS_DIRECTORY')
     if path is None:
-        raise NRPServicesGeneralException(ErrorMessages.MOD_VARIABLE_ERROR, "Server Error", 500)
+        raise NRPServicesGeneralException(
+            ErrorMessages.MOD_VARIABLE_ERROR, "Server Error", 500)
 
     return path
 
