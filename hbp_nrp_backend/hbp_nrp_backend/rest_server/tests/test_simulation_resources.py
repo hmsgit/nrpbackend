@@ -60,6 +60,8 @@ class TestSimulationResources(RestTest):
 
         patch_SimulationControl.return_value = sim
 
+        sim.private = None
+
         resources = self.client.get('/simulation/0/resources')
 
         self.assertEqual(resources.status_code, 200)
@@ -103,6 +105,8 @@ class TestSimulationResources(RestTest):
         sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
+
+        sim.private = None
 
         resources = self.client.get('/simulation/0/resources')
 

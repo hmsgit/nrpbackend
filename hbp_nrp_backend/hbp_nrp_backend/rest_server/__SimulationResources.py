@@ -154,7 +154,7 @@ class SimulationResources(Resource):
         for conf in bibi_dom.configuration:
             resources.append({'file': conf.src, 'type': conf.type})
 
-        if simulation.experiment_id:
+        if simulation.private:
             for conf in resources:
                 conf['file'] = os.path.join('/config-from-cloned-folder', os.path.basename(
                     simulation.lifecycle.simulation_root_folder), os.path.basename(conf['file']))
