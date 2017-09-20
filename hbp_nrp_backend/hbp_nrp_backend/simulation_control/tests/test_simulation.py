@@ -117,6 +117,8 @@ class TestSimulation(unittest.TestCase):
 
         sm2_updated_code = self.__simulation.get_state_machine_code('SM2')
         self.assertEqual(another_valid_code, sm2_updated_code)
+        self.__simulation.state_machines[1].request_termination.assert_called_once_with()
+        self.__simulation.state_machines[1].wait_termination.assert_called_once_with()
 
         # The create method is mandatory in the state machine code
         self.__simulation.state_machines[0].initialize_sm = Mock(side_effect=AttributeError)

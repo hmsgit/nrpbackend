@@ -305,8 +305,10 @@ class Simulation(object):
 
         sm = self.get_state_machine(name)
         if sm is None:
-            sm = self.state_machine_manager.create_state_machine(
-                name, self.sim_id)
+            sm = self.state_machine_manager.create_state_machine(name, self.sim_id)
+        else:
+            sm.request_termination()
+            sm.wait_termination()
 
         sm.sm_path = file_path
 
