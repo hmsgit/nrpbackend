@@ -106,6 +106,8 @@ import hbp_nrp_backend.rest_server.__ErrorHandlers
 
 from hbp_nrp_backend import hbp_nrp_backend_config
 from hbp_nrp_backend.rest_server.__SimulationResources import SimulationResources
+from hbp_nrp_backend.rest_server.__ExperimentClone import \
+    ExperimentClone
 from hbp_nrp_backend.rest_server.__ExperimentBibiTransferFunctions import \
     ExperimentBibiTransferFunctions
 from hbp_nrp_backend.rest_server.__ExperimentBrainFile import ExperimentBrainFile
@@ -139,6 +141,7 @@ from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 
 # Register /experiment
 api.add_resource(Experiment, '/experiment')
+api.add_resource(ExperimentClone, '/experiment/clone')
 api.add_resource(StorageExperiment, '/experiment/<string:experiment_id>')
 api.add_resource(ExperimentBibiTransferFunctions,
                  '/experiment/<string:exp_id>/bibi-transfer-functions')

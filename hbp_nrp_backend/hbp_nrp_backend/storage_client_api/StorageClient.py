@@ -29,12 +29,12 @@ import os
 import logging
 import tempfile
 import requests
+import shutil
 from hbp_nrp_backend import hbp_nrp_backend_config
 from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
-from hbp_nrp_commons.generated import exp_conf_api_gen
-
+from hbp_nrp_commons.generated import exp_conf_api_gen, model_conf_api_gen, bibi_api_gen
 
 __author__ = "Manos Angelidis"
 logger = logging.getLogger(__name__)
@@ -98,13 +98,14 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def list_experiments(self, token):
+    def list_experiments(self, token, context_id):
         """
         Lists the experiments the user has access to depending on his token
         :param token: a valid token to be used for the request
         :return: an array of all the available to the user experiments
         """
-        headers = {'Authorization': 'Bearer ' + token}
+        headers = {'Authorization': 'Bearer ' +
+                   token, 'context-id': context_id}
         try:
             res = requests.get(self.__proxy_url +
                                '/storage/experiments', headers=headers)
@@ -142,7 +143,7 @@ class StorageClient(object):
                 if res.text == 'Experiment already exists':
                     logger.info(res.json())
                 else:
-                    return res.json()
+                    return res.json()['uuid']
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err
@@ -370,3 +371,280 @@ class StorageClient(object):
                     "File not valid"
                 )
         return file_obj
+
+    def create_unique_experiment_id(self, basename, suffix, experiments_names):
+        """
+        Creates a unique experiment_id which does not exist in the user's
+        experiments list. If an experiment with the same basename exists
+        a numerical suffix is appended. For example if there exist experiments
+        with name 'User Experiment_i' for i = 1 to n - 1, return 'User Experiment_n'.
+        Works also if a random experiment in the range i = 1 to n - 1 is deleted
+        Recursive functions
+        :param basename: The name of the experiment to create. I.e. 'Experiment'
+        :param suffix: A numerical value to append
+        :param experiments_names: The names of the experiments accessible to the user
+        :return: A unique experiment folder id
+        """
+        if (basename + '_' + str(suffix)) in experiments_names:
+            suffix += 1
+            return self.create_unique_experiment_id(basename, suffix, experiments_names)
+        else:
+            return (basename + '_' + str(suffix))
+
+    def clone_experiment_template_to_storage(self,
+                                             token,
+                                             exp_configuration,
+                                             paths=None,
+                                             context_id=None):
+        """
+        Takes an experiment template and clones it into the storage. This creates
+        a new experiment folder for the specific user
+        :param token: The token of the user
+        :param exp_configuration: The experiment configuration file of the template to clone
+        :return: The UUID of the created folder
+        """
+        list_experiments = self.list_experiments(token, context_id)
+        experiments_names_list = [exp['name'] for exp in list_experiments]
+        experiment_folder_uuid = self.create_experiment(
+            token, self.create_unique_experiment_id(
+                'Experiment', 0, experiments_names_list),
+            context_id)
+
+        with _FlattenedExperimentDirectory(exp_configuration, paths) as temporary_folder:
+            logger.debug(
+                "Copying the flattened experiment files to the storage")
+            for filename in os.listdir(temporary_folder):
+                filepath = os.path.join(temporary_folder, filename)
+                if '.png' in filepath:
+                    with open(filepath) as temp_image:
+                        self.create_or_update(token,
+                                              experiment_folder_uuid,
+                                              filename,
+                                              temp_image,
+                                              'application/octet-stream')
+                else:
+                    with open(filepath) as temp_file:
+                        self.create_or_update(token,
+                                              experiment_folder_uuid,
+                                              filename,
+                                              temp_file,
+                                              'text/plain')
+        return experiment_folder_uuid
+
+
+def get_model_basepath():
+    """
+    :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
+    """
+
+    path = os.environ.get('NRP_MODELS_DIRECTORY')
+    if path is None:
+        raise Exception("Server Error. NRP_MODELS_DIRECTORY not defined.")
+
+    return path
+
+
+class _FlattenedExperimentDirectory(object):
+    """
+    Helper context class. It takes all the files useful to describe an
+    experiment and puts them at the root of a temporary directory.
+    All the links in these files are updated.
+    """
+
+    def __init__(self, exp_configuration, models_paths):
+        """
+        Constructor. Does nothing more that saving the exp_configuration parameter.
+        :param exp_configuration: The experiment configuration file of the template to clone.
+        """
+        self.__exp_configuration = exp_configuration
+        self.__temp_directory = None
+        self.__models_paths = models_paths
+        # exp_configuration may look like:
+        # $NRP_EXPERIMENTS_DIRECTORY/braitenberg_husky/ExDBraitenbergHuskySBC.xml
+        # We extract: $NRP_EXPERIMENTS_DIRECTORY
+        self.__experiment_folder = os.path.dirname(exp_configuration)
+        self.__models_folder = get_model_basepath()
+
+    def __enter__(self):
+        """
+        Performs the flattening.
+        :return: The temporary directory where the flattened experiment is located.
+        """
+        self.__temp_directory = tempfile.mkdtemp()
+        logger.debug("Using temporary directory " +
+                     self.__temp_directory +
+                     " to flatten experiment template")
+
+        # Get the experiment configuration file as a DOM object
+        with open(self.__exp_configuration) as e:
+            experiment_dom = exp_conf_api_gen.CreateFromDocument(e.read())
+        # copy statemachines
+        if experiment_dom.experimentControl and experiment_dom.experimentControl.stateMachine:
+            for sm in experiment_dom.experimentControl.stateMachine:
+                sm_file = os.path.join(self.__experiment_folder, sm.src)
+                sm.src = os.path.basename(sm.src)
+                shutil.copyfile(sm_file, os.path.join(
+                    self.__temp_directory, sm.src))
+        # Get the experiment image and copy it into the flattened experiment
+        # directory
+        img_file = os.path.join(self.__experiment_folder,
+                                experiment_dom.thumbnail)
+        shutil.copyfile(img_file, os.path.join(
+            self.__temp_directory, os.path.basename(img_file)))
+        # Update the experiment thumbnail file with the new path
+        experiment_dom.thumbnail = os.path.basename(img_file)
+        # Get the SDF file path and copy it into the flattened experiment directory
+        # if we are creating a new experiment we have to change the path to the
+        # environment
+        if self.__models_paths is not None and self.__models_paths['envPath'] is not None:
+            sdf_file = \
+                self._parse_models_config_file(
+                    self.__models_paths['envPath'], 'environments')
+        else:
+            sdf_file = os.path.join(
+                self.__models_folder, experiment_dom.environmentModel.src)
+        shutil.copyfile(sdf_file, os.path.join(
+            self.__temp_directory, os.path.basename(sdf_file)))
+        # Update the experiment configuration file with the new paths
+        experiment_dom.environmentModel.src = os.path.basename(sdf_file)
+        # Get the BIBI file path and copy it into the flattened experiment
+        # directory
+        bibi_configuration_file = os.path.join(
+            self.__experiment_folder, experiment_dom.bibiConf.src
+        )
+        # Update the BIBI configuration file with the new paths
+        experiment_dom.bibiConf.src = 'bibi_configuration.bibi'
+        flattened_exp_configuration_file = \
+            os.path.join(
+                self.__temp_directory,
+                'experiment_configuration.exc'
+            )
+        # save experiment configuration file
+        with open(flattened_exp_configuration_file, "w") as f:
+            f.write(experiment_dom.toDOM().toprettyxml())
+
+        # copy experiment configuration file
+        for conf in experiment_dom.configuration:
+            self.__copy_config_file(conf.src)
+
+        # flatten bibi configuration file and save
+        self.__flatten_bibi_configuration(bibi_configuration_file)
+        return self.__temp_directory
+
+    def __copy_config_file(self, config_file):
+        """
+        Copy the provided config file to the flattened temporary directory.
+        """
+        config_filepath = os.path.join(self.__experiment_folder, config_file)
+        config_filename = os.path.basename(config_filepath)
+        # we copy the config file at the root of the directory
+        shutil.copyfile(config_filepath, os.path.join(
+            self.__temp_directory, config_filename))
+
+    def __flatten_bibi_configuration(self, bibi_configuration_file):
+        """
+        Flatten the bibi configuration with respect to transfer function
+        external references:
+        Copy all external dependencies (tf python scripts) for transfer functions in
+        a temporary 'flattened' folder
+        Update the file paths of the corresponding transfer functions
+        in the bibi configuration file
+        Copy the 'flattened' bibi configuration file to the above folder
+        :param bibi_configuration_file: path to the bibi configuration file
+        of the template experiment
+        """
+        # Get the bibi configuration file as a DOM object
+        with open(bibi_configuration_file) as b:
+            bibi_configuration_dom = bibi_api_gen.CreateFromDocument(b.read())
+
+        # Get all config file
+        for conf in bibi_configuration_dom.configuration:
+            logger.debug("Copying config file {} to storage.".format(conf.src))
+            self.__copy_config_file(conf.src)
+
+        # Get the robot file path and copy it into the flattened experiment
+        # directory
+        if self.__models_paths is not None and self.__models_paths['robotPath'] is not None:
+            robot_sdf_file = \
+                self._parse_models_config_file(
+                    self.__models_paths['robotPath'], 'robots')
+        else:
+            robot_sdf_file = os.path.join(
+                self.__models_folder, bibi_configuration_dom.bodyModel)
+        robot_sdf_file_name = os.path.basename(robot_sdf_file)
+        shutil.copyfile(robot_sdf_file, os.path.join(
+            self.__temp_directory, robot_sdf_file_name))
+        bibi_configuration_dom.bodyModel = bibi_api_gen.SDFFilename(
+            robot_sdf_file_name)
+        # Get the PyNN file path and copy it into the flattened experiment
+        # directory
+        if self.__models_paths is not None and self.__models_paths['brainPath'] is not None:
+            brain_file = \
+                os.path.join(self.__models_folder, 'brains',
+                             self.__models_paths['brainPath'])
+        else:
+            brain_file = os.path.join(
+                self.__models_folder, bibi_configuration_dom.brainModel.file)
+        brain_file_name = os.path.basename(brain_file)
+        shutil.copyfile(brain_file, os.path.join(
+            self.__temp_directory, brain_file_name))
+        bibi_configuration_dom.brainModel.file = bibi_api_gen.PythonFilename(
+            brain_file_name)
+
+        # Copy 'flattened' dependencies to temporary folder
+        # and update file paths of TF python scripts
+        for tf in bibi_configuration_dom.transferFunction:
+            if hasattr(tf, "src") and tf.src:
+                tf_file = os.path.join(self.__experiment_folder, tf.src)
+                tf.src = os.path.basename(tf.src)
+                shutil.copyfile(
+                    tf_file,
+                    os.path.join(self.__temp_directory, tf.src)
+                )
+        flattened_bibi_configuration_file = os.path.join(
+            self.__temp_directory,
+            'bibi_configuration.bibi'
+        )
+        with open(flattened_bibi_configuration_file, "w") as b:
+            b.write(bibi_configuration_dom.toDOM().toprettyxml())
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Cleanup the temporary folder containing the flattened experiment
+        :param exc_type: Exception type if any (None otherwise).
+        :param exc_value: Exception value if any (None otherwise).
+        :param traceback: Exception traceback if any (None otherwise).
+        """
+        if not (exc_type or exc_value or traceback):
+            logger.debug("Clean up temporary directory " +
+                         self.__temp_directory)
+            shutil.rmtree(self.__temp_directory)
+
+    def _parse_models_config_file(self, model_config_path, model_type):
+        """
+        Parse the model.config files from the paths we receive from
+        the frontend. These files contain the path to the models
+        (environment and robot)
+        :param model_config_path: The path to the model we are getting
+        from the frontend. Looks like: /lauron_model/model.sdf
+        :param model_type: Differentiate between environment, robot
+        :return model_sdf_file: The absolute path to the model
+        """
+        # Looks like : $NRR/Models/robots/lauron_model/model.config
+        model_config_file = \
+            os.path.join(self.__models_folder, model_type, model_config_path)
+        with open(model_config_file) as model_config:
+            model_config_dom = \
+                model_conf_api_gen.CreateFromDocument(model_config.read())
+            # we read the relative path to the sdf
+            model_sdf_value = model_config_dom.sdf.value()
+            # we extract the name of the model folder, i.e. lauron_model
+            model_folder_name = os.path.split(model_config_path)[0]
+            # the final path looks like
+            # $NRR/Models/robots/lauron_model/model.sdf
+            model_sdf_file = \
+                os.path.join(self.__models_folder,
+                             model_type,
+                             model_folder_name,
+                             model_sdf_value)
+            return model_sdf_file
