@@ -479,13 +479,3 @@ def _get_state_machine_files(exp_id, which):
                 ret[sm.id] = os.path.join(exp_dir, sm.src)
 
     return ret
-
-
-def get_username():
-    """
-    Gets the name of the current user
-
-    :return: string: username
-    """
-    user_name = UserAuthentication.get_x_user_name_header(request)
-    return user_name
