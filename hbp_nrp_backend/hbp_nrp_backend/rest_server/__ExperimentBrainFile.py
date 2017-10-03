@@ -60,16 +60,19 @@ class ExperimentBrainFile(Resource):
 
         if isinstance(brain_populations, list):
             for value in brain_populations:
-                population_node = None
-                if isinstance(value, dict):
+                if 'list' in value:
+                    population_node = bibi_api_gen.List()
+                    for index in value['list']:
+                        population_node.append(index)
+                else:
                     population_node = bibi_api_gen.Range()
                     population_node.from_ = value['from']
                     population_node.to = value['to']
                     population_node.step = value.get('step')
                     if population_node.step <= 0:
                         population_node.step = 1
-                    population_node.population = value['name']
-                    bibi.brainModel.populations.append(population_node)
+                population_node.population = value['name']
+                bibi.brainModel.populations.append(population_node)
         else:
             for key, value in brain_populations.iteritems():
                 population_node = None
