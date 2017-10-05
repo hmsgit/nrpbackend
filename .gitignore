@@ -24,3 +24,8 @@ __generated_experiment*
 user_makefile
 config.json.sample
 hbp-flask-restful-swagger-master/flask_restful_swagger/static/config.json*
+hbp_nrp_commons/hbp_nrp_commons/generated/bibi_api_gen.py
+hbp_nrp_commons/hbp_nrp_commons/generated/model_conf_api_gen.py
+hbp_nrp_commons/hbp_nrp_commons/generated/exp_conf_api_gen.py
+hbp_nrp_commons/hbp_nrp_commons/generated/_sc.py
+
