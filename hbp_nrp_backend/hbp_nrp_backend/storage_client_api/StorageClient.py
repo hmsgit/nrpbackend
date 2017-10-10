@@ -98,7 +98,7 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def list_experiments(self, token, context_id):
+    def list_experiments(self, token, context_id, get_all=False):
         """
         Lists the experiments the user has access to depending on his token
         :param token: a valid token to be used for the request
@@ -106,9 +106,12 @@ class StorageClient(object):
         """
         headers = {'Authorization': 'Bearer ' +
                    token, 'context-id': context_id}
+
         try:
-            res = requests.get(self.__proxy_url +
-                               '/storage/experiments', headers=headers)
+            url = self.__proxy_url + '/storage/experiments'
+            if get_all:
+                url += '?all=true'
+            res = requests.get(url, headers=headers)
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
@@ -403,7 +406,9 @@ class StorageClient(object):
         :param exp_configuration: The experiment configuration file of the template to clone
         :return: The UUID of the created folder
         """
-        list_experiments = self.list_experiments(token, context_id)
+
+        list_experiments = self.list_experiments(
+            token, context_id, get_all=True)
         experiments_names_list = [exp['name'] for exp in list_experiments]
         experiment_folder_uuid = self.create_experiment(
             token, self.create_unique_experiment_id(
