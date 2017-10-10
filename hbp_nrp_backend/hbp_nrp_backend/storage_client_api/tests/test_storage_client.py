@@ -538,6 +538,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                          'csv_joint_state_monitor.py',
                          'ExDXMLExample.3ds',
                          'ExDXMLExample.png',
+                         'robot_description.launch',
                          'virtual_room.sdf',
                          'csv_robot_position.py']
 

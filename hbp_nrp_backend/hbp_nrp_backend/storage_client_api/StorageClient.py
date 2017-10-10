@@ -532,6 +532,10 @@ class _FlattenedExperimentDirectory(object):
         for conf in experiment_dom.configuration:
             self.__copy_config_file(conf.src)
 
+        # copy launch file
+        if experiment_dom.rosLaunch:
+            self.__copy_config_file(experiment_dom.rosLaunch.src)
+
         # flatten bibi configuration file and save
         self.__flatten_bibi_configuration(bibi_configuration_file)
         return self.__temp_directory
