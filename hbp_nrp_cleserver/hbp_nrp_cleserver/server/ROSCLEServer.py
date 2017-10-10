@@ -435,6 +435,9 @@ class ROSCLEServer(object):
             self.__set_brain(previous_valid_brain[3], previous_valid_brain[0],
                              previous_valid_brain[1], previous_valid_brain[2],
                              SetBrainRequest.ASK_RENAME_POPULATION)
+        else:
+          self.__notificator.publish_state(json.dumps({"action": "setbrain"}))
+
         return return_value
 
     def __set_brain(self, brain_populations, brain_type, brain_data, data_type, change_population):
