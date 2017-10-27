@@ -352,10 +352,33 @@ class CLELauncher(object):
 
         self.__notify("Starting Gazebo web client")
         os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
+
+        self.__set_env_for_gzbridge()
         # We do not know here in which state the previous user did let us
         # gzweb.
         self.gzweb = LocalGazeboBridgeInstance()
         self.gzweb.restart()
+
+    def __set_env_for_gzbridge(self):
+        def get_gzbridge_setting(name, default):
+            """
+                Obtain parameter from pyxb bindings of experiment schema.
+                If something goes wrong return default value. The default
+                also defines the type that the parameter should have.
+            :param name: Name of the parameter
+            :param default_: default value
+            :return: a string
+            """
+            try:
+                s = self.__exd_conf.gzbridgesettings
+                val = getattr(s, name)
+                val = type(default)(val)
+            except Exception:
+                val = default
+            return repr(val)
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] = get_gzbridge_setting('pose_update_delta_translation', 0.001)
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting('pose_update_delta_rotation', 0.001)
+        os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting('pose_update_early_threshold', 0.02)
 
     def __load_environment(self, world_file):
         """
