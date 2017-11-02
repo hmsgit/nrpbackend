@@ -143,13 +143,6 @@ class TestSimulationStateMachines(RestTest):
         self.assertRaises(NRPServicesWrongUserException)
         self.assertEqual(response.status_code, 401)
 
-    def test_simulation_state_machines_put_wrong_state(self):
-        simulation = _get_simulation_or_abort(0)
-        simulation.state = "bad_state"
-
-        response = self.client.put('/simulation/0/state-machines/Control1', data=SM)
-        self.assertEqual(response.status_code, 403)
-
     def test_simulation_state_machines_put_attribute_error(self):
         simulation = _get_simulation_or_abort(0)
         simulation.set_state_machine_code(self.sm_instance_name, SM)

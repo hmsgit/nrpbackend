@@ -105,13 +105,6 @@ class TestSimulation(unittest.TestCase):
         another_valid_code = "import smach_ros\n" +\
             "from mock import Mock\n" +\
             "sm = Mock()"
-        # The simulation state needs to be 'initialized'
-        self.assertRaises(
-            AssertionError, self.__simulation.set_state_machine_code,
-            'SM1',
-            another_valid_code
-        )
-
         self.__simulation.state = 'paused'
         response = self.__simulation.set_state_machine_code('SM2', another_valid_code)
 

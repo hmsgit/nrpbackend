@@ -456,41 +456,23 @@ class ROSCLEServer(object):
                                   1 (permission granted) replace old name with a new one;
                                   2 proceed with no replace action
         """
-        # pylint: disable-msg=R0914
         try:
             return_value = ["", 0, 0, 0]
-
-            new_populations = [str(item) for item in json.loads(brain_populations).keys()]
-            old_populations = [str(item) for item in tf_framework.get_brain_populations().keys()]
-
-            old_changed = find_changed_strings(old_populations, new_populations)
-            new_added = find_changed_strings(new_populations, old_populations)
-
-            if len(new_added) == len(old_changed) >= 1:
-                transfer_functions = tf_framework.get_transfer_functions()
-                check_var_name_re = re.compile(r'^([a-zA-Z_]+\w*)$')
-                for item in new_added:
-                    if not check_var_name_re.match(item):
-                        return ["Provided name \"" + item + "\" is not a valid population name",
-                                0, 0, 0]
-                r = self.change_transfer_functions(change_population, old_changed, new_added,
-                                                   transfer_functions)
-                if r is not None:
-                    return r
-            if self.__lifecycle.state != 'paused':
-                # Member added by transitions library
-                # pylint: disable=no-member
-                self.__lifecycle.paused()
+            err = self.__check_set_brain(data_type, brain_populations, change_population)
+            if err is not None:
+                return err
+            running = self.__cle.running
+            if running:
+                self.__cle.stop()
             with NamedTemporaryFile(prefix='brain', suffix='.' + brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
                     if data_type == "text":
                         brain_file.write(brain_data)
-                    elif data_type == "base64":
-                        brain_file.write(base64.decodestring(brain_data))
                     else:
-                        tmp.delete = True
-                        return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
+                        brain_file.write(base64.decodestring(brain_data))
                 self.__cle.load_network_from_file(tmp.name, **json.loads(brain_populations))
+            if running:
+                self.__cle.start()
         except ValueError, e:
             logger.exception(e)
             return_value = ["Population format is invalid: " + str(e), 0, 0, 0]
@@ -505,6 +487,34 @@ class ROSCLEServer(object):
             return_value = ["Error changing neuronal network: " + str(e), 0, 0, 0]
 
         return return_value
+
+    def __check_set_brain(self, data_type, brain_populations, change_population):
+        """
+        Checks whether the given brain change request is valid
+        :param data_type: The data type
+        :param brain_populations: The brain populations
+        :param change_population: A flag indicating whether populations should be changed
+        :return: None in case everything is alright, otherwise an error tuple
+        """
+        if data_type != "text" and data_type != "base64":
+            return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
+
+        new_populations = [str(item) for item in json.loads(brain_populations).keys()]
+        old_populations = [str(item) for item in tf_framework.get_brain_populations().keys()]
+
+        old_changed = find_changed_strings(old_populations, new_populations)
+        new_added = find_changed_strings(new_populations, old_populations)
+
+        if len(new_added) == len(old_changed) >= 1:
+            transfer_functions = tf_framework.get_transfer_functions()
+            check_var_name_re = re.compile(r'^([a-zA-Z_]+\w*)$')
+            for item in new_added:
+                if not check_var_name_re.match(item):
+                    return ["Provided name \"" + item + "\" is not a valid population name",
+                            0, 0, 0]
+            return self.change_transfer_functions(change_population, old_changed, new_added,
+                                                  transfer_functions)
+        return None
 
     # pylint: disable=unused-argument
     @staticmethod
@@ -615,18 +625,23 @@ class ROSCLEServer(object):
 
         # Make sure CLE is stopped. If already stopped, these calls are harmless.
         # (Execution of updated code is asynchronous)
-        self.__cle.stop()
+        running = self.__cle.running
+        err = ""
+        if running:
+            self.__cle.stop()
         try:
             tf_framework.set_transfer_function(new_source, new_code, new_name)
         except TFLoadingException as e:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_ERROR, function_name=e.tf_name)
-            return e.message
+            err = e.message
         except Exception as e:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_CRITICAL, function_name=new_name)
-            return e.message
-        return ""
+            err = e.message
+        if running:
+            self.__cle.start()
+        return err
 
     @staticmethod
     def get_tf_name(source):
@@ -695,8 +710,13 @@ class ROSCLEServer(object):
         :param request: The mandatory rospy request parameter
         :return: True if the delete was successful, False if the transfer function does not exist.
         """
-        self.__cle.stop()
-        return tf_framework.delete_transfer_function(request.transfer_function_name)
+        running = self.__cle.running
+        if running:
+            self.__cle.stop()
+        ret = tf_framework.delete_transfer_function(request.transfer_function_name)
+        if running:
+            self.__cle.start()
+        return ret
 
     def publish_state_update(self):
         """

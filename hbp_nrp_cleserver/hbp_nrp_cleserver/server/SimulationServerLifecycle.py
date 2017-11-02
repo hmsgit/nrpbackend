@@ -55,11 +55,12 @@ class SimulationServerLifecycle(SimulationLifecycle):
     def __init__(self, sim_id, cle, server, except_hook=None):
         self.stopped = lambda: None
         super(SimulationServerLifecycle, self).__init__(TOPIC_LIFECYCLE(sim_id))
-        self.__start_thread = None
         self.__cle = cle
         self.__server = server
         self.__except_hook = except_hook or logger.exception
         self.__done_event = threading.Event()
+
+        cle.start_cb = self.__register_crash_handler
 
     @property
     def done_event(self):
@@ -69,20 +70,6 @@ class SimulationServerLifecycle(SimulationLifecycle):
         :return: An event that will be set as soon as the lifecycle is done
         """
         return self.__done_event
-
-    def __simulation(self):
-        """
-        Runs the Simulation and registers any exceptions
-        """
-        try:
-            self.__cle.start()
-        except TFException, e:
-            self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, e.error_type,
-                                        str(e), function_name=e.tf_name)
-        except Exception, e:
-            self.__server.publish_error("CLE", "General Error", str(e),
-                                        severity=CLEError.SEVERITY_CRITICAL)
-            self.failed()
 
     def shutdown(self, shutdown_event):
         """
@@ -108,9 +95,30 @@ class SimulationServerLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to start
         """
-        self.__start_thread = threading.Thread(target=self.__simulation)
-        self.__start_thread.setDaemon(True)
-        self.__start_thread.start()
+        self.__cle.start()
+
+    def __register_crash_handler(self, future):
+        """
+        Adds a callback to the given start CLE future
+
+        :param future: The start future
+        """
+        future.add_done_callback(self.__handle_crash)
+
+    def __handle_crash(self, future):
+        """
+        Gets called when the start future is finished to see why
+
+        :param future: The future that represented the start call
+        """
+        exc = future.exception()
+        if isinstance(exc, TFException):
+            self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, exc.error_type,
+                                        str(exc), function_name=exc.tf_name)
+        elif exc is not None:
+            self.__server.publish_error("CLE", "General Error", str(exc),
+                                        severity=CLEError.SEVERITY_CRITICAL)
+            self.failed()
 
     def stop(self, state_change):
         """
@@ -123,13 +131,6 @@ class SimulationServerLifecycle(SimulationLifecycle):
         # pylint: disable=broad-except
         except Exception as e:
             self.__except_hook(e)
-        if self.__start_thread is not None:
-            self.__start_thread.join(60)
-            if self.__start_thread.isAlive():
-                logger.error(
-                    "Error while stopping the simulation, "
-                    "impossible to join the simulation thread"
-                )
 
     def fail(self, state_change):
         """

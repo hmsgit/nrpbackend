@@ -200,7 +200,6 @@ class SimulationStateMachine(Resource):
         ]
     )
     @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
-                         ErrorMessages.OPERATION_INVALID_IN_CURRENT_STATE_403,
                          ErrorMessages.SIMULATION_PERMISSION_401,
                          ErrorMessages.SOURCE_CODE_ERROR_400)
     def put(self, sim_id, state_machine_name):
@@ -215,9 +214,8 @@ class SimulationStateMachine(Resource):
         :< json string data: The source code of the state machine
 
         :status 404: {0}
-        :status 403: {1}
-        :status 401: {2}
-        :status 400: {3}
+        :status 401: {1}
+        :status 400: {2}
         :status 200: Success. The code was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
@@ -226,7 +224,6 @@ class SimulationStateMachine(Resource):
             raise NRPServicesWrongUserException()
 
         state_machine_source = request.data
-        pause_simulation_or_raise(simulation)
         try:
             simulation.set_state_machine_code(
                 state_machine_name,
@@ -319,7 +316,6 @@ class SimulationStateMachine(Resource):
             raise NRPServicesWrongUserException()
 
         failure_message = "State machine destruction failed: "
-        response_message = None
         try:
             ok, response_message = simulation.delete_state_machine(state_machine_name)
             if ok:
@@ -331,5 +327,4 @@ class SimulationStateMachine(Resource):
                 " {0}: {1}".format(e.__class__.__name__, e.message),
                 "State machine error",
             ), None, info[2]
-
         raise NRPServicesStateMachineException(failure_message + "\n" + response_message, 404)

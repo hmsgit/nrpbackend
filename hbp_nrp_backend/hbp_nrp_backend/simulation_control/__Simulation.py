@@ -294,8 +294,6 @@ class Simulation(object):
         :type    python_code: string
         :raise:  NameError, SyntaxError, AttributeError, ...
         """
-        assert self.state == 'paused'
-
         with NamedTemporaryFile(prefix='sm_', suffix='.py', delete=False) as tmp:
             with tmp.file as sm_file:
                 file_path = tmp.name

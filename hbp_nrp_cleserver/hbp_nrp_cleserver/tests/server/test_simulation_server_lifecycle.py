@@ -29,6 +29,7 @@ from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerL
 import logging
 from testfixtures import log_capture
 import unittest
+from concurrent.futures import Future
 from mock import patch, MagicMock, Mock
 from hbp_nrp_cle.tf_framework import TFException
 
@@ -40,10 +41,6 @@ class TestSimulationServerLifecycle(unittest.TestCase):
     def setUp(self):
         self.mock_cle = MagicMock()
         self.mock_server = MagicMock()
-        self.mock_double_timer_instance = MagicMock()
-        self.mock_double_timer = \
-            patch('hbp_nrp_cleserver.server.SimulationServerLifecycle.DoubleTimer',
-            MagicMock(return_value=self.mock_double_timer_instance))
 
         self.mock_event_instance = MagicMock()
         self.mock_thread_instance = MagicMock()
@@ -51,12 +48,11 @@ class TestSimulationServerLifecycle(unittest.TestCase):
             patch('hbp_nrp_cleserver.server.SimulationServerLifecycle.threading').start()
         self.mock_threading.Event.return_value = self.mock_event_instance
         self.mock_threading.Thread.return_value = self.mock_thread_instance
+        self.mock_except_hook = Mock()
 
-        self.ssl = SimulationServerLifecycle(0, self.mock_cle, self.mock_server)
+        self.ssl = SimulationServerLifecycle(0, self.mock_cle, self.mock_server, self.mock_except_hook)
 
     def test_init(self):
-        self.mock_double_timer_instance.start.assert_called()
-        self.mock_double_timer_instance.enable_second_callback.assert_called()
         self.mock_threading.Event.assert_called()
 
     def test_initialize(self):
@@ -70,47 +66,33 @@ class TestSimulationServerLifecycle(unittest.TestCase):
         self.mock_cle.initialize.assert_called()
 
     def test_start(self):
-        # Checking if starting a simulation creates a new thread
         self.ssl.start('not relevant')
-        self.mock_threading.Thread.assert_called_with(
-            target=self.ssl._SimulationServerLifecycle__simulation)
-        self.mock_thread_instance.setDaemon.assert_called_with(True)
-        self.mock_thread_instance.start.assert_called()
-
-        self.mock_threading.Thread.call_args_list[0][1]['target']()
         self.mock_cle.start.assert_called()
 
-        self.mock_cle.start.side_effect = TFException(None, None, None)
-        self.mock_threading.Thread.call_args_list[0][1]['target']()
+        crash_cb = self.mock_cle.start_cb
+        f1 = Future()
+        crash_cb(f1)
+        f1.set_running_or_notify_cancel()
+        f1.set_exception(TFException(None, None, None))
         self.assertEquals(self.mock_server.publish_error.call_args_list[-1][0][0],
                           "Transfer Function")
 
-        self.mock_cle.start.side_effect = Exception()
-        self.assertRaises(Exception, self.mock_threading.Thread.call_args_list[0][1]['target'])
+        f2 = Future()
+        crash_cb(f2)
+        f2.set_running_or_notify_cancel()
+        f2.set_exception(Exception())
         self.assertEquals(self.mock_server.publish_error.call_args_list[-1][0][0], "CLE")
 
-
-    @log_capture(level=logging.ERROR)
-    def test_stop(self, logcapture):
+    def test_stop(self):
         # Stop transition with everything all right
-        self.ssl.start('not relevant')
-        self.mock_thread_instance.isAlive.return_value = False
         self.ssl.stop('not relevant')
-        self.mock_double_timer_instance.cancel_all.assert_called()
-        self.mock_cle.stop.assert_called()
-        self.mock_thread_instance.join.assert_called_with(60)
-        self.mock_double_timer_instance.join.assert_called()
+        self.mock_cle.stop.assert_called_once_with(forced=True)
+
         # Stop transition with a thread unwilling to stop
-        self.mock_thread_instance.isAlive.return_value = True
+        e = Exception()
+        self.mock_cle.stop.side_effect = e
         self.ssl.stop('not relevant')
-        self.mock_double_timer_instance.cancel_all.assert_called()
-        self.mock_cle.stop.assert_called()
-        self.mock_thread_instance.join.assert_called_with(60)
-        self.mock_double_timer_instance.join.assert_called()
-        logcapture.check(
-            (self.LOGGER_NAME, 'ERROR', "Error while stopping the simulation, "
-                                        "impossible to join the simulation thread")
-        )
+        self.mock_except_hook.assert_called_once_with(e)
 
     def test_shutdown(self):
         # Testing shutdown
@@ -121,7 +103,6 @@ class TestSimulationServerLifecycle(unittest.TestCase):
         # Testing fail
         self.ssl.fail('not relevant')
         self.mock_cle.stop.assert_called()
-        self.mock_double_timer_instance.cancel_all.assert_called()
 
     def test_pause(self):
         self.ssl.pause('not relevant')
