@@ -31,6 +31,7 @@ __author__ = 'Luc Guyot, Daniel Peppicelli'
 import logging
 import rospy
 import tf.transformations
+import os
 
 from lxml import etree as ET
 from flask import request
@@ -40,7 +41,7 @@ from flask_restful_swagger import swagger
 from gazebo_msgs.srv import ExportWorldSDF
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesUnavailableROSService, ErrorMessages
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -81,10 +82,13 @@ class ExperimentWorldSDF(Resource):
         """
         Save the current running experiment SDF back to the storage
         :param experiment_id: The experiment ID
+        :param context_id: The context_id of the experiment
         :status 500: Error saving file
         :status 200: Success. File written.
         """
-
+        # pylint: disable=too-many-locals
+        body = request.get_json(force=True)
+        context_id = body.get('context_id', None)
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module.
         from hbp_nrp_backend.storage_client_api.StorageClient \
@@ -131,13 +135,25 @@ class ExperimentWorldSDF(Resource):
 
         world_file_name = experiment_file.environmentModel.src
 
-        client.create_or_update(
-            UserAuthentication.get_header_token(request),
-            experiment_id,
-            world_file_name,
-            sdf_string,
-            "text/plain"
-        )
+        if 'storage://' in world_file_name:
+            world_file_name = os.path.basename(world_file_name)
+            client.create_or_update(
+                UserAuthentication.get_header_token(request),
+                client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
+                                               context_id,
+                                               'environments'),
+                world_file_name,
+                sdf_string,
+                "text/plain"
+            )
+        else:
+            client.create_or_update(
+                UserAuthentication.get_header_token(request),
+                experiment_id,
+                world_file_name,
+                sdf_string,
+                "text/plain"
+            )
 
         # Save the robot position in the ExDConf file
         if len(robot_pose) is 6:  # We need 6 elements (from Gazebo)

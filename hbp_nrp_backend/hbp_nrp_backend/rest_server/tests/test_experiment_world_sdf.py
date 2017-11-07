@@ -30,6 +30,7 @@ import rospy
 import os
 import shutil
 import tempfile
+import json
 from mock import MagicMock, patch, ANY
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -87,9 +88,10 @@ class TestExperimentWorldSDF(RestTest):
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
         def empty(a,b,c,d,e):
             return
+        body = {'context_id': 'fake'}
         self.mock_storageClient_instance.clone_file.return_value =  exd_conf_temp_path
         self.mock_storageClient_instance.create_or_update = empty
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world')
+        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
         self.assertEqual(response.status_code, 200)
 
 
@@ -99,7 +101,8 @@ class TestExperimentWorldSDF(RestTest):
         MockServiceResponse.sdf_dump = "<invalid xml><><><<,,.asdf"
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world')
+        body = {'context_id': 'fake'}
+        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
         self.assertEqual(response.status_code, 500)
 
     @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
@@ -107,5 +110,6 @@ class TestExperimentWorldSDF(RestTest):
         experiment_id = '123456'
         MockServiceResponse.sdf_dump = "<sdf/>"
         mocked_rospy.wait_for_service.side_effect = rospy.ROSException('Mocked ROSException')
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world')
+        body = {'context_id': 'fake'}
+        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
         self.assertEqual(response.status_code, 500)

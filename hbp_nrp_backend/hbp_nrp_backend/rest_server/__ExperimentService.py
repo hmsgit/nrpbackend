@@ -38,7 +38,7 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
     NRPServicesGeneralException, ErrorMessages
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 
 from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen

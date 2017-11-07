@@ -30,6 +30,7 @@ __author__ = "Alessandro Ambrosano"
 import os
 import logging
 import json
+import tempfile
 
 from flask import request
 from flask_restful import Resource, fields
@@ -41,7 +42,7 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException, \
     NRPServicesTransferFunctionException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
@@ -206,13 +207,15 @@ class SimulationReset(Resource):
         :param sim:
         """
 
-        experiments_base_path = os.path.join(get_experiment_basepath(), sim.experiment_conf)
+        experiments_base_path = os.path.join(
+            get_experiment_basepath(), sim.experiment_conf)
         models_base_path = get_model_basepath()
         _, bibi_conf = get_experiment_data(str(experiments_base_path))
         if bibi_conf is None:
             return
 
-        neurons_config = get_all_neurons_as_dict(bibi_conf.brainModel.populations)
+        neurons_config = get_all_neurons_as_dict(
+            bibi_conf.brainModel.populations)
 
         # Convert the populations to a JSON dictionary
         for (name, s) in neurons_config.iteritems():
@@ -227,7 +230,16 @@ class SimulationReset(Resource):
             neurons_config[name] = v
 
         neurons_config = json.dumps(neurons_config)
-        brain_path = os.path.join(models_base_path, bibi_conf.brainModel.file)
+        if 'storage://' in bibi_conf.brainModel.file:
+            for entry in os.listdir(tempfile.gettempdir()):
+                if entry.startswith('nrpTemp'):
+                    brain_path = os.path.join(tempfile.gettempdir(),
+                                              entry,
+                                              os.path.basename(bibi_conf.brainModel.file))
+        else:
+            brain_path = os.path.join(
+                models_base_path, bibi_conf.brainModel.file)
+
         with open(brain_path, 'r') as myfile:
             data = myfile.read()
             DO_CHANGE_POPULATION = 1

@@ -24,7 +24,6 @@
 """
 This module contains the implementation of the backend simulation lifecycle
 """
-
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.cle_interface import TOPIC_LIFECYCLE
@@ -34,12 +33,11 @@ from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient \
     import ROSCLESimulationFactoryClient
 import logging
 from hbp_nrp_backend import NRPServicesGeneralException
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
 from flask import request
 import os
-import shutil
 import rospy
-import tempfile
 import datetime
 
 __author__ = 'Georg Hinkel'
@@ -74,7 +72,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         return self.__simulation
 
-    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path):
+    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path, using_storage):
         """
         Parses the experiment configuration, loads state machines and updates the environment path
         with the one in the configuration file if none is passed as an argument, for supporting
@@ -82,6 +80,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param experiment_path: Path the experiment configuration.
         :param environment_path: Path to the environment configuration.
+        :param using_storage: Private or template simulation
         """
         # parse experiment
         with open(experiment_path) as exd_file:
@@ -105,11 +104,62 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         self.simulation.state_machine_manager.initialize_all()
         logger.info("Requesting simulation resources")
 
-        if environment_path is None or environment_path.strip() == '':
-            environment_path = os.path.join(
-                self.models_path, str(experiment.environmentModel.src))
+        return experiment, self._parse_env_path(environment_path, experiment, using_storage)
 
-        return experiment, environment_path
+    def _parse_env_path(self, environment_path, experiment, using_storage):
+        """
+        Parses the environment path, depending if we are using a storage model from
+        a template experiment(where we have to fetch the model from the storage),
+        or we are running a storage experiment where the model is already there.
+        Default case is when we are not using a storage model
+
+        :param experiment: The experiment object.
+        :param environment_path: Path to the environment configuration.
+        :param using_storage: Private or template simulation
+        """
+        # TODO: refactor this terribly compicated function when we drop the
+        # esv-web
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        client = StorageClient()
+        # 1. Launching a private experiment with a storage environment
+        # means we are copying the environmen file from the storage
+        # to the temporary directory where the experiment is running.
+        # 2. Launching a private experiment with a template environment
+        # means we are just using the already cloned model
+        if using_storage:
+            if 'storage://' in environment_path:
+                environment_path = os.path.join(client.get_temp_directory(),
+                                                os.path.basename(experiment.environmentModel.src))
+                with open(environment_path, "w") as f:
+                    f.write(client.get_file(
+                        UserAuthentication.get_header_token(request),
+                        client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
+                                                       self.simulation.ctx_id,
+                                                       'environments'),
+                        os.path.basename(experiment.environmentModel.src),
+                        byname=True))
+        # 1. Launching a template experiment with a storage environment means
+        # we are copying the model to a temp folder where it is going to be
+        # used from the simulation. Will not work unless you have created an
+        # 'environments' folder with the same user name as the one that you
+        # log in. Will be addressed in a subsequent story
+        # 2. Template exp + template env = As usual
+        else:
+            if not environment_path and 'storage://' in experiment.environmentModel.src:
+                environment_path = os.path.join(client.get_temp_directory(),
+                                                os.path.basename(experiment.environmentModel.src))
+                with open(environment_path, "w") as f:
+                    f.write(client.get_file(
+                        UserAuthentication.get_header_token(request),
+                        client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
+                                                       self.simulation.ctx_id,
+                                                       'environments'),
+                        os.path.basename(experiment.environmentModel.src),
+                        byname=True))
+            else:
+                environment_path = os.path.join(
+                    self.models_path, str(experiment.environmentModel.src))
+        return environment_path
 
     def initialize(self, state_change):
         """
@@ -117,16 +167,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to be initialized
         """
+        # TODO: fix dependencies so these import are not necessary
+        # anymore
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         simulation = self.simulation
         try:
             using_storage = simulation.private is not None
             if using_storage:
-                # TODO: fix dependencies so these import are not necessary
-                # anymore
-                from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
-                from hbp_nrp_backend.storage_client_api.StorageClient import \
-                    StorageClient
-
                 client = StorageClient()
                 clone_folder, experiment_paths = client.clone_all_experiment_files(
                     UserAuthentication.get_header_token(request),
@@ -145,7 +192,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 environment_path = simulation.environment_conf
             experiment, environment_path = \
                 self._parse_exp_and_initialize_paths(self.__experiment_path,
-                                                     environment_path)
+                                                     environment_path, using_storage)
 
             simulation.kill_datetime = datetime.datetime.now(timezone) \
                 + datetime.timedelta(seconds=experiment.timeout)
@@ -156,7 +203,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 environment_path, self.__experiment_path,
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
                 simulation.sim_id, str(
-                    simulation.kill_datetime), simulation.playback_path
+                    simulation.kill_datetime), simulation.playback_path,
+                UserAuthentication.get_header_token(request),
+                self.simulation.ctx_id
             )
             if not simulation.playback_path:
                 simulation.cle = ROSCLEClient(simulation.sim_id)
@@ -209,18 +258,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             sm.sm_id, str(sm.result)) for sm in self.simulation.state_machines))
 
         self.simulation.state_machine_manager.shutdown()
-
-        using_storage = self.simulation.experiment_id is not None
-
-        if using_storage:
-            path_to_cloned_configuration_folder = os.path.split(
-                self.__experiment_path)[0]
-            if tempfile.gettempdir() in path_to_cloned_configuration_folder:
-                logger.debug(
-                    "removing the temporary configuration folder %s",
-                    path_to_cloned_configuration_folder
-                )
-                shutil.rmtree(path_to_cloned_configuration_folder)
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        client = StorageClient()
+        client.remove_temp_directory()
 
     def pause(self, state_change):
         """
@@ -228,7 +268,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that paused the simulation
         """
-        # From the backend side, there is nothing to do because state machines keep running
+        # From the backend side, there is nothing to do because state machines
+        # keep running
         pass
 
     def fail(self, state_change):

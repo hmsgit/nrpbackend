@@ -65,6 +65,8 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         timeout = str(datetime.now(tz) + timedelta(minutes=5))
         reservation = 'user_workshop'
         playback_path = None
+        token = None
+        ctx_id = None
 
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     def setUp(self, mocked_logger):
@@ -155,7 +157,6 @@ class TestROSCLESimulationFactory(unittest.TestCase):
     @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
     @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
     def test_create_new_simulation_dead_thread(self, mocked_os, mocked_logger):
-        print "test_create_new_simulation_dead_thread"
         self.mockThreading()
         self.__ros_cle_simulation_factory.\
             running_simulation_thread.is_alive = MagicMock(return_value=False)

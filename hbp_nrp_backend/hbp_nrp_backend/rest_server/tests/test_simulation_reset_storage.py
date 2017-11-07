@@ -196,7 +196,7 @@ class TestSimulationResetStorage(RestTest):
 
         reset_world_type = ResetSimulationRequest.RESET_WORLD
 
-        self.assertEqual(SimulationResetStorage._compute_payload(reset_world_type, self.experiment_id),
+        self.assertEqual(SimulationResetStorage._compute_payload(reset_world_type, self.experiment_id, None),
                          (fake_world_sdf_string, None, None))
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_sdf_world_from_storage')
@@ -209,7 +209,7 @@ class TestSimulationResetStorage(RestTest):
 
         empty_payload = (None, None, None)
 
-        self.assertEqual(SimulationResetStorage._compute_payload(reset_robot_pose_type, self.experiment_id),
+        self.assertEqual(SimulationResetStorage._compute_payload(reset_robot_pose_type, self.experiment_id, None),
                          empty_payload)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.tempfile')
@@ -245,7 +245,7 @@ class TestSimulationResetStorage(RestTest):
         mock_get_all_neurons_as_dict.return_value = dummy_populations
 
         payload = SimulationResetStorage._compute_payload(
-            ResetSimulationRequest.RESET_BRAIN, self.experiment_id)
+            ResetSimulationRequest.RESET_BRAIN, self.experiment_id, None)
         self.assertEqual(mock_get_brain_info.call_count, 3)
         self.assertEqual(payload, (None,  '/my/temp/dir/brain.py', []))
 
@@ -275,7 +275,7 @@ class TestSimulationResetStorage(RestTest):
         with patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.open', mock_open(read_data=fake_world_sdf_string), create=True) as m:
             # call target function
             world_sdf_string = SimulationResetStorage._get_sdf_world_from_storage(
-                self.experiment_id)
+                self.experiment_id,None)
 
         # assertions
         mock_get_header_token.assert_called()
@@ -316,7 +316,7 @@ class TestSimulationResetStorage(RestTest):
         dummy_populations = {'pop1': slice(0, 1, 1), 'pop2': slice(1, 2, 1)}
         mock_get_all_neurons_as_dict.return_value = dummy_populations
         data_from_storage, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
-            self.experiment_id)
+            self.experiment_id, None)
         self.assertEqual(data_from_storage,
                          os.path.join(dummy_dir, 'brain.py'))
         self.assertEqual(
@@ -324,20 +324,24 @@ class TestSimulationResetStorage(RestTest):
 
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage.resetFromStorageAll")
     def test_full_reset_ok(self, mock_reset_from_storage):
-        mock_reset_from_storage.side_effect = None
+        with patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._compute_payload') \
+                as mock_compute_payload:
+                    mock_reset_from_storage.side_effect = None
+                    mock_compute_payload.return_value = '<sdf></sdf>', None, None
+                    simulations[0].cle = mock.MagicMock()
 
-        simulations[0].cle = mock.MagicMock()
-
-        response = self.client.put(self.correct_reset_url, data=json.dumps({
-            'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
-        }))
-        self.assertEqual(200, response.status_code)
-        simulations[0].cle.reset.side_effect = None
-        response = self.client.put(self.correct_reset_url, data=json.dumps({
-            'resetType': ResetSimulationRequest.RESET_FULL
-        }))
-        simulations[0].cle.reset.assert_called()
-        self.assertEqual(response.status_code, 200)
+                    response = self.client.put(self.correct_reset_url, data=json.dumps({
+                        'resetType': ResetSimulationRequest.RESET_ROBOT_POSE,
+                        'contextId' : None
+                    }))
+                    self.assertEqual(200, response.status_code)
+                    simulations[0].cle.reset.side_effect = None
+                    response = self.client.put(self.correct_reset_url, data=json.dumps({
+                        'resetType': ResetSimulationRequest.RESET_FULL,
+                        'contextId' : None
+                    }))
+                    simulations[0].cle.reset.assert_called()
+                    self.assertEqual(response.status_code, 200)
 
 if __name__ == '__main__':
     unittest.main()

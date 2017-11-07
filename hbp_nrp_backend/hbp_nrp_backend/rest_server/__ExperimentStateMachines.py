@@ -36,7 +36,7 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__ExperimentService import save_file, \
     get_control_state_machine_files, get_evaluation_state_machine_files
 

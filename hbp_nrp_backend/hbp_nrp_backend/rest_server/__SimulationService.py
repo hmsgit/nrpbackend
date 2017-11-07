@@ -31,7 +31,7 @@ from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server import api, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from flask import request
 from flask_restful import Resource, fields, marshal, marshal_with
 from flask_restful_swagger import swagger
@@ -125,10 +125,8 @@ class SimulationService(Resource):
         :status 402: Another simulation is already running on the server
         :status 201: Simulation created successfully
         """
-
         body = request.get_json(force=True)
         sim_id = len(simulations)
-
         if 'experimentConfiguration' not in body:
             raise NRPServicesClientErrorException(
                 'Experiment configuration not given.')
@@ -158,7 +156,7 @@ class SimulationService(Resource):
             private = None
         else:
             private = body['private']
-
+        ctx_id = body.get('ctxId', None)
         sim = Simulation(sim_id,
                          body['experimentConfiguration'],
                          body.get('environmentConfiguration', None),
@@ -169,7 +167,8 @@ class SimulationService(Resource):
                          sim_experiment_id,
                          sim_state,
                          playback_path=playback_path,
-                         private=private)
+                         private=private,
+                         ctx_id=ctx_id)
 
         sim.creationUniqueID = body.get(
             'creationUniqueID', str(time.time() + random.random()))

@@ -79,15 +79,17 @@ logger = logging.getLogger(__name__)
 # pylint: disable = too-many-locals
 # pylint: disable = too-many-statements
 # pylint: disable = too-many-branches
+# pylint: disable = too-many-arguments
 
 
 class CLELauncher(object):
     """
     CLELauncher substitutes generated cle
     """
+    # pylint: disable = too-many-arguments
 
     def __init__(self, exd_conf, bibi_conf, experiment_path, gzserver_host, reservation, sim_id,
-                 playback_path):
+                 playback_path, token, ctx_id=None):
         """
         Constructor of CLELauncher
 
@@ -103,6 +105,10 @@ class CLELauncher(object):
         @type gzserver_host: str
         @param sim_id: simulation id
         @type sim_id: int
+        @param token: the request token in case we want to use the storage
+        @type token: str
+        @param ctx_id: the ctx_id of collab based simulations
+        @type ctx_id: str
         """
 
         assert isinstance(exd_conf, exp_conf_api_gen.ExD_)
@@ -115,6 +121,8 @@ class CLELauncher(object):
         self.__reservation = reservation
         self.__sim_id = sim_id
         self.__playback_path = playback_path
+        self.__token = token
+        self.__ctx_id = ctx_id
 
         self.__abort_initialization = None
         self.__dependencies = compute_dependencies(bibi_conf)
@@ -361,6 +369,7 @@ class CLELauncher(object):
         self.gzweb.restart()
 
     # pylint: disable=missing-docstring
+    # pylint: disable=broad-except
     def __set_env_for_gzbridge(self):
         def get_gzbridge_setting(name, default):
             """
@@ -379,8 +388,8 @@ class CLELauncher(object):
             except Exception:
                 val = default
             return repr(val)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] = get_gzbridge_setting(
-            'pose_update_delta_translation', 0.001)
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] \
+            = get_gzbridge_setting('pose_update_delta_translation', 0.001)
         os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting(
             'pose_update_delta_rotation', 0.001)
         os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting(
@@ -473,10 +482,25 @@ class CLELauncher(object):
         self.__notify("Loading brain and population configuration")
         # load brain
         brainfilepath = self.__bibi_conf.brainModel.file
+
         if self.__is_collab_hack():
             if self.__experiment_path is not None:
                 brainfilepath = os.path.join(
                     self.__experiment_path, brainfilepath)
+
+        if 'storage://' in brainfilepath:
+            from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+            client = StorageClient()
+            brainfilepath = os.path.join(client.get_temp_directory(),
+                                         os.path.basename(brainfilepath))
+            with open(brainfilepath, "w") as f:
+                f.write(client.get_file(
+                    self.__token,
+                    client.get_folder_uuid_by_name(self.__token,
+                                                   self.__ctx_id,
+                                                   'brains'),
+                    os.path.basename(brainfilepath),
+                    byname=True))
         else:
             brainfilepath = os.path.join(self.models_path, brainfilepath)
         neurons_config = get_all_neurons_as_dict(
@@ -583,7 +607,20 @@ class CLELauncher(object):
         :param robot_file: The robot file
         :return: the absolute path to the robot file
         """
-        if self.__is_collab_hack():
+        if 'storage://' in robot_file:
+            from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+            client = StorageClient()
+            abs_file = os.path.join(client.get_temp_directory(),
+                                    os.path.basename(robot_file))
+            with open(abs_file, "w") as f:
+                f.write(client.get_file(
+                    self.__token,
+                    client.get_folder_uuid_by_name(
+                        self.__token, self.__ctx_id, 'robots'),
+                    os.path.basename(robot_file),
+                    byname=True))
+
+        elif self.__is_collab_hack():
             abs_file = os.path.join(
                 self.__experiment_path, os.path.basename(robot_file))
         else:
@@ -873,7 +910,7 @@ if __name__ == '__main__':  # pragma: no cover
                                    bibi,
                                    rcsf_get_experiment_basepath(args.exd_file),
                                    args.gzserver_host, args.reservation, args.sim_id,
-                                   None)
+                                   None, None)
         cle_launcher.cle_function_init(args.environment_file, timeout_parsed)
         if cle_launcher.cle_server is None:
             raise Exception(

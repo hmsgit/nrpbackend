@@ -36,7 +36,7 @@ from flask_restful_swagger import swagger
 
 # Import data base models
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 logger = logging.getLogger(__name__)
 

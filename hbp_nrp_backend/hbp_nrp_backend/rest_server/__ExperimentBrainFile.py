@@ -36,7 +36,7 @@ from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
@@ -142,6 +142,7 @@ class ExperimentBrainFile(Resource):
 
         :< json body json string data: PyNN script of the model
         :< json body json string brain_populations: neuron populations
+        :< json body json string brain_populations: context_id of the sim
 
         :status 500: {0}
         :status 404: {1}
@@ -155,6 +156,8 @@ class ExperimentBrainFile(Resource):
             raise NRPServicesClientErrorException(
                 "Neural network python code should be sent in the body under the 'data' key"
             )
+        context_id = body.get('context_id', None)
+
         # no need to rewrite a get_header function since the user
         # authentication already has one
         # Read the request data
@@ -187,14 +190,24 @@ class ExperimentBrainFile(Resource):
             byname=True
         )
         bibi_file_obj = bibi_api_gen.CreateFromDocument(bibi_file)
-        brain_filename = os.path.split(bibi_file_obj.brainModel.file)[-1]
+        brain_filename = bibi_file_obj.brainModel.file
 
-        # replace the brain in the storage (Threaded function)
-        client.create_or_update(UserAuthentication.get_header_token(request),
-                                experiment_id,
-                                brain_filename,
-                                data,
-                                content_type)
+        if 'storage://' in brain_filename:
+            client.create_or_update(UserAuthentication.get_header_token(request),
+                                    client.get_folder_uuid_by_name(
+                                        UserAuthentication.get_header_token(
+                                            request),
+                                        context_id,
+                                        'brains'),
+                                    os.path.basename(brain_filename),
+                                    data,
+                                    content_type)
+        else:
+            client.create_or_update(UserAuthentication.get_header_token(request),
+                                    experiment_id,
+                                    os.path.basename(brain_filename),
+                                    data,
+                                    content_type)
 
         # remove all the populations
         del bibi_file_obj.brainModel.populations[:]

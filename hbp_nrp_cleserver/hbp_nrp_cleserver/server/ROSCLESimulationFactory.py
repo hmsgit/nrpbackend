@@ -149,6 +149,8 @@ class ROSCLESimulationFactory(object):
             exd_config_file = service_request.exd_config_file
             timeout = self.__get_timeout(service_request)
             playback_path = service_request.playback_path
+            token = service_request.token
+            ctx_id = service_request.ctx_id
 
             logger.info(
                 "Preparing new simulation with environment file: %s "
@@ -177,10 +179,13 @@ class ROSCLESimulationFactory(object):
                     from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
                     cle_launcher = CLELauncher(exd,
                                                bibi,
-                                               get_experiment_basepath(exd_config_file),
-                                               gzserver_host, reservation, sim_id, playback_path)
+                                               get_experiment_basepath(
+                                                   exd_config_file),
+                                               gzserver_host, reservation, sim_id, playback_path,
+                                               token, ctx_id)
                     try:
-                        cle_launcher.cle_function_init(environment_file, timeout, self.except_hook)
+                        cle_launcher.cle_function_init(
+                            environment_file, timeout, self.except_hook)
                     # pylint: disable=broad-except
                     except Exception:
                         cle_launcher.shutdown()
@@ -191,8 +196,10 @@ class ROSCLESimulationFactory(object):
                     logger.info("Creating distributed MUSICLauncher object")
                     from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
 
-                    experiment_base_path = get_experiment_basepath(exd_config_file)
-                    bibi_file = os.path.join(experiment_base_path, exd.bibiConf.src)
+                    experiment_base_path = get_experiment_basepath(
+                        exd_config_file)
+                    bibi_file = os.path.join(
+                        experiment_base_path, exd.bibiConf.src)
 
                     cle_launcher = MUSICLauncher(exd_config_file,
                                                  bibi_file,
@@ -210,7 +217,8 @@ class ROSCLESimulationFactory(object):
                         raise
 
                 if cle_launcher.cle_server is None:
-                    raise Exception("Error in cle_function_init. Cannot start simulation.")
+                    raise Exception(
+                        "Error in cle_function_init. Cannot start simulation.")
 
             # pylint: disable=broad-except
             except Exception:
@@ -225,7 +233,8 @@ class ROSCLESimulationFactory(object):
                 args=(cle_launcher, )
             )
             self.running_simulation_thread.daemon = True
-            logger.info("Spawning new thread that will manage the experiment execution.")
+            logger.info(
+                "Spawning new thread that will manage the experiment execution.")
             self.running_simulation_thread.start()
         else:
             error_message = "Trying to initialize a new simulation even though the " \
@@ -257,10 +266,10 @@ class ROSCLESimulationFactory(object):
 
         self.simulation_terminate_event.clear()
 
-        #pylint: disable=broad-except
+        # pylint: disable=broad-except
         try:
             cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
-                                           # threading.Thread.start
+            # threading.Thread.start
         except Exception, e:
             logger.error("Exception during simulation")
             logger.exception(e)
@@ -306,7 +315,8 @@ def get_experiment_data(experiment_file_path):
 
     bibi_file = experiment.bibiConf.src
     logger.info("Bibi: " + bibi_file)
-    bibi_file_abs = os.path.join(os.path.dirname(experiment_file_path), bibi_file)
+    bibi_file_abs = os.path.join(
+        os.path.dirname(experiment_file_path), bibi_file)
     logger.info("BibiAbs:" + bibi_file_abs)
     with open(bibi_file_abs) as b_file:
         try:
@@ -315,7 +325,8 @@ def get_experiment_data(experiment_file_path):
             raise Exception("Could not parse brain configuration {0:s} due to validation "
                             "error: {1:s}".format(bibi_file_abs, str(ve)))
         except NamespaceError, ne:
-            # first check to see if the BIBI file appears to have a valid namespace
+            # first check to see if the BIBI file appears to have a valid
+            # namespace
             namespace = str(ne).split(" ", 1)[0]
             if not namespace.startswith("http://schemas.humanbrainproject.eu/SP10") or \
                not namespace.endswith("BIBI"):
@@ -362,7 +373,8 @@ def __except_hook(ex_type, value, ex_traceback):
     :param value: The exception value
     :param ex_traceback: The traceback
     """
-    logger.critical("Unhandled exception of type {0}: {1}".format(ex_type, value))
+    logger.critical(
+        "Unhandled exception of type {0}: {1}".format(ex_type, value))
     logger.exception(ex_traceback)
 
 
@@ -402,7 +414,8 @@ def main():
 
     signal.signal(signal.SIGUSR1, print_full_stack_trace)
     parser = argparse.ArgumentParser()
-    parser.add_argument('--logfile', dest='logfile', help='specify the CLE logfile')
+    parser.add_argument('--logfile', dest='logfile',
+                        help='specify the CLE logfile')
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
     parser.add_argument('-p', '--pycharm',

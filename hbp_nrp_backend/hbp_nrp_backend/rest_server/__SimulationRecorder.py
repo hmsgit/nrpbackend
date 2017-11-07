@@ -31,7 +31,7 @@ from flask_restful import Resource
 from flask import request
 
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
                                         NRPServicesGeneralException, \
                                         NRPServicesWrongUserException, \

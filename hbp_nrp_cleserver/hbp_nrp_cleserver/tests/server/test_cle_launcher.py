@@ -44,7 +44,7 @@ class TestCLELauncher(unittest.TestCase):
         with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         with patch("hbp_nrp_cleserver.server.CLELauncher.os", MockOs):
-            self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "gz_host", None, 42, None)
+            self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "gz_host", None, 42, None, None)
         self.launcher.models_path ="models_path"
 
     def test_robot_path_sdf(self):

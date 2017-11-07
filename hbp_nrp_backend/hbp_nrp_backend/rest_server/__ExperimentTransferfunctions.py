@@ -35,7 +35,7 @@ from flask_restful import Resource, request, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, ErrorMessages
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import get_tf_name
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 

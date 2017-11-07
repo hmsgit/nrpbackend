@@ -98,10 +98,14 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def list_experiments(self, token, context_id, get_all=False):
+    def list_experiments(self, token, context_id, get_all=False, name=None):
         """
         Lists the experiments the user has access to depending on his token
         :param token: a valid token to be used for the request
+        :param context_id: the context_id if we are using collab storage
+        :param get_all: a parameter to return all the available experiments,
+                        not only the ones available to a specific user
+        :param name: if we want to get a specific folder i.e. the robots
         :return: an array of all the available to the user experiments
         """
         headers = {'Authorization': 'Bearer ' +
@@ -109,7 +113,11 @@ class StorageClient(object):
 
         try:
             url = self.__proxy_url + '/storage/experiments'
-            if get_all:
+            if get_all and name:
+                url += '?all=true&filter=' + name
+            elif name:
+                url += '?filter=' + name
+            elif get_all:
                 url += '?all=true'
             res = requests.get(url, headers=headers)
 
@@ -435,6 +443,34 @@ class StorageClient(object):
                                               temp_file,
                                               'text/plain')
         return experiment_folder_uuid
+
+    def get_folder_uuid_by_name(self, token, context_id, folder_name):
+        """
+        Returns the uuid of a folder provided its name
+        :param token: a valid token to be used for the request
+        :param context_id: the context_id of the collab
+        :param folder_name: the name of the folder
+        :return: if found, the uuid of the named folder
+        """
+        folders = self.list_experiments(
+            token, context_id, get_all=True, name=folder_name)
+        for folder in folders:
+            if folder["name"] == folder_name:
+                return folder["uuid"]
+
+    # pylint: disable=no-self-use
+    def remove_temp_directory(self):
+        """
+        Removes the temporary directory where all the simulation based files are stored
+        """
+        for entry in os.listdir(tempfile.gettempdir()):
+            if entry.startswith('nrpTemp'):
+                nrp_temp = os.path.join(tempfile.gettempdir(), entry)
+                logger.debug(
+                    "removing the temporary configuration folder %s",
+                    nrp_temp
+                )
+                shutil.rmtree(nrp_temp)
 
 
 def get_model_basepath():

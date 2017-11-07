@@ -51,6 +51,8 @@ class MockedServiceRequest(object):
     timeout = str(datetime.now(tz) + timedelta(minutes=5))
     reservation = 'user_workshop'
     playback_path = None
+    token = None
+    ctx_id = None
 
 
 class MockedGazeboHelper(object):

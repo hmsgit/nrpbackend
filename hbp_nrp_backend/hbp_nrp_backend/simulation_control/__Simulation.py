@@ -50,7 +50,7 @@ class Simulation(object):
     # pylint: disable=too-many-arguments
     def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
                  reservation=None, sim_brain_processes=1, experiment_id=None,
-                 state='created', private=False, playback_path=None):
+                 state='created', private=False, playback_path=None, ctx_id=None):
         """
         Creates a new simulation
 
@@ -67,6 +67,7 @@ class Simulation(object):
         :param state: The initial state (created by default)
         :param playback_path: The simulation recording to playback (Path to recording root)
         :param private: Defines whether the simulation is based on a private experiment
+        :param ctx_id: The ctx_id of the collab if we are running a collab based simulation
         """
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
@@ -91,6 +92,14 @@ class Simulation(object):
             self.__lifecycle = PlaybackSimulationLifecycle(self, state)
 
         self.__private = private
+        self.__ctx_id = ctx_id
+
+    @property
+    def ctx_id(self):
+        """
+        :return: unique creation ID (used by Frontend to identify this simulation)
+        """
+        return self.__ctx_id
 
     @property
     def creationUniqueID(self):

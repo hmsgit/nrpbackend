@@ -74,7 +74,7 @@ class TestCLELauncherInit(unittest.TestCase):
         with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         with patch("hbp_nrp_cleserver.server.CLELauncher.os", MockOs):
-            self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "local", None, 42, None)
+            self.launcher = CLELauncher.CLELauncher(exd, bibi, "/somewhere/over/the/rainbow", "local", None, 42, None, None)
 
     def test_gazebo_location_not_supported_throws_exception(self):
         self.launcher._CLELauncher__gzserver_host = 'not_supported'

@@ -36,7 +36,7 @@ from hbp_nrp_backend import get_date_and_time_string
 from hbp_nrp_backend import NRPServicesWrongUserException
 
 from hbp_nrp_backend.rest_server import ErrorMessages
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 
 from hbp_nrp_commons.bibi_functions import docstring_parameter

@@ -37,7 +37,7 @@ from flask_restful import Resource, abort, marshal_with, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 from std_msgs.msg import ColorRGBA
 from gazebo_msgs.srv import SetVisualProperties, SetLightProperties, GetLightProperties

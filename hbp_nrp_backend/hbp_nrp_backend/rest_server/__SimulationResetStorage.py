@@ -45,7 +45,7 @@ from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException, \
     NRPServicesTransferFunctionException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf, \
     import_referenced_python_tfs, correct_indentation, get_tf_name, get_all_neurons_as_dict
 
@@ -71,7 +71,8 @@ class SimulationResetStorage(Resource):
         Represents a request for the API implemented by SimulationResetStorage
         """
 
-        resource_fields = {'resetType': fields.Integer}
+        resource_fields = {'resetType': fields.Integer,
+                           'contextId': fields.String()}
         required = ['resetType']
 
     @swagger.operation(
@@ -141,6 +142,7 @@ class SimulationResetStorage(Resource):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
+        context_id = body.get('contextId', None)
 
         for par in SimulationResetStorage.ResetRequest.required:
             if par not in body:
@@ -155,15 +157,18 @@ class SimulationResetStorage(Resource):
         reset_type = body.get('resetType')
 
         world_sdf, brain_file, populations = SimulationResetStorage\
-            ._compute_payload(reset_type, experiment_id)
+            ._compute_payload(reset_type, experiment_id, context_id)
+
         try:
             rsr = srv.ResetSimulationRequest
             if reset_type == rsr.RESET_FULL:
-                SimulationResetStorage.resetFromStorageAll(sim, experiment_id)
+                SimulationResetStorage.resetFromStorageAll(
+                    sim, experiment_id, context_id)
                 sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
                               populations=populations)
             elif reset_type == rsr.RESET_BRAIN:
-                SimulationResetStorage.resetBrain(sim, experiment_id)
+                SimulationResetStorage.resetBrain(
+                    sim, experiment_id, context_id)
             else:
                 sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
                               populations=populations)
@@ -174,12 +179,13 @@ class SimulationResetStorage(Resource):
         return {}, 200
 
     @staticmethod
-    def resetFromStorageAll(simulation, experiment_id):
+    def resetFromStorageAll(simulation, experiment_id, context_id):
         """
         Reset states machines and transfer functions
 
         :param: the simulation id
         :param: the experiment id
+        :param: the context_id for collab based simulations
         """
 
         from hbp_nrp_backend.storage_client_api.StorageClient \
@@ -202,7 +208,8 @@ class SimulationResetStorage(Resource):
 
         exp_conf, bibi_conf = get_experiment_data(current_experiment_path)
 
-        SimulationResetStorage.resetBrain(simulation, experiment_id)
+        SimulationResetStorage.resetBrain(
+            simulation, experiment_id, context_id)
 
         SimulationResetStorage.resetTransferFunctions(simulation,
                                                       bibi_conf,
@@ -211,16 +218,17 @@ class SimulationResetStorage(Resource):
             simulation, exp_conf, current_base_path)
 
     @staticmethod
-    def resetBrain(simulation, experiment_id):
+    def resetBrain(simulation, experiment_id, context_id):
         """
         Reset brain
 
         :param simulation: simulation object
         :param experiment_id: the related experiment id
+        :param context_id: the context ID for collab based simulations
         """
         brain_path, _, neurons_config = \
             SimulationResetStorage._get_brain_info_from_storage(
-                experiment_id)
+                experiment_id, context_id)
 
         # Convert the populations to a JSON dictionary
         for (name, s) in neurons_config.iteritems():
@@ -309,33 +317,43 @@ class SimulationResetStorage(Resource):
                 )
 
     @staticmethod
-    def _compute_payload(reset_type, experiment_id):
+    def _compute_payload(reset_type, experiment_id, context_id):
         """
         Compute the payload corresponding to a certain reset type
 
         :param reset_type:
         :param experiment_id: the experiment needed by RESET_WORLD
+        :param context_id: the context ID for collab based simulations
         :return: the payload for the reset request: a tuple of (world_sdf, brain_path, populations)
         """
 
         rsr = srv.ResetSimulationRequest
 
         if reset_type == rsr.RESET_WORLD:
-            return SimulationResetStorage._get_sdf_world_from_storage(experiment_id), None, None
+            return \
+                SimulationResetStorage._get_sdf_world_from_storage(
+                    experiment_id, context_id), None, None
         elif reset_type == rsr.RESET_BRAIN:
             brain, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
-                experiment_id)
+                experiment_id, context_id)
             return None, brain, populations
+        elif reset_type == rsr.RESET_FULL:
+            world_sdf = SimulationResetStorage._get_sdf_world_from_storage(
+                experiment_id, context_id)
+            brain, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
+                experiment_id, context_id)
+            return world_sdf, brain, populations
         else:
             return None, None, None
 
     @staticmethod
-    def _get_brain_info_from_storage(experiment_id):
+    def _get_brain_info_from_storage(experiment_id, context_id):
         """
         Gathers from the storage the brain script and the populations by getting the BIBI
         configuration file.
 
         :param experiment_id: the id of the experiment in which to look for the brain information
+        :param context_id: the context ID for collab based simulations
         :return: A tuple with the path to the brain file and a list of populations
         """
 
@@ -362,12 +380,25 @@ class SimulationResetStorage(Resource):
         )
         bibi_file_obj = bibi_api_gen.CreateFromDocument(bibi_file)
         brain_filename = os.path.split(bibi_file_obj.brainModel.file)[-1]
+        brain_file_path = os.path.join(
+            client.get_temp_directory(), brain_filename)
 
-        brain_file_path = client.clone_file(
-            brain_filename,
-            UserAuthentication.get_header_token(request),
-            experiment_id
-        )
+        if 'storage://' in bibi_file_obj.brainModel.file:
+            with open(brain_file_path, "w") as f:
+                f.write(client.get_file(
+                    UserAuthentication.get_header_token(request),
+                    client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
+                                                   context_id,
+                                                   'brains'),
+                    brain_filename,
+                    byname=True))
+
+        else:
+            brain_file_path = client.clone_file(
+                brain_filename,
+                UserAuthentication.get_header_token(request),
+                experiment_id
+            )
 
         neurons_config = get_all_neurons_as_dict(
             bibi_file_obj.brainModel.populations)
@@ -397,12 +428,13 @@ class SimulationResetStorage(Resource):
                                                 stop=0, step=0)
 
     @staticmethod
-    def _get_sdf_world_from_storage(experiment_id):
+    def _get_sdf_world_from_storage(experiment_id, context_id):
         """
         Download from the storage an sdf world file as a string.
         The file belongs to the experiment identified by experiment_id
 
         :param experiment_id: the ID of the experiment in which to look for the world sdf
+        :param context_id: the context ID for collab based simulations
         :return: The content of the world sdf file
         """
 
@@ -423,8 +455,17 @@ class SimulationResetStorage(Resource):
         world_file_name = exp_conf_api_gen.CreateFromDocument(
             experiment_file).environmentModel.src
 
-        return client.get_file(
-            UserAuthentication.get_header_token(request),
-            experiment_id,
-            world_file_name,
-            byname=True)
+        if 'storage://' in world_file_name:
+            return client.get_file(
+                UserAuthentication.get_header_token(request),
+                client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
+                                               context_id,
+                                               'environments'),
+                os.path.basename(world_file_name),
+                byname=True)
+        else:
+            return client.get_file(
+                UserAuthentication.get_header_token(request),
+                experiment_id,
+                world_file_name,
+                byname=True)

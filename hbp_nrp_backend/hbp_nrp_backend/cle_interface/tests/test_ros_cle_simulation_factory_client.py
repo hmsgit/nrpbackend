@@ -39,10 +39,12 @@ class TestROSCLESimulationFactoryClient(unittest.TestCase):
         roscle = ROSCLESimulationFactoryClient()
         service_proxy = mock_service_proxy()
         self.assertTrue(service_proxy.wait_for_service.called)
-        self.assertIsNone(roscle.create_new_simulation(1, 2, 3, 4, 5, 6, 7, 8))
-        service_proxy.assert_once_called_with(1, 2, 3, 4, 5, 6, 7, 8)
+        self.assertIsNone(roscle.create_new_simulation(
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+        service_proxy.assert_once_called_with(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
         service_proxy.side_effect = Exception
-        self.assertRaises(Exception, roscle.create_new_simulation, 1, 2, 3, 4, 5, 6, 7, 8)
+        self.assertRaises(Exception, roscle.create_new_simulation,
+                          1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 
 
 if __name__ == '__main__':

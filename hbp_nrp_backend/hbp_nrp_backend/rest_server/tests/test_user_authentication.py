@@ -30,7 +30,7 @@ __author__ = 'Oliver Denninger'
 import unittest
 from flask import Flask
 import flask
-from hbp_nrp_backend.rest_server.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 
 class TestUserAuthentication(unittest.TestCase):
