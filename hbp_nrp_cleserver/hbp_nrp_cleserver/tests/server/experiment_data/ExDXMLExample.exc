@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ExD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig"
-     xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig ExDConfFile.xsd">
+     xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig ../../../../../../Experiments/ExDConfFile.xsd">
     <name>Husky Braitenberg experiment</name>
     <thumbnail>ExDXMLExample.png</thumbnail>
     <description>This experiment loads the Husky robot from Clearpath Robotics and the virtual room
@@ -21,4 +21,8 @@
         <cameraPosition x="4.5" y="0" z="1.8"/>
         <cameraLookAt x="0" y="0" z="0.6"/>
     </cameraPose>
+    <physicsEngine>ode</physicsEngine>
+    <gzbridgesettings>
+        <pose_update_delta_rotation>1</pose_update_delta_rotation>
+    </gzbridgesettings>
 </ExD>

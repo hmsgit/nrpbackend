@@ -29,7 +29,7 @@ This file contains the setup of the neuronal network running the Husky experimen
 
 __author__ = 'Lazar Mateev, Georg Hinkel'
 
-from hbp_nrp_cle.brainsim import simulator as sim
+import pyNN.nest as sim
 import numpy as np
 import logging
 

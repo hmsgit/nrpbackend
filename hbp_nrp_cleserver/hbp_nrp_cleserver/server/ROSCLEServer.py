@@ -31,7 +31,6 @@ import json
 import logging
 import rospy
 import numpy
-import datetime
 import time
 
 from std_srvs.srv import Empty
@@ -44,18 +43,18 @@ from RestrictedPython import compile_restricted
 
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackage folder at the root of this CLE repository.
+from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
-from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, \
-    SERVICE_SIM_RESET_ID, SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
+from hbp_nrp_cleserver.server import \
+    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
+    SERVICE_CLEAN_CSV_RECORDERS_FILES, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
 from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
-from hbp_nrp_watchdog import Timer
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException, BrainParameterException
 import base64
@@ -63,7 +62,6 @@ from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
 from hbp_nrp_commons.bibi_functions import find_changed_strings
-import dateutil.parser as datetime_parser
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -92,11 +90,10 @@ def extract_line_number(tb):
 
 # pylint: disable=R0902
 # the attributes are reasonable in this case
-class ROSCLEServer(object):
+class ROSCLEServer(SimulationServer):
     """
     A ROS server wrapper around the Closed Loop Engine.
     """
-    STATUS_UPDATE_INTERVAL = 1.0
 
     def __init__(self, sim_id, timeout, gzserver, notificator):
         """
@@ -107,16 +104,9 @@ class ROSCLEServer(object):
         :param gzserver: Gazebo simulator launch/control instance
         :param notificator: ROS state/error notificator interface
         """
-
-        # ROS allows multiple calls to init_node, as long as the arguments are the same.
-        # Allow multiple distributed processes to spawn nodes of the same name.
-        rospy.init_node(ROS_CLE_NODE_NAME, anonymous=True)
-
-        self.__lifecycle = None
+        super(ROSCLEServer, self).__init__(sim_id, timeout, gzserver, notificator)
         self.__cle = None
 
-        self.__service_reset = None
-        self.__service_extend_timeout = None
         self.__service_get_transfer_functions = None
         self.__service_add_transfer_function = None
         self.__service_edit_transfer_function = None
@@ -128,14 +118,6 @@ class ROSCLEServer(object):
         self.__service_get_populations = None
         self.__service_get_CSV_recorders_files = None
         self.__service_clean_CSV_recorders_files = None
-
-        self.__timer = Timer.Timer(ROSCLEServer.STATUS_UPDATE_INTERVAL,
-                                   self.publish_state_update)
-        self.__timeout = timeout
-        self.__gzserver = gzserver
-        self.__notificator = notificator
-
-        self.__simulation_id = sim_id
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
 
@@ -158,11 +140,11 @@ class ROSCLEServer(object):
         """
         if severity >= CLEError.SEVERITY_ERROR:
             logger.exception("Error in {0} ({1}): {2}".format(source_type, error_type, message))
-        self.__notificator.publish_error(
+        self._notificator.publish_error(
             CLEError(severity, source_type, error_type, message,
                      function_name, line_number, offset, line_text, file_name))
-        if severity == CLEError.SEVERITY_CRITICAL and self.__lifecycle is not None:
-            self.__lifecycle.failed()
+        if severity == CLEError.SEVERITY_CRITICAL and self.lifecycle is not None:
+            self.lifecycle.failed()
 
     def __tf_except_hook(self, tf, tf_error, tb):
         """
@@ -177,7 +159,29 @@ class ROSCLEServer(object):
                                severity=CLEError.SEVERITY_ERROR, function_name=tf.name,
                                line_number=extract_line_number(tb))
 
-    def prepare_simulation(self, cle, except_hook=None):
+    @property
+    def cle(self):
+        """
+        Gets the Closed Loop Engine referenced by this server
+        """
+        return self.__cle
+
+    @cle.setter
+    def cle(self, value):
+        """
+        Sets the Closed Loop Engine of this server
+        """
+        self.__cle = value
+
+    def _create_lifecycle(self, except_hook):
+        """
+        Creates the lifecycle for the current simulation
+        :param except_hook: An exception handler
+        :return: The created lifecycle
+        """
+        return SimulationServerLifecycle(self.simulation_id, self.cle, self, except_hook)
+
+    def prepare_simulation(self, except_hook=None):
         """
         The CLE will be initialized within this method and ROS services for
         starting, pausing, stopping and resetting are setup here.
@@ -185,112 +189,68 @@ class ROSCLEServer(object):
         :param cle: the closed loop engine
         :param except_hook: A handler method for critical exceptions
         """
-        self.__cle = cle
-        self.__lifecycle = SimulationServerLifecycle(self.__simulation_id, cle, self, except_hook)
+        super(ROSCLEServer, self).prepare_simulation(except_hook)
 
         logger.info("Registering ROS Service handlers")
 
-        # We have to use lambdas here (!) because otherwise we bind to the state which is in place
-        # during the time we set the callback! I.e. we would bind directly to the initial state.
-        # The x parameter is defined because of the architecture of rospy.
-        # rospy is expecting to have handlers which takes two arguments (self and x). The
-        # second one holds all the arguments sent through ROS (defined in the srv file).
-        # Even when there is no input argument for the service, rospy requires this.
-
-        # pylint: disable=unnecessary-lambda
-
-        self.__service_reset = rospy.Service(
-            SERVICE_SIM_RESET_ID(self.__simulation_id), srv.ResetSimulation,
-            lambda x: self.reset_simulation(x)
-        )
-
-        self.__service_extend_timeout = rospy.Service(
-            SERVICE_SIM_EXTEND_TIMEOUT_ID(self.__simulation_id), srv.ExtendTimeout,
-            self.__extend_timeout
-        )
-
         self.__service_get_transfer_functions = rospy.Service(
-            SERVICE_GET_TRANSFER_FUNCTIONS(self.__simulation_id), srv.GetTransferFunctions,
+            SERVICE_GET_TRANSFER_FUNCTIONS(self.simulation_id), srv.GetTransferFunctions,
             self.__get_transfer_function_sources
         )
 
         self.__service_add_transfer_function = rospy.Service(
-            SERVICE_ADD_TRANSFER_FUNCTION(self.__simulation_id), srv.AddTransferFunction,
+            SERVICE_ADD_TRANSFER_FUNCTION(self.simulation_id), srv.AddTransferFunction,
             self.__add_transfer_function
         )
 
         self.__service_edit_transfer_function = rospy.Service(
-            SERVICE_EDIT_TRANSFER_FUNCTION(self.__simulation_id), srv.EditTransferFunction,
+            SERVICE_EDIT_TRANSFER_FUNCTION(self.simulation_id), srv.EditTransferFunction,
             self.__edit_transfer_function
         )
 
         self.__service_get_structured_transfer_functions = rospy.Service(
-            SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(self.__simulation_id),
+            SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(self.simulation_id),
             srv.GetStructuredTransferFunctions,
             self.__get_structured_transfer_functions
         )
 
         self.__service_set_structured_transfer_function = rospy.Service(
-            SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(self.__simulation_id),
+            SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(self.simulation_id),
             srv.SetStructuredTransferFunction,
             self.__set_structured_transfer_function
         )
 
         self.__service_delete_transfer_function = rospy.Service(
-            SERVICE_DELETE_TRANSFER_FUNCTION(self.__simulation_id), srv.DeleteTransferFunction,
+            SERVICE_DELETE_TRANSFER_FUNCTION(self.simulation_id), srv.DeleteTransferFunction,
             self.__delete_transfer_function
         )
 
         self.__service_get_brain = rospy.Service(
-            SERVICE_GET_BRAIN(self.__simulation_id), srv.GetBrain,
+            SERVICE_GET_BRAIN(self.simulation_id), srv.GetBrain,
             self.__get_brain
         )
 
         self.__service_set_brain = rospy.Service(
-            SERVICE_SET_BRAIN(self.__simulation_id), srv.SetBrain,
+            SERVICE_SET_BRAIN(self.simulation_id), srv.SetBrain,
             self.__try_set_brain
         )
 
         self.__service_get_populations = rospy.Service(
-            SERVICE_GET_POPULATIONS(self.__simulation_id), srv.GetPopulations,
+            SERVICE_GET_POPULATIONS(self.simulation_id), srv.GetPopulations,
             self.__get_populations
         )
 
         self.__service_get_CSV_recorders_files = rospy.Service(
-            SERVICE_GET_CSV_RECORDERS_FILES(self.__simulation_id), srv.GetCSVRecordersFiles,
+            SERVICE_GET_CSV_RECORDERS_FILES(self.simulation_id), srv.GetCSVRecordersFiles,
             self.__get_CSV_recorders_files
         )
 
         self.__service_clean_CSV_recorders_files = rospy.Service(
-            SERVICE_CLEAN_CSV_RECORDERS_FILES(self.__simulation_id), Empty,
+            SERVICE_CLEAN_CSV_RECORDERS_FILES(self.simulation_id), Empty,
             self.__clean_CSV_recorders_files
         )
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
-        self.__timer.start()
-
-    @property
-    def lifecycle(self):
-        """
-        Gets the lifecycle instance representing the current ROSCLEServer
-        """
-        return self.__lifecycle
-
-    def __get_remaining(self):
-        """
-        Get the remaining time of the simulation
-        """
-        if self.__timeout is not None:
-            # pylint: disable=E1103
-            # false positive
-            remaining = (self.__timeout - datetime.datetime.now(self.__timeout.tzinfo)) \
-                .total_seconds()
-            # pylint: enable=E1103
-            if remaining < 0:
-                self.__lifecycle.stopped()
-            return max(0, int(remaining))
-        else:
-            return 0
 
     # pylint: disable=unused-argument
     def __get_populations(self, request):
@@ -436,7 +396,7 @@ class ROSCLEServer(object):
                              previous_valid_brain[1], previous_valid_brain[2],
                              SetBrainRequest.ASK_RENAME_POPULATION)
         else:
-            self.__notificator.publish_state(json.dumps({"action": "setbrain"}))
+            self._notificator.publish_state(json.dumps({"action": "setbrain"}))
 
         return return_value
 
@@ -661,22 +621,6 @@ class ROSCLEServer(object):
             return False, error_msg
         return True, m[0]
 
-    def __extend_timeout(self, request):
-        """
-        Extend the simulation timeout
-
-        :param request: The new timeout
-        :return: whether it could extend the timeout
-        """
-        new_timeout = datetime_parser.parse(request.timeout)
-
-        if self.__gzserver is not None and not self.__gzserver.try_extend(new_timeout):
-            return False
-
-        self.__timeout = new_timeout
-
-        return True
-
     # pylint: disable=unused-argument
     @staticmethod
     def __get_structured_transfer_functions(request):
@@ -718,43 +662,20 @@ class ROSCLEServer(object):
             self.__cle.start()
         return ret
 
-    def publish_state_update(self):
-        """
-        Publish the state and the remaining timeout
-        """
-        try:
-            if self.__lifecycle is None:
-                logger.warn("Trying to publish state even though no simulation is active")
-                return
-            message = {
-                'state': str(self.__lifecycle.state),
-                'timeout': self.__get_remaining(),
+    def _create_state_message(self):
+        return {
                 'simulationTime': int(self.__cle.simulation_time),
                 'realTime': int(self.__cle.real_time),
                 'transferFunctionsElapsedTime': self.__cle.tf_elapsed_time(),
                 'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),
                 'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
             }
-            logger.debug(json.dumps(message))
-            self.__notificator.publish_state(json.dumps(message))
-        # pylint: disable=broad-except
-        except Exception as e:
-            logger.exception(e)
-
-    def run(self):
-        """
-        This method blocks the caller until the simulation is finished
-        """
-        self.__lifecycle.done_event.wait()
-
-        self.publish_state_update()
-        time.sleep(1.0)
-        logger.info("Finished main loop")
 
     def shutdown(self):
         """
         Shutdown the cle server
         """
+        super(ROSCLEServer, self).shutdown()
 
         # the cle and services are initialized in prepare_simulation, which is not
         # guaranteed to have occurred before shutdown is called
@@ -762,10 +683,6 @@ class ROSCLEServer(object):
             logger.info("Shutting down the closed loop service")
             self.__cle.shutdown()
             time.sleep(1)
-            logger.info("Shutting down reset service")
-            self.__service_reset.shutdown()
-            logger.info("Shutting down extend timeout service")
-            self.__service_extend_timeout.shutdown()
             logger.info("Shutting down get_transfer_functions service")
             self.__service_get_transfer_functions.shutdown()
             self.__service_get_structured_transfer_functions.shutdown()
@@ -786,11 +703,6 @@ class ROSCLEServer(object):
             self.__service_get_CSV_recorders_files.shutdown()
             logger.info("Shutting down clean_CSV_recorders_files service")
             self.__service_clean_CSV_recorders_files.shutdown()
-            time.sleep(1)
-
-        # items initialized in the constructor
-        self.__lifecycle = None
-        self.__timer.cancel_all()
 
     def _reset_world(self, request):
         """
@@ -799,7 +711,7 @@ class ROSCLEServer(object):
         :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
         """
 
-        with self.__notificator.task_notifier("Resetting Environment", "Emptying 3D world"):
+        with self._notificator.task_notifier("Resetting Environment", "Emptying 3D world"):
             if request.world_sdf is not None and request.world_sdf is not "":
                 sdf_world_string = request.world_sdf
                 self.__cle.reset_world(sdf_world_string)
@@ -838,21 +750,21 @@ class ROSCLEServer(object):
             network_conf_orig = {
                 p.name: self._get_population_value(p) for p in neurons_conf
                 }
-            with self.__notificator.task_notifier("Resetting the simulation", ""):
-                self.__notificator.update_task("Restoring the 3D world", False, True)
+            with self._notificator.task_notifier("Resetting the simulation", ""):
+                self._notificator.update_task("Restoring the 3D world", False, True)
                 self.__cle.reset_world(sdf_world_string)
-                self.__notificator.update_task("Restoring the brain", False, True)
+                self._notificator.update_task("Restoring the brain", False, True)
                 self.__cle.reset_brain(brain_temp_path, network_conf_orig)
         else:
-            with self.__notificator.task_notifier("Resetting the simulation", ""):
-                self.__notificator.update_task("Restoring the 3D world", False, True)
+            with self._notificator.task_notifier("Resetting the simulation", ""):
+                self._notificator.update_task("Restoring the 3D world", False, True)
                 self.__cle.reset_world()
-                self.__notificator.update_task("Restoring the brain", False, True)
+                self._notificator.update_task("Restoring the brain", False, True)
                 self.__cle.reset_brain()
 
         # Member added by transitions library
         # pylint: disable=no-member
-        self.__lifecycle.initialized()
+        self.lifecycle.initialized()
 
     def start_fetching_gazebo_logs(self):
         """
@@ -860,7 +772,7 @@ class ROSCLEServer(object):
         """
         gazebo_logger.handlers.append(notificator_handler)
         Notificator.register_notification_function(
-            lambda subtask, update_progress: self.__notificator.update_task(subtask,
+            lambda subtask, update_progress: self._notificator.update_task(subtask,
                                                                             update_progress,
                                                                             True)
         )
@@ -885,7 +797,7 @@ class ROSCLEServer(object):
         if reset_type == rsr.RESET_OLD:
             # Member added by transitions library
             # pylint: disable=no-member
-            self.__lifecycle.initialized()
+            self.lifecycle.initialized()
         else:
             try:
                 self.start_fetching_gazebo_logs()

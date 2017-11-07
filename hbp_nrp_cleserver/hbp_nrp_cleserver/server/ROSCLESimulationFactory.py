@@ -40,9 +40,11 @@ import dateutil.parser as datetime_parser
 from cle_ros_msgs import srv
 from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMULATION, \
     SERVICE_VERSION, SERVICE_IS_SIMULATION_RUNNING
+from hbp_nrp_cleserver.server.PlaybackServer import PlaybackSimulationAssembly
 
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from pyxb import ValidationError, NamespaceError
+from hbp_nrp_cleserver.server import ServerConfigurations
 import gc
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
@@ -172,56 +174,33 @@ class ROSCLESimulationFactory(object):
                     exd.bibiConf.processes = service_request.brain_processes
 
                 # single brain process launch
-                if exd.bibiConf.processes == 1 or playback_path:
-                    # This import starts NEST. Don't move it to the imports at the top of the file,
-                    # because NEST shall be started on the simulation thread.
-                    logger.info("Creating local CLELauncher object")
-                    from hbp_nrp_cleserver.server.CLELauncher import CLELauncher
-                    cle_launcher = CLELauncher(exd,
-                                               bibi,
-                                               get_experiment_basepath(exd_config_file),
-                                               gzserver_host,
-                                               reservation,
-                                               sim_id,
-                                               playback_path,
-                                               token,
-                                               ctx_id)
-                    try:
-                        cle_launcher.cle_function_init(
-                            environment_file, timeout, self.except_hook)
-                    # pylint: disable=broad-except
-                    except Exception:
-                        cle_launcher.shutdown()
-                        raise
-
+                if playback_path:
+                    assembly = PlaybackSimulationAssembly
+                elif exd.bibiConf.processes == 1:
+                    conf = bibi.mode
+                    if conf is None:
+                        conf = "SynchronousNestSimulation"
+                    assembly = getattr(ServerConfigurations, conf)
                 # distributed, multi-process launch
                 else:
                     logger.info("Creating distributed MUSICLauncher object")
                     from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
 
-                    experiment_base_path = get_experiment_basepath(
-                        exd_config_file)
-                    bibi_file = os.path.join(
-                        experiment_base_path, exd.bibiConf.src)
+                    assembly = MUSICLauncher
 
-                    cle_launcher = MUSICLauncher(exd_config_file,
-                                                 bibi_file,
-                                                 environment_file,
-                                                 experiment_base_path,
-                                                 gzserver_host,
-                                                 reservation,
-                                                 sim_id,
-                                                 timeout)
-                    try:
-                        cle_launcher.init(bibi, exd)
-                    # pylint: disable=broad-except
-                    except Exception:
-                        cle_launcher.shutdown()
-                        raise
-
-                if cle_launcher.cle_server is None:
-                    raise Exception(
-                        "Error in cle_function_init. Cannot start simulation.")
+                launcher = assembly(sim_id, exd, bibi,
+                                    gzserver_host=gzserver_host,
+                                    reservation=reservation,
+                                    timeout=timeout,
+                                    playback_path=playback_path,
+                                    context_id=ctx_id,
+                                    token=token)
+                try:
+                    launcher.initialize(environment_file, self.except_hook)
+                # pylint: disable=broad-except
+                except Exception:
+                    launcher.shutdown()
+                    raise
 
             # pylint: disable=broad-except
             except Exception:
@@ -233,7 +212,7 @@ class ROSCLESimulationFactory(object):
 
             self.running_simulation_thread = threading.Thread(
                 target=self.__simulation,
-                args=(cle_launcher, )
+                args=(launcher, )
             )
             self.running_simulation_thread.daemon = True
             logger.info(
@@ -260,19 +239,19 @@ class ROSCLESimulationFactory(object):
             timeout = datetime_parser.parse(service_request.timeout)
         return timeout
 
-    def __simulation(self, cle_launcher):
+    def __simulation(self, launcher):
         """
         Main simulation method. Start the simulation from the given script file.
 
-        :param: cle_launcher: The instance of the CLELauncher to be run in a separated thread.
+        :param: launcher: The assembled simulation
         """
 
         self.simulation_terminate_event.clear()
 
         # pylint: disable=broad-except
         try:
-            cle_launcher.cle_server.run()  # This is a blocking call, not to be confused with
-            # threading.Thread.start
+            launcher.run()  # This is a blocking call, not to be confused with
+                            # threading.Thread.start
         except Exception, e:
             logger.error("Exception during simulation")
             logger.exception(e)
@@ -281,7 +260,7 @@ class ROSCLESimulationFactory(object):
             self.__is_running_simulation_terminating = True
             try:
                 logger.info("Shutdown simulation")
-                cle_launcher.shutdown()
+                launcher.shutdown()
             except Exception, e:
                 logger.error("Exception during shutdown")
                 logger.exception(e)
@@ -312,18 +291,21 @@ def get_experiment_data(experiment_file_path):
     with open(experiment_file_path) as exd_file:
         try:
             experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+            experiment.path = experiment_file_path
         except ValidationError, ve:
             raise Exception("Could not parse experiment configuration {0:s} due to validation "
                             "error: {1:s}".format(experiment_file_path, str(ve)))
 
     bibi_file = experiment.bibiConf.src
     logger.info("Bibi: " + bibi_file)
-    bibi_file_abs = os.path.join(
-        os.path.dirname(experiment_file_path), bibi_file)
+    experiment_dir = os.path.dirname(experiment_file_path)
+    bibi_file_abs = os.path.join(experiment_dir, bibi_file)
+    experiment.dir = experiment_dir
     logger.info("BibiAbs:" + bibi_file_abs)
     with open(bibi_file_abs) as b_file:
         try:
             bibi = bibi_api_gen.CreateFromDocument(b_file.read())
+            bibi.path = bibi_file_abs
         except ValidationError, ve:
             raise Exception("Could not parse brain configuration {0:s} due to validation "
                             "error: {1:s}".format(bibi_file_abs, str(ve)))

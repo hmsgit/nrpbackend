@@ -24,23 +24,17 @@
 # ---LICENSE-END
 
 """
-Playback ROS wrapper overriding the ROSCLEServer implementation for playback
+Playback ROS wrapper overriding the SimulationServer implementation for playback
 """
-
-from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
+from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
 from hbp_nrp_cleserver.server.PlaybackServerLifecycle import PlaybackServerLifecycle
-
+from hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly import GazeboSimulationAssembly
 from hbp_nrp_cleserver.bibi_config.notificator import NotificatorHandler
 
 import rospy
 from cle_ros_msgs import srv
-from std_srvs.srv import Trigger
 from rosgraph_msgs.msg import Clock
-from hbp_nrp_cleserver.server import SERVICE_SIM_RESET_ID, SERVICE_SIM_EXTEND_TIMEOUT_ID
-import hbp_nrp_cle.tf_framework as tf_framework
-
-import json
-import time
+from std_srvs.srv import Trigger
 
 import logging
 
@@ -54,9 +48,7 @@ gazebo_logger.setLevel(logging.INFO)
 notificator_handler = NotificatorHandler()
 
 
-# disable pylint for protected _ROSCLEServer__<name> parent member access below
-# pylint: disable=no-member, attribute-defined-outside-init
-class PlaybackServer(ROSCLEServer):
+class PlaybackServer(SimulationServer):
     """
     Playback ROS server overriding the ROSCLEServer implementation for playback
     """
@@ -86,7 +78,21 @@ class PlaybackServer(ROSCLEServer):
         self.__service_stop = None
         self.__service_reset = None
 
-    def prepare_simulation(self, playback_path, except_hook=None):
+    @property
+    def playback_path(self):
+        """
+        Gets the playback path
+        """
+        return self.__playback_path
+
+    @playback_path.setter
+    def playback_path(self, value):
+        """
+        Sets the playback path
+        """
+        self.__playback_path = value
+
+    def prepare_simulation(self, except_hook=None):
         """
         The CLE will be initialized within this method and ROS services for
         starting, pausing, stopping and resetting are setup here.
@@ -95,40 +101,16 @@ class PlaybackServer(ROSCLEServer):
         :param except_hook: A handler method for critical exceptions
         """
 
-        self.__playback_path = playback_path
-        self._ROSCLEServer__lifecycle = PlaybackServerLifecycle(self._ROSCLEServer__simulation_id,
-                                                                self,
-                                                                except_hook)
+        super(PlaybackServer, self).prepare_simulation(except_hook)
 
-        logger.info("Registering ROS Service handlers")
-
-        # We have to use lambdas here (!) because otherwise we bind to the state which is in place
-        # during the time we set the callback! I.e. we would bind directly to the initial state.
-        # The x parameter is defined because of the architecture of rospy.
-        # rospy is expecting to have handlers which takes two arguments (self and x). The
-        # second one holds all the arguments sent through ROS (defined in the srv file).
-        # Even when there is no input argument for the service, rospy requires this.
-
-        # pylint: disable=unnecessary-lambda
-
-        self._ROSCLEServer__service_reset = rospy.Service(
-            SERVICE_SIM_RESET_ID(self._ROSCLEServer__simulation_id), srv.ResetSimulation,
-            lambda x: self.reset_simulation(x)
-        )
-
-        self._ROSCLEServer__service_extend_timeout = rospy.Service(
-            SERVICE_SIM_EXTEND_TIMEOUT_ID(self._ROSCLEServer__simulation_id), srv.ExtendTimeout,
-            self._ROSCLEServer__extend_timeout
-        )
-
-        # use the playback clock values to populate state updates
-        # pylint: disable=missing-docstring
         def clock_callback(t):
+            """
+            This function is called when there is a new clock message
+
+            :param t: The current simulation time
+            """
             self.__sim_clock = t.clock.secs
         self.__sim_clock_subscriber = rospy.Subscriber('/clock', Clock, clock_callback)
-
-        tf_framework.TransferFunction.excepthook = self._ROSCLEServer__tf_except_hook
-        self._ROSCLEServer__timer.start()
 
         # instantiate the service proxies
         base = '/gazebo/playback/%s'
@@ -143,59 +125,26 @@ class PlaybackServer(ROSCLEServer):
         if not resp.success:
             raise Exception('Configuration of playback plugin failed: %s' % resp.message)
 
-    def publish_state_update(self):
+    def _create_lifecycle(self, except_hook):
         """
-        Publish the playback state and the remaining timeout
+        Creates the lifecycle for the current simulation
+        :param except_hook: An exception handler
+        :return: The created lifecycle
         """
-        try:
-            if self._ROSCLEServer__lifecycle is None:
-                logger.warn("Trying to publish state even though no simulation is active")
-                return
-            message = {
-                'state': str(self._ROSCLEServer__lifecycle.state),
-                'timeout': self._ROSCLEServer__get_remaining(),
-                'simulationTime': int(self.__sim_clock),
-                'realTime': int(self.__sim_clock),
-                'transferFunctionsElapsedTime': 0,
-                'brainsimElapsedTime': 0,
-                'robotsimElapsedTime': 0
-            }
-            logger.debug(json.dumps(message))
-            self._ROSCLEServer__notificator.publish_state(json.dumps(message))
-        # pylint: disable=broad-except
-        except Exception as e:
-            logger.exception(e)
+        return PlaybackServerLifecycle(self.simulation_id, self, except_hook)
 
-    def shutdown(self):
+    def _create_state_message(self):
         """
-        Shutdown the playback
+        Creates a status message
+        :return: A dictionary with status information
         """
-
-        # the services are initialized in prepare_simulation, which is not
-        # guaranteed to have occurred before shutdown is called
-        if self.__sim_clock_subscriber is not None:
-            logger.info("Shutting down reset service")
-            self._ROSCLEServer__service_reset.shutdown()
-            logger.info("Shutting down extend timeout service")
-            self._ROSCLEServer__service_extend_timeout.shutdown()
-            logger.info("Shutting down clock subscriber")
-            self.__sim_clock_subscriber.unregister()
-            time.sleep(1)
-
-        # try to shutdown the service proxies, ignore failures and continue shutdown
-        # pylint: disable=bare-except
-        try:
-            self.__service_configure.shutdown()
-            self.__service_start.shutdown()
-            self.__service_pause.shutdown()
-            self.__service_stop.shutdown()
-            self.__service_reset.shutdown()
-        except:
-            pass
-
-        # items initialized in the constructor
-        self._ROSCLEServer__lifecycle = None
-        self._ROSCLEServer__timer.cancel_all()
+        return {
+            'simulationTime': int(self.__sim_clock),
+            'realTime': int(self.__sim_clock),
+            'transferFunctionsElapsedTime': {},
+            'brainsimElapsedTime': 0,
+            'robotsimElapsedTime': 0
+        }
 
     def process_lifecycle_command(self, command):
         """
@@ -248,3 +197,77 @@ class PlaybackServer(ROSCLEServer):
         # perform the reset and (re-)configure
         resp = self.__service_reset(self.__playback_path)
         return resp.success, resp.message
+
+    def shutdown(self):
+        """
+        Shutdown the playback
+        """
+        super(PlaybackServer, self).shutdown()
+        if self.__sim_clock_subscriber is not None:
+            self.__sim_clock_subscriber.unregister()
+            self.__sim_clock_subscriber = None
+
+
+class PlaybackSimulationAssembly(GazeboSimulationAssembly):
+    """
+    This class is used to realize the assembly of a playback simulation
+    """
+
+    def __init__(self, sim_id, exc, bibi, **par):
+        """
+        Creates a new simulation assembly to simulate an experiment using the CLE and Gazebo
+        :param sim_id: The simulation id
+        :param exc: The experiment configuration
+        :param bibi: The BIBI configuration
+        """
+        super(PlaybackSimulationAssembly, self).__init__(sim_id, exc, bibi)
+        self.__playback_path = par.get('playback_path', None)
+        self.playback = None
+
+    def _initialize(self, environment, except_hook):
+        """
+        Internally initialize the simulation
+        :param environment: The environment that should be simulated
+        :param except_hook: A method that should be called when there is a critical error
+        """
+        # TODO: validate playback path / download with storage server API
+
+        # create the CLE server and lifecycle first to report any failures
+        # properly
+        logger.info("Creating Playback Server")
+        self.playback = PlaybackServer(self.sim_id, self._timeout, self.gzserver,
+                                         self.ros_notificator)
+
+        # disable roslaunch for playback
+        self.exc.rosLaunch = None
+
+        # start Gazebo simulator and bridge (RNG seed is irrelevant for
+        # playback)
+        self._start_gazebo(123456, self.__playback_path, None, environment)
+
+        # create playback CLE server
+        logger.info("Preparing Playback Server")
+        self.playback.prepare_simulation(self.__playback_path, except_hook)
+
+    def _shutdown(self, notifications):
+        """
+        Shutdown the CLE and any hooks before shutting down Gazebo
+
+        :param notifications: A flag indicating whether notifications should be attempted to send
+        """
+        try:
+            if notifications:
+                self.ros_notificator.update_task("Shutting down Playback",
+                                                 update_progress=True, block_ui=False)
+
+            self.playback.shutdown()
+        #pylint: disable=broad-except
+        except Exception, e:
+            logger.error("The cle server could not be shut down")
+            logger.exception(e)
+
+    def run(self):
+        """
+        Runs the simulation
+        """
+        self.playback.run()

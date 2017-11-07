@@ -35,31 +35,34 @@ from std_srvs.srv import TriggerResponse
 
 class TestPlaybackServer(unittest.TestCase):
 
-    def setUp(self):
+    @patch("hbp_nrp_cleserver.server.PlaybackServer.PlaybackServerLifecycle")
+    @patch("hbp_nrp_cleserver.server.SimulationServer.Timer")
+    def setUp(self, mock_timer, mock_lifecycle):
         unittest.TestCase.setUp(self)
 
         # Mock the respective objects and make them available for all tests.
         # Also have a look at the following link:
         # https://docs.python.org/3.5/library/unittest.mock-examples.html#applying-the-same-patch-to-every-test-method
         rospy_patcher = patch('hbp_nrp_cleserver.server.PlaybackServer.rospy')
-        cle_rospy_patcher = patch('hbp_nrp_cleserver.server.ROSCLEServer.rospy')
+        base_rospy_patcher = patch('hbp_nrp_cleserver.server.SimulationServer.rospy')
 
         # Ensure that the patchers are cleaned up correctly even in exceptional cases
         # e.g. when an exception was thrown.
         self.addCleanup(rospy_patcher.stop)
-        self.addCleanup(cle_rospy_patcher.stop)
+        self.addCleanup(base_rospy_patcher.stop)
 
         self.__mocked_rospy = rospy_patcher.start()
-        self.__mocked_cle_rospy = cle_rospy_patcher.start()
+        self.__mocked_base_rospy = base_rospy_patcher.start()
 
         self.__mocked_notificator = Mock()
         self.__mocked_notificator.task_notifier = mock_open()
 
         self.__playback_server = PlaybackServer(0, None, None, self.__mocked_notificator)
-        self.__playback_server._ROSCLEServer__done_flag = Mock()
-
-        self.__playback_server.prepare_simulation('foo')
-        self.assertEqual(2, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(mock_timer.Timer.call_count, 1)
+        self.__playback_server.playback_path = 'foo'
+        self.__playback_server.prepare_simulation(None)
+        self.assertEqual(mock_lifecycle.call_count, 1)
+        self.assertEqual(2, self.__mocked_base_rospy.Service.call_count)
         self.assertEqual(5, self.__mocked_rospy.ServiceProxy.call_count)
         self.assertEqual(1, self.__mocked_rospy.Subscriber.call_count)
         self.__playback_server._PlaybackServer__service_configure.assert_called_once_with('foo')
@@ -120,20 +123,13 @@ class TestPlaybackServer(unittest.TestCase):
 
     def test_shutdown(self):
     
-        ps = PlaybackServer(0, None, None, self.__mocked_notificator)
-        ps.prepare_simulation('foo')
+        ps = self.__playback_server
         ps.shutdown()
 
         # assert all of the shutdowns were called
-        ps._ROSCLEServer__service_reset.shutdown.assert_called_once()
-        ps._ROSCLEServer__service_extend_timeout.shutdown.assert_called_once()
-        ps._PlaybackServer__sim_clock_subscriber.unregister.assert_called_once()
-        
-        ps._PlaybackServer__service_configure.shutdown.assert_called_once()
-        ps._PlaybackServer__service_start.shutdown.assert_called_once()
-        ps._PlaybackServer__service_pause.shutdown.assert_called_once()
-        ps._PlaybackServer__service_stop.shutdown.assert_called_once()
-        ps._PlaybackServer__service_reset.shutdown.assert_called_once()
+        self.assertIsNone(ps._PlaybackServer__sim_clock_subscriber)
+        ps._SimulationServer__service_reset.shutdown.assert_any_call()
+        ps._SimulationServer__service_extend_timeout.shutdown.assert_any_call()
 
 if __name__ == '__main__':
     unittest.main()

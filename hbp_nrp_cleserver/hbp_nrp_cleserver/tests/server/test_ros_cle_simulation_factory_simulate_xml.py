@@ -80,25 +80,22 @@ class MockOs(object):
 
 @patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.ROSNotificator", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.ROSCLEServer", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.RosControlAdapter", new=MockRobotControlAdapter)
-@patch("hbp_nrp_cleserver.server.CLELauncher.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
-@patch("hbp_nrp_cleserver.server.CLELauncher.nrp.config.active_node", new=Mock())
+@patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RosControlAdapter", new=MockRobotControlAdapter)
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp.config.active_node", new=Mock())
 @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
     new=Mock(return_value=EXPERIMENTS_PATH)
 )
-@patch("hbp_nrp_cleserver.server.CLELauncher.get_experiment_basepath", new=Mock(return_value=EXPERIMENTS_PATH))
-@patch("hbp_nrp_cleserver.server.CLELauncher.get_model_basepath",
-    new=Mock(return_value=MODELS_PATH)
-)
-@patch("hbp_nrp_cleserver.server.CLELauncher.LuganoVizClusterGazebo",
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", EXPERIMENTS_PATH)
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LuganoVizClusterGazebo",
        new=lambda x, y: LocalGazeboServerInstance())
-@patch("hbp_nrp_cleserver.server.CLELauncher.LocalGazeboBridgeInstance", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLELauncher.GazeboHelper", new=MockedGazeboHelper)
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboBridgeInstance", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
-@patch("hbp_nrp_cleserver.server.CLELauncher.ClosedLoopEngine", new=MockedClosedLoopEngine())
-@patch("hbp_nrp_cleserver.server.CLELauncher.nrp", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ClosedLoopEngine", new=MockedClosedLoopEngine())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp", new=Mock())
 class SimulationTestCase(unittest.TestCase):
 
     def test_simulation_local(self):

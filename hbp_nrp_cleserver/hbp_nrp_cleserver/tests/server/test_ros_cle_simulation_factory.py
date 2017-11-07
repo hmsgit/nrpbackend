@@ -40,10 +40,8 @@ from cle_ros_msgs import srv
 import os
 import time
 import sys
-PATH = os.getcwd()
+PATH = os.path.dirname(__file__)
 tz = pytz.timezone("Europe/Zurich")
-if not os.path.exists("experiment_data"):
-    PATH += "/hbp_nrp_cleserver/hbp_nrp_cleserver/tests/server"
 
 
 __author__ = 'Georg Hinkel, Bernd Eckstein'
@@ -132,7 +130,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         self.assertEqual(self.__mocked_rospy.Service.call_count, 3)
         self.__mocked_rospy.spin.assert_called_once_with()
 
-    @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
+    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.ServerConfigurations', MagicMock())
     def test_is_simulation_running(self):
         self.assertFalse(
             self.__ros_cle_simulation_factory.is_simulation_running(self.mocked_service_request)
@@ -155,7 +153,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
     @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.logger')
     @patch('hbp_nrp_cleserver.server.LocalGazebo.os')
     @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
-    @patch('hbp_nrp_cleserver.server.CLELauncher.CLELauncher', MagicMock())
+    @patch('hbp_nrp_cleserver.server.ROSCLESimulationFactory.ServerConfigurations', MagicMock())
     def test_create_new_simulation_dead_thread(self, mocked_os, mocked_logger):
         self.mockThreading()
         self.__ros_cle_simulation_factory.\
@@ -168,7 +166,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                 self.mocked_service_request
             )
 
-        self.assertEqual(mocked_logger.info.call_count, 10)
+        self.assertEqual(mocked_logger.info.call_count, 9)
         self.assertEqual(mocked_logger.error.call_count, 0)
 
         self.assertEqual(self.__mocked_threading.Thread.call_count, 1)
