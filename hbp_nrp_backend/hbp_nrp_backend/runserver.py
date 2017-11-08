@@ -29,9 +29,8 @@ import os
 __author__ = 'GeorgHinkel'
 
 import argparse
-from hbp_nrp_backend.rest_server import init, app, db
+from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.rest_server.cleanup import clean_simulations
-from hbp_nrp_backend.rest_server import db_create_and_check, NRPServicesDatabaseTimeoutException
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 import logging
 import sys
@@ -54,7 +53,7 @@ root_logger = logging.getLogger('hbp_nrp_backend')
 
 # This happens within the app process and so it works both in the command line
 # and the uWSGI case
-def start_ros(): # pragma: no cover
+def start_ros():  # pragma: no cover
     """
     Starts ROS utilities and cleanup thread in the app process.
     """
@@ -72,13 +71,15 @@ def start_ros(): # pragma: no cover
     cleanup_thread.start()
 
 
-def __process_args(): # pragma: no cover
+def __process_args():  # pragma: no cover
     """
     Processes the arguments to the server.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--logfile', dest='logfile', help='specify the logfile for the ExDBackend')
-    parser.add_argument('--port', dest='port', help='specify the application server\'s port')
+    parser.add_argument('--logfile', dest='logfile',
+                        help='specify the logfile for the ExDBackend')
+    parser.add_argument('--port', dest='port',
+                        help='specify the application server\'s port')
     parser.add_argument('-p', '--pycharm',
                         dest='pycharm',
                         help='debug with pyCharm. IP adress and port are needed.',
@@ -97,7 +98,7 @@ def __process_args(): # pragma: no cover
     return args
 
 
-def __init_console_logging(): # pragma: no cover
+def __init_console_logging():  # pragma: no cover
     """
     Initialize the logging to stdout.
     """
@@ -110,7 +111,7 @@ def __init_console_logging(): # pragma: no cover
     assert os.environ.get('NRP_MODELS_DIRECTORY') is not None
 
 
-def init_logging(args): # pragma: no cover
+def init_logging(args):  # pragma: no cover
     """
     Initialize the logging.
     """
@@ -127,19 +128,12 @@ def init_logging(args): # pragma: no cover
             root_logger.warn("Could not write to specified logfile or no logfile specified, " +
                              "logging to stdout now!")
     else:
-        # Started with uWSGI or any other framework. Logging is done through the console.
+        # Started with uWSGI or any other framework. Logging is done through
+        # the console.
         __init_console_logging()
         root_logger.warn("Application started with uWSGI or any other framework. logging "
                          "to console by default !")
 
-
-# Populate the data base object
-try:
-    init()
-    db_create_and_check(db) # 1 s timeout
-except NRPServicesDatabaseTimeoutException as e:  # pragma: no cover
-    root_logger.warn("Database connection timeout ( " + str(e) +
-                     " ). You are probably in the local mode. ")
 
 # Detect uwsgi, start ros and initialize multithreading support
 if __name__.find("uwsgi_file") == 0:  # pragma: no cover
@@ -159,7 +153,8 @@ if __name__ == '__main__':  # pragma: no cover
     try:
         port = int(_args.port)
     except (TypeError, ValueError) as _:
-        root_logger.warn("Could not parse port, will use default port: " + str(DEFAULT_PORT))
+        root_logger.warn(
+            "Could not parse port, will use default port: " + str(DEFAULT_PORT))
     root_logger.info("Starting the REST backend server now ...")
     app.run(port=port, host=DEFAULT_HOST, threaded=True)
     root_logger.info("REST backend server terminated.")

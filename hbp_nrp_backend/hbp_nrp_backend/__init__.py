@@ -10,19 +10,6 @@ import string
 
 __author__ = 'GeorgHinkel'
 
-setting_str = os.environ.get('APP_SETTINGS')
-# The APP_SETTINGS environment variable allows you to easily switch configurations.
-# Standard configurations are listed in config.py .
-# APP_SETTINGS defaults to config.DeploymentConfig on a puppet-managed server
-# (see nrp-services/nrp-services-env.sh from server-scripts repo).
-# Some other valid config objects: config.TestConfig, config.LocalConfig.
-if setting_str is not None:
-    config_class_str = setting_str.split('.')[-1]
-    # Application configuration object, shared accross all hbp_nrp_backend files
-    hbp_nrp_backend_config = getattr(config, config_class_str)
-else:
-    hbp_nrp_backend_config = None
-
 
 class NRPServicesGeneralException(Exception):
     """
@@ -33,6 +20,7 @@ class NRPServicesGeneralException(Exception):
     :param error_type: Type of error (like 'CLE Error')
     :param error_code: The HTTP error code to send to the frontend.
     """
+
     def __init__(self, message, error_type, error_code=500, data=None):
         super(NRPServicesGeneralException, self).__init__(message)
         # These fields are handled by the front-end JS code.
@@ -52,8 +40,10 @@ class NRPServicesClientErrorException(NRPServicesGeneralException):
     :param message: message displayed to the end user.
     :param error_code: The HTTP error code to send to the frontend.
     """
+
     def __init__(self, message, error_type="Client error", error_code=400):
-        super(NRPServicesClientErrorException, self).__init__(message, error_type, error_code)
+        super(NRPServicesClientErrorException, self).__init__(
+            message, error_type, error_code)
 
 
 class NRPServicesStateException(NRPServicesGeneralException):
@@ -62,8 +52,10 @@ class NRPServicesStateException(NRPServicesGeneralException):
 
     :param message: message displayed to the end user.
     """
+
     def __init__(self, message):
-        super(NRPServicesStateException, self).__init__(message, "Transition error", 400)
+        super(NRPServicesStateException, self).__init__(
+            message, "Transition error", 400)
 
 
 class NRPServicesDuplicateNameException(NRPServicesGeneralException):
@@ -74,6 +66,7 @@ class NRPServicesDuplicateNameException(NRPServicesGeneralException):
 
     :param message: message displayed to the end user.
     """
+
     def __init__(self, message):
         super(NRPServicesDuplicateNameException, self).\
             __init__(message, "Duplicate name error", 403)
@@ -86,6 +79,7 @@ class NRPServicesTransferFunctionException(NRPServicesGeneralException):
 
     :param message: message displayed to the end user.
     """
+
     def __init__(self, message):
         super(NRPServicesTransferFunctionException, self).\
             __init__(message, "Transfer function error", 400)
@@ -97,6 +91,7 @@ class NRPServicesStateMachineException(NRPServicesClientErrorException):
     to the HBP frontend in case source code updates fail.
     :param message: message displayed to the end user.
     """
+
     def __init__(self, message, error_code):
         super(NRPServicesStateMachineException, self).\
             __init__(message, "State machine error", error_code)
@@ -108,6 +103,7 @@ class NRPServicesWrongUserException(NRPServicesClientErrorException):
     to the HBP frontend in case an invalid user is detected.
     :param message: message displayed to the end user.
     """
+
     def __init__(self):
         super(NRPServicesWrongUserException, self).\
             __init__(
@@ -126,6 +122,7 @@ class NRPServicesUnavailableROSService(NRPServicesGeneralException):
     :param message: message displayed to the end user. It contains the text of the
                     corresponding ROS exception
     """
+
     def __init__(self, message):
         super(NRPServicesUnavailableROSService, self).__init__(
             "ROS service not available: " + message,

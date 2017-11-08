@@ -6,7 +6,7 @@ __author__ = 'GeorgHinkel'
 
 import unittest
 import mock
-from hbp_nrp_backend.rest_server import init, app
+from hbp_nrp_backend.rest_server import app
 
 
 class RestTest(unittest.TestCase):
@@ -17,7 +17,6 @@ class RestTest(unittest.TestCase):
         self.mock_environment = mock.patch.dict('os.environ', {'APP_SETTINGS': 'config.TestConfig'})
         self.mock_environment.start()
 
-        init()
         self.client = app.test_client()
 
     @classmethod
