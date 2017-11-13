@@ -30,7 +30,7 @@ import logging
 import tempfile
 import requests
 import shutil
-from hbp_nrp_backend import hbp_nrp_backend_config
+from hbp_nrp_backend.config import Config
 from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
@@ -63,7 +63,7 @@ class StorageClient(object):
                 if entry.startswith('nrpTemp'):
                     return os.path.join(tempfile.gettempdir(), entry)
             return None
-        self.__proxy_url = hbp_nrp_backend_config.LOCAL_STORAGE_URI['storage_uri']
+        self.__proxy_url = Config.LOCAL_STORAGE_URI['storage_uri']
         if not make_temp_directory():
             self.__temp_directory = tempfile.mkdtemp(
                 prefix="nrpTemp", suffix="")

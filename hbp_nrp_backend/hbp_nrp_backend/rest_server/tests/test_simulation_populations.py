@@ -37,7 +37,6 @@ ros_service_object = mock.Mock()
 rospy.wait_for_service = mock.Mock(return_value=ros_service_object)
 rospy.ServiceProxy = mock.Mock(return_value=ros_service_object)
 
-from hbp_nrp_backend.rest_server import init
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 
 neurons = {'populations': [

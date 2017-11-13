@@ -312,7 +312,8 @@ class CLELauncher(object):
         # If playback is specified, load the first log/world file in the recording at Gazebo launch
         # TODO: when storage server is available this should be updated
         if self.__playback_path:
-            gzserver_args += ' --play {path}/gzserver/1.log'.format(path=self.__playback_path)
+            gzserver_args += ' --play {path}/gzserver/1.log'.format(
+                path=self.__playback_path)
 
         # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
         # information that is useful to know for the user.
@@ -359,6 +360,7 @@ class CLELauncher(object):
         self.gzweb = LocalGazeboBridgeInstance()
         self.gzweb.restart()
 
+    # pylint: disable=missing-docstring
     def __set_env_for_gzbridge(self):
         def get_gzbridge_setting(name, default):
             """
@@ -373,12 +375,16 @@ class CLELauncher(object):
                 s = self.__exd_conf.gzbridgesettings
                 val = getattr(s, name)
                 val = type(default)(val)
+            # pylint: disable=broad-except
             except Exception:
                 val = default
             return repr(val)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] = get_gzbridge_setting('pose_update_delta_translation', 0.001)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting('pose_update_delta_rotation', 0.001)
-        os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting('pose_update_early_threshold', 0.02)
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] = get_gzbridge_setting(
+            'pose_update_delta_translation', 0.001)
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting(
+            'pose_update_delta_rotation', 0.001)
+        os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting(
+            'pose_update_early_threshold', 0.02)
 
     def __load_environment(self, world_file):
         """

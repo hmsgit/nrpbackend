@@ -8,7 +8,6 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
-from flask_sqlalchemy import SQLAlchemy
 import hbp_nrp_backend as backend
 import multiprocessing
 
@@ -16,31 +15,6 @@ from hbp_nrp_backend import NRPServicesGeneralException, NRPServicesClientErrorE
     NRPServicesStateException, NRPServicesTransferFunctionException, \
     NRPServicesStateMachineException, NRPServicesWrongUserException, \
     NRPServicesUnavailableROSService, NRPServicesDuplicateNameException
-
-
-class NRPServicesDatabaseException(NRPServicesGeneralException):
-    """
-    Database exception class that can be used to return meaningful messages
-    to the HBP frontend code. It is considered as a server error with status
-    500 (internal error).
-
-    :param message: message displayed to the end user.
-    """
-
-    def __init__(self, message):
-        super(NRPServicesDatabaseException, self).__init__(
-            message, "Database error")
-
-
-class NRPServicesDatabaseTimeoutException(NRPServicesDatabaseException):
-    """
-    Database exception class that can be used in the case when the database
-    is not reachable (connection timeout)
-    """
-
-    def __init__(self):
-        super(NRPServicesDatabaseTimeoutException, self).__init__(
-            "Database connection timeout")
 
 
 class NRPServicesExtendedApi(Api):
@@ -97,14 +71,11 @@ class ErrorMessages(object):
 
 app = Flask(__name__, static_folder='')
 api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
 # Import REST APIs
 # pylint: disable=W0401
 import hbp_nrp_backend.rest_server.__ErrorHandlers
 
-from hbp_nrp_backend import hbp_nrp_backend_config
 from hbp_nrp_backend.rest_server.__SimulationResources import SimulationResources
 from hbp_nrp_backend.rest_server.__ExperimentClone import \
     ExperimentClone
@@ -199,32 +170,3 @@ api.add_resource(Last24HoursErrorCheck, '/health/errors-last-24h')
 
 # Register /version
 api.add_resource(Version, '/version')
-
-
-def db_create_and_check(database, timeout=1):
-    """
-    Populates the database based on the configuration provided by the
-    SQLAlchemy object and checks, if the database url can be reached
-    within the defined timeout.
-
-    :param database: SQLAlchemy database object to be addressed
-    :param timeout: timeout for the connection (in s)
-    :raises NRPServicesDatabaseTimeoutException: if the database connection attempt exceeds the
-                                                 timeout
-    """
-
-    db_proc = multiprocessing.Process(target=database.create_all)
-    db_proc.start()
-    db_proc.join(timeout)
-    if db_proc.is_alive():
-        db_proc.terminate()
-        raise NRPServicesDatabaseTimeoutException()
-
-
-def init():
-    """
-    General initialization. We do not want this to be done every time (especially when testing).
-    This is why it has been put in a separate function.
-    """
-
-    app.config.from_object(backend.hbp_nrp_backend_config)
