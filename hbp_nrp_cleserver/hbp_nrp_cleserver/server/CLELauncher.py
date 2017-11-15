@@ -610,13 +610,18 @@ class CLELauncher(object):
             client = StorageClient()
             abs_file = os.path.join(client.get_temp_directory(),
                                     os.path.basename(robot_file))
+            name, ext = os.path.splitext(abs_file)
+            ext = ext.lower()
+            zipped = False
+            if ext == '.zip':
+                zipped = True
             with open(abs_file, "w") as f:
                 f.write(client.get_file(
                     self.__token,
                     client.get_folder_uuid_by_name(
                         self.__token, self.__ctx_id, 'robots'),
                     os.path.basename(robot_file),
-                    byname=True))
+                    byname=True, zipped=zipped))
 
         elif self.__is_collab_hack():
             abs_file = os.path.join(

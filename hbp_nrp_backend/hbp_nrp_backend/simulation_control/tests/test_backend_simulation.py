@@ -25,11 +25,12 @@
 This module tests the backend implementation of the simulation lifecycle
 """
 
-from mock import Mock, patch
+from mock import Mock, patch, mock_open
 import unittest
 import os
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import BackendSimulationLifecycle
 from hbp_nrp_backend import NRPServicesGeneralException
+from hbp_nrp_commons.generated import exp_conf_api_gen
 import datetime
 import rospy
 
@@ -121,9 +122,9 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
             self.assertEqual(2, len(state_machines))
             directory = PATH
             self.assertEqual(os.path.join(directory, "SM1.py"),
-                            state_machines["SM1"])
+                             state_machines["SM1"])
             self.assertEqual(os.path.join(directory, "SM2.py"),
-                            state_machines["SM2"])
+                             state_machines["SM2"])
 
     def test_backend_initialize_storage(self):
         self.simulation.experiment_id = "Foobar"
@@ -220,3 +221,42 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         # Assert state machines have been terminated
         self.assertTrue(
             self.simulation.state_machine_manager.terminate_all.called)
+
+    def test_parse_env_path_template(self):
+        exp_path = os.path.join(PATH, self.simulation.experiment_conf)
+        with open(exp_path, 'r') as exp_file:
+            exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
+        env_path = self.lifecycle._parse_env_path(
+            exp.environmentModel.src, exp, False)
+        self.assertEqual(env_path, os.path.join(
+            PATH, 'virtual_room/virtual_room.sdf'))
+
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
+    def test_parse_env_path_template_storage(self, mock_storage):
+        exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')
+        with open(exp_path, 'r') as exp_file:
+            exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
+
+        mock_storage().get_temp_directory.return_value = PATH
+        mock_storage().get_file.return_value = '<sdf></sdf>'
+        mock_storage().get_folder_uuid_by_name.return_value = 'environments'
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
+            env_path = self.lifecycle._parse_env_path(
+                None, exp, False)
+            self.assertEqual(env_path, os.path.join(
+                PATH, 'virtual_room.sdf'))
+    
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
+    def test_parse_env_path_template_storage_user_env(self, mock_storage):
+        exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')
+        with open(exp_path, 'r') as exp_file:
+            exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
+
+        mock_storage().get_temp_directory.return_value = PATH
+        mock_storage().get_file.return_value = '<sdf></sdf>'
+        mock_storage().get_folder_uuid_by_name.return_value = 'environments'
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
+            env_path = self.lifecycle._parse_env_path(
+                exp.environmentModel.src, exp, True)
+            self.assertEqual(env_path, os.path.join(
+                PATH, 'virtual_room.sdf'))

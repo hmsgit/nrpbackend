@@ -35,6 +35,7 @@ import json
 import tempfile
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
+
 class TestExperimentBrain(RestTest):
 
     def setUp(self):
@@ -102,14 +103,17 @@ def create_brain():
 
     def test_experiment_brain_put_withpoplist(self):
 
-        bibi_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","bibi_1.bibi")
+        bibi_original_path = os.path.join(
+            self.test_directory, "experiments", "experiment_data", "bibi_1.bibi")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
-       
-        exp_temp_path = os.path.join(os.path.split(__file__)[0], "experiments", "experiment_data", "test_1.exc")
-        def fake_get(*args,**kwargs):
-            if args[2] =='experiment_configuration.exc':
+
+        exp_temp_path = os.path.join(os.path.split(
+            __file__)[0], "experiments", "experiment_data", "test_1.exc")
+
+        def fake_get(*args, **kwargs):
+            if args[2] == 'experiment_configuration.exc':
                 with open(exp_temp_path) as exp_xml:
                     return exp_xml.read()
             with open(bibi_temp_path) as bibi_xml:
@@ -118,33 +122,73 @@ def create_brain():
         self.mock_StorageClient_instance.get_file = fake_get
         context_id = '123456'
         brain_populations = [{'to': 4, 'step': 1, 'from': 0, 'name': 'record'}]
-        body = {'data': self.brain_model, 'additional_populations': brain_populations}
+        body = {'data': self.brain_model,
+                'additional_populations': brain_populations}
         response = self.client.put(
             '/experiment/' + context_id + '/brain',
             data=json.dumps(body)
         )
         self.assertEqual(response.status_code, 200)
 
-    def test_experiment_brain_put(self):        
-        bibi_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","bibi_1.bibi")
+    def test_experiment_brain_put(self):
+        bibi_original_path = os.path.join(
+            self.test_directory, "experiments", "experiment_data", "bibi_1.bibi")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
         context_id = '123456'
-       
-        exp_temp_path = os.path.join(os.path.split(__file__)[0], "experiments", "experiment_data", "test_1.exc")
-        def fake_get(*args,**kwargs):
-            if args[2] =='experiment_configuration.exc':
+
+        exp_temp_path = os.path.join(os.path.split(
+            __file__)[0], "experiments", "experiment_data", "test_1.exc")
+
+        def fake_get(*args, **kwargs):
+            if args[2] == 'experiment_configuration.exc':
                 with open(exp_temp_path) as exp_xml:
                     return exp_xml.read()
             with open(bibi_temp_path) as bibi_xml:
                 return bibi_xml.read()
 
         self.mock_StorageClient_instance.get_file = fake_get
-        brain_populations = {'index': [0], 'slice': {'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
-        body = {'data': self.brain_model, 'additional_populations': brain_populations}
+        brain_populations = {'index': [0], 'slice': {
+            'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
+        body = {'data': self.brain_model,
+                'additional_populations': brain_populations}
         response = self.client.put(
             '/experiment/' + context_id + '/brain',
             data=json.dumps(body)
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_experiment_brain_put_storage(self):
+        bibi_original_path = os.path.join(
+            self.test_directory, "experiments", "experiment_data", "bibi_4.bibi")
+        bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
+        bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
+        shutil.copyfile(bibi_original_path, bibi_temp_path)
+        context_id = '123456'
+
+        exp_temp_path = os.path.join(os.path.split(
+            __file__)[0], "experiments", "experiment_data", "test_1.exc")
+
+        def fake_get(*args, **kwargs):
+            if args[2] == 'experiment_configuration.exc':
+                with open(exp_temp_path) as exp_xml:
+                    return exp_xml.read()
+            with open(bibi_temp_path) as bibi_xml:
+                return bibi_xml.read()
+
+        self.mock_StorageClient_instance.get_file = fake_get
+        brain_populations = {'index': [0], 'slice': {
+            'from': 0, 'to': 12, 'step': 2}, 'list': [1, 2, 3]}
+        body = {'data': self.brain_model,
+                'additional_populations': brain_populations}
+        response = self.client.put(
+            '/experiment/' + context_id + '/brain',
+            data=json.dumps(body)
+        )
+        self.assertEqual(response.status_code, 200)
+
+        body = { 'additional_populations': brain_populations}
+        response = self.client.put('/experiment/' + context_id + '/brain',
+                                   data=json.dumps(body))
+        self.assertEqual(response.status_code, 400)
