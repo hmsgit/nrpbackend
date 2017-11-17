@@ -66,6 +66,7 @@ class ExperimentObject(object):
         "name": fields.String(),
         "experimentConfiguration": fields.String(),
         "description": fields.String(),
+        "tags": fields.List(fields.String),
         "timeout": fields.Integer(),
         "maturity": fields.String(),
         "cameraPose": fields.List(fields.Float),
@@ -73,7 +74,7 @@ class ExperimentObject(object):
         "visualModelParams": fields.List(fields.Float),
         "brainProcesses": fields.Integer()
     }
-    required = ['name', 'experimentConfiguration', 'description', 'timeout', 'maturity',
+    required = ['name', 'experimentConfiguration', 'description', 'tags', 'timeout', 'maturity',
                 'cameraPose', 'visualModel', 'visualModelParams', 'brainProcesses']
 
 
@@ -282,6 +283,7 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
 
     current_exp = dict(name=_name,
                        description=_description,
+                       tags=experiment.tags if experiment.tags else [],
                        experimentConfiguration=os.path.join(
                            experiment_dir, experiment_file),
                        timeout=_timeout,
