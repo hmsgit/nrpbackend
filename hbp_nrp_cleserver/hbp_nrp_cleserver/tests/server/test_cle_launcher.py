@@ -33,6 +33,7 @@ from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
 MockOs = Mock()
 MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
+                  'NRP_EXPERIMENTS_DIRECTORY': '/somewhere/near/the/rainbow',
                   'ROS_MASTER_URI': "localhost:0815"}
 MockOs.path.join.return_value = "/a/really/nice/place"
 

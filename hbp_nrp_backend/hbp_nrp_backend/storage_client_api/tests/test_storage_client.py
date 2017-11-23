@@ -40,6 +40,7 @@ from hbp_nrp_backend.storage_client_api.StorageClient import _FlattenedExperimen
 
 
 class MockResponse:
+
     def __init__(self, json_data, status_code, text=None):
         self.json_data = json_data
         self.status_code = status_code
@@ -144,13 +145,13 @@ def mocked_list_files_ok(*args, **kwargs):
         "modifiedOn": "2017-08-31T13:56:34.306090Z"
     },
         {
-        "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
-        "name": "simple_move_robot.py",
-        "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
-        "contentType": "application/hbp-neurorobotics.tfs+python",
-        "type": "file",
-        "modifiedOn": "2017-08-30T12:32:47.842214Z"
-    }], 200)
+            "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
+            "name": "simple_move_robot.py",
+            "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+            "contentType": "application/hbp-neurorobotics.tfs+python",
+            "type": "file",
+            "modifiedOn": "2017-08-30T12:32:47.842214Z"
+        }], 200)
 
 
 class TestNeuroroboticsStorageClient(unittest.TestCase):
@@ -471,13 +472,13 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
             "modifiedOn": "2017-08-31T13:56:34.306090Z"
         },
             {
-            "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
-            "name": "simple_move_robot.py",
-            "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
-            "contentType": "application/hbp-neurorobotics.tfs+python",
-            "type": "file",
-            "modifiedOn": "2017-08-30T12:32:47.842214Z"
-        }]
+                "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
+                "name": "simple_move_robot.py",
+                "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+                "contentType": "application/hbp-neurorobotics.tfs+python",
+                "type": "file",
+                "modifiedOn": "2017-08-30T12:32:47.842214Z"
+            }]
         res = client.clone_file("fakeFile",
                                 "fakeToken",
                                 "fakeExperiment")
@@ -496,7 +497,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
     # CLONE ALL EXPERIMENT FILES
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_files')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_file')
-    def test_clone_all_expeirment_files(self, mocked_list, mocked_get):
+    def test_clone_all_experiment_files(self, mocked_list, mocked_get):
         with patch('tempfile.mkdtemp', return_value='/tmp/nrpTemp') as mock_temp_make:
             mocked_get.side_effect = None
             client = StorageClient.StorageClient()
@@ -511,24 +512,25 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 "modifiedOn": "2017-08-31T13:56:34.306090Z"
             },
                 {
-                "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
-                "name": "simple_move_robot.py",
-                "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
-                "contentType": "application/hbp-neurorobotics.tfs+python",
-                "type": "file",
-                "modifiedOn": "2017-08-30T12:32:47.842214Z"
-            }]
+                    "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
+                    "name": "simple_move_robot.py",
+                    "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+                    "contentType": "application/hbp-neurorobotics.tfs+python",
+                    "type": "file",
+                    "modifiedOn": "2017-08-30T12:32:47.842214Z"
+                }]
             with patch("__builtin__.open", mock_open(read_data="data")) as mock_file:
                 res = client.clone_all_experiment_files("fakeToken",
                                                         "fakeExperiment")
 
                 self.assertIn('nrpTemp', res[0])
 
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_experiment_basepath')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath')
-    def test_flatten_bibi_configuration(self, get_model_basepath_mock):
+    def test_flatten_bibi_configuration(self, get_model_basepath_mock, get_experiment_basepath_mock):
         get_model_basepath_mock.return_value = self.models_directory
-        exp_configuration = os.path.join(
-            self.experiments_directory, 'ExDXMLExample.exc')
+        get_experiment_basepath_mock.return_value = self.experiments_directory
+        exp_configuration = 'ExDXMLExample.exc' 
         expected_list = ['experiment_configuration.exc',
                          'bibi_configuration.bibi',
                          'braitenberg_husky_linear_twist.py',
@@ -543,8 +545,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                          'csv_robot_position.py']
 
         with _FlattenedExperimentDirectory(exp_configuration, None) as temporary_folder:
-            bibi_configuration_file = os.path.join(
-                self.experiments_directory, 'milestone2_python_tf.bibi')
+            bibi_configuration_file = 'milestone2_python_tf.bibi'
             l = os.listdir(temporary_folder)
             # make sure we do not copy things we aren't expecting
             self.assertEqual(len(l), len(expected_list))
@@ -581,8 +582,9 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 bibi_api_gen.PythonFilename('braitenberg.py')
             )
 
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_experiment_basepath')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath')
-    def test_flattened_parse_model_config_files(self, get_model_basepath_mock):
+    def test_flattened_parse_model_config_files(self, get_model_basepath_mock, get_experiment_basepath_mock):
         expected_list = ['fakeRobot.sdf',
                          'experiment_configuration.exc',
                          'TemplateEmpty.png',
@@ -591,8 +593,8 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                          'fakeEnv.sdf',
                          'fakeBrain.py']
         get_model_basepath_mock.return_value = self.models_directory
-        exp_configuration = os.path.join(
-            self.experiments_directory, 'experiment_configuration.exc')
+        get_experiment_basepath_mock.return_value = self.experiments_directory
+        exp_configuration = 'experiment_configuration.exc'
         mock_paths = {
             "envPath": os.path.join("fakeEnvFolder", "model.config"),
             "robotPath": os.path.join("fakeRobotFolder", "model.config"),
@@ -628,17 +630,18 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
         mock_env_get.return_value = None
         self.assertRaises(Exception, StorageClient.get_model_basepath)
 
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_experiment_basepath')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.create_experiment')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.create_or_update')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_experiments')
-    def test_clone_experiment_to_storage(self, mock_list, mock_create_update, mock_create_exp):
+    def test_clone_experiment_to_storage(self, mock_list, mock_create_update, mock_create_exp, get_experiment_basepath_mock):
+        get_experiment_basepath_mock.return_value = self.experiments_directory
         mock_create_exp.return_value = 'Fake UUID'
         mock_create_update.return_value = None
         mock_list.return_value = [
             {"name": "Experiment"}, {"name": "Experiment_1"}]
         client = StorageClient.StorageClient()
-        exp_configuration = os.path.join(
-            self.experiments_directory, 'ExDXMLExample.exc')
+        exp_configuration = 'ExDXMLExample.exc'
         exp_uuid = client.clone_experiment_template_to_storage(
             'token', exp_configuration)
         self.assertEqual('Fake UUID', exp_uuid)

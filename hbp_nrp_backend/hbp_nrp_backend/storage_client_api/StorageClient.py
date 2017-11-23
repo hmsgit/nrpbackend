@@ -35,6 +35,7 @@ from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen, model_conf_api_gen, bibi_api_gen
+from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
 
 __author__ = "Manos Angelidis"
 logger = logging.getLogger(__name__)
@@ -347,7 +348,8 @@ class StorageClient(object):
                 # in order to return the environment and experiment path we have
                 # to read the .exc
                 if 'experiment_configuration.exc' in str(file_clone_destination):
-                    experiment_paths['experiment_conf'] = file_clone_destination
+                    experiment_paths[
+                        'experiment_conf'] = file_clone_destination
                     env_filename = exp_conf_api_gen.CreateFromDocument(
                         file_contents).environmentModel.src
                     experiment_paths['environment_conf'] = os.path.join(
@@ -417,10 +419,10 @@ class StorageClient(object):
 
         list_experiments = self.list_experiments(
             token, context_id, get_all=True)
-        experiments_names_list = [exp['name'] for exp in list_experiments]
+
         experiment_folder_uuid = self.create_experiment(
             token, self.create_unique_experiment_id(
-                'Experiment', 0, experiments_names_list),
+                'Experiment', 0, [exp['name'] for exp in list_experiments]),
             context_id)
 
         with _FlattenedExperimentDirectory(exp_configuration, paths) as temporary_folder:
@@ -428,20 +430,14 @@ class StorageClient(object):
                 "Copying the flattened experiment files to the storage")
             for filename in os.listdir(temporary_folder):
                 filepath = os.path.join(temporary_folder, filename)
-                if '.png' in filepath:
-                    with open(filepath) as temp_image:
-                        self.create_or_update(token,
-                                              experiment_folder_uuid,
-                                              filename,
-                                              temp_image,
-                                              'application/octet-stream')
-                else:
-                    with open(filepath) as temp_file:
-                        self.create_or_update(token,
-                                              experiment_folder_uuid,
-                                              filename,
-                                              temp_file,
-                                              'text/plain')
+                _, ext = os.path.splitext(filepath)
+                mimetype = 'application/octet-stream' if ext in {'.png', '.jpg'} else 'text/plain'
+                with open(filepath) as temp_image:
+                    self.create_or_update(token,
+                                          experiment_folder_uuid,
+                                          filename,
+                                          temp_image,
+                                          mimetype)
         return experiment_folder_uuid
 
     def get_folder_uuid_by_name(self, token, context_id, folder_name):
@@ -497,13 +493,14 @@ class _FlattenedExperimentDirectory(object):
         Constructor. Does nothing more that saving the exp_configuration parameter.
         :param exp_configuration: The experiment configuration file of the template to clone.
         """
-        self.__exp_configuration = exp_configuration
         self.__temp_directory = None
         self.__models_paths = models_paths
         # exp_configuration may look like:
         # $NRP_EXPERIMENTS_DIRECTORY/braitenberg_husky/ExDBraitenbergHuskySBC.xml
         # We extract: $NRP_EXPERIMENTS_DIRECTORY
-        self.__experiment_folder = os.path.dirname(exp_configuration)
+        self.__exp_configuration = os.path.join(
+            get_experiment_basepath(), exp_configuration)
+        self.__experiment_folder = os.path.dirname(self.__exp_configuration)
         self.__models_folder = get_model_basepath()
 
     def __enter__(self):
