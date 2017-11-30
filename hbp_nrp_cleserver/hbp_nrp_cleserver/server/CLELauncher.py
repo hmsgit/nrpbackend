@@ -389,9 +389,9 @@ class CLELauncher(object):
                 val = default
             return repr(val)
         os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] \
-            = get_gzbridge_setting('pose_update_delta_translation', 0.001)
+            = get_gzbridge_setting('pose_update_delta_translation', 1.e-5)
         os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting(
-            'pose_update_delta_rotation', 0.001)
+            'pose_update_delta_rotation', 1.e-4)
         os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting(
             'pose_update_early_threshold', 0.02)
 
