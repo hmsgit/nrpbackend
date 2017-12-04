@@ -159,7 +159,7 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def get_file(self, token, experiment, filename, byname=False):
+    def get_file(self, token, experiment, filename, byname=False, zipped=False):
         """
         Gets a file under an experiment based on the filename
         :param token: a valid token to be used for the request
@@ -181,6 +181,8 @@ class StorageClient(object):
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
                     + str(res.status_code))
+            if zipped:
+                return res.content
             else:
                 return res.text
         except requests.exceptions.ConnectionError, err:
