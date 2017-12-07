@@ -2,6 +2,8 @@
 # This script is designed for local usage.
 
 # Code coverage does not seem work without /nfs4 or /gpfs access
+export VIRTUAL_ENV=$NRP_VIRTUAL_ENV
+
 make test-nocover
 RET=$?
 
