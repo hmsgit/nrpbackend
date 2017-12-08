@@ -126,7 +126,7 @@ class ROSCLESimulationFactory(object):
         return self.running_simulation_thread is not None and \
             self.running_simulation_thread.is_alive()
 
-    # pylint: disable=too-many-locals, too-many-statements
+    # pylint: disable=too-many-locals, too-many-statements, too-many-branches
     def create_new_simulation(self, service_request):
         """
         Handler for the ROS service. Spawn a new simulation.
@@ -173,21 +173,44 @@ class ROSCLESimulationFactory(object):
                                 .format(service_request.brain_processes, exd.bibiConf.processes))
                     exd.bibiConf.processes = service_request.brain_processes
 
-                # single brain process launch
+                    # do not use MUSIC for overridden single-process simulations
+                    if bibi.mode == bibi_api_gen.SimulationMode.SynchronousMUSICNestSimulation and\
+                       exd.bibiConf.processes == 1:
+                        bibi.mode = bibi_api_gen.SimulationMode.SynchronousNestSimulation
+
+                # backwards compatibility, default to synchronous Nest simulation
+                if bibi.mode is None:
+                    bibi.mode = bibi_api_gen.SimulationMode.SynchronousNestSimulation
+
+                # simulation playback
                 if playback_path:
                     assembly = PlaybackSimulationAssembly
+
+                # single brain process launch
                 elif exd.bibiConf.processes == 1:
-                    conf = bibi.mode
-                    if conf is None:
-                        conf = "SynchronousNestSimulation"
-                    assembly = getattr(ServerConfigurations, conf)
-                # distributed, multi-process launch
+                    assembly = getattr(ServerConfigurations, bibi.mode)
+
+                # distributed, multi-process launch (inline imports to avoid circular dependencies)
                 else:
-                    logger.info("Creating distributed MUSICLauncher object")
-                    from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
 
-                    assembly = MUSICLauncher
+                    # MUSIC-based Nest distributed simulation
+                    if bibi.mode == bibi_api_gen.SimulationMode.SynchronousMUSICNestSimulation:
+                        logger.info("Creating distributed MUSICLauncher object")
+                        from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
+                        assembly = MUSICLauncher
 
+                    # non-MUSIC based Nest distributed simulation
+                    elif bibi.mode == bibi_api_gen.SimulationMode.SynchronousNestSimulation:
+                        logger.info("Creating distributed NestLauncher object")
+                        from hbp_nrp_distributed_nest.launch.NestLauncher import NestLauncher
+                        assembly = NestLauncher
+
+                    # unsupported multi-process mode
+                    else:
+                        raise Exception("Unsupported multi-process simulation mode requested: "
+                                        "{0:s}".format(str(bibi.mode)))
+
+                # create and initialize the selected launcher
                 launcher = assembly(sim_id, exd, bibi,
                                     gzserver_host=gzserver_host,
                                     reservation=reservation,

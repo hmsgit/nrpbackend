@@ -550,7 +550,7 @@ class ROSCLEServer(SimulationServer):
             original_name = request.transfer_function_name
             # Delete synchronously the original if needed
             if original_name:
-                tf_framework.delete_transfer_function(original_name)
+                self.__delete_transfer_function(request)
         else:
             original_name = None
 
