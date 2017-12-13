@@ -385,6 +385,9 @@ class ROSCLEServer(SimulationServer):
 
         :param request: The mandatory rospy request parameter
         """
+        running = self.__cle.running
+        if running:
+            self.__cle.stop()
         previous_valid_brain = self.__get_brain(None)
         return_value = self.__set_brain(request.brain_populations, request.brain_type,
                                         request.brain_data, request.data_type,
@@ -397,6 +400,9 @@ class ROSCLEServer(SimulationServer):
                              SetBrainRequest.ASK_RENAME_POPULATION)
         else:
             self._notificator.publish_state(json.dumps({"action": "setbrain"}))
+
+        if running:
+            self.__cle.start()
 
         return return_value
 
@@ -421,9 +427,6 @@ class ROSCLEServer(SimulationServer):
             err = self.__check_set_brain(data_type, brain_populations, change_population)
             if err is not None:
                 return err
-            running = self.__cle.running
-            if running:
-                self.__cle.stop()
             with NamedTemporaryFile(prefix='brain', suffix='.' + brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
                     if data_type == "text":
@@ -431,8 +434,6 @@ class ROSCLEServer(SimulationServer):
                     else:
                         brain_file.write(base64.decodestring(brain_data))
                 self.__cle.load_network_from_file(tmp.name, **json.loads(brain_populations))
-            if running:
-                self.__cle.start()
         except ValueError, e:
             logger.exception(e)
             return_value = ["Population format is invalid: " + str(e), 0, 0, 0]
