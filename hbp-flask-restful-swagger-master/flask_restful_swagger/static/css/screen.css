@@ -1239,10 +1239,10 @@ body #header {
 }
 
 body #header a#logo {
-    font-size: 1.5em;
+    font-size: 1.4em;
     font-weight: bold;
     text-decoration: none;
-    background: transparent url(../images/bbp.png) no-repeat left center;
+    background: transparent url(../images/nrp.png) no-repeat left center;
     border-left: 20px solid transparent;
     background-origin: border-box;
     padding: 20px 0px 20px 40px;
