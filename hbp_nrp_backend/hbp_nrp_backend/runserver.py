@@ -58,8 +58,9 @@ def start_ros():  # pragma: no cover
     Starts ROS utilities and cleanup thread in the app process.
     """
     root_logger.info("Starting ROS node")
-    rosparam.set_param("/use_sim_time", "true")
+    # Block until connection to ROS master is established, and initialize a backend node
     rospy.init_node("nrp_backend")
+    rosparam.set_param("/use_sim_time", "true")
 
     rospy_thread = Thread(target=rospy.spin)
     rospy_thread.setDaemon(True)
