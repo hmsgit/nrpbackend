@@ -223,7 +223,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 "CLE error")
         except rospy.ServiceException as e:
             raise NRPServicesGeneralException(
-                "Error starting the simulation.",
+                "Error starting the simulation. (" + e.message + ")",
                 "rospy.ServiceException",
                 data=e.message)
 
