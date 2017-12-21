@@ -524,7 +524,7 @@ class ROSCLEServer(SimulationServer):
         """
         return self.__set_transfer_function(request, False)
 
-    # pylint: disable=R0911
+    # pylint: disable=R0911,too-many-branches
     def __set_transfer_function(self, request, new):
         """
         Patch a transfer function. This method is called when adding or editing a transfer function.
@@ -548,22 +548,20 @@ class ROSCLEServer(SimulationServer):
 
         if not new:
             original_name = request.transfer_function_name
-            # Delete synchronously the original if needed
-            if original_name:
-                self.__delete_transfer_function(request)
         else:
             original_name = None
 
         # Make sure function name is not a duplicate
-        try:
-            self.__check_duplicate_tf_name(new_name)
-        except ValueError:
-            message = "duplicate Transfer Function name"
-            # Select the correct function to highlight
-            function_name = new_name if original_name is None else original_name
-            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading",
-                               "Duplicate Definition Name", function_name=function_name)
-            return message
+        if new or (new_name != original_name):
+            try:
+                self.__check_duplicate_tf_name(new_name)
+            except ValueError:
+                message = "duplicate Transfer Function name"
+                # Select the correct function to highlight
+                function_name = new_name if original_name is None else original_name
+                self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading",
+                                   "Duplicate Definition Name", function_name=function_name)
+                return message
 
         # Compile (synchronously) transfer function's new code in restricted mode
         new_code = None
@@ -591,6 +589,8 @@ class ROSCLEServer(SimulationServer):
         if running:
             self.__cle.stop()
         try:
+            if not new and original_name is not None:
+                tf_framework.delete_transfer_function(original_name)
             tf_framework.set_transfer_function(new_source, new_code, new_name)
         except TFLoadingException as e:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
