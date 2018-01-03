@@ -30,6 +30,7 @@ for loading and saving experiment transfer functions
 __author__ = 'Bernd Eckstein'
 
 import logging
+import xml.dom.minidom
 from threading import Thread
 from flask_restful import Resource, request, fields
 from flask_restful_swagger import swagger
@@ -115,7 +116,7 @@ class ExperimentTransferfunctions(Resource):
         :status 404: The request body is malformed
         :status 200: Success. File written.
         """
-
+        # pylint: disable=too-many-locals
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module
         from hbp_nrp_backend.storage_client_api.StorageClient \
@@ -170,12 +171,15 @@ class ExperimentTransferfunctions(Resource):
                 t.start()
                 threads.append(t)
 
+        # we need to prettify the parsed bibi
+        pretty_bibi = xml.dom.minidom.parseString(
+            bibi.toxml("utf-8")).toprettyxml()
         t = Thread(target=client.create_or_update,
                    kwargs={
                        'token': UserAuthentication.get_header_token(request),
                        'experiment': experiment_id,
                        'filename': bibi_filename,
-                       'content': bibi.toxml("utf-8"),
+                       'content': pretty_bibi,
                        'content_type': 'text/plain'})
         t.start()
         threads.append(t)

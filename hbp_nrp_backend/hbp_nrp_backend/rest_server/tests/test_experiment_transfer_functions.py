@@ -66,7 +66,6 @@ class TestExperimentTransferFunctions(RestTest):
         experiment_id = '123456'
         data = {'transfer_functions': [self.tf1, self.tf2]}
         bibi_original_path = os.path.join(self.test_directory, "experiments", "experiment_data","bibi_1.bibi")
-        bibi_remote_path = os.path.join("/storage_remote_path", "bibi_1.bibi")
         bibi_temp_path = os.path.join(self.temp_directory, "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
         with open(bibi_temp_path) as bibi_xml:
@@ -77,6 +76,7 @@ class TestExperimentTransferFunctions(RestTest):
             exp = exp_xml.read()
 
         self.mock_storageClient_instance.get_file.return_value = exp
-
+        self.mock_storageClient_instance.parse_and_check_file_is_valid.return_value = bibi
+        
         response = self.client.put('/experiment/' + experiment_id + '/transfer-functions', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)

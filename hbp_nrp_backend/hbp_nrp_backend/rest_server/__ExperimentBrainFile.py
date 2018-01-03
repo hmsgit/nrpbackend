@@ -31,6 +31,7 @@ __author__ = 'Bernd Eckstein'
 
 import os
 import logging
+import xml.dom.minidom
 
 from flask_restful import Resource, fields, request
 from flask_restful_swagger import swagger
@@ -221,7 +222,8 @@ class ExperimentBrainFile(Resource):
             UserAuthentication.get_header_token(request),
             experiment_id,
             bibi_filename,
-            bibi_file_obj.toxml("utf-8"),
+            xml.dom.minidom.parseString(
+                bibi_file_obj.toxml("utf-8")).toprettyxml(),
             "text/plain"
         )
 
