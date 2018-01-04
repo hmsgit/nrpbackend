@@ -212,15 +212,10 @@ class SimulationCSVRecorders(Resource):
 
         if csv_files:
             for csv_file in csv_files:
-                file_data = []
                 with open(csv_file.temporary_path) as csvfile:
-                    spamreader = csv.reader(
-                        csvfile, delimiter=' ', quotechar='|')
-                    for row in spamreader:
-                        file_data.append(', '.join(row))
-                client.create_or_update(UserAuthentication.get_header_token(request),
-                                        folder_uuid,
-                                        csv_file.name,
-                                        str(file_data),
-                                        'text/plain')
+                    client.create_or_update(UserAuthentication.get_header_token(request),
+                                            folder_uuid,
+                                            csv_file.name,
+                                            csvfile.read(),
+                                            'text/plain')
         return 200
