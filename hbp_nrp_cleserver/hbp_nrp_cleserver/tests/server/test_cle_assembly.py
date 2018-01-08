@@ -28,8 +28,9 @@ This module contains the unit tests for the cle launcher
 import unittest
 import os
 from mock import patch, Mock
-from hbp_nrp_cleserver.server.ServerConfigurations import SynchronousNestSimulation
+from hbp_nrp_cleserver.server.ServerConfigurations import SynchronousNestSimulation, SynchronousRobotRosNest
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
+from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 
 PATH = os.path.split(__file__)[0]
 
@@ -139,3 +140,33 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 
         with self.assertRaises(Exception):
             SynchronousNestSimulation(42, exd, bibi, gzserver_host="bullshit")
+
+    @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
+    @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
+    def test_load_robot_adapters(self):
+        (comm, ctrl) = self.launcher._create_robot_adapters()
+        self.assertIsNotNone(comm)
+        self.assertIsNotNone(ctrl)
+
+
+class TestCLEGazeboSimulationAssemblyRobot(TestCLEGazeboSimulationAssembly):
+
+    def setUp(self):
+        dir = os.path.split(__file__)[0]
+        with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
+            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
+        with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
+            exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+        exd.path = "/somewhere/over/the/rainbow/exc"
+        exd.dir = "/somewhere/over/the/rainbow"
+        bibi.path = "/somewhere/over/the/rainbow/bibi"
+        self.models_path_patch=patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
+        self.models_path_patch.start()
+        self.launcher = SynchronousRobotRosNest(42, exd, bibi, gzserver_host="local")
+
+    @patch("hbp_nrp_cle.robotsim.RosRobotControlAdapter.RosRobotControlAdapter", new=MockRobotControlAdapter)
+    @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
+    def test_load_robot_adapters(self):
+        (comm, ctrl) = self.launcher._create_robot_adapters()
+        self.assertIsNotNone(comm)
+        self.assertIsNotNone(ctrl)

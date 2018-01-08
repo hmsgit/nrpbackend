@@ -82,8 +82,8 @@ class MockOs(object):
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RosControlAdapter", new=MockRobotControlAdapter)
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
+@patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
+@patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp.config.active_node", new=Mock())
 @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
     new=Mock(return_value=EXPERIMENTS_PATH)
