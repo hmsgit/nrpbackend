@@ -424,7 +424,7 @@ class StorageClient(object):
 
         experiment_folder_uuid = self.create_experiment(
             token, self.create_unique_experiment_id(
-                'Experiment', 0, [exp['name'] for exp in list_experiments]),
+                os.path.split(exp_configuration)[0], 0, [exp['name'] for exp in list_experiments]),
             context_id)
 
         with _FlattenedExperimentDirectory(exp_configuration, paths) as temporary_folder:
@@ -433,7 +433,8 @@ class StorageClient(object):
             for filename in os.listdir(temporary_folder):
                 filepath = os.path.join(temporary_folder, filename)
                 _, ext = os.path.splitext(filepath)
-                mimetype = 'application/octet-stream' if ext in {'.png', '.jpg'} else 'text/plain'
+                mimetype = 'application/octet-stream' if ext in {
+                    '.png', '.jpg'} else 'text/plain'
                 with open(filepath) as temp_image:
                     self.create_or_update(token,
                                           experiment_folder_uuid,
