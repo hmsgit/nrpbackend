@@ -127,8 +127,7 @@ class TestSimulationResetStorage(RestTest):
         mock_get_brain_info_from_storage.return_value = os.path.join(PATH,
                                                                      'models/braitenberg.py'), {}, {}
 
-        experiment_file_path = os.path.join(
-            PATH, 'experiments/experiment_data/test_1.exc')
+        experiment_file_path = os.path.join(PATH, 'experiments/experiment_data/test_1.exc')
 
         with open(experiment_file_path) as exd_file:
             try:
@@ -222,7 +221,6 @@ class TestSimulationResetStorage(RestTest):
         bibi_original_path = os.path.join(os.path.split(
             __file__)[0], "experiments", "experiment_data", "bibi_1.bibi")
         bibi_temp_path = os.path.join(tempfile.mkdtemp(), "bibi_test.xml")
-        bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
 
         exp_temp_path = os.path.join(os.path.split(
@@ -255,7 +253,6 @@ class TestSimulationResetStorage(RestTest):
         bibi_original_path = os.path.join(os.path.split(
             __file__)[0], "experiments", "experiment_data", "bibi_1.bibi")
         bibi_temp_path = os.path.join(tempfile.mkdtemp(), "bibi_test.xml")
-        bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
 
         exp_temp_path = os.path.join(os.path.split(
@@ -279,18 +276,16 @@ class TestSimulationResetStorage(RestTest):
 
         # assertions
         mock_get_header_token.assert_called()
-        self.assertEqual(
-            self.mock_storageClient_instance.clone_file, fake_filepath)
+        self.assertEqual(self.mock_storageClient_instance.clone_file, fake_filepath)
 
         self.assertNotEqual(world_sdf_string, fake_world_sdf_string)
-    
+
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.UserAuthentication.get_header_token')
     def test_get_sdf_world_from_storage_user_model(self, mock_get_header_token):
 
         bibi_original_path = os.path.join(os.path.split(
             __file__)[0], "experiments", "experiment_data", "bibi_4.bibi")
         bibi_temp_path = os.path.join(tempfile.mkdtemp(), "bibi_test.xml")
-        bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
 
         exp_temp_path = os.path.join(os.path.split(
@@ -314,8 +309,7 @@ class TestSimulationResetStorage(RestTest):
 
         # assertions
         mock_get_header_token.assert_called()
-        self.assertEqual(
-            self.mock_storageClient_instance.clone_file, fake_filepath)
+        self.assertEqual(self.mock_storageClient_instance.clone_file, fake_filepath)
 
         self.assertNotEqual(world_sdf_string, fake_world_sdf_string)
 
@@ -334,7 +328,6 @@ class TestSimulationResetStorage(RestTest):
         bibi_original_path = os.path.join(os.path.split(
             __file__)[0], "experiments", "experiment_data", "bibi_1.bibi")
         bibi_temp_path = os.path.join(tempfile.mkdtemp(), "bibi_test.xml")
-        bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
 
         exp_temp_path = os.path.join(os.path.split(
@@ -352,16 +345,20 @@ class TestSimulationResetStorage(RestTest):
         mock_get_all_neurons_as_dict.return_value = dummy_populations
         data_from_storage, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
             self.experiment_id, None)
-        self.assertEqual(data_from_storage,
-                         os.path.join(dummy_dir, 'brain.py'))
+        self.assertEqual(data_from_storage, os.path.join(dummy_dir, 'brain.py'))
         self.assertEqual(
-            "[name: pop2\ntype: 1\nids: []\nstart: 1\nstop: 2\nstep: 1, name: pop1\ntype: 1\nids: []\nstart: 0\nstop: 1\nstep: 1]", str(populations))
-    
+            '[name: pop2\ntype: 1\nids: []\nstart: 1\nstop: 2\nstep: 1, name: pop1\ntype: 1\nids: []\nstart: 0\nstop: 1\nstep: 1]',
+            str(populations).replace('\"', ''))
+        # Converting the population list to a String using str(populations) generates double quotes
+        # around the population name if run locally, but does not generate the double quotes on
+        # jenkins for now. So this is just a workaround to remove any generated double quotes around
+        # population names.
+
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.tempfile')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.get_all_neurons_as_dict')
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.UserAuthentication.get_header_token')
     def test_get_brain_info_from_storage_user_model(self, mock_get_brain_info,
-                                         mock_get_all_neurons_as_dict, mock_tempfile):
+                                                    mock_get_all_neurons_as_dict, mock_tempfile):
 
         dummy_dir = "/my/temp/dir"
         mock_tempfile.mkdtemp.return_value = dummy_dir
@@ -372,7 +369,6 @@ class TestSimulationResetStorage(RestTest):
         bibi_original_path = os.path.join(os.path.split(
             __file__)[0], "experiments", "experiment_data", "bibi_4.bibi")
         bibi_temp_path = os.path.join(tempfile.mkdtemp(), "bibi_test.xml")
-        bibi_remote_path = os.path.join("/collab_dir", "bibi_test.xml")
         shutil.copyfile(bibi_original_path, bibi_temp_path)
 
         exp_temp_path = os.path.join(os.path.split(
@@ -391,8 +387,14 @@ class TestSimulationResetStorage(RestTest):
         with patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.open', mock_open(read_data='Fake_data'), create=True) as m:
             data_from_storage, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
                 self.experiment_id, None)
+
         self.assertEqual(
-            "[name: pop2\ntype: 1\nids: []\nstart: 1\nstop: 2\nstep: 1, name: pop1\ntype: 1\nids: []\nstart: 0\nstop: 1\nstep: 1]", str(populations))
+            '[name: pop2\ntype: 1\nids: []\nstart: 1\nstop: 2\nstep: 1, name: pop1\ntype: 1\nids: []\nstart: 0\nstop: 1\nstep: 1]',
+            str(populations).replace('\"', ''))
+        # Converting the population list to a String using str(populations) generates double quotes
+        # around the population name if run locally, but does not generate the double quotes on
+        # jenkins for now. So this is just a workaround to remove any generated double quotes around
+        # population names.
 
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage.resetFromStorageAll")
     def test_full_reset_ok(self, mock_reset_from_storage):
@@ -436,13 +438,11 @@ class TestSimulationResetStorage(RestTest):
         mock_resetBrain.return_value = None
         mock_resetTFs.return_value = None
         mock_resetSMs.return_value = None
-        mock_dirname.return_value = os.path.join(
-            PATH, 'experiments/experiment_data')
+        mock_dirname.return_value = os.path.join(PATH, 'experiments/experiment_data')
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
 
-        experiment_file_path = os.path.join(
-            PATH, 'experiments/experiment_data/test_5.exc')
+        experiment_file_path = os.path.join(PATH, 'experiments/experiment_data/test_5.exc')
 
         with open(experiment_file_path) as exd_file:
             try:
@@ -462,8 +462,7 @@ class TestSimulationResetStorage(RestTest):
                                     "error: {1:s}".format(bibi_file_abs, str(ve)))
 
         mock_get_experiment_data.return_value = experiment, bibi
-        SimulationResetStorage.resetFromStorageAll(
-            simulations[0], 'ExperimentId', 'fakeContextID')
+        SimulationResetStorage.resetFromStorageAll(simulations[0], 'ExperimentId', 'fakeContextID')
 
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_brain_info_from_storage")
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_sdf_world_from_storage')
@@ -492,8 +491,7 @@ class TestSimulationResetStorage(RestTest):
                                                         'models/braitenberg.py'), None, {u'record': slice(0L, 2L, 1L), u'neurons': slice(0L, 2L, 1L)}
 
         SimulationResetStorage.resetBrain(simulations[0], 'expId', 'contextId')
-        SimulationResetStorage._get_brain_info_from_storage.assert_called_with(
-            'expId', 'contextId')
+        SimulationResetStorage._get_brain_info_from_storage.assert_called_with('expId', 'contextId')
 
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_brain_info_from_storage")
     def test_reset_brain_throw(self, mock_get_brain_info):
@@ -510,8 +508,7 @@ class TestSimulationResetStorage(RestTest):
         mock_get_brain_info.return_value = os.path.join(PATH,
                                                         'models/braitenberg.py'), None, {u'record': slice(0L, 2L, 1L), u'neurons': slice(0L, 2L, 1L)}
         with self.assertRaises(ROSCLEClientException) as context:
-            SimulationResetStorage.resetBrain(
-                simulations[0], 'expId', 'contextId')
+            SimulationResetStorage.resetBrain(simulations[0], 'expId', 'contextId')
 
         self.assertEqual(
             'error, line:10, column:50, population_change:None', context.exception.message)
@@ -525,8 +522,7 @@ class TestSimulationResetStorage(RestTest):
             __file__)[0], "experiments", "experiment_data", "bibi_1.bibi")
         with open(bibi_file_abs) as b_file:
             bibi = bibi_api_gen.CreateFromDocument(b_file.read())
-        SimulationResetStorage.resetTransferFunctions(
-            simulations[0], bibi, PATH)
+        SimulationResetStorage.resetTransferFunctions(simulations[0], bibi, PATH)
         simulations[0].cle.get_simulation_transfer_functions.assert_called()
         simulations[0].cle.delete_simulation_transfer_function.assert_called_with('grab_image')
 
