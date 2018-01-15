@@ -34,7 +34,8 @@ from hbp_nrp_backend.config import Config
 from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
-from hbp_nrp_commons.generated import exp_conf_api_gen, model_conf_api_gen, bibi_api_gen
+from hbp_nrp_commons.generated import exp_conf_api_gen, environment_conf_api_gen, bibi_api_gen, \
+    robot_conf_api_gen
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
 
 __author__ = "Manos Angelidis"
@@ -540,7 +541,7 @@ class _FlattenedExperimentDirectory(object):
         if self.__models_paths is not None and self.__models_paths['envPath'] is not None:
             sdf_file = \
                 self._parse_models_config_file(
-                    self.__models_paths['envPath'], 'environments')
+                    self.__models_paths['envPath'], 'environments', environment_conf_api_gen)
         else:
             sdf_file = os.path.join(
                 self.__models_folder, experiment_dom.environmentModel.src)
@@ -612,7 +613,7 @@ class _FlattenedExperimentDirectory(object):
         if self.__models_paths is not None and self.__models_paths['robotPath'] is not None:
             robot_sdf_file = \
                 self._parse_models_config_file(
-                    self.__models_paths['robotPath'], 'robots')
+                    self.__models_paths['robotPath'], 'robots', robot_conf_api_gen)
         else:
             robot_sdf_file = os.path.join(
                 self.__models_folder, bibi_configuration_dom.bodyModel)
@@ -621,6 +622,11 @@ class _FlattenedExperimentDirectory(object):
             self.__temp_directory, robot_sdf_file_name))
         bibi_configuration_dom.bodyModel = bibi_api_gen.SDFFilename(
             robot_sdf_file_name)
+
+        robot_config = os.path.join(os.path.dirname(robot_sdf_file), 'model.config')
+        shutil.copyfile(robot_config, os.path.join(
+            self.__temp_directory, 'robot.config'))
+
         # Get the PyNN file path and copy it into the flattened experiment
         # directory
         if self.__models_paths is not None and self.__models_paths['brainPath'] is not None:
@@ -665,7 +671,7 @@ class _FlattenedExperimentDirectory(object):
                          self.__temp_directory)
             shutil.rmtree(self.__temp_directory)
 
-    def _parse_models_config_file(self, model_config_path, model_type):
+    def _parse_models_config_file(self, model_config_path, model_type, model_api_gen):
         """
         Parse the model.config files from the paths we receive from
         the frontend. These files contain the path to the models
@@ -680,7 +686,7 @@ class _FlattenedExperimentDirectory(object):
             os.path.join(self.__models_folder, model_type, model_config_path)
         with open(model_config_file) as model_config:
             model_config_dom = \
-                model_conf_api_gen.CreateFromDocument(model_config.read())
+                model_api_gen.CreateFromDocument(model_config.read())
             # we read the relative path to the sdf
             model_sdf_value = model_config_dom.sdf.value()
             # we extract the name of the model folder, i.e. lauron_model

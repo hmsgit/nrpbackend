@@ -30,7 +30,7 @@ import shutil
 import os
 import requests
 from mock import patch, MagicMock, mock_open, call, Mock
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen, model_conf_api_gen
+from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
 from hbp_nrp_backend.storage_client_api import StorageClient
 from hbp_nrp_backend.storage_client_api.StorageClient import _FlattenedExperimentDirectory
@@ -530,13 +530,14 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
     def test_flatten_bibi_configuration(self, get_model_basepath_mock, get_experiment_basepath_mock):
         get_model_basepath_mock.return_value = self.models_directory
         get_experiment_basepath_mock.return_value = self.experiments_directory
-        exp_configuration = 'ExDXMLExample.exc' 
+        exp_configuration = 'ExDXMLExample.exc'
         expected_list = ['experiment_configuration.exc',
                          'bibi_configuration.bibi',
                          'braitenberg_husky_linear_twist.py',
                          'csv_spike_monitor.py',
                          'model.sdf',
                          'braitenberg.py',
+                         'robot.config',
                          'csv_joint_state_monitor.py',
                          'ExDXMLExample.3ds',
                          'ExDXMLExample.png',
