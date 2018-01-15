@@ -258,7 +258,7 @@ class SimulationReset(Resource):
         Reset transfer functions
         """
         # Delete all TFs
-        old_tfs = sim.cle.get_simulation_transfer_functions()
+        old_tfs, _ = sim.cle.get_simulation_transfer_functions()
         for tf in old_tfs:
             sim.cle.delete_simulation_transfer_function(get_tf_name(tf))
 

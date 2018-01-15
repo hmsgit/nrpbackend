@@ -29,6 +29,8 @@ SERVICE_ADD_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/add_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_EDIT_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/edit_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_ACTIVATE_TRANSFER_FUNCTION = lambda sim_id: \
+    '/%s/%d/activate_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS = lambda sim_id: \
     '/%s/%d/get_structured_transfer_functions' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION = lambda sim_id: \

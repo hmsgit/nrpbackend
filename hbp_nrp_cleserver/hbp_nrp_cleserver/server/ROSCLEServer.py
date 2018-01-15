@@ -51,7 +51,7 @@ from hbp_nrp_cleserver.server import \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES, \
+    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
 from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
@@ -110,6 +110,7 @@ class ROSCLEServer(SimulationServer):
         self.__service_get_transfer_functions = None
         self.__service_add_transfer_function = None
         self.__service_edit_transfer_function = None
+        self.__service_activate_transfer_function = None
         self.__service_get_structured_transfer_functions = None
         self.__service_set_structured_transfer_function = None
         self.__service_delete_transfer_function = None
@@ -195,7 +196,7 @@ class ROSCLEServer(SimulationServer):
 
         self.__service_get_transfer_functions = rospy.Service(
             SERVICE_GET_TRANSFER_FUNCTIONS(self.simulation_id), srv.GetTransferFunctions,
-            self.__get_transfer_function_sources
+            self.__get_transfer_function_sources_and_activation
         )
 
         self.__service_add_transfer_function = rospy.Service(
@@ -206,6 +207,11 @@ class ROSCLEServer(SimulationServer):
         self.__service_edit_transfer_function = rospy.Service(
             SERVICE_EDIT_TRANSFER_FUNCTION(self.simulation_id), srv.EditTransferFunction,
             self.__edit_transfer_function
+        )
+
+        self.__service_activate_transfer_function = rospy.Service(
+            SERVICE_ACTIVATE_TRANSFER_FUNCTION(self.simulation_id), srv.ActivateTransferFunction,
+            self.__activate_transfer_function
         )
 
         self.__service_get_structured_transfer_functions = rospy.Service(
@@ -479,15 +485,24 @@ class ROSCLEServer(SimulationServer):
 
     # pylint: disable=unused-argument
     @staticmethod
-    def __get_transfer_function_sources(request):
+    def __get_transfer_function_sources_and_activation(request):
         """
-        Return the source code of the transfer functions
+        Return the source code of the transfer functions and its activity state
+        in a tuple of parallel lists.
 
         :param request: The mandatory rospy request parameter
+        :return A tuple (tf_sources, tf_activation_state)
         """
         tfs = tf_framework.get_transfer_functions()
-        arr = numpy.asarray([tf.source.encode('UTF-8') for tf in tfs])
-        return arr, []
+
+        tf_arr = []
+        arr_active_mask = []
+
+        for tf in tfs:
+            tf_arr.append(tf.source.encode('UTF-8'))
+            arr_active_mask.append(tf.active)
+
+        return numpy.array(tf_arr), numpy.array(arr_active_mask)
 
     def __check_duplicate_tf_name(self, tf_name):
         """
@@ -498,7 +513,7 @@ class ROSCLEServer(SimulationServer):
         """
 
         tf_names = []
-        for tf in self.__get_transfer_function_sources(None)[0]:
+        for tf in self.__get_transfer_function_sources_and_activation(None)[0]:
             tf_names.append(self.get_tf_name(tf)[1])
 
         if tf_name in tf_names:
@@ -523,6 +538,29 @@ class ROSCLEServer(SimulationServer):
                  (executed synchronously), an error message otherwise.
         """
         return self.__set_transfer_function(request, False)
+
+    def __activate_transfer_function(self, request):
+        """
+        Set the activation state of a Transfer Function
+
+        :param request: The mandatory rospy request parameter
+        :return: empty string if successful, an error message otherwise.
+        """
+        original_name = request.transfer_function_name
+        activate = request.activate
+
+        tf_to_activate = tf_framework.get_transfer_function(original_name)
+
+        message = ""
+
+        if tf_to_activate is None:
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "NoOrMultipleNames",
+                               original_name, severity=CLEError.SEVERITY_ERROR)
+            message = "Can't change activation status: Transfer Function not found"
+        else:
+            tf_framework.activate_transfer_function(tf_to_activate, activate)
+
+        return message
 
     # pylint: disable=R0911,too-many-branches
     def __set_transfer_function(self, request, new):
@@ -774,8 +812,8 @@ class ROSCLEServer(SimulationServer):
         gazebo_logger.handlers.append(notificator_handler)
         Notificator.register_notification_function(
             lambda subtask, update_progress: self._notificator.update_task(subtask,
-                                                                            update_progress,
-                                                                            True)
+                                                                           update_progress,
+                                                                           True)
         )
 
     def stop_fetching_gazebo_logs(self):

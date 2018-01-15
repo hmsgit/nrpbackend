@@ -34,7 +34,8 @@ import rospy
 # in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
-    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
+    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
+    SERVICE_ACTIVATE_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION, \
@@ -166,6 +167,9 @@ class ROSCLEClient(object):
         self.__cle_add_transfer_function = ROSCLEServiceWrapper(
             SERVICE_ADD_TRANSFER_FUNCTION(sim_id), srv.AddTransferFunction, self)
 
+        self.__cle_activate_transfer_function = ROSCLEServiceWrapper(
+            SERVICE_ACTIVATE_TRANSFER_FUNCTION(sim_id), srv.ActivateTransferFunction, self)
+
         self.__cle_edit_transfer_function = ROSCLEServiceWrapper(
             SERVICE_EDIT_TRANSFER_FUNCTION(sim_id), srv.EditTransferFunction, self)
 
@@ -274,16 +278,20 @@ class ROSCLEClient(object):
         return self.__cle_set_brain(brain_type, data, data_type, brain_populations,
                                     change_population)
 
-    @fallback_retval([])
+    @fallback_retval(([], []))
     def get_simulation_transfer_functions(self):
         """
-        Get the simulation transfer functions.
+        Get the simulation transfer functions and their activation status
 
-        :returns: An array of strings containing the source code of the transfer functions.
+        :returns:  A tuple of parallel arrays of:
+        - strings containing the source code of the transfer functions
+        - their activation status
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_get_transfer_functions().transfer_functions
+
+        response = self.__cle_get_transfer_functions()
+        return response.transfer_functions, response.active
 
     @fallback_retval(False)
     def delete_simulation_transfer_function(self, transfer_function_name):
@@ -322,6 +330,19 @@ class ROSCLEClient(object):
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_add_transfer_function(transfer_function_source).error_message
+
+    def activate_simulation_transfer_function(self, transfer_function_name,
+                                              activate_transfer_function):
+        """
+        Set the activation status of a transfer function
+        :param transfer_function_name: the name of the tf to be set
+        :param activate_transfer_function: the desired new activation status
+        :return:
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        return self.__cle_activate_transfer_function(transfer_function_name,
+                                                     activate_transfer_function).error_message
 
     def get_structured_transfer_functions(self):
         """

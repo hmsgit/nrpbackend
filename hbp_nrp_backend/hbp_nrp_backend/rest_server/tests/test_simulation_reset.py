@@ -98,6 +98,7 @@ class TestSimulationReset(RestTest):
         simulations[0].cle.set_simulation_brain.return_value = Mock(
             error_message="")
         simulations[0].cle.add_simulation_transfer_function.return_value = None
+        simulations[0].cle.get_simulation_transfer_functions.return_value = ([], [])
 
         mock_get_experiment_path.return_value = PATH
         mock_get_model_path.return_value = os.path.join(PATH, 'models')
@@ -107,6 +108,7 @@ class TestSimulationReset(RestTest):
         }))
         simulations[0].cle.reset.assert_called_with(
             ResetSimulationRequest.RESET_ROBOT_POSE)
+        self.assertEqual(200, response.status_code)
 
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_FULL
@@ -120,6 +122,7 @@ class TestSimulationReset(RestTest):
         }))
         simulations[0].cle.reset.assert_called_with(
             ResetSimulationRequest.RESET_WORLD)
+        self.assertEqual(200, response.status_code)
 
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_model_basepath")

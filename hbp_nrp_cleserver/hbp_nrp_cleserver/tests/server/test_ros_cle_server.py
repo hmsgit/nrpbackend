@@ -113,7 +113,7 @@ class TestROSCLEServer(unittest.TestCase):
 
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
-        self.assertEqual(11, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(12, self.__mocked_rospy.Service.call_count)
         self.assertEqual(2, self.__mock_base_rospy.Service.call_count)
 
     def test_reset_simulation(self):
@@ -328,7 +328,6 @@ class TestROSCLEServer(unittest.TestCase):
             self.assertEqual(response[2], -1)
             self.assertEqual(response[3], 0)
 
-
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_CSV_recorders_functions(self, mocked_tf_framework):
         ros_callbacks = self.__get_handlers_for_testing_main()
@@ -357,13 +356,52 @@ class TestROSCLEServer(unittest.TestCase):
     def test_get_transfer_functions(self, mocked_tf_framework):
         tf = [MagicMock(), MagicMock()]
         tf[0].source = "tf_0 python code"
+        tf[0].active = True
         tf[1].source = "tf_1 python code"
+        tf[1].active = False
+
         mocked_tf_framework.get_transfer_functions = MagicMock(return_value=tf)
         ros_callbacks = self.__get_handlers_for_testing_main()
-        transfer_functions_from_service = ros_callbacks['get_transfer_functions'](None)[0]
+        transfer_functions_from_service, active_tfs_mask = ros_callbacks['get_transfer_functions'](None)
         self.assertEqual(2, len(transfer_functions_from_service))
+        self.assertEqual(2, len(active_tfs_mask))
         self.assertEqual("tf_0 python code", transfer_functions_from_service[0])
         self.assertEqual("tf_1 python code", transfer_functions_from_service[1])
+        self.assertEqual(True, active_tfs_mask[0])
+        self.assertEqual(False, active_tfs_mask[1])
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
+    def test_activate_transfer_function_ok(self, mocked_tf_framework):
+
+        mocked_tf = MagicMock()
+        mocked_tf.configure_mock(name='tf_0', active=True)
+        mocked_tf_framework.get_transfer_function = MagicMock(return_value=mocked_tf)
+        mocked_tf_framework.activate_transfer_function = MagicMock()
+
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        activate_transfer_function_handler = ros_callbacks['activate_transfer_function']
+
+        new_activate = False
+        request = MagicMock(transfer_function_name=mocked_tf.name, activate=new_activate)
+
+        response_message = activate_transfer_function_handler(request)
+
+        self.assertEqual(response_message, "")  # no error
+        self.assertTrue(mocked_tf_framework.activate_transfer_function.called)
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
+    def test_activate_transfer_function_no_tf(self, mocked_tf_framework):
+        mocked_tf_framework.get_transfer_function = MagicMock(return_value=None)
+
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        activate_transfer_function_handler = ros_callbacks['activate_transfer_function']
+
+        request = MagicMock(transfer_function_name="tf_foo", activate=False)
+
+        response_message = activate_transfer_function_handler(request)
+
+        self.assertIn("not found", response_message)  # no error
+        self.assertEqual(self.__mocked_notificator.publish_error.call_count, 1) # publish error message
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_set_transfer_function(self, mocked_tf_framework):

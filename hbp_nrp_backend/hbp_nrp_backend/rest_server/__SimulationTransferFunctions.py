@@ -70,16 +70,28 @@ class TransferFunctionDictionary(object):
 
 
 @swagger.model
-@swagger.nested(data=TransferFunctionDictionary.__name__)
+class ActiveTransferFunctionDictionary(object):
+    """
+    Swagger documentation object
+    """
+    resource_fields = {
+        'tf_name': fields.Boolean
+    }
+
+
+@swagger.model
+@swagger.nested(data=TransferFunctionDictionary.__name__,
+                active=ActiveTransferFunctionDictionary.__name__)
 class TransferFunctionData(object):
     """
     Swagger documentation object
     Main Data Attribute for parsing convenience on the front-end side.
     """
     resource_fields = {
-        'data': fields.Nested(TransferFunctionDictionary.resource_fields)
+        'data': fields.Nested(TransferFunctionDictionary.resource_fields),
+        'active': fields.Nested(ActiveTransferFunctionDictionary.resource_fields),
     }
-    required = ['data']
+    required = ['data', 'active']
 
 
 class SimulationTransferFunctions(Resource):
@@ -97,7 +109,8 @@ class SimulationTransferFunctions(Resource):
             {
                 "name": "sim_id",
                 "required": True,
-                "description": "The ID of the simulation whose transfer function will be retrieved",
+                "description":
+                    "The ID of the simulation whose transfer function will be retrieved",
                 "paramType": "path",
                 "dataType": int.__name__
             }
@@ -122,6 +135,7 @@ class SimulationTransferFunctions(Resource):
         :param sim_id: The simulation ID
 
         :> json dict data: Dictionary containing all transfer functions ('name': 'source')
+        :> json dict active: Dictionary containing a mask for active TFs ('name': 'isActive')
 
         :status 404: {0}
         :status 200: Transfer functions retrieved successfully
@@ -130,12 +144,17 @@ class SimulationTransferFunctions(Resource):
         simulation = _get_simulation_or_abort(sim_id)
 
         transfer_functions = dict()
-        transfer_functions_list = simulation.cle.get_simulation_transfer_functions()
-        for tf in transfer_functions_list:
+        active_tfs_mask = dict()
+
+        transfer_functions_list, active_tfs_mask_list = \
+            simulation.cle.get_simulation_transfer_functions()
+
+        for tf, tf_active in zip(transfer_functions_list, active_tfs_mask_list):
             name = get_tf_name(tf)
             transfer_functions[name] = tf
+            active_tfs_mask[name] = tf_active
 
-        return dict(data=transfer_functions), 200
+        return dict(data=transfer_functions, active=active_tfs_mask), 200
 
     @swagger.operation(
         notes='Adds a new transfer function.',
@@ -379,4 +398,94 @@ class SimulationTransferFunction(Resource):
         if response is False:
             raise NRPServicesTransferFunctionException(
                 "Transfer function delete failed: " + str(transfer_function_name))
+        return 200
+
+
+class SimulationTransferFunctionActivation(Resource):
+    """
+    REST service for setting the activation state of a transfer function
+    """
+
+    def __init__(self):
+        Resource.__init__(self)
+
+    @swagger.operation(
+        notes='Set the activation state of a transfer function.',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "sim_id",
+                "required": True,
+                "description": "The ID of the simulation whose transfer function will be modified",
+                "paramType": "path",
+                "dataType": int.__name__
+            },
+            {
+                "name": "transfer_function_name",
+                "description": "The name of the transfer function to be modified",
+                "required": True,
+                "paramType": "path",
+                "dataType": str.__name__
+            },
+            {
+               "name": "activate",
+               "description": "Desired new activation state of the transfer function",
+               "required": True,
+               "paramType": "path",
+               "dataType": bool.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 404,
+                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
+            },
+            {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
+                "code": 400,
+                "message": ErrorMessages.ACTIVATION_ERROR_400
+            },
+            {
+                "code": 200,
+                "message": "Success. The activation state of the TF has been successfully changed"
+            }
+        ]
+    )
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401,
+                         ErrorMessages.ACTIVATION_ERROR_400)
+    def put(self, sim_id, transfer_function_name, activate):
+        """
+
+        Sets the activation state of the transfer function
+
+        :param sim_id: The simulation ID
+        :param transfer_function_name: The name of the transfer function to be modified
+        :param activate A boolean denoting the new desired activation status
+
+        :status 404: {0}
+        :status 401: {1}
+        :status 400: {2}
+        :status 200: Success. The activation state of the TF has been successfully changed
+
+        """
+
+        simulation = _get_simulation_or_abort(sim_id)
+        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+            raise NRPServicesWrongUserException()
+
+        activate_bool = activate.lower() == "true"  # convert unicode to boolean
+
+        error_message = simulation.cle.activate_simulation_transfer_function(
+            transfer_function_name, activate_bool)
+
+        if error_message:
+            raise NRPServicesTransferFunctionException(
+                "Transfer function (de-)activation failed: "
+                + error_message + "\n"
+            )
+
         return 200

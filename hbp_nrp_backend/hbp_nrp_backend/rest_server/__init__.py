@@ -59,6 +59,7 @@ class ErrorMessages(object):
 
     INVALID_PARAMETERS_400 = "Provided parameters are invalid"
     SOURCE_CODE_ERROR_400 = "The source code is invalid: [ERROR-MESSAGE]"
+    ACTIVATION_ERROR_400 = "The (de-)activation of the Transfer Function has failed"
     ERROR_IN_BASE64_400 = "Error in base64: {0}"
 
     EXP_VARIABLE_ERROR = """Error on server: environment variable: \
@@ -95,7 +96,7 @@ from hbp_nrp_backend.rest_server.__SimulationResetStorage import SimulationReset
 from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import SimulationTransferFunction, \
-    SimulationTransferFunctions
+    SimulationTransferFunctions, SimulationTransferFunctionActivation
 from hbp_nrp_backend.rest_server.__SimulationStateMachines import SimulationStateMachines, \
     SimulationStateMachine
 from hbp_nrp_backend.rest_server.__SimulationCSVRecorders import SimulationCSVRecorders
@@ -147,6 +148,9 @@ api.add_resource(SimulationStateMachines,
                  '/simulation/<int:sim_id>/state-machines')
 api.add_resource(SimulationTransferFunction,
                  '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>')
+api.add_resource(SimulationTransferFunctionActivation,
+                 '/simulation/<int:sim_id>/transfer-functions/<string:transfer_function_name>/'
+                 'activation/<string:activate>')
 api.add_resource(SimulationTransferFunctions,
                  '/simulation/<int:sim_id>/transfer-functions')
 api.add_resource(SimulationCSVRecorders,

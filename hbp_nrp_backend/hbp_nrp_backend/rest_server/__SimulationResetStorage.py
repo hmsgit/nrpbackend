@@ -293,7 +293,7 @@ class SimulationResetStorage(Resource):
         :param bibi_conf: BIBI conf
         :param base_path: base path of the experiment
         """
-        old_tfs = simulation.cle.get_simulation_transfer_functions()
+        old_tfs, _ = simulation.cle.get_simulation_transfer_functions()
         for tf in old_tfs:
             simulation.cle.delete_simulation_transfer_function(get_tf_name(tf))
 

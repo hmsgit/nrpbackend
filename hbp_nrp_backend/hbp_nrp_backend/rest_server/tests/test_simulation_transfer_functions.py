@@ -64,18 +64,21 @@ class TestSimulationTransferFunctions(RestTest):
         mocked_simulation.cle = MagicMock()
         transfer_functions_list = [
             "def tf1(unused):\n return", "def tf2():\n return"]
+        transfer_functions_list_activation_mask = [True, True]
         mocked_simulation.cle.get_simulation_transfer_functions = MagicMock(
-            return_value=transfer_functions_list)
+            return_value=(transfer_functions_list, transfer_functions_list_activation_mask))
         mocked_get_simulation_or_abort.return_value = mocked_simulation
         response = self.client.get('/simulation/0/transfer-functions')
         self.assertEqual(
             mocked_simulation.cle.get_simulation_transfer_functions.call_count, 1)
         self.assertEqual(response.status_code, 200)
-        transfer_functions = {
+        transfer_functions_response = {
             "data":
-            {"tf1": "def tf1(unused):\n return", "tf2": "def tf2():\n return"}
+            {"tf1": "def tf1(unused):\n return", "tf2": "def tf2():\n return"},
+            "active":
+            {"tf1": True, "tf2": True}
         }
-        self.assertEqual(response.data.strip(), json.dumps(transfer_functions))
+        self.assertEqual(response.data.strip(), json.dumps(transfer_functions_response))
 
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_functions_post_success(self, mocked_get_simulation_or_abort):
@@ -150,7 +153,7 @@ class TestSimulationTransferFunctions(RestTest):
                                     data=json.dumps(
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
-        self.assertIn('Transfer function patch failed',response.data )
+        self.assertIn('Transfer function patch failed', response.data)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_function_put_fail(self, mocked_get_simulation_or_abort):
@@ -161,7 +164,61 @@ class TestSimulationTransferFunctions(RestTest):
                                     data=json.dumps(
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
-        self.assertIn('Transfer function patch failed',response.data )
+        self.assertIn('Transfer function patch failed', response.data)
+
+
+class TestSimulationTransferFunctionActivate(RestTest):
+
+    @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
+    def test_simulation_transfer_function_activate_put(self, mocked_get_simulation_or_abort):
+
+        mocked_simulation = MagicMock(owner="default-owner")
+        mocked_simulation.cle = MagicMock()
+
+        mocked_get_simulation_or_abort.return_value = mocked_simulation
+
+        mocked_simulation.cle.activate_simulation_transfer_function = MagicMock(
+            return_value="")
+
+        response = self.client.put(
+            '/simulation/0/transfer-functions/{transfer_function_name}/activation/{activate}'
+            .format(transfer_function_name="a_tf", activate=False)
+        )
+
+        self.assertEqual(
+            mocked_simulation.cle.activate_simulation_transfer_function.call_count, 1)
+        self.assertEqual(response.status_code, 200)
+
+    @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
+    def test_simulation_transfer_function_activate_put_fail(self, mocked_get_simulation_or_abort):
+        mocked_simulation = MagicMock(owner="default-owner")
+        mocked_simulation.cle = MagicMock()
+        mocked_get_simulation_or_abort.return_value = mocked_simulation
+
+        mocked_simulation.cle.activate_simulation_transfer_function = MagicMock(
+            return_value="SOME ERROR")
+
+        response = self.client.put(
+            '/simulation/0/transfer-functions/{transfer_function_name}/activation/{activate}'
+            .format(transfer_function_name="a_tf", activate=False)
+        )
+
+        self.assertEqual(
+            mocked_simulation.cle.activate_simulation_transfer_function.call_count, 1)
+        self.assertEqual(response.status_code, 400)
+
+    @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
+    def test_simulation_transfer_function_activate_put_wrong_user(self, mocked_get_simulation_or_abort):
+        mocked_simulation = MagicMock(owner="wrong-owner")
+        mocked_simulation.cle = MagicMock()
+        mocked_get_simulation_or_abort.return_value = mocked_simulation
+
+        response = self.client.put(
+            '/simulation/0/transfer-functions/{transfer_function_name}/activation/{activate}'
+            .format(transfer_function_name="a_tf", activate=False)
+        )
+
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == '__main__':

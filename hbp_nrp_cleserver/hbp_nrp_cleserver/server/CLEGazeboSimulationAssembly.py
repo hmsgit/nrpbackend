@@ -362,7 +362,7 @@ class GazeboSimulationAssembly(SimulationAssembly):
 
 class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
     """
-    This class assembles the simulation using  the CLE
+    This class assembles the simulation using the CLE
     """
 
     def __init__(self, sim_id, exc, bibi, **par):
