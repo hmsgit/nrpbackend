@@ -29,11 +29,94 @@ by a class that adopts the SimulationAssembly API.
 from hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly import CLEGazeboSimulationAssembly
 
 
+def unused(_):
+    """
+    Marks an argument as unused
+    """
+    pass
+
+
+def robot_gazebo_ros_adapters():
+    """
+    Creates the adapter components for the robot side, configuration with Gazebo
+
+    :return: A tuple of the communication and control adapter for the robot side
+    """
+    from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
+    from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
+    # control adapter
+    robotcontrol = RosControlAdapter()
+    # communication adapter
+    robotcomm = RosCommunicationAdapter()
+    return robotcomm, robotcontrol
+
+
+def robot_ros_adapters():
+    """
+    Creates the adapter components for the robot side, configuration with the real robot
+
+    :return: A tuple of the communication and control adapter for the robot side
+    """
+    from hbp_nrp_cle.robotsim.RosRobotControlAdapter import RosRobotControlAdapter
+    from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
+    # control adapter
+    robotcontrol = RosRobotControlAdapter()
+    # communication adapter
+    robotcomm = RosCommunicationAdapter()
+    return robotcomm, robotcontrol
+
+
+def brain_nest_adapters():
+    """
+    Creates the adapter components for the neural simulator, configuration with NEST
+
+    :return: A tuple of the communication and control adapter for the neural simulator
+    """
+    import pyNN.nest as nestsim
+    from hbp_nrp_cle.brainsim.pynn.PyNNControlAdapter import PyNNControlAdapter
+    from hbp_nrp_cle.brainsim.pynn_nest.PyNNNestCommunicationAdapter import \
+        PyNNNestCommunicationAdapter
+    braincontrol = PyNNControlAdapter(nestsim)
+    braincomm = PyNNNestCommunicationAdapter()
+    return braincomm, braincontrol
+
+
+def brain_spinnaker_adapters():  # pragma: no cover
+    """
+    Creates the adapter components for the neural simulator, configuration with SpiNNaker
+
+    :return: A tuple of the communication and control adapter for the neural simulator
+    """
+    # pylint: disable=import-error, no-name-in-module
+    try:
+        import pyNN.spiNNaker as spinnaker
+    except ImportError:
+        try:
+            import spynnaker8 as spinnaker
+        except ImportError:
+            raise Exception("Spinnaker does not seem to be installed on this machine. "
+                            "Please install Spinnaker in order to use it in the NRP "
+                            "or use a different server.")
+    from hbp_nrp_cle.brainsim.pynn_spiNNaker.PyNNSpiNNakerCommunicationAdapter import \
+        PyNNSpiNNakerCommunicationAdapter
+    from hbp_nrp_cle.brainsim.pynn_spiNNaker.PyNNSpiNNakerControlAdapter import \
+        PySpiNNakerControlAdapter
+    return PyNNSpiNNakerCommunicationAdapter(), PySpiNNakerControlAdapter(spinnaker)
+
+
 class SynchronousNestSimulation(CLEGazeboSimulationAssembly):
     """
     This class represents a synchronous simulation assembly using Nest as the neural simulator
     synchronous to Gazebo
     """
+
+    def _create_robot_adapters(self):
+        """
+        Creates the adapter components for the robot side
+
+        :return: A tuple of the communication and control adapter for the robot side
+        """
+        return robot_gazebo_ros_adapters()
 
     def _create_brain_adapters(self):
         """
@@ -41,37 +124,59 @@ class SynchronousNestSimulation(CLEGazeboSimulationAssembly):
 
         :return: A tuple of the communication and control adapter for the neural simulator
         """
-        import pyNN.nest as nestsim
-        from hbp_nrp_cle.brainsim.pynn.PyNNControlAdapter import PyNNControlAdapter
-        from hbp_nrp_cle.brainsim.pynn_nest.PyNNNestCommunicationAdapter import \
-            PyNNNestCommunicationAdapter
-        braincontrol = PyNNControlAdapter(nestsim)
-        braincomm = PyNNNestCommunicationAdapter()
-        return braincomm, braincontrol
+        return brain_nest_adapters()
 
 
 class SynchronousSpinnakerSimulation(CLEGazeboSimulationAssembly):
     """
     This class represents a synchronous simulation assembly using SpiNNaker as the neural simulator
     """
+
+    def _create_robot_adapters(self):  # pragma: no cover
+        """
+        Creates the adapter components for the robot side
+
+        :return: A tuple of the communication and control adapter for the robot side
+        """
+        return robot_gazebo_ros_adapters()
+
     def _create_brain_adapters(self):  # pragma: no cover
         """
         Creates the adapter components for the neural simulator
 
         :return: A tuple of the communication and control adapter for the neural simulator
         """
-        # pylint: disable=import-error, no-name-in-module
-        try:
-            import pyNN.spiNNaker as spinnaker
-        except ImportError:
-            try:
-                import spynnaker8 as spinnaker
-            except ImportError:
-                raise Exception("Spinnaker does not seem to be installed on this machine. "
-                                "Please install Spinnaker in order to use it in the NRP "
-                                "or use a different server.")
-        from hbp_nrp_cle.brainsim.pynn_spiNNaker.PyNNSpiNNakerCommunicationAdapter import \
-            PyNNSpiNNakerCommunicationAdapter
-        from hbp_nrp_cle.brainsim.pynn_spiNNaker.PyNNSpiNNakerControlAdapter import \
-            PySpiNNakerControlAdapter
-        return PyNNSpiNNakerCommunicationAdapter(), PySpiNNakerControlAdapter(spinnaker)
+        return brain_spinnaker_adapters()
+
+
+class SynchronousRobotRosNest(CLEGazeboSimulationAssembly):
+    """
+    This class represents a synchronous simulation assembly using Nest as the neural simulator
+    and a real robotic platform that uses ROS
+    """
+
+    def _load_environment(self, world_file, robot_file_abs):
+        """
+        Loads the environment and robot in Gazebo
+
+        :param world_file Backwards compatibility for world file specified through webpage
+        """
+        unused(world_file)
+        unused(robot_file_abs)
+        return None, None, None
+
+    def _create_robot_adapters(self):
+        """
+        Creates the adapter components for the robot side
+
+        :return: A tuple of the communication and control adapter for the robot side
+        """
+        return robot_ros_adapters()
+
+    def _create_brain_adapters(self):
+        """
+        Creates the adapter components for the neural simulator
+
+        :return: A tuple of the communication and control adapter for the neural simulator
+        """
+        return brain_nest_adapters()

@@ -62,13 +62,14 @@ class SomeWeiredTFException(Exception):
 
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.os", new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RosControlAdapter", new=MockRobotControlAdapter)
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
+@patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
+@patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.ClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ClosedLoopEngine", new=MockedClosedLoopEngine())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_brain_adapters", new=Mock(return_value=(Mock(), Mock())))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_robot_adapters", new=Mock(return_value=(Mock(), Mock())))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=MockOs)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._get_robot_abs_path", new=Mock(return_value="/a/robot/under/the/rainbow/model.sdf"))
 class TestCLELauncherInit(unittest.TestCase):

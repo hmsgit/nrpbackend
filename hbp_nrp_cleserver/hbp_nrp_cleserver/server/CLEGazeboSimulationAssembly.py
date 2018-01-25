@@ -46,8 +46,6 @@ from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
 from hbp_nrp_cleserver.server.SimulationAssembly import SimulationAssembly
 from hbp_nrp_cleserver.server.ROSLaunch import ROSLaunch
-from hbp_nrp_cle.robotsim.RosControlAdapter import RosControlAdapter
-from hbp_nrp_cle.robotsim.RosCommunicationAdapter import RosCommunicationAdapter
 from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboBridgeInstance, \
     LocalGazeboServerInstance
 from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
@@ -410,8 +408,11 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self._start_gazebo(rng_seed, None, self.__tmp_robot_dir, environment)
 
         # load environment and robot models
-        roscontrol, roscomm, robot_pose, models, lights = self.__load_environment(
+        robot_pose, models, lights = self._load_environment(
             environment, robot_file_abs)
+
+        # load robot adapters
+        robotcomm, robotcontrol = self._create_robot_adapters()
 
         # load the brain
         braincontrol, braincomm, brainfile, brainconf = self._load_brain(
@@ -419,7 +420,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # initialize the cle server and services
         logger.info("Preparing CLE Server")
-        self.cle_server.cle = self.__load_cle(roscontrol, roscomm, braincontrol, braincomm,
+        self.cle_server.cle = self.__load_cle(robotcontrol, robotcomm, braincontrol, braincomm,
                                               brainfile, brainconf, robot_pose, models, lights)
         self.cle_server.prepare_simulation(except_hook)
 
@@ -476,7 +477,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 robot_zip.extractall(path=self.__tmp_robot_dir)
             return os.path.join(self.__tmp_robot_dir, name)
 
-    def __load_environment(self, world_file, robot_file_abs):
+    def _load_environment(self, world_file, robot_file_abs):
         """
         Loads the environment and robot in Gazebo
 
@@ -533,12 +534,15 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     self.shutdown()
                     return
 
-        # control adapter
-        roscontrol = RosControlAdapter()
-        # communication adapter
-        roscomm = RosCommunicationAdapter()
+        return rpose, w_models, w_lights
 
-        return roscontrol, roscomm, rpose, w_models, w_lights
+    def _create_robot_adapters(self):  # pragma: no cover
+        """
+        Creates the adapter components for the robot side
+
+        :return: A tuple of the communication and control adapter for the robot side
+        """
+        raise NotImplementedError("This method must be overridden in an implementation")
 
     def _load_brain(self, rng_seed):
         """
