@@ -33,7 +33,6 @@ from mock import patch, MagicMock, mock_open, call, Mock
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_backend.rest_server import app, NRPServicesGeneralException
 from hbp_nrp_backend.storage_client_api import StorageClient
-from hbp_nrp_backend.storage_client_api.StorageClient import _FlattenedExperimentDirectory
 
 # Used to mock all the http requests by providing a response and a
 # status code
@@ -238,42 +237,6 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
         mocked_get.side_effect = requests.exceptions.ConnectionError()
         with self.assertRaises(requests.exceptions.ConnectionError) as context:
             client.list_experiments("fakeToken", 'ctx')
-        self.assertEqual(requests.exceptions.ConnectionError, context.expected)
-
-    # CREATE EXPERIMENT
-    @patch('requests.put', side_effect=mocked_create_experiment_ok)
-    def test_create_experiment_successfully(self, mocked_put):
-        client = StorageClient.StorageClient()
-        res = client.create_experiment(
-            "fakeToken", "fakeExperiment", "fakeContextId")
-        self.assertEqual(
-            res, "8cb4fbea-f3cf-4ade-ad46-a570a1ab3b15")
-
-    @patch('requests.put', side_effect=mocked_create_experiment_exists)
-    def test_create_experiment_exists(self, mocked_put):
-        client = StorageClient.StorageClient()
-        res = client.create_experiment(
-            "fakeToken", "fakeExperiment", "fakeContextId")
-        self.assertEqual(
-            res, None)
-
-    @patch('requests.put', side_effect=mocked_request_not_ok)
-    def test_create_experiment_fail(self, mocked_put):
-        client = StorageClient.StorageClient()
-        with self.assertRaises(Exception) as context:
-            client.create_experiment(
-                "fakeToken", "fakeExperiment", "fakeContextId")
-
-        self.assertTrue(
-            'Failed to communicate with the storage server, status code 404' in context.exception)
-
-    @patch('requests.put')
-    def test_create_experiment_connection_error(self, mocked_put):
-        client = StorageClient.StorageClient()
-        mocked_put.side_effect = requests.exceptions.ConnectionError()
-        with self.assertRaises(requests.exceptions.ConnectionError) as context:
-            client.create_experiment(
-                "fakeToken", "fakeExperiment", "fakeContextId")
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
     # GET FILE
@@ -525,100 +488,6 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
 
                 self.assertIn('nrpTemp', res[0])
 
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_experiment_basepath')
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath')
-    def test_flatten_bibi_configuration(self, get_model_basepath_mock, get_experiment_basepath_mock):
-        get_model_basepath_mock.return_value = self.models_directory
-        get_experiment_basepath_mock.return_value = self.experiments_directory
-        exp_configuration = 'ExDXMLExample.exc'
-        expected_list = ['experiment_configuration.exc',
-                         'bibi_configuration.bibi',
-                         'braitenberg_husky_linear_twist.py',
-                         'csv_spike_monitor.py',
-                         'model.sdf',
-                         'braitenberg.py',
-                         'robot.config',
-                         'csv_joint_state_monitor.py',
-                         'ExDXMLExample.3ds',
-                         'ExDXMLExample.png',
-                         'robot_description.launch',
-                         'virtual_room.sdf',
-                         'csv_robot_position.py']
-
-        with _FlattenedExperimentDirectory(exp_configuration, None) as temporary_folder:
-            bibi_configuration_file = 'milestone2_python_tf.bibi'
-            l = os.listdir(temporary_folder)
-            # make sure we do not copy things we aren't expecting
-            self.assertEqual(len(l), len(expected_list))
-            for expected_file in expected_list:
-                self.assertIn(expected_file, l)
-            flattened_bibi_configuration_file = os.path.join(
-                temporary_folder,
-                'bibi_configuration.bibi'
-            )
-            flattened_exp_configuration_file = os.path.join(
-                temporary_folder,
-                'experiment_configuration.exc'
-            )
-            with open(flattened_exp_configuration_file) as e:
-                exp_configuration_dom = exp_conf_api_gen.CreateFromDocument(
-                    e.read())
-
-            with open(flattened_bibi_configuration_file) as b:
-                bibi_configuration_dom = bibi_api_gen.CreateFromDocument(
-                    b.read())
-
-            for tf in bibi_configuration_dom.transferFunction:
-                if hasattr(tf, "src") and tf.src:
-                    self.assertEqual(tf.src, os.path.basename(tf.src))
-                    path = os.path.join(temporary_folder, tf.src)
-                    self.assertEqual(os.path.exists(path), True)
-
-            self.assertEqual(
-                bibi_configuration_dom.bodyModel,
-                bibi_api_gen.SDFFilename('model.sdf')
-            )
-            self.assertEqual(
-                bibi_configuration_dom.brainModel.file,
-                bibi_api_gen.PythonFilename('braitenberg.py')
-            )
-
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_experiment_basepath')
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath')
-    def test_flattened_parse_model_config_files(self, get_model_basepath_mock, get_experiment_basepath_mock):
-        expected_list = ['fakeRobot.sdf',
-                         'experiment_configuration.exc',
-                         'TemplateEmpty.png',
-                         'TemplateEmpty.json',
-                         'bibi_configuration.bibi',
-                         'fakeEnv.sdf',
-                         'fakeBrain.py']
-        get_model_basepath_mock.return_value = self.models_directory
-        get_experiment_basepath_mock.return_value = self.experiments_directory
-        exp_configuration = 'experiment_configuration.exc'
-        mock_paths = {
-            "envPath": os.path.join("fakeEnvFolder", "model.config"),
-            "robotPath": os.path.join("fakeRobotFolder", "model.config"),
-            "brainPath": os.path.join("fakeBrainFolder", "fakeBrain.py")
-        }
-        with _FlattenedExperimentDirectory(exp_configuration, mock_paths) as temporary_folder:
-            self.assertEqual('fakeRobot.sdf' in os.listdir(
-                temporary_folder), True)
-            self.assertEqual('experiment_configuration.exc' in os.listdir(
-                temporary_folder), True)
-            self.assertEqual('bibi_configuration.bibi' in os.listdir(
-                temporary_folder), True)
-            self.assertEqual('fakeBrain.py' in os.listdir(
-                temporary_folder), True)
-
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_experiments')
-    def test_create_unique_experiment_id(self, mocked_list):
-        mocked_list.return_value = [
-            "Experiment",  "Experiment_2"]
-        client = StorageClient.StorageClient()
-        unique_exp_name = client.create_unique_experiment_id(
-            'Experiment', 0, mocked_list)
-        self.assertEqual(unique_exp_name, 'Experiment_0')
 
     @patch('os.environ.get')
     def test_get_model_basepath_ok(self, mock_env_get):
@@ -630,23 +499,6 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
     def test_get_model_basepath_ok(self, mock_env_get):
         mock_env_get.return_value = None
         self.assertRaises(Exception, StorageClient.get_model_basepath)
-
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.get_experiment_basepath')
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.create_experiment')
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.create_or_update')
-    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_experiments')
-    def test_clone_experiment_to_storage(self, mock_list, mock_create_update, mock_create_exp, get_experiment_basepath_mock):
-        get_experiment_basepath_mock.return_value = self.experiments_directory
-        mock_create_exp.return_value = 'Fake UUID'
-        mock_create_update.return_value = None
-        mock_list.return_value = [
-            {"name": "Experiment"}, {"name": "Experiment_1"}]
-        client = StorageClient.StorageClient()
-        exp_configuration = 'ExDXMLExample.exc'
-        exp_uuid = client.clone_experiment_template_to_storage(
-            'token', exp_configuration)
-        self.assertEqual('Fake UUID', exp_uuid)
-
 
 if __name__ == '__main__':
     unittest.main()
