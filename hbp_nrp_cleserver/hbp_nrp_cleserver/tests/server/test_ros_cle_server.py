@@ -360,7 +360,7 @@ class TestROSCLEServer(unittest.TestCase):
         tf[1].source = "tf_1 python code"
         mocked_tf_framework.get_transfer_functions = MagicMock(return_value=tf)
         ros_callbacks = self.__get_handlers_for_testing_main()
-        transfer_functions_from_service = ros_callbacks['get_transfer_functions'](None)
+        transfer_functions_from_service = ros_callbacks['get_transfer_functions'](None)[0]
         self.assertEqual(2, len(transfer_functions_from_service))
         self.assertEqual("tf_0 python code", transfer_functions_from_service[0])
         self.assertEqual("tf_1 python code", transfer_functions_from_service[1])

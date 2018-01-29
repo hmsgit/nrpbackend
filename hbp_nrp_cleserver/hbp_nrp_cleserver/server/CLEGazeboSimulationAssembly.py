@@ -54,7 +54,7 @@ from hbp_nrp_cle.robotsim.GazeboHelper import GazeboHelper
 
 # These imports start NEST.
 from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
-from hbp_nrp_cle.cle.ClosedLoopEngine import ClosedLoopEngine
+from hbp_nrp_cle.cle.ClosedLoopEngine import DeterministicClosedLoopEngine, ClosedLoopEngine
 import hbp_nrp_cle.tf_framework as nrp
 import hbp_nrp_cle.brainsim.config as brainconfig
 
@@ -632,8 +632,8 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # initialize CLE
         self._notify("Initializing CLE")
-        cle = ClosedLoopEngine(roscontrol, roscomm,
-                               braincontrol, braincomm, tfmanager, timestep)
+        cle = DeterministicClosedLoopEngine(roscontrol, roscomm,
+                                            braincontrol, braincomm, tfmanager, timestep)
         cle.initialize(brain_file_path, **neurons_config)
 
         # Set initial pose

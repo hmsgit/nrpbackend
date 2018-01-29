@@ -487,7 +487,7 @@ class ROSCLEServer(SimulationServer):
         """
         tfs = tf_framework.get_transfer_functions()
         arr = numpy.asarray([tf.source.encode('UTF-8') for tf in tfs])
-        return arr
+        return arr, []
 
     def __check_duplicate_tf_name(self, tf_name):
         """
@@ -498,7 +498,7 @@ class ROSCLEServer(SimulationServer):
         """
 
         tf_names = []
-        for tf in self.__get_transfer_function_sources(None):
+        for tf in self.__get_transfer_function_sources(None)[0]:
             tf_names.append(self.get_tf_name(tf)[1])
 
         if tf_name in tf_names:
