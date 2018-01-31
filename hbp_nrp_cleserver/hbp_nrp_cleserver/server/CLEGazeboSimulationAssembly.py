@@ -648,7 +648,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         Loads and connects all transfer functions
         """
-
         self._notify("Loading transfer functions")
 
         # Create transfer functions
@@ -664,12 +663,21 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
             try:
                 new_code = compile_restricted(tf_code, '<string>', 'exec')
-                nrp.set_transfer_function(tf_code, new_code, tf.name)
             # pylint: disable=broad-except
             except Exception as e:
-                logger.error("Error while loading new transfer function")
-                logger.error(e)
-                raise
+                message = "Error while compiling the updated transfer function named "\
+                          + tf.name +\
+                          " in restricted mode.\n"\
+                          + str(e)
+                logger.error(message)
+                nrp.set_flawed_transfer_function(tf_code, tf.name, e)
+                continue
+
+            try:
+                nrp.set_transfer_function(tf_code, new_code, tf.name)
+            except nrp.TFLoadingException as loading_e:
+                logger.error(loading_e)
+                nrp.set_flawed_transfer_function(tf_code, tf.name, loading_e)
 
     def _handle_gazebo_shutdown(self):
         """

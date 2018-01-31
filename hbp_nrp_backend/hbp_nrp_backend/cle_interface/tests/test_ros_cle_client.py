@@ -52,7 +52,7 @@ __author__ = 'Lorenzo Vannucci, Daniel peppicelli, Georg Hinkel'
 class TestROSCLEClient(unittest.TestCase):
 
     LOGGER_NAME = ROSCLEClient.__name__
-    NUMBER_OF_SERVICE_PROXIES = 14  # TODO Update when adding a new service to ROSCLEClient!
+    NUMBER_OF_SERVICE_PROXIES = 14  # Update when adding a new service to ROSCLEClient!
 
     def setUp(self):
         patcher = patch('rospy.ServiceProxy')

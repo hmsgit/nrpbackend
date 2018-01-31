@@ -125,7 +125,7 @@ class ROSCLEServer(SimulationServer):
     # pylint: disable=too-many-arguments
     def publish_error(self, source_type, error_type, message,
                       severity=CLEError.SEVERITY_ERROR, function_name="",
-                      line_number=-1, offset=-1, line_text="", file_name=""):
+                      line_number=-1, offset=-1, line_text="", file_name="", do_log=True):
         """
         Publishes an error and takes appropriate action if necessary
 
@@ -138,12 +138,15 @@ class ROSCLEServer(SimulationServer):
         :param offset: The offset
         :param line_text: The text of the line causing the error
         :param file_name:
+        :param do_log: log the error on the default logger, do not log otherwise
         """
-        if severity >= CLEError.SEVERITY_ERROR:
+        if do_log and severity >= CLEError.SEVERITY_ERROR:
             logger.exception("Error in {0} ({1}): {2}".format(source_type, error_type, message))
+
         self._notificator.publish_error(
             CLEError(severity, source_type, error_type, message,
                      function_name, line_number, offset, line_text, file_name))
+
         if severity == CLEError.SEVERITY_CRITICAL and self.lifecycle is not None:
             self.lifecycle.failed()
 
@@ -473,7 +476,7 @@ class ROSCLEServer(SimulationServer):
         new_added = find_changed_strings(new_populations, old_populations)
 
         if len(new_added) == len(old_changed) >= 1:
-            transfer_functions = tf_framework.get_transfer_functions()
+            transfer_functions = tf_framework.get_transfer_functions(flawed=False)
             check_var_name_re = re.compile(r'^([a-zA-Z_]+\w*)$')
             for item in new_added:
                 if not check_var_name_re.match(item):
@@ -484,13 +487,13 @@ class ROSCLEServer(SimulationServer):
         return None
 
     # pylint: disable=unused-argument
-    @staticmethod
-    def __get_transfer_function_sources_and_activation(request):
+    def __get_transfer_function_sources_and_activation(self, request, send_errors=True):
         """
         Return the source code of the transfer functions and its activity state
         in a tuple of parallel lists.
 
         :param request: The mandatory rospy request parameter
+        :param send_errors: when available, send error messages on the cle_error topic
         :return A tuple (tf_sources, tf_activation_state)
         """
         tfs = tf_framework.get_transfer_functions()
@@ -502,19 +505,57 @@ class ROSCLEServer(SimulationServer):
             tf_arr.append(tf.source.encode('UTF-8'))
             arr_active_mask.append(tf.active)
 
+            if send_errors and hasattr(tf, 'error'):  # tf may not have an error member
+                self._publish_error_from_exception(tf.error, tf.name)
+
         return numpy.array(tf_arr), numpy.array(arr_active_mask)
+
+    def _publish_error_from_exception(self, exception, tf_name):
+        """
+        Publish an error message on the error topic, populating the message using the
+        information in exception
+
+        :param exception: the exception from which to create the message to be sent
+        :param tf_name: the name of the transfer function that caused the error
+        """
+        if isinstance(exception, ValueError):
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION,
+                               "Loading",
+                               "Duplicate Definition Name",
+                               function_name=tf_name,
+                               do_log=False)
+        elif isinstance(exception, SyntaxError):
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION,
+                               "Compile",
+                               str(exception),
+                               severity=CLEError.SEVERITY_ERROR,
+                               function_name=tf_name,
+                               line_number=exception.lineno, offset=exception.offset,
+                               line_text=exception.text, file_name=exception.filename,
+                               do_log=False)
+        elif isinstance(exception, Exception):
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION,
+                               "Compile",
+                               str(exception),
+                               severity=CLEError.SEVERITY_ERROR,
+                               function_name=tf_name,
+                               do_log=False)
 
     def __check_duplicate_tf_name(self, tf_name):
         """
-        Internal helper to check whether a transfer function name already exists.
+        Internal helper to check whether a transfer function name already exists, excluding
+        flawed transfer function.
 
         :param tf_name: transfer function name to be checked.
         :return: Raises a ValueError if name already exists. Returns nothing otherwise.
         """
 
         tf_names = []
-        for tf in self.__get_transfer_function_sources_and_activation(None)[0]:
-            tf_names.append(self.get_tf_name(tf)[1])
+        for tf in self.__get_transfer_function_sources_and_activation(None, send_errors=False)[0]:
+            curr_tf_name = self.get_tf_name(tf)[1]
+            # if is flawed don't consider it duplicate, we're adding a proper TF
+            if not tf_framework.get_flawed_transfer_function(curr_tf_name):
+                tf_names.append(curr_tf_name)
 
         if tf_name in tf_names:
             raise ValueError("Duplicate definition name")
@@ -537,7 +578,10 @@ class ROSCLEServer(SimulationServer):
         :return: empty string for a successful compilation in restricted mode
                  (executed synchronously), an error message otherwise.
         """
-        return self.__set_transfer_function(request, False)
+        if tf_framework.get_flawed_transfer_function(request.transfer_function_name):
+            return self.__set_flawed_transfer_function(request)
+        else:
+            return self.__set_transfer_function(request, False)
 
     def __activate_transfer_function(self, request):
         """
@@ -562,7 +606,24 @@ class ROSCLEServer(SimulationServer):
 
         return message
 
-    # pylint: disable=R0911,too-many-branches
+    def __set_flawed_transfer_function(self, request):
+        """
+        Patch a flawed transfer function.
+        This method is called when editing a flawed transfer function.
+        If the new code is loaded without any error,
+        the flawed transfer function is "promoted" to a proper TF.
+
+        :param request: The mandatory rospy request parameter
+        :return: empty string if successful, an error message otherwise.
+        """
+
+        tf_name = request.transfer_function_name
+
+        tf_framework.delete_flawed_transfer_function(tf_name)
+
+        return self.__set_transfer_function(request, True)
+
+    # pylint: disable=R0911,too-many-branches,too-many-statements,too-many-locals
     def __set_transfer_function(self, request, new):
         """
         Patch a transfer function. This method is called when adding or editing a transfer function.
@@ -576,13 +637,19 @@ class ROSCLEServer(SimulationServer):
         logger.info("About to compile transfer function with the following python code: \n"
                     + repr(new_source))
 
-        tf_name = self.get_tf_name(new_source)
-        if tf_name[0]:
-            new_name = tf_name[1]
+        # Make sure the TF has exactly one function definition
+        get_tf_name_outcome, get_tf_name_outcome_value = self.get_tf_name(new_source)
+        if get_tf_name_outcome is True:
+            new_name = get_tf_name_outcome_value
         else:
-            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "NoOrMultipleNames",
-                               tf_name[1], severity=CLEError.SEVERITY_ERROR)
-            return tf_name[1]
+            error_message = get_tf_name_outcome_value
+
+            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION,
+                               "NoOrMultipleNames",
+                               error_message,
+                               severity=CLEError.SEVERITY_ERROR)
+
+            return error_message
 
         if not new:
             original_name = request.transfer_function_name
@@ -593,40 +660,46 @@ class ROSCLEServer(SimulationServer):
         if new or (new_name != original_name):
             try:
                 self.__check_duplicate_tf_name(new_name)
-            except ValueError:
+            except ValueError as value_e:
                 message = "duplicate Transfer Function name"
                 # Select the correct function to highlight
                 function_name = new_name if original_name is None else original_name
-                self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading",
-                                   "Duplicate Definition Name", function_name=function_name)
+
+                self._publish_error_from_exception(value_e, new_name)
+
+                if new:
+                    tf_framework.set_flawed_transfer_function(new_source, function_name, value_e)
+
                 return message
 
         # Compile (synchronously) transfer function's new code in restricted mode
         new_code = None
         try:
             new_code = compile_restricted(new_source, '<string>', 'exec')
-        except SyntaxError as e:
-            message = "Syntax Error while compiling the updated" \
+        # pylint: disable=broad-except
+        except Exception as e:
+            message = "Error while compiling the updated" \
                       + " transfer function named " + new_name \
                       + " in restricted mode.\n" \
                       + str(e)
-            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Compile", str(e),
-                               severity=CLEError.SEVERITY_ERROR, function_name=new_name,
-                               line_number=e.lineno, offset=e.offset, line_text=e.text,
-                               file_name=e.filename)
+            if new:
+                tf_framework.set_flawed_transfer_function(new_source, new_name, e)
+
+            self._publish_error_from_exception(e, new_name)
+
             return message
-        except Exception as e:
-            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Compile", str(e),
-                               severity=CLEError.SEVERITY_ERROR, function_name=new_name)
-            return e.message
 
         # Make sure CLE is stopped. If already stopped, these calls are harmless.
         # (Execution of updated code is asynchronous)
         running = self.__cle.running
         err = ""
+
         if running:
             self.__cle.stop()
+
+        # Try to load the TF
         try:
+            # When editing a TF (i.e. not new), delete it before loading the new one
             if not new and original_name is not None:
                 tf_framework.delete_transfer_function(original_name)
             tf_framework.set_transfer_function(new_source, new_code, new_name)
@@ -634,12 +707,12 @@ class ROSCLEServer(SimulationServer):
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_ERROR, function_name=e.tf_name)
             err = e.message
-        except Exception as e:
-            self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
-                               severity=CLEError.SEVERITY_CRITICAL, function_name=new_name)
-            err = e.message
+
+            tf_framework.set_flawed_transfer_function(new_source, new_name, e)
+
         if running:
             self.__cle.start()
+
         return err
 
     @staticmethod
@@ -668,7 +741,7 @@ class ROSCLEServer(SimulationServer):
 
         :param request: The mandatory rospy request parameter
         """
-        tfs = tf_framework.get_transfer_functions()
+        tfs = tf_framework.get_transfer_functions(flawed=False)
         return srv.GetStructuredTransferFunctionsResponse(
             [tf for tf in map(StructuredTransferFunction.extract_structure, tfs) if tf is not None]
         )

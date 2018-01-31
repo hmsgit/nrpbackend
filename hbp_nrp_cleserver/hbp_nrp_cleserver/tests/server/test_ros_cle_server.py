@@ -27,7 +27,7 @@ ROSCLEServer unit test
 
 from cle_ros_msgs.srv import ResetSimulation, ResetSimulationRequest
 from cle_ros_msgs.msg import CSVRecordedFile, ExperimentPopulationInfo
-from hbp_nrp_cle.tf_framework import BrainParameterException
+from hbp_nrp_cle.tf_framework import BrainParameterException, TFLoadingException
 from hbp_nrp_cleserver.server import ROSCLEServer
 import logging
 from mock import patch, MagicMock, Mock, PropertyMock, mock_open
@@ -404,7 +404,47 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEqual(self.__mocked_notificator.publish_error.call_count, 1) # publish error message
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
-    def test_set_transfer_function(self, mocked_tf_framework):
+    def test_edit_flawed_transfer_function(self, mocked_tf_framework):
+        mocked_tf_framework.delete_flawed_transfer_function = MagicMock()
+        mocked_tf_framework.get_flawed_transfer_function.return_value = MagicMock(name='mock_flawed_tf')
+
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        add_transfer_function_handler = ros_callbacks['edit_transfer_function']
+        request = MagicMock()
+        request.transfer_function_name = "tf_0"
+        request.transfer_function_source = "def tf0(): \n return 0"
+
+        set_transfer_function_msg = ''
+        with patch.object(self.__ros_cle_server,
+                          '_ROSCLEServer__set_transfer_function',
+                          return_value=set_transfer_function_msg):
+            _ = add_transfer_function_handler(request)
+
+        # when a flawed transfer function is patched, it should be deleted
+        mocked_tf_framework.delete_flawed_transfer_function.assert_called_once()
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
+    def test_edit_flawed_transfer_function_fail(self, mocked_tf_framework):
+        mocked_tf_framework.delete_flawed_transfer_function = MagicMock()
+        mocked_tf_framework.get_flawed_transfer_function.return_value = MagicMock(name='mock_flawed_tf')
+
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        add_transfer_function_handler = ros_callbacks['edit_transfer_function']
+        request = MagicMock()
+        request.transfer_function_name = "tf_0"
+        request.transfer_function_source = "def tf0(): \n return 0"
+
+        set_transfer_function_message = "SOME ERROR"
+        with patch.object(self.__ros_cle_server,
+                          '_ROSCLEServer__set_transfer_function',
+                          return_value=set_transfer_function_message):
+            _ = add_transfer_function_handler(request)
+
+        # when a flawed transfer function is patched, it should be deleted
+        mocked_tf_framework.delete_flawed_transfer_function.assert_called_once()
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
+    def test_edit_transfer_function(self, mocked_tf_framework):
         mocked_tf_framework.set_transfer_function = MagicMock(return_value=None)
         mocked_tf_framework.delete_transfer_function = MagicMock()
         ros_callbacks = self.__get_handlers_for_testing_main()
@@ -427,31 +467,49 @@ class TestROSCLEServer(unittest.TestCase):
         response = add_transfer_function_handler(request)
         self.assertIn("no definition name", response)
 
+        # test add duplicate
+        tf1_name = "tf_1"
+        tf1_source = "def tf_1(): \n return -1"
+        mock_tf = MagicMock(source=tf1_source, active=True)
+        mocked_tf_framework.get_transfer_functions.return_value = [mock_tf]
+        mocked_tf_framework.get_flawed_transfer_function.return_value = False
+
+        request.transfer_function_name = tf1_name
+        request.transfer_function_source = tf1_source
+
+        response = add_transfer_function_handler(request)
+
+        self.assertIn("duplicate", response)
+        mocked_tf_framework.get_transfer_functions = MagicMock()  # reset return_value
+        mocked_tf_framework.get_flawed_transfer_function = MagicMock()
+
+        # test add flawed tf
         request.transfer_function_name = "tf_2"
         request.transfer_function_source = "def tf_2(): \n return -1 undefined"
         response = add_transfer_function_handler(request)
-        self.assertIn("invalid syntax", response)
-        self.assertIn("line 2", response)
+        self.assertEqual(0, mocked_tf_framework.delete_transfer_function.call_count)
+        self.assertNotEquals("", response)
 
         request.transfer_function_name = "tf_3"
         request.transfer_function_source = "def tf_3_a(): \n\treturn -1\ndef tf_3_b(): \n\treturn -2"
         response = add_transfer_function_handler(request)
         self.assertIn("multiple definition names", response)
 
+        # test add faulty tf
         with patch('hbp_nrp_cleserver.server.ROSCLEServer.compile_restricted') as compile_restricted:
             request.transfer_function_name = "tf_4"
             request.transfer_function_source = "def tf_4(): \n return 0"
             compile_restricted.side_effect = Exception("foo")
             response = add_transfer_function_handler(request)
-            self.assertEqual("foo", response)
+            self.assertNotEquals("", response)
 
-        mocked_tf_framework.set_transfer_function.side_effect = Exception("bar")
+        mocked_tf_framework.set_transfer_function.side_effect = TFLoadingException("bar_name", "bar_message")
         self.__ros_cle_server._SimulationServer__lifecycle = Mock()
         response = add_transfer_function_handler(request)
-        self.assertEqual("bar", response)
+        self.assertEqual("bar_message", response)
 
         mocked_tf_framework.set_transfer_function.reset_mock()
-        name ="tf_3_a"
+        name = "tf_3_a"
         request.transfer_function_name = name
         request.transfer_function_source = "def tf_3_a(): \n\tdef tf_3_b(): \n\t\treturn -2\n\treturn -1"
         response = add_transfer_function_handler(request)
