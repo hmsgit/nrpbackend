@@ -41,6 +41,7 @@ import re
 
 from RestrictedPython import compile_restricted
 
+
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackage folder at the root of this CLE repository.
 from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
@@ -748,16 +749,20 @@ class ROSCLEServer(SimulationServer):
 
     def __set_structured_transfer_function(self, request):
         """
-        Patch a transfer function
+        Patch a structured transfer function
 
         :param request: The mandatory rospy request parameter
         :return: empty string for a successful compilation in restricted mode
                  (executed synchronously), an error message otherwise.
         """
-        return self.__set_transfer_function(request.transfer_function.name,
-                                            StructuredTransferFunction.
-                                            generate_code_from_structured_tf(request.
-                                                                             transfer_function))
+
+        edit_tf_request = srv.EditTransferFunctionRequest
+
+        edit_tf_request.transfer_function_name = request.transfer_function.name
+        edit_tf_request.transfer_function_source = \
+            StructuredTransferFunction.generate_code_from_structured_tf(request.transfer_function)
+
+        return self.__set_transfer_function(edit_tf_request, False)
 
     def __delete_transfer_function(self, request):
         """

@@ -334,7 +334,7 @@ class TestROSCLEServer(unittest.TestCase):
         get_CSV_recorders_files_implementation = ros_callbacks['get_CSV_recorders_files']
         clean_CSV_recorders_files_implementation = ros_callbacks['clean_CSV_recorders_files']
         mocked_tf_framework.dump_csv_recorder_to_files = Mock()
-        mocked_tf_framework.dump_csv_recorder_to_files.return_value = [('a','b'),('c','d')]
+        mocked_tf_framework.dump_csv_recorder_to_files.return_value = [('a', 'b'), ('c', 'd')]
         result_value = get_CSV_recorders_files_implementation(None).files
         self.assertEqual(result_value[0].name, 'a')
         self.assertEqual(result_value[0].temporary_path, 'b')
@@ -401,7 +401,29 @@ class TestROSCLEServer(unittest.TestCase):
         response_message = activate_transfer_function_handler(request)
 
         self.assertIn("not found", response_message)  # no error
-        self.assertEqual(self.__mocked_notificator.publish_error.call_count, 1) # publish error message
+        self.assertEqual(self.__mocked_notificator.publish_error.call_count, 1)  # publish error message
+
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.StructuredTransferFunction')
+    def test_set_structured_transfer_function(self, mocked_structured_tf):
+
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        set_structured_transfer_function_handler = ros_callbacks['set_structured_transfer_function']
+
+        mock_tf_name = "tf_0"
+        mock_tf_source = "Some python code"
+        mocked_structured_tf.generate_code_from_structured_tf = \
+            MagicMock(return_value=mock_tf_source)
+
+        mock_request = MagicMock(transfer_function=MagicMock())
+        mock_request.transfer_function.name = mock_tf_name
+
+        with patch.object(self.__ros_cle_server,
+                          '_ROSCLEServer__set_transfer_function') as set_tf_mock:
+            set_structured_transfer_function_handler(mock_request)
+            request_arg = set_tf_mock.call_args[0][0]
+
+        self.assertEqual(request_arg.transfer_function_name, mock_tf_name)
+        self.assertEqual(request_arg.transfer_function_source, mock_tf_source)
 
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_edit_flawed_transfer_function(self, mocked_tf_framework):
@@ -543,7 +565,7 @@ class TestROSCLEServer(unittest.TestCase):
 
         mock_params = MagicMock(spec=["spec"])
         mock_params.spec = mock_spec
-        mock_tf.params = ["t", mock_params] # for some reason the real data has a t as in the list
+        mock_tf.params = ["t", mock_params]  # for some reason the real data has a t as in the list
 
         tfs = [mock_tf]
         self.assertEqual(ROSCLEServer.ROSCLEServer.change_transfer_function_for_population(srv.SetBrainRequest.ASK_RENAME_POPULATION, "node_name", MagicMock(), tfs), ["we ask the user if we change TFs", 0, 0, 1])
@@ -578,6 +600,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.__ros_cle_server.shutdown()
         for x in [a, c, d, e, f, g, h, i, j, k, l, m, n, z]:
             self.assertEquals(x.shutdown.call_count, 1, repr(x) + " not shutdown")
+
 
 if __name__ == '__main__':
     unittest.main()
