@@ -61,13 +61,17 @@ class Simulation(object):
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to 'local'
                                   for localhost and 'lugano' for a dedicated machine on the Lugano
                                   viz cluster.
-        :param reservation: the name of the cluster reservation subsequently used to allocate a job
-        :param sim_brain_processes: Number of brain processes to use (overrides ExD configuration)
-        :param experiment_id: The experiment ID of the experiment
-        :param state: The initial state (created by default)
-        :param playback_path: The simulation recording to playback (Path to recording root)
-        :param private: Defines whether the simulation is based on a private experiment
-        :param ctx_id: The ctx_id of the collab if we are running a collab based simulation
+        :param reservation: (optional) the name of the cluster reservation subsequently used to
+                            allocate a job
+        :param sim_brain_processes: (optional) Number of brain processes to use (overrides ExD
+                                    configuration)
+        :param experiment_id: (optional) The experiment ID of the experiment
+        :param state: (optional) The initial state (created by default)
+        :param playback_path: (optional) The simulation recording to playback (Path to recording
+                              root)
+        :param private: (optional) Defines whether the simulation is based on a private experiment
+        :param ctx_id: (optional) The context id of the collab if we are running a collab based
+                       simulation
         """
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
