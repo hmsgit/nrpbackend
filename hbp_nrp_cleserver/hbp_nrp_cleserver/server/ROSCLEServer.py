@@ -485,6 +485,9 @@ class ROSCLEServer(SimulationServer):
                             0, 0, 0]
             return self.change_transfer_functions(change_population, old_changed, new_added,
                                                   transfer_functions)
+        elif old_changed and len(new_added) > len(old_changed):
+            return ["Renamed populations must be applied separately. Please apply the renaming " +
+                    "before proceeding with other changes.", -2, -2, 0]
         return None
 
     # pylint: disable=unused-argument
