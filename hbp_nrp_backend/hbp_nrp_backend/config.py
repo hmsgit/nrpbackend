@@ -36,5 +36,5 @@ class Config(object):
     """
 
     LOCAL_STORAGE_URI = {
-        'storage_uri': 'http://localhost:8000'
+        'storage_uri': 'http://localhost:9000/storage'
     }
