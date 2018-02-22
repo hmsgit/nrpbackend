@@ -315,9 +315,10 @@ class StorageClient(object):
             file_clone_destination = os.path.join(
                 destination_directory, file_under_experiment['name'])
             with open(file_clone_destination, "w") as f:
+                zipped = os.path.splitext(file_under_experiment['name'])[
+                    1].lower() == '.zip'
                 file_contents = self.get_file(
-                    token, experiment, file_under_experiment['name'], byname=True)
-
+                    token, experiment, file_under_experiment['name'], byname=True, zipped=zipped)
                 # in order to return the environment and experiment path we have
                 # to read the .exc
                 if 'experiment_configuration.exc' in str(file_clone_destination):
