@@ -215,15 +215,15 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         except IOError as e:
             raise NRPServicesGeneralException(
-                "Error while accessing simulation models (" + e.message + ")",
+                "Error while accessing simulation models (" + repr(e.message) + ")",
                 "Models error")
         except rospy.ROSException as e:
             raise NRPServicesGeneralException(
-                "Error while communicating with the CLE (" + e.message + ")",
+                "Error while communicating with the CLE (" + repr(e.message) + ")",
                 "CLE error")
         except rospy.ServiceException as e:
             raise NRPServicesGeneralException(
-                "Error starting the simulation. (" + e.message + ")",
+                "Error starting the simulation. (" + repr(e.message) + ")",
                 "rospy.ServiceException",
                 data=e.message)
 
