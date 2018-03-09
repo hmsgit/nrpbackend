@@ -40,10 +40,11 @@ from hbp_nrp_backend.storage_client_api import StorageClient
 
 class MockResponse:
 
-    def __init__(self, json_data, status_code, text=None):
+    def __init__(self, json_data, status_code, text=None,content=None):
         self.json_data = json_data
         self.status_code = status_code
         self.text = text
+        self.content = content
 
     def json(self):
         return self.json_data
@@ -150,7 +151,14 @@ def mocked_list_files_ok(*args, **kwargs):
             "contentType": "application/hbp-neurorobotics.tfs+python",
             "type": "file",
             "modifiedOn": "2017-08-30T12:32:47.842214Z"
-        }], 200)
+    }], 200)
+
+
+def mocked_get_custom_models_ok(*args, **kwargs):
+    return MockResponse([{'name': 'testZip1'}, {'name': 'testZip2'}], 200)
+
+def mocked_get_custom_model_ok(*args, **kwargs):
+    return MockResponse({'name': 'testZip1'}, 200,content='Test')
 
 
 class TestNeuroroboticsStorageClient(unittest.TestCase):
@@ -390,6 +398,73 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 "fakeName")
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
+    # GET CUSTOM MODELS
+    @patch('requests.get', side_effect=mocked_get_custom_models_ok)
+    def test_get_custom_models_successfully(self, mocked_get):
+        client = StorageClient.StorageClient()
+        res = client.get_custom_models(
+            "fakeToken",
+            "fakeContextId",
+            "environments")
+        self.assertEqual(res[0], {'name': 'testZip1'})
+        self.assertEqual(res[1], {'name': 'testZip2'})
+
+    @patch('requests.get', side_effect=mocked_request_not_ok)
+    def test_get_custom_models_failed(self, mocked_get):
+        client = StorageClient.StorageClient()
+        with self.assertRaises(Exception) as context:
+            client.get_custom_models(
+                "fakeToken",
+                "fakeContextId",
+                "environments")
+
+        self.assertTrue(
+            'Failed to communicate with the storage server, status code 404' in context.exception)
+
+    @patch('requests.get')
+    def test_get_custom_models_connection_error(self, mocked_get):
+        client = StorageClient.StorageClient()
+        mocked_get.side_effect = requests.exceptions.ConnectionError()
+        with self.assertRaises(requests.exceptions.ConnectionError) as context:
+            client.get_custom_models(
+                "fakeToken",
+                "fakeContextId",
+                "environments")
+        self.assertEqual(requests.exceptions.ConnectionError, context.expected)
+
+    # GET CUSTOM MODEL
+    @patch('requests.get', side_effect=mocked_get_custom_model_ok)
+    def test_get_custom_model_successfully(self, mocked_get):
+        client = StorageClient.StorageClient()
+        res = client.get_custom_model(
+            "fakeToken",
+            "fakeContextId",
+            "modelZipPath")
+        self.assertEqual(res, 'Test')
+
+    @patch('requests.get', side_effect=mocked_request_not_ok)
+    def test_get_custom_model_failed(self, mocked_get):
+        client = StorageClient.StorageClient()
+        with self.assertRaises(Exception) as context:
+            client.get_custom_model(
+                "fakeToken",
+                "fakeContextId",
+                "modelZipPath")
+
+        self.assertTrue(
+            'Failed to communicate with the storage server, status code 404' in context.exception)
+
+    @patch('requests.get')
+    def test_get_custom_model_connection_error(self, mocked_get):
+        client = StorageClient.StorageClient()
+        mocked_get.side_effect = requests.exceptions.ConnectionError()
+        with self.assertRaises(requests.exceptions.ConnectionError) as context:
+            client.get_custom_model(
+                "fakeToken",
+                "fakeContextId",
+                "modelZipPath")
+        self.assertEqual(requests.exceptions.ConnectionError, context.expected)
+
     # LIST FILES
     @patch('requests.get', side_effect=mocked_list_files_ok)
     def test_list_files_successfully(self, mocked_post):
@@ -413,7 +488,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
             'Failed to communicate with the storage server, status code 404' in context.exception)
 
     @patch('requests.get')
-    def test_create_folder_connection_error(self, mocked_post):
+    def test_list_files_connection_error(self, mocked_post):
         client = StorageClient.StorageClient()
         mocked_post.side_effect = requests.exceptions.ConnectionError()
         with self.assertRaises(requests.exceptions.ConnectionError) as context:
@@ -441,7 +516,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 "contentType": "application/hbp-neurorobotics.tfs+python",
                 "type": "file",
                 "modifiedOn": "2017-08-30T12:32:47.842214Z"
-            }]
+        }]
         res = client.clone_file("fakeFile",
                                 "fakeToken",
                                 "fakeExperiment")
@@ -481,13 +556,12 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                     "contentType": "application/hbp-neurorobotics.tfs+python",
                     "type": "file",
                     "modifiedOn": "2017-08-30T12:32:47.842214Z"
-                }]
+            }]
             with patch("__builtin__.open", mock_open(read_data="data")) as mock_file:
                 res = client.clone_all_experiment_files("fakeToken",
                                                         "fakeExperiment")
 
                 self.assertIn('nrpTemp', res[0])
-
 
     @patch('os.environ.get')
     def test_get_model_basepath_ok(self, mock_env_get):
@@ -496,9 +570,10 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
         self.assertEqual('NRP/Models', path)
 
     @patch('os.environ.get')
-    def test_get_model_basepath_ok(self, mock_env_get):
+    def test_get_model_basepath_not_ok(self, mock_env_get):
         mock_env_get.return_value = None
         self.assertRaises(Exception, StorageClient.get_model_basepath)
+
 
 if __name__ == '__main__':
     unittest.main()
