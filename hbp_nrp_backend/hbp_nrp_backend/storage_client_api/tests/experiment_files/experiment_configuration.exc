@@ -10,7 +10,7 @@
     <ns1:configuration src="ExDTutorialBaseball.3ds" type="3d-settings"/>
     <ns1:maturity>production</ns1:maturity>
     <ns1:environmentModel src="empty_world.sdf">
-        <ns1:robotPose theta="0.707106896726" ux="0.0" uy="0.0" uz="1.57" x="0.0" y="0.0" z="0.624"/>
+        <ns1:robotPose roll="0.0" pitch="0.0" yaw="1.57" x="0.0" y="0.0" z="0.624"/>
     </ns1:environmentModel>
     <ns1:bibiConf src="bibi_configuration.bibi"/>
     <ns1:experimentControl>

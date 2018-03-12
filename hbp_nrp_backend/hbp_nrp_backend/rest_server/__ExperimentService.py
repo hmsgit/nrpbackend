@@ -277,8 +277,8 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
     if _visualModelObj:
         _visualModel = _visualModelObj.src
         _visualModelParams = [_visualModelObj.visualPose.x, _visualModelObj.visualPose.y,
-                              _visualModelObj.visualPose.z, _visualModelObj.visualPose.ux,
-                              _visualModelObj.visualPose.uy, _visualModelObj.visualPose.uz,
+                              _visualModelObj.visualPose.z, _visualModelObj.visualPose.roll,
+                              _visualModelObj.visualPose.pitch, _visualModelObj.visualPose.yaw,
                               _visualModelObj.scale if _visualModelObj.scale else 1.0]
 
     current_exp = dict(name=_name,
