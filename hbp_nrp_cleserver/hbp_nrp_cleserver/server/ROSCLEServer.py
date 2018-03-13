@@ -267,6 +267,7 @@ class ROSCLEServer(SimulationServer):
         )
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
+        tf_framework.TF_API.set_ros_cle_server(self)
 
     # pylint: disable=unused-argument
     def __get_populations(self, request):
