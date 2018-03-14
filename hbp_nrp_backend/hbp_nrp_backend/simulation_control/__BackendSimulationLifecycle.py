@@ -39,8 +39,9 @@ from flask import request
 import os
 import rospy
 import datetime
+import zipfile
 
-__author__ = 'Georg Hinkel'
+__author__ = 'Georg Hinkel, Manos Angelidis'
 
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,78 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         return experiment, self._parse_env_path(environment_path, experiment, using_storage)
 
+    def _check_and_extract_environment_zip(self, experiment):
+        """
+        Checks for validity and extracts a zipped environment. First we
+        make sure that the zip referenced in the experiment exists in the
+        list of user environments, then we unzip it on the fly in the temporary
+        simulation directory. After the extraction we also make sure to copy
+        the sdf from the experiment folder cause the user may have modified it
+        :param experiment: The experiment object.
+        """
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        client = StorageClient()
+        environments_list = client.get_custom_models(UserAuthentication.get_header_token(request),
+                                                     self.simulation.ctx_id,
+                                                     'environments')
+        # we use the paths of the uploaded zips to make sure the selected
+        # zip is there
+        paths_list = [environment['path']
+                      for environment in environments_list]
+        # check if the zip is in the user storage
+        zipped_model_path = [
+            path for path in paths_list if experiment.environmentModel.customModelPath in path]
+        if len(zipped_model_path):
+            environment_path = os.path.join(client.get_temp_directory(),
+                                            os.path.basename(experiment.environmentModel.src))
+            storage_env_zip_data = client.get_custom_model(
+                UserAuthentication.get_header_token(request),
+                self.simulation.ctx_id, zipped_model_path[0])
+            env_sdf_name = os.path.basename(
+                experiment.environmentModel.src)
+            env_path = os.path.join(
+                client.get_temp_directory(),
+                experiment.environmentModel.customModelPath)
+            with open(env_path, 'w') as environment_zip:
+                environment_zip.write(storage_env_zip_data)
+            with zipfile.ZipFile(env_path) as env_zip_to_extract:
+                env_zip_to_extract.extractall(
+                    path=client.get_temp_directory())
+            # copy back the .sdf from the experiment folder, cause we don't want the one
+            # in the zip, cause the user might have made manual changes
+            client.clone_file(env_sdf_name, UserAuthentication.get_header_token(request),
+                              self.simulation.experiment_id)
+        # if the zip is not there, prompt the user to check his uploaded
+        # models
+        else:
+            raise NRPServicesGeneralException(
+                "Could not find selected zip %s in the list of uploaded models. Please make\
+                    sure that it has been uploaded correctly" % (
+                    os.path.dirname(experiment.environmentModel.src)),
+                "Zipped model retrieval failed")
+        return environment_path
+
+    def _copy_storage_environment(self, experiment):
+        """
+        Copies a storage environment from the storage environment models
+        to the running simulation temporary folder
+
+        :param experiment: The experiment object.
+        """
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        client = StorageClient()
+        environment_path = os.path.join(client.get_temp_directory(),
+                                        os.path.basename(experiment.environmentModel.src))
+        with open(environment_path, "w") as f:
+            f.write(client.get_file(
+                UserAuthentication.get_header_token(request),
+                client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
+                                               self.simulation.ctx_id,
+                                               'environments'),
+                os.path.basename(experiment.environmentModel.src),
+                byname=True))
+        return environment_path
+
     def _parse_env_path(self, environment_path, experiment, using_storage):
         """
         Parses the environment path, depending if we are using a storage model from
@@ -117,33 +190,17 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param environment_path: Path to the environment configuration.
         :param using_storage: Private or template simulation
         """
-        # TODO: refactor this terribly compicated function when we drop the
-        # esv-web
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
-        # 1. Launching a private experiment with a storage environment
-        # means we are copying the environmen file from the storage
-        # to the temporary directory where the experiment is running.
-        # 2. Launching a private experiment with a template environment
-        # means we are just using the already cloned model
         if using_storage:
-            if 'storage://' in environment_path:
-                environment_path = os.path.join(client.get_temp_directory(),
-                                                os.path.basename(experiment.environmentModel.src))
-                with open(environment_path, "w") as f:
-                    f.write(client.get_file(
-                        UserAuthentication.get_header_token(request),
-                        client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
-                                                       self.simulation.ctx_id,
-                                                       'environments'),
-                        os.path.basename(experiment.environmentModel.src),
-                        byname=True))
-        # 1. Launching a template experiment with a storage environment means
-        # we are copying the model to a temp folder where it is going to be
-        # used from the simulation. Will not work unless you have created an
-        # 'environments' folder with the same user name as the one that you
-        # log in. Will be addressed in a subsequent story
-        # 2. Template exp + template env = As usual
+            custom = experiment.environmentModel.customModelPath
+            if custom:
+                environment_path = self._check_and_extract_environment_zip(
+                    experiment)
+            else:
+                if 'storage://' in environment_path:
+                    environment_path = self._copy_storage_environment(
+                        experiment)
         else:
             if not environment_path and 'storage://' in experiment.environmentModel.src:
                 environment_path = os.path.join(client.get_temp_directory(),
@@ -186,13 +243,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 self.__experiment_path = os.path.join(
                     self.__experiment_path, simulation.experiment_conf
                 )
-                logger.info(self.__experiment_path)
                 self.__simulation_root_folder = os.path.dirname(
                     self.__experiment_path)
                 environment_path = simulation.environment_conf
-            experiment, environment_path = \
-                self._parse_exp_and_initialize_paths(self.__experiment_path,
-                                                     environment_path, using_storage)
+            experiment, environment_path = self._parse_exp_and_initialize_paths(
+                self.__experiment_path,
+                environment_path,
+                using_storage)
 
             simulation.kill_datetime = datetime.datetime.now(timezone) \
                 + datetime.timedelta(seconds=experiment.timeout)

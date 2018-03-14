@@ -269,6 +269,58 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
+    def get_custom_models(self, token, context_id, folder_name):
+        """
+        Returns the contents of a custom models folder provided its name
+        :param token: a valid token to be used for the request
+        :param context_id: the context_id of the collab
+        :param folder_name: the name of the folder
+        :return: if found, the uuid of the named folder
+        """
+        try:
+            headers = {
+                'Authorization': 'Bearer ' + token,
+                'context-id': context_id
+            }
+            res = requests.get(self.__proxy_url +
+                               '/storage/custommodels/{0}'.format(
+                                   folder_name), headers=headers)
+            if res.status_code < 200 or res.status_code >= 300:
+                raise Exception(
+                    'Failed to communicate with the storage server, status code '
+                    + str(res.status_code))
+            else:
+                return res.json()
+        except requests.exceptions.ConnectionError, err:
+            logger.exception(err)
+            raise err
+
+    def get_custom_model(self, token, context_id, model_path):
+        """
+        Returns a custom model provided its path
+        :param token: a valid token to be used for the request
+        :param context_id: the context_id of the collab
+        :param folder_name: the name of the folder
+        :return: if found, the uuid of the named folder
+        """
+        try:
+            headers = {
+                'Authorization': 'Bearer ' + token,
+                'context-id': context_id
+            }
+            res = requests.get(self.__proxy_url +
+                               '/storage/custommodel/{0}'.format(
+                                   model_path), headers=headers)
+            if res.status_code < 200 or res.status_code >= 300:
+                raise Exception(
+                    'Failed to communicate with the storage server, status code '
+                    + str(res.status_code))
+            else:
+                return res.content
+        except requests.exceptions.ConnectionError, err:
+            logger.exception(err)
+            raise err
+
     # HELPER FUNCTIONS
     def clone_file(self, filename, token, experiment):
         """
@@ -328,7 +380,6 @@ class StorageClient(object):
                         file_contents).environmentModel.src
                     experiment_paths['environment_conf'] = os.path.join(
                         destination_directory, env_filename)
-
                 f.write(file_contents)
         return destination_directory, experiment_paths
 

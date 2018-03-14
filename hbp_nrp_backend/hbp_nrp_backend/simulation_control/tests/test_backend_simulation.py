@@ -25,7 +25,7 @@
 This module tests the backend implementation of the simulation lifecycle
 """
 
-from mock import Mock, patch, mock_open
+from mock import Mock, patch
 import unittest
 import os
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import BackendSimulationLifecycle
@@ -232,11 +232,45 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
             PATH, 'virtual_room/virtual_room.sdf'))
 
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
+    def test_parse_env_path_custom_environment_throws(self, mock_storage):
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
+            mock_storage().get_custom_models.return_value = [
+                {'path': 'fakePath'}]
+            exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
+            with open(exp_path, 'r') as exp_file:
+                exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
+            with self.assertRaises(NRPServicesGeneralException) as context:
+                self.lifecycle._parse_env_path(
+                    exp.environmentModel.src, exp, True)
+            self.assertEqual(
+                NRPServicesGeneralException, context.expected)
+
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
+    @patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.zipfile")
+    def test_parse_env_path_custom_environment_ok(self, mock_zip, mock_storage):
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
+            mock_storage().get_custom_models.return_value = [
+                {'path': 'virtual_room.zip'}]
+            mock_storage().get_custom_model.return_value = 'test'
+            mock_storage().get_temp_directory.return_value = os.path.join(os.path.dirname(
+                os.path.realpath(__file__)), 'zipped_data')
+            import zipfile
+            mock_zip.ZipFile.return_value = zipfile.ZipFile(os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), 'zipped_data', 'mouse_ymaze_world.zip'), 'r')
+            exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
+            with open(exp_path, 'r') as exp_file:
+                exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
+            self.lifecycle._parse_env_path(
+                exp.environmentModel.src, exp, True)
+            self.assertEqual(exp.environmentModel.src, 'virtual_room.sdf')
+            self.assertEqual(
+                exp.environmentModel.customModelPath, 'virtual_room.zip')
+
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
     def test_parse_env_path_template_storage(self, mock_storage):
         exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')
         with open(exp_path, 'r') as exp_file:
             exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
-
         mock_storage().get_temp_directory.return_value = PATH
         mock_storage().get_file.return_value = '<sdf></sdf>'
         mock_storage().get_folder_uuid_by_name.return_value = 'environments'
@@ -245,7 +279,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 None, exp, False)
             self.assertEqual(env_path, os.path.join(
                 PATH, 'virtual_room.sdf'))
-    
+
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
     def test_parse_env_path_template_storage_user_env(self, mock_storage):
         exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')
