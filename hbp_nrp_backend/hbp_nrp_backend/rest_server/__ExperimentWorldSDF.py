@@ -30,6 +30,7 @@ __author__ = 'Luc Guyot, Daniel Peppicelli'
 
 import logging
 import rospy
+import tf.transformations
 import os
 
 from lxml import etree as ET
@@ -159,9 +160,14 @@ class ExperimentWorldSDF(Resource):
             experiment_file.environmentModel.robotPose.x = robot_pose[0]
             experiment_file.environmentModel.robotPose.y = robot_pose[1]
             experiment_file.environmentModel.robotPose.z = robot_pose[2]
-            experiment_file.environmentModel.robotPose.roll = robot_pose[3]
-            experiment_file.environmentModel.robotPose.pitch = robot_pose[4]
-            experiment_file.environmentModel.robotPose.yaw = robot_pose[5]
+            quaternion = tf.transformations.quaternion_from_euler(float(robot_pose[3]),
+                                                                  float(
+                                                                      robot_pose[4]),
+                                                                  float(robot_pose[5]))
+            experiment_file.environmentModel.robotPose.ux = quaternion[0]
+            experiment_file.environmentModel.robotPose.uy = quaternion[1]
+            experiment_file.environmentModel.robotPose.uz = quaternion[2]
+            experiment_file.environmentModel.robotPose.theta = quaternion[3]
 
             client.create_or_update(
                 UserAuthentication.get_header_token(request),
