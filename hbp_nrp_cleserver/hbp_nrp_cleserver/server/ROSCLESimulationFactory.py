@@ -46,6 +46,7 @@ from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from pyxb import ValidationError, NamespaceError
 from hbp_nrp_cleserver.server import ServerConfigurations
 import gc
+from hbp_nrp_cleserver.server.__signal_patch import patch_signal
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
@@ -421,6 +422,7 @@ def main():
         raise Exception("You should run ROS first.")
 
     signal.signal(signal.SIGUSR1, print_full_stack_trace)
+    patch_signal()
     parser = argparse.ArgumentParser()
     parser.add_argument('--logfile', dest='logfile',
                         help='specify the CLE logfile')
