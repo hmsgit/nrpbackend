@@ -53,6 +53,7 @@ class MockedServiceRequest(object):
     playback_path = None
     token = None
     ctx_id = None
+    experiment_id = None
 
 
 class MockedGazeboHelper(object):

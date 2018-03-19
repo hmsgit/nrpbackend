@@ -9,6 +9,7 @@ Example:
     pyxbgen -u $HBP/Experiments/ExDConfFile.xsd -m exp_conf_api_gen
     pyxbgen -u $HBP/Models/robot_model_configuration.xsd -m robot_conf_api_gen
     pyxbgen -u $HBP/Models/environment_model_configuration.xsd -m environment_conf_api_gen
+    pyxbgen -u $HBP/Models/brain_model_configuration.xsd -m brain_conf_api_gen
 
 Attention: the xml schema has to be specified with its file ending, the python module without.
 

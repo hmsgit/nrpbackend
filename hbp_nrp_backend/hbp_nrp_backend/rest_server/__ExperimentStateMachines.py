@@ -338,7 +338,8 @@ class ExperimentStorageStateMachine(Resource):
                        'token': UserAuthentication.get_header_token(request),
                        'experiment': experiment_id,
                        'filename': 'experiment_configuration.exc',
-                       'content': xml.dom.minidom.parseString(experiment.toxml("utf-8")).toprettyxml(),
+                       'content': xml.dom.minidom.parseString(
+                           experiment.toxml("utf-8")).toprettyxml(),
                        'content_type': "application/hbp-neurorobotics+xml"})
         t.start()
         threads.append(t)

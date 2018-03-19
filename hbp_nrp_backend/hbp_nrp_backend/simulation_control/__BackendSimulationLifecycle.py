@@ -40,6 +40,7 @@ import os
 import rospy
 import datetime
 import zipfile
+import json
 
 __author__ = 'Georg Hinkel, Manos Angelidis'
 
@@ -116,6 +117,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         the sdf from the experiment folder cause the user may have modified it
         :param experiment: The experiment object.
         """
+        # pylint: disable=too-many-locals
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
         environments_list = client.get_custom_models(UserAuthentication.get_header_token(request),
@@ -131,9 +133,12 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         if len(zipped_model_path):
             environment_path = os.path.join(client.get_temp_directory(),
                                             os.path.basename(experiment.environmentModel.src))
+            model_data = {}
+            model_data['uuid'] = zipped_model_path[0]
+            json_model_data = json.dumps(model_data)
             storage_env_zip_data = client.get_custom_model(
                 UserAuthentication.get_header_token(request),
-                self.simulation.ctx_id, zipped_model_path[0])
+                self.simulation.ctx_id, json_model_data)
             env_sdf_name = os.path.basename(
                 experiment.environmentModel.src)
             env_path = os.path.join(
@@ -143,7 +148,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 environment_zip.write(storage_env_zip_data)
             with zipfile.ZipFile(env_path) as env_zip_to_extract:
                 env_zip_to_extract.extractall(
-                    path=client.get_temp_directory())
+                    path=os.path.join(client.get_temp_directory(), 'environmentData'))
             # copy back the .sdf from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
             client.clone_file(env_sdf_name, UserAuthentication.get_header_token(request),
@@ -262,7 +267,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 simulation.sim_id, str(
                     simulation.kill_datetime), simulation.playback_path,
                 UserAuthentication.get_header_token(request),
-                self.simulation.ctx_id
+                self.simulation.ctx_id,
+                self.simulation.experiment_id
             )
             if not simulation.playback_path:
                 simulation.cle = ROSCLEClient(simulation.sim_id)
@@ -272,11 +278,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         except IOError as e:
             raise NRPServicesGeneralException(
-                "Error while accessing simulation models (" + repr(e.message) + ")",
+                "Error while accessing simulation models (" +
+                repr(e.message) + ")",
                 "Models error")
         except rospy.ROSException as e:
             raise NRPServicesGeneralException(
-                "Error while communicating with the CLE (" + repr(e.message) + ")",
+                "Error while communicating with the CLE (" +
+                repr(e.message) + ")",
                 "CLE error")
         except rospy.ServiceException as e:
             raise NRPServicesGeneralException(

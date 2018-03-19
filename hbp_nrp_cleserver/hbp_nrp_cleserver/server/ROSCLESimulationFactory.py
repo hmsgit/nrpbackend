@@ -153,6 +153,7 @@ class ROSCLESimulationFactory(object):
             playback_path = service_request.playback_path
             token = service_request.token
             ctx_id = service_request.ctx_id
+            experiment_id = service_request.experiment_id
 
             logger.info(
                 "Preparing new simulation with environment file: %s "
@@ -217,7 +218,8 @@ class ROSCLESimulationFactory(object):
                                     timeout=timeout,
                                     playback_path=playback_path,
                                     context_id=ctx_id,
-                                    token=token)
+                                    token=token,
+                                    experiment_id=experiment_id)
                 try:
                     launcher.initialize(environment_file, self.except_hook)
                 # pylint: disable=broad-except
