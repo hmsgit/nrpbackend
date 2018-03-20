@@ -240,6 +240,8 @@ def get_storage_experiment(experiment_id):
     return result
 
 
+#pylint: disable-msg=too-many-locals
+#pylint: disable-msg=too-many-branches
 def _make_experiment(experiment, experiment_file='', experiment_dir=''):
     """
     Creates and returns an dictionary with the experiment data
@@ -274,11 +276,34 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
         _cameraPose = [_cameraPoseObj.cameraPosition.x, _cameraPoseObj.cameraPosition.y,
                        _cameraPoseObj.cameraPosition.z, _cameraPoseObj.cameraLookAt.x,
                        _cameraPoseObj.cameraLookAt.y, _cameraPoseObj.cameraLookAt.z]
+
     if _visualModelObj:
         _visualModel = _visualModelObj.src
+
+        roll = 0
+        pitch = 0
+        yaw = 0
+
+        if _visualModelObj.visualPose.ux is not None:
+
+            roll = _visualModelObj.visualPose.ux
+            pitch = _visualModelObj.visualPose.uy
+            yaw = _visualModelObj.visualPose.uz
+
+        else:
+
+            if _visualModelObj.visualPose.roll is not None:
+                roll = _visualModelObj.visualPose.roll
+
+            if _visualModelObj.visualPose.pitch is not None:
+                pitch = _visualModelObj.visualPose.pitch
+
+            if _visualModelObj.visualPose.yaw is not None:
+                yaw = _visualModelObj.visualPose.yaw
+
         _visualModelParams = [_visualModelObj.visualPose.x, _visualModelObj.visualPose.y,
-                              _visualModelObj.visualPose.z, _visualModelObj.visualPose.ux,
-                              _visualModelObj.visualPose.uy, _visualModelObj.visualPose.uz,
+                              _visualModelObj.visualPose.z,
+                              roll, pitch, yaw,
                               _visualModelObj.scale if _visualModelObj.scale else 1.0]
 
     current_exp = dict(name=_name,

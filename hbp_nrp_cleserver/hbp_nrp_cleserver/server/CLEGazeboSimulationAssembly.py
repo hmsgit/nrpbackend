@@ -35,6 +35,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+import tf.transformations as transformations
 logger = logging.getLogger(__name__)
 
 from RestrictedPython import compile_restricted
@@ -497,10 +498,37 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             rpose.position.x = robot_initial_pose.x
             rpose.position.y = robot_initial_pose.y
             rpose.position.z = robot_initial_pose.z
-            rpose.orientation.x = robot_initial_pose.ux
-            rpose.orientation.y = robot_initial_pose.uy
-            rpose.orientation.z = robot_initial_pose.uz
-            rpose.orientation.w = robot_initial_pose.theta
+
+            if robot_initial_pose.ux is not None:
+
+                rpose.orientation.x = robot_initial_pose.ux
+                rpose.orientation.y = robot_initial_pose.uy
+                rpose.orientation.z = robot_initial_pose.uz
+                rpose.orientation.w = robot_initial_pose.theta
+
+            else:
+
+                roll = 0
+                pitch = 0
+                yaw = 0
+
+                if robot_initial_pose.roll is not None:
+                    roll = robot_initial_pose.roll
+
+                if robot_initial_pose.pitch is not None:
+                    pitch = robot_initial_pose.pitch
+
+                if robot_initial_pose.yaw is not None:
+                    yaw = robot_initial_pose.yaw
+
+                quaternion = transformations.quaternion_from_euler(
+                    roll, pitch, yaw
+                )
+
+                rpose.orientation.x = quaternion[0]
+                rpose.orientation.y = quaternion[1]
+                rpose.orientation.z = quaternion[2]
+                rpose.orientation.w = quaternion[3]
         else:
             rpose = None
 
