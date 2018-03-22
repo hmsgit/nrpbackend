@@ -759,7 +759,7 @@ class ROSCLEServer(SimulationServer):
                  (executed synchronously), an error message otherwise.
         """
 
-        edit_tf_request = srv.EditTransferFunctionRequest
+        edit_tf_request = srv.EditTransferFunctionRequest()
 
         edit_tf_request.transfer_function_name = request.transfer_function.name
         edit_tf_request.transfer_function_source = \
