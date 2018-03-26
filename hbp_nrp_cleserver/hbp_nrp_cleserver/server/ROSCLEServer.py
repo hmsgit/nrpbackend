@@ -32,6 +32,7 @@ import logging
 import rospy
 import numpy
 import time
+import sys
 
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import SetBrainRequest
@@ -75,17 +76,22 @@ gazebo_logger.setLevel(logging.INFO)
 notificator_handler = NotificatorHandler()
 
 
-def extract_line_number(tb):
+def extract_line_number(tb, filename="<string>"):
     """
     Extracts the line number of the given traceback or returns -1
 
     :param tb: The traceback with the original error information
+    :param filename: the absolute path to the file of the code
+    that has raised the error, "<string>" otherwise.
     """
-    current = tb
+    # find the base of the traceback stack (where the exception has been raised)
+    prev = current = tb
     while current is not None:
-        if current.tb_frame.f_code.co_filename == "<string>":
-            return current.tb_lineno
+        prev = current
         current = current.tb_next
+
+    if prev.tb_frame.f_code.co_filename == filename:
+        return prev.tb_lineno
     return -1
 
 
@@ -434,9 +440,11 @@ class ROSCLEServer(SimulationServer):
         """
         try:
             return_value = ["", 0, 0, 0]
+
             err = self.__check_set_brain(data_type, brain_populations, change_population)
             if err is not None:
                 return err
+
             with NamedTemporaryFile(prefix='brain', suffix='.' + brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
                     if data_type == "text":
@@ -450,6 +458,10 @@ class ROSCLEServer(SimulationServer):
         except SyntaxError, e:
             logger.exception(e)
             return_value = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
+        except AttributeError as e:
+            logger.exception(e)
+            line_no = extract_line_number(sys.exc_info()[2], tmp.name)
+            return_value = ["The new brain has an error: " + e.message, line_no, 0, 0]
         except BrainParameterException as e:
             logger.exception(e)
             return_value = [e.message, -1, -1, 0]

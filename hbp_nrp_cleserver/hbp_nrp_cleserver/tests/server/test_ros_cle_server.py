@@ -198,8 +198,8 @@ class TestROSCLEServer(unittest.TestCase):
     def test_get_brain(self):
         with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
             mocked_tf_framework.get_brain_source.return_value = "Some python code"
-            slice1 = { 'from': 1, 'to': 2, 'step': 3}
-            slice2 = { 'from': 1, 'to': 2}
+            slice1 = {'from': 1, 'to': 2, 'step': 3}
+            slice2 = {'from': 1, 'to': 2}
             populations_json_slice = {
               'population_1': 1, 'population_2': 2,
               'slice_1': slice1, 'slice_2': slice2,
@@ -219,59 +219,62 @@ class TestROSCLEServer(unittest.TestCase):
             self.assertEqual("h5", brain[0])
             self.assertEqual("base64", brain[2])
 
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
+    @patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework")
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.SimulationServerLifecycle')
-    def test_set_brain(self, mock_tempfile, mock_lifecycle):
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
+    def test_set_brain(self, mock_tempfile, mock_lifecycle, mocked_tf_framework):
 
         mock_tempfile.name = 'random_name_tempfile'
 
-        with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
-            slice1 = { 'from': 1, 'to': 2, 'step': 1}
-            populations_json_slice = {
-              'index1': 1,
-              'slice_1': slice1,
-              'list1': [1, 2, 3]
-            }
-            mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
+        slice1 = {'from': 1, 'to': 2, 'step': 1}
+        populations_json_slice = {
+          'index1': 1,
+          'slice_1': slice1,
+          'list1': [1, 2, 3]
+        }
+        mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
 
-            ros_callbacks = self.__get_handlers_for_testing_main()
-            self.__mock_lifecycle.state = 'started'
-            self.__mocked_cle.network_file = PropertyMock()
-            set_brain_implementation = ros_callbacks['set_brain']
-            populations_erroneous = json.dumps({
-                'index1': 1,
-                'list1': [1, 2, 3],
-                'slice1 new': {'from': 1, 'to': 2, 'step': 1}
-            })
-            request = Mock()
-            request.data_type = "text"
-            request.brain_type = "py"
-            request.brain_data = "Dummy = None"
-            request.brain_populations = populations_erroneous
-            request.change_population = srv.SetBrainRequest.ASK_RENAME_POPULATION
-            response = set_brain_implementation(request)
-            self.assertNotEqual(response[0], "")
+        ros_callbacks = self.__get_handlers_for_testing_main()
+        self.__mock_lifecycle.state = 'started'
+        self.__mocked_cle.network_file = PropertyMock()
+        set_brain_implementation = ros_callbacks['set_brain']
+        populations_erroneous = json.dumps({
+            'index1': 1,
+            'list1': [1, 2, 3],
+            'slice1 new': {'from': 1, 'to': 2, 'step': 1}
+        })
+        request = Mock()
+        request.data_type = "text"
+        request.brain_type = "py"
+        request.brain_data = "Dummy = None"
+        request.brain_populations = populations_erroneous
+        request.change_population = srv.SetBrainRequest.ASK_RENAME_POPULATION
 
-            populations_new = json.dumps({
-                'index1': 1,
-                'list1': [1, 2, 3],
-                'slice1_new': {'from': 1, 'to': 2, 'step': 1}
-            })
-            request.change_population = srv.SetBrainRequest.DO_RENAME_POPULATION
-            request.brain_populations = populations_new
-            response = set_brain_implementation(request)
-            self.assertEqual(response[0], "")
+        response = set_brain_implementation(request)
+        self.assertNotEqual(response[0], "")
+
+        populations_new = json.dumps({
+            'index1': 1,
+            'list1': [1, 2, 3],
+            'slice1_new': {'from': 1, 'to': 2, 'step': 1}
+        })
+        request.change_population = srv.SetBrainRequest.DO_RENAME_POPULATION
+        request.brain_populations = populations_new
+        response = set_brain_implementation(request)
+        self.assertEqual(response[0], "")
 
         self.__mock_lifecycle.paused.assert_called()
         expected_populations_arg = json.dumps(
             self.__mocked_cle.load_network_from_file.call_args[1]
         )
         self.assertEqual(populations_new, expected_populations_arg)
+
         self.__mocked_cle.load_network_from_file.reset_mock()
         request.data_type = "base64"
         request.brain_data = base64.encodestring(request.brain_data)
-        response = set_brain_implementation(request)
+        _ = set_brain_implementation(request)
         self.__mocked_cle.load_network_from_file.assert_called()
+
         request.data_type = "not_supported"
         response = set_brain_implementation(request)
         self.assertNotEqual("", response[0])
@@ -281,19 +284,22 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertNotEqual("", response[0])
         request.brain_populations = populations_new
 
-        def raise_syntax_error(foo):
-            exec "Foo Bar"
-        with patch("base64.decodestring") as mock_b64:
-            request.data_type = "base64"
-            mock_b64.side_effect = raise_syntax_error
-            response = set_brain_implementation(request)
-            self.assertNotEqual("", response[0])
-            mock_b64.side_effect = Exception
-            response = set_brain_implementation(request)
-            self.assertNotEqual("", response[0])
+        # test Exceptions catching
+        request.data_type = "base64"
+        self.__mocked_cle.load_network_from_file.side_effect = SyntaxError
+        response = set_brain_implementation(request)
+        self.assertNotEqual("", response[0])
 
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
+        self.__mocked_cle.load_network_from_file.side_effect = AttributeError
+        response = set_brain_implementation(request)
+        self.assertNotEqual("", response[0])
+
+        self.__mocked_cle.load_network_from_file.side_effect = Exception
+        response = set_brain_implementation(request)
+        self.assertNotEqual("", response[0])
+
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.SimulationServerLifecycle')
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.NamedTemporaryFile')
     def test_handling_BrainParameterException(self, mock_tempfile, mock_lifecycle):
 
         # any caught BrainParameterException exception should return [{msg}, -1, -1, 0]
@@ -303,7 +309,7 @@ class TestROSCLEServer(unittest.TestCase):
 
         with patch("hbp_nrp_cleserver.server.ROSCLEServer.tf_framework") as mocked_tf_framework:
 
-            slice1 = { 'from': 1, 'to': 2, 'step': 1}
+            slice1 = {'from': 1, 'to': 2, 'step': 1}
             populations_json_slice = {
               'index1': 1,
               'slice_1': slice1,
@@ -582,7 +588,7 @@ class TestROSCLEServer(unittest.TestCase):
 
     def test_shutdown(self):
         z = self.__ros_cle_server._ROSCLEServer__cle = MagicMock()
-        a = self.__ros_cle_server._SimulationServer__service_reset  = MagicMock()
+        a = self.__ros_cle_server._SimulationServer__service_reset = MagicMock()
         b = self.__ros_cle_server._ROSCLEServer__current_task = None
         c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
         d = self.__ros_cle_server._SimulationServer__service_extend_timeout = MagicMock()

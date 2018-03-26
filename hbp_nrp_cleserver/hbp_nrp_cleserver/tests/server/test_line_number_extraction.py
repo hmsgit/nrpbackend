@@ -28,25 +28,37 @@ import sys
 
 __author__ = "Georg Hinkel"
 
-class TestErrorLineExtraction(TestCase):
 
+class TestErrorLineExtraction(TestCase):
     ret_none = lambda: None
 
-    def test_line_number_of_type_error(self):
-        code = "# Here are some comments\n" \
-               "def test():\n" \
-               "    foo = None\n" \
-               "    # the next line will crash\n" \
-               "    foo.bar\n"
-        line_no = self.__get_line_number_of_error(code)
-        self.assertEqual(5, line_no)
+    test_code = "# Here are some comments\n" \
+                "def test():\n" \
+                "    def test_inner():\n" \
+                "        foo = None\n" \
+                "        # the next line will crash\n" \
+                "        foo.bar\n" \
+                "    # not the next one\n" \
+                "    test_inner()\n"
+    expected_error_line_no = 6
 
-    def __get_line_number_of_error(self, code):
+    def test_extract_line_number_from_file(self):
+        filename = "mock_script.py"
+
+        error_line_no = self.__get_line_number_of_error(self.test_code, filename)
+        self.assertEqual(self.expected_error_line_no, error_line_no)
+
+    def test_extract_line_number_from_string(self):
+        error_line_no = self.__get_line_number_of_error(self.test_code, '<string>')
+        self.assertEqual(self.expected_error_line_no, error_line_no)
+
+    def __get_line_number_of_error(self, code, filename):
         test = TestErrorLineExtraction.ret_none
-        restricted = compile_restricted(code, '<string>', 'exec')
+        restricted = compile_restricted(code, filename, 'exec')
         exec restricted
         try:
             return test()
         except Exception:
             tb = sys.exc_info()[2]
-            return extract_line_number(tb)
+            return extract_line_number(tb, filename)
+
