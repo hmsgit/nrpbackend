@@ -28,4 +28,5 @@ hbp_nrp_commons/hbp_nrp_commons/generated/bibi_api_gen.py
 hbp_nrp_commons/hbp_nrp_commons/generated/model_conf_api_gen.py
 hbp_nrp_commons/hbp_nrp_commons/generated/exp_conf_api_gen.py
 hbp_nrp_commons/hbp_nrp_commons/generated/_sc.py
-
+hbp_nrp_commons/hbp_nrp_commons/generated/environment_conf_api_gen.py
+hbp_nrp_commons/hbp_nrp_commons/generated/robot_conf_api_gen.py
