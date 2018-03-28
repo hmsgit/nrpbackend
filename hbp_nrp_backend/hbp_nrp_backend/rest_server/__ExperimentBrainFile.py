@@ -159,14 +159,6 @@ class ExperimentBrainFile(Resource):
             )
         context_id = body.get('context_id', None)
 
-        # no need to rewrite a get_header function since the user
-        # authentication already has one
-        # Read the request data
-        content_type = UserAuthentication.get_header(
-            request,
-            'Content-type',
-            'text/plain'
-        )
         data = body['data']
         brain_populations = body.get('additional_populations')
 
@@ -202,13 +194,13 @@ class ExperimentBrainFile(Resource):
                                         'brains'),
                                     os.path.basename(brain_filename),
                                     data,
-                                    content_type)
+                                    'text/plain')
         else:
             client.create_or_update(UserAuthentication.get_header_token(request),
                                     experiment_id,
                                     os.path.basename(brain_filename),
                                     data,
-                                    content_type)
+                                    'text/plain')
 
         # remove all the populations
         del bibi_file_obj.brainModel.populations[:]
