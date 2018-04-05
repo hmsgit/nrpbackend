@@ -31,6 +31,7 @@ __author__ = 'Bernd Eckstein'
 import os
 import logging
 from threading import Thread
+import xml
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
@@ -312,7 +313,6 @@ class ExperimentStorageStateMachine(Resource):
             exp_conf_api_gen.CreateFromDocument,
             exp_conf_api_gen.ExD_
         )
-
         if not experiment:
             return {"message": "Failed to parse experiment configuration file"}, 500
 
@@ -333,13 +333,12 @@ class ExperimentStorageStateMachine(Resource):
                 'content_type': "application/hbp-neurorobotics.sm+python"})
             t.start()
             threads.append(t)
-
         t = Thread(target=client.create_or_update,
                    kwargs={
                        'token': UserAuthentication.get_header_token(request),
                        'experiment': experiment_id,
                        'filename': 'experiment_configuration.exc',
-                       'content': experiment.toxml("utf-8"),
+                       'content': xml.dom.minidom.parseString(experiment.toxml("utf-8")).toprettyxml(),
                        'content_type': "application/hbp-neurorobotics+xml"})
         t.start()
         threads.append(t)

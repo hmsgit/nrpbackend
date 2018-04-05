@@ -149,6 +149,7 @@ class TestExperimentStateMachines(RestTest):
         with open(exp_temp_path) as exp_xml:
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
         client_mock.clone_file.return_value = exp_temp_path
+        client_mock.parse_and_check_file_is_valid.return_value = exp
         storage_mock.return_value = client_mock
         mock_bp0.return_value = PATH
         sm = "def test_sm():\n"\

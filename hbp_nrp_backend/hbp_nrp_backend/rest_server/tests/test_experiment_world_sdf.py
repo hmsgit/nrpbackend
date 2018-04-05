@@ -91,6 +91,7 @@ class TestExperimentWorldSDF(RestTest):
         body = {'context_id': 'fake'}
         self.mock_storageClient_instance.clone_file.return_value =  exd_conf_temp_path
         self.mock_storageClient_instance.create_or_update = empty
+        self.mock_storageClient_instance.parse_and_check_file_is_valid.return_value =  exp
         response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
         self.assertEqual(response.status_code, 200)
 

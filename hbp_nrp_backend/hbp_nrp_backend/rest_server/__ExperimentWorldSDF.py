@@ -36,6 +36,7 @@ from lxml import etree as ET
 from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
+import xml
 
 from gazebo_msgs.srv import ExportWorldSDF
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
@@ -167,7 +168,8 @@ class ExperimentWorldSDF(Resource):
                 UserAuthentication.get_header_token(request),
                 experiment_id,
                 'experiment_configuration.exc',
-                experiment_file.toxml("utf-8"),
+                xml.dom.minidom.parseString(
+                    experiment_file.toxml("utf-8")).toprettyxml(),
                 "text/plain")
 
         else:
