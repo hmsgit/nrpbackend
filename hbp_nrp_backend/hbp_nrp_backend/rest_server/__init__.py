@@ -108,6 +108,7 @@ from hbp_nrp_backend.rest_server.__SimulationStructuredTransferFunctions import 
 from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
 from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
+from hbp_nrp_backend.rest_server.__SimulationResourcesCloner import SimulationResourcesCloner
 
 # Register /experiment
 api.add_resource(Experiment, '/experiment')
@@ -160,6 +161,8 @@ api.add_resource(SimulationStructuredTransferFunctions,
 api.add_resource(SimulationTopics, '/simulation/topics')
 api.add_resource(SimulationRecorder,
                  '/simulation/<int:sim_id>/recorder/<string:command>')
+api.add_resource(SimulationResourcesCloner,
+                 '/simulation/clone-resources-files')
 
 # This should not be on the /simulation path ... as it does not apply to a
 # running simulation

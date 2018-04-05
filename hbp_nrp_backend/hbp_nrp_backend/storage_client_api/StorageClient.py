@@ -30,6 +30,7 @@ import logging
 import tempfile
 import requests
 import shutil
+import urllib
 from hbp_nrp_backend.config import Config
 from pyxb import ValidationError
 from xml.sax import SAXParseException
@@ -59,16 +60,19 @@ class StorageClient(object):
 
             :return the path to the temporary directory
             """
-            for entry in os.listdir(tempfile.gettempdir()):
-                if entry.startswith('nrpTemp'):
-                    return os.path.join(tempfile.gettempdir(), entry)
-            return None
+            if not os.path.exists(os.path.join(tempfile.gettempdir(), "nrpTemp")):
+
+                os.makedirs(os.path.join(tempfile.gettempdir(), "nrpTemp"))
+
+            return os.path.join(
+                tempfile.gettempdir(), "nrpTemp")
         self.__proxy_url = Config.LOCAL_STORAGE_URI['storage_uri']
-        if not make_temp_directory():
-            self.__temp_directory = tempfile.mkdtemp(
-                prefix="nrpTemp", suffix="")
-        else:
-            self.__temp_directory = make_temp_directory()
+
+        self.__temp_directory = make_temp_directory()
+
+        # adding the resources folder into the created temp_directory
+        self.__resources_path = os.path.join(
+            self.__temp_directory, "resources")
 
     def get_temp_directory(self):
         """
@@ -239,13 +243,14 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def list_files(self, token, experiment):
+    def list_files(self, token, experiment, folder=None):
         """
         Lists all the files under an experiment based on the
         experiment name and the user token
         :param token: a valid token to be used for the request
         :param experiment: the name of the experiment
         :return: if successful, the files under the experiment
+        :folder: it is a boolean variable that indicates if list_files returns folders or not.
         """
         try:
             headers = {
@@ -260,9 +265,10 @@ class StorageClient(object):
                     + str(res.status_code))
             else:
                 results = []
-                # we have to filter out the folders
+                # folder variable is added because copy_resources_folders_to_tmp needs
+                #  to list the folders too
                 for entry in res.json():
-                    if entry['type'] == 'file':
+                    if entry['type'] == 'file' or folder:
                         results.append(entry)
                 return results
         except requests.exceptions.ConnectionError, err:
@@ -333,6 +339,7 @@ class StorageClient(object):
         :return: The local path of the cloned file,
         """
         found = False
+
         for folder_entry in self.list_files(token, experiment):
             if filename in folder_entry['name']:
                 found = True
@@ -344,6 +351,92 @@ class StorageClient(object):
             return clone_destination
         else:
             return None
+
+    def copy_file_content(self, token, src_folder, dest_folder, filename):
+        """
+        copy the content of file located in the Storage into the proper tmp folder
+
+        :param token: The token of the request
+        :param src_folder: folder location where it will be copy from
+        :param dest_folder: folder location where it will be copy to
+        :param filename: name of the file to be copied.
+        """
+        with open(os.path.join(src_folder, filename), "w") as f:
+            f.write(self.get_file(
+                    token, dest_folder, filename, byname=True))
+
+    # pylint: disable=no-self-use
+    def check_create_folder(self, folder_path):
+        """
+        checks if the folder exist and if it does not exist, then it is created it
+
+        :param folder_path: folder location to be checked
+        """
+        try:
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+            return None
+        except OSError as ex:
+            logger.exception(
+                'An error happened trying to create ' + folder_path)
+            raise ex
+
+    def copy_folder_content_to_tmp(self, token, folder):
+        """
+        copy the content of the folder located in storage/experiment into tmp folder
+
+        :param token: The token of the request
+        :param folder: the folder in the storage folder to copy in tmp folder,
+                       it has included the uuid of the experiment
+        """
+        child_folders = []
+        child_folders.append(folder)
+        folder_path = ''
+        while child_folders:
+            actual_folder = child_folders.pop()
+            folder_path = os.path.join(folder_path, actual_folder['name'])
+            folder_uuid = urllib.quote_plus(actual_folder['uuid'])
+            for folder_entry in self.list_files(token, folder_uuid, True):
+                if folder_entry['type'] == 'folder':
+                    child_folders.append(folder_entry)
+                if folder_entry['type'] == 'file':
+                    folder_tmp_path = str(os.path.join(
+                        self.__temp_directory, folder_path))
+                    self.check_create_folder(folder_tmp_path)
+                    self.copy_file_content(
+                        token, folder_tmp_path, folder_uuid, folder_entry['name'])
+
+    # pylint: disable=no-self-use
+    def delete_directory_content(self, folder_path):
+        """
+        delete the content of the folder.
+
+        :param folder_path: The path of the folder.
+        """
+        for file_entry in os.listdir(folder_path):
+
+            file_path = os.path.join(folder_path, file_entry)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        return None
+
+    def copy_resources_folders_to_tmp(self, token, experiment):
+        """
+        copy the resources folder located in storage/experiment into tmp folder
+
+        :param token: The token of the request
+        :param experiment: The experiment which contains the resource folder
+        """
+        try:
+            for folder_entry in self.list_files(token, experiment, True):
+                if folder_entry['name'] == 'resources' and folder_entry['type'] == 'folder':
+                    if os.path.exists(self.__resources_path):
+                        self.delete_directory_content(self.__resources_path)
+                    self.copy_folder_content_to_tmp(token, folder_entry)
+        except Exception as ex:
+            logger.exception(
+                'An error happened trying to copy resources to tmp ')
+            raise ex
 
     def clone_all_experiment_files(self, token, experiment, new_folder=False):
         """
@@ -359,6 +452,7 @@ class StorageClient(object):
         """
         experiment_paths = dict()
         list_files_to_clone = self.list_files(token, experiment)
+        self.copy_resources_folders_to_tmp(token, experiment)
         if new_folder:
             destination_directory = tempfile.mkdtemp()
         else:

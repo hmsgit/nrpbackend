@@ -40,7 +40,7 @@ from hbp_nrp_backend.storage_client_api import StorageClient
 
 class MockResponse:
 
-    def __init__(self, json_data, status_code, text=None,content=None):
+    def __init__(self, json_data, status_code, text=None, content=None):
         self.json_data = json_data
         self.status_code = status_code
         self.text = text
@@ -151,14 +151,23 @@ def mocked_list_files_ok(*args, **kwargs):
             "contentType": "application/hbp-neurorobotics.tfs+python",
             "type": "file",
             "modifiedOn": "2017-08-30T12:32:47.842214Z"
+    },
+        {
+            "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd13",
+            "name": "resources",
+            "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+            "contentType": "application/hbp-neurorobotics.tfs+python",
+            "type": "folder",
+            "modifiedOn": "2017-08-30T12:32:47.842214Z"
     }], 200)
 
 
 def mocked_get_custom_models_ok(*args, **kwargs):
     return MockResponse([{'name': 'testZip1'}, {'name': 'testZip2'}], 200)
 
+
 def mocked_get_custom_model_ok(*args, **kwargs):
-    return MockResponse({'name': 'testZip1'}, 200,content='Test')
+    return MockResponse({'name': 'testZip1'}, 200, content='Test')
 
 
 class TestNeuroroboticsStorageClient(unittest.TestCase):
@@ -464,6 +473,56 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 "fakeContextId",
                 "modelZipPath")
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
+
+    # Resources
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_files')
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_file')
+    def test_copy_resources_folders_content_to_tmp(self, mocked_get, mocked_list_files):
+        client = StorageClient.StorageClient()
+       # mocked_get_files.side_effect = None
+        resources_item = {
+            "uuid": "89857775-6215-4d53-94ee-fb6c18b9e2f8",
+            "name": "resources",
+            "parent": "89857775-6215-4d53-94ee-fb6c18b9e2g8",
+            "type": "folder"
+        }
+        mocked_list_files.return_value = [
+            {
+                "uuid": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+                "name": "fakeFileName",
+                "parent": "89857775-6215-4d53-94ee-fb6c18b9e2f8",
+                "type": "file"
+            }
+        ]
+        mocked_get.return_value = 'test'
+        client.copy_folder_content_to_tmp(
+            "fakeToken",
+            resources_item)
+        self.assertTrue(client.list_files.called)
+        file_path = os.path.join(
+            'resources', 'fakeFileName')
+        tmp_path = os.path.join(
+            client.get_temp_directory(), file_path)
+        with open(tmp_path) as tmp_file:
+            self.assertEqual(tmp_file.read(), 'test')
+
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_files')
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.copy_folder_content_to_tmp')
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_file')
+    def test_copy_resources_folders_to_tmp(self, mocked_get, mocked_copy_folder_content_to_tmp, mocked_list_files):
+        client = StorageClient.StorageClient()
+        mocked_list_files.return_value = [{
+            "uuid": "3ce08569-bdb7-49ee-a751-5640f4b8745646",
+            "name": "resources",
+            "parent": "89857775-6215-4d53-94ee-fb6c18b9e2f8",
+            "type": "folder"
+        }]
+
+        client.copy_resources_folders_to_tmp(
+            "fakeToken",
+            "fakeExperiment"
+        )
+        self.assertTrue(client.copy_folder_content_to_tmp.called)
 
     # LIST FILES
     @patch('requests.get', side_effect=mocked_list_files_ok)
