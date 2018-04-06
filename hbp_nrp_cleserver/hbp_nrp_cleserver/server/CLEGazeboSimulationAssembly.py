@@ -61,6 +61,7 @@ import hbp_nrp_cle.tf_framework as nrp
 import hbp_nrp_cle.brainsim.config as brainconfig
 import json
 
+
 models_path = os.environ.get('NRP_MODELS_DIRECTORY')
 
 
@@ -303,10 +304,12 @@ class GazeboSimulationAssembly(SimulationAssembly):
                     logger.exception(e)
 
             # Stop any external robot controllers
-            if self.bibi.extRobotController is not None:
-                robot_controller_filepath = os.path.join(models_path,
-                                                         self.bibi.extRobotController)
-                if os.path.isfile(robot_controller_filepath):
+            if self.bibi.extRobotController:
+                from hbp_nrp_backend.storage_client_api.StorageClient \
+                    import get_model_basepath, find_file_in_paths
+                robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
+                                                               get_model_basepath())
+                if robot_controller_filepath:
                     if notifications:
                         self.ros_notificator.update_task("Stopping external robot controllers",
                                                          update_progress=True, block_ui=False)
@@ -379,7 +382,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         :param bibi: The BIBI configuration
         """
         super(CLEGazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, **par)
-        self.__tmp_robot_dir = None
+        self.__tmp_robot_dir = ''
         self.__dependencies = compute_dependencies(bibi)
         self.cle_server = None
 
@@ -389,6 +392,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         :param environment: The environment that should be simulated
         :param except_hook: A method that should be called when there is a critical error
         """
+        # pylint: disable=too-many-locals
 
         # create the CLE server and lifecycle first to report any failures
         # properly
@@ -407,11 +411,18 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # find robot
         robot_file = self.bibi.bodyModel
-        logger.info("Robot: " + robot_file.value())
+        #logger.info("Robot: " + str(robot_file))
         robot_file_abs = self._get_robot_abs_path(robot_file)
 
         # start Gazebo simulator and bridge
-        self._start_gazebo(rng_seed, None, self.__tmp_robot_dir, environment)
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        self._start_gazebo(
+            rng_seed,
+            None,       # playback path
+            (self.__tmp_robot_dir
+                + ':' if self.__tmp_robot_dir else ''
+                + StorageClient().get_simulation_directory()),
+            environment)
 
         # load environment and robot models
         robot_pose, models, lights = self._load_environment(
@@ -450,7 +461,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         if 'storage://' in robot_file.value():
             from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
             client = StorageClient()
-            abs_file = os.path.join(client.get_temp_directory(),
+            abs_file = os.path.join(client.get_simulation_directory(),
                                     os.path.basename(robot_file.value()))
             name, ext = os.path.splitext(abs_file)
             ext = ext.lower()
@@ -468,7 +479,13 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             abs_file = os.path.join(
                 self.exc.dir, os.path.basename(robot_file.value()))
         else:
-            abs_file = os.path.join(models_path, robot_file.value())
+            from hbp_nrp_backend.storage_client_api.StorageClient \
+                import get_model_basepath, find_file_in_paths
+            abs_file = find_file_in_paths(robot_file.value(), get_model_basepath())
+
+            if not abs_file:
+                raise Exception("Could not find robot file: ".format(robot_file.value()))
+
         name, ext = os.path.splitext(abs_file)
         ext = ext.lower()
         if ext == ".sdf":
@@ -481,7 +498,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 except KeyError:
                     raise Exception("The robot zip archive must contain an sdf file named {0} "
                                     "at the root of the archive, but does not.".format(name))
-                self.__tmp_robot_dir = tempfile.mkdtemp(suffix="robot")
+                self.__tmp_robot_dir = os.path.join(
+                    StorageClient().get_simulation_directory(),
+                    'robot')
                 robot_zip.extractall(path=self.__tmp_robot_dir)
             return os.path.join(self.__tmp_robot_dir, name)
 
@@ -503,13 +522,18 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                                                'robots')
         # we use the paths of the uploaded zips to make sure the selected
         # zip is there
+
         paths_list = [robot['path']
                       for robot in robots_list]
+
         # check if the zip is in the user storage
         zipped_model_path = [
-            path for path in paths_list if robot_file.customModelPath in path]
-        if len(zipped_model_path):
-            robot_path = os.path.join(client.get_temp_directory(),
+            path
+            for path in paths_list
+                if robot_file.customModelPath in path
+            ]
+        if zipped_model_path:
+            robot_path = os.path.join(client.get_simulation_directory(),
                                       os.path.basename(robot_file.value()))
             model_data = {}
             model_data['uuid'] = zipped_model_path[0]
@@ -520,13 +544,13 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             robot_sdf_name = os.path.basename(
                 os.path.basename(robot_file.value()))
             rob_zip_path = os.path.join(
-                client.get_temp_directory(),
+                client.get_simulation_directory(),
                 robot_file.customModelPath)
             with open(rob_zip_path, 'w') as robot_zip:
                 robot_zip.write(storage_robot_zip_data)
             with zipfile.ZipFile(rob_zip_path) as robot_zip_to_extract:
                 robot_zip_to_extract.extractall(
-                    path=os.path.join(client.get_temp_directory(), 'robotData'))
+                    path=os.path.join(client.get_simulation_directory(), 'assets'))
             # copy back the .sdf from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
             client.clone_file(robot_sdf_name, self.token,
@@ -535,8 +559,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # models
         else:
             raise NRPServicesGeneralException(
-                "Could not find selected zip in the list of uploaded models. Please make\
-                     sure that it has been uploaded correctly",
+                "Could not find zip file {0} in the list of uploaded models. "
+                .format(robot_file.value()) +
+                "Please make sure that it has been uploaded correctly.",
                 "Zipped model retrieval failed")
         return robot_path
 
@@ -547,6 +572,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         :param world_file Backwards compatibility for world file specified through webpage
         """
+        # pylint: disable=too-many-locals
 
         # load the world file if provided first
         self._notify("Loading experiment environment")
@@ -593,7 +619,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         else:
             rpose = None
 
-        logger.info("RobotAbs: " + robot_file_abs)
+        logger.info("RobotAbs: " + str(robot_file_abs))
 
         # check retina script file
         retina_config_path = None
@@ -609,8 +635,10 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # load external robot controller
         if self.bibi.extRobotController is not None:
-            robot_controller_filepath = os.path.join(models_path,
-                                                     self.bibi.extRobotController)
+            from hbp_nrp_backend.storage_client_api.StorageClient \
+                import get_model_basepath, find_file_in_paths
+            robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
+                                                           get_model_basepath())
             if not os.path.isfile(robot_controller_filepath) and self.__tmp_robot_dir is not None:
                 robot_controller_filepath = os.path.join(self.__tmp_robot_dir,
                                                          self.bibi.extRobotController)
@@ -657,7 +685,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         elif 'storage://' in brainfilepath:
             from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
             client = StorageClient()
-            brainfilepath = os.path.join(client.get_temp_directory(),
+            brainfilepath = os.path.join(client.get_simulation_directory(),
                                          os.path.basename(brainfilepath))
             with open(brainfilepath, "w") as f:
                 f.write(client.get_file(
@@ -668,7 +696,13 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     os.path.basename(brainfilepath),
                     byname=True))
         else:
-            brainfilepath = os.path.join(models_path, brainfilepath)
+            from hbp_nrp_backend.storage_client_api.StorageClient \
+                import get_model_basepath, find_file_in_paths
+            brainfilepath = find_file_in_paths(brainfilepath, get_model_basepath())
+
+            #if not brainfilepath:
+            #    raise Exception("Could not find brain file: ".format(brainfilepath))
+
         neurons_config = get_all_neurons_as_dict(
             self.bibi.brainModel.populations)
 
@@ -682,6 +716,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         simulation directory. After the extraction we also make sure to copy
         the .py from the experiment folder cause the user may have modified it
         """
+        # pylint: disable=too-many-locals
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
         brains_list = client.get_custom_models(self.token,
@@ -704,13 +739,18 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             brain_name = os.path.basename(
                 self.bibi.brainModel.file)
             brn_zip_path = os.path.join(
-                client.get_temp_directory(),
+                client.get_simulation_directory(),
                 self.bibi.brainModel.customModelPath)
             with open(brn_zip_path, 'w') as brain_zip:
                 brain_zip.write(storage_brain_zip_data)
             with zipfile.ZipFile(brn_zip_path) as brain_zip_to_extract:
-                brain_zip_to_extract.extractall(
-                    path=os.path.join(client.get_temp_directory()))
+                for brain_file in brain_zip_to_extract.namelist():
+                    _, file_name = os.path.split(brain_file)
+                    if file_name:
+                        with open(os.path.join(
+                                client.get_simulation_directory(),
+                                file_name), 'w') as file_to_write:
+                            file_to_write.write(brain_zip_to_extract.read(brain_file))
             # copy back the .py from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
             client.clone_file(brain_name, self.token,
@@ -857,7 +897,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             logger.exception(e)
 
         # Delete temporary robot folder, if any
-        if self.__tmp_robot_dir is not None:
+        if not self.__tmp_robot_dir:
             logger.info("Deleting temporary directory {temp}".format(
                 temp=self.__tmp_robot_dir))
             shutil.rmtree(self.__tmp_robot_dir, ignore_errors=True)

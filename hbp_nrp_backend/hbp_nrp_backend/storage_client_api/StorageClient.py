@@ -52,33 +52,27 @@ class StorageClient(object):
         """
         Creates the storage client
         """
-
-        def make_temp_directory():
-            """
-            Returns a temp directory where all the simulation related files are
-            stored. This directory starts with nrpTemp
-
-            :return the path to the temporary directory
-            """
-            if not os.path.exists(os.path.join(tempfile.gettempdir(), "nrpTemp")):
-
-                os.makedirs(os.path.join(tempfile.gettempdir(), "nrpTemp"))
-
-            return os.path.join(
-                tempfile.gettempdir(), "nrpTemp")
         self.__proxy_url = Config.LOCAL_STORAGE_URI['storage_uri']
+        simdir = os.environ['NRP_SIMULATION_DIR']
+        if simdir is None:
+            raise Exception("Server Error. NRP_SIMULATION_DIR not defined.")
 
-        self.__temp_directory = make_temp_directory()
+        if not os.path.exists(simdir):
+            try:
+                os.mkdir(simdir)
+            except OSError as e:
+                raise e
+        self.__simulation_directory = simdir
 
         # adding the resources folder into the created temp_directory
         self.__resources_path = os.path.join(
-            self.__temp_directory, "resources")
+            self.__simulation_directory, "resources")
 
-    def get_temp_directory(self):
+    def get_simulation_directory(self):
         """
-        Returns the temporary directory where all the simulation based files are stored
+        Returns the simulation directory where all the simulation based files are stored
         """
-        return self.__temp_directory
+        return self.__simulation_directory
 
     # Wrappers around the storage API
     def authenticate(self, user, password):
@@ -328,8 +322,8 @@ class StorageClient(object):
     # HELPER FUNCTIONS
     def clone_file(self, filename, token, experiment):
         """
-        Clones a file according to a given filename to a temporary folder.
-        The caller has then the responsibility of managing this folder.
+        Clones a file according to a given filename to a simulation folder.
+        The caller then has the responsibility of managing this folder.
 
         :param filename: The filename of the file to clone
         :param token: The token of the request
@@ -342,7 +336,7 @@ class StorageClient(object):
             if filename in folder_entry['name']:
                 found = True
         if found:
-            clone_destination = os.path.join(self.__temp_directory, filename)
+            clone_destination = os.path.join(self.__simulation_directory, filename)
             with open(clone_destination, "w") as f:
                 f.write(self.get_file(
                     token, experiment, filename, byname=True))
@@ -399,7 +393,7 @@ class StorageClient(object):
                     child_folders.append(folder_entry)
                 if folder_entry['type'] == 'file':
                     folder_tmp_path = str(os.path.join(
-                        self.__temp_directory, folder_path))
+                        self.__simulation_directory, folder_path))
                     self.check_create_folder(folder_tmp_path)
                     self.copy_file_content(
                         token, folder_tmp_path, folder_uuid, folder_entry['name'])
@@ -438,15 +432,15 @@ class StorageClient(object):
 
     def clone_all_experiment_files(self, token, experiment, new_folder=False):
         """
-        Clones all the experiment files to a temporary folder.
+        Clones all the experiment files to a simulation folder.
         The caller has then the responsibility of managing this folder.
 
         :param token: The token of the request
         :param experiment: The experiment to clone
         :param new_folder: specifies whether we want to clone the files again
-        or use the existing temporary nrpTemp folder. Used in reset
+        or use the existing simulation 'simdir' folder. Used in reset
         :return: A dictionary containing the paths to the experiment files
-        as well as the path to the temporary folder
+        as well as the path to the simulation folder
         """
         experiment_paths = dict()
         list_files_to_clone = self.list_files(token, experiment)
@@ -454,7 +448,7 @@ class StorageClient(object):
         if new_folder:
             destination_directory = tempfile.mkdtemp()
         else:
-            destination_directory = self.get_temp_directory()
+            destination_directory = self.get_simulation_directory()
         for file_under_experiment in list_files_to_clone:
             file_clone_destination = os.path.join(
                 destination_directory, file_under_experiment['name'])
@@ -520,25 +514,36 @@ class StorageClient(object):
     # pylint: disable=no-self-use
     def remove_temp_directory(self):
         """
-        Removes the temporary directory where all the simulation based files are stored
+        Removes the simulation directory where all the simulation based files are stored
         """
-        for entry in os.listdir(tempfile.gettempdir()):
-            if entry.startswith('nrpTemp'):
-                nrp_temp = os.path.join(tempfile.gettempdir(), entry)
-                logger.debug(
-                    "removing the temporary configuration folder %s",
-                    nrp_temp
-                )
-                shutil.rmtree(nrp_temp)
+        logger.debug(
+            "removing the simulation configuration folder %s",
+            self.__simulation_directory
+        )
+        shutil.rmtree(self.__simulation_directory)
 
 
 def get_model_basepath():
     """
-    :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
+    :return: path given in the environment variable 'NRP_MODELS_PATHS'
     """
+    paths = os.environ.get('NRP_MODELS_PATHS')
+    if paths is None:
+        raise Exception("Server Error. NRP_MODELS_PATHS not defined.")
 
-    path = os.environ.get('NRP_MODELS_DIRECTORY')
-    if path is None:
-        raise Exception("Server Error. NRP_MODELS_DIRECTORY not defined.")
+    models_dirs = [x for x in paths.split(':') if os.path.isdir(x)]
 
-    return path
+    return models_dirs
+
+
+def find_file_in_paths(filename, paths):
+    """
+    :return: returns the absolute path of the first file found path lists.
+             if not found returns and empty string.
+    """
+    logger.info("Finding file {0} in paths {1}".format(filename, paths))
+
+    for path in paths:
+        if os.path.isfile(os.path.join(path, filename)):
+            return os.path.join(path, filename)
+    return None

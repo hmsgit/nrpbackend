@@ -381,7 +381,7 @@ class SimulationResetStorage(Resource):
         bibi_file_obj = bibi_api_gen.CreateFromDocument(bibi_file)
         brain_filename = os.path.split(bibi_file_obj.brainModel.file)[-1]
         brain_file_path = os.path.join(
-            client.get_temp_directory(), brain_filename)
+            client.get_simulation_directory(), brain_filename)
 
         if 'storage://' in bibi_file_obj.brainModel.file:
             with open(brain_file_path, "w") as f:

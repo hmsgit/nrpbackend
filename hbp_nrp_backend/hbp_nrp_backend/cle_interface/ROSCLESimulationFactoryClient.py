@@ -44,14 +44,14 @@ class ROSCLESimulationFactoryClient(object):
 
     def __init__(self):
         """
-        Create the client. If the service is not available after 10 seconds, a ROSException
+        Create the client. If the service is not available after 20 seconds, a ROSException
         will be raised.
         """
 
         self.__create_new_simulation_service = rospy.ServiceProxy(
             SERVICE_CREATE_NEW_SIMULATION, srv.CreateNewSimulation
         )
-        self.__create_new_simulation_service.wait_for_service(timeout=10)
+        self.__create_new_simulation_service.wait_for_service(timeout=20)
 
     # pylint: disable=too-many-arguments
     def create_new_simulation(self, environment_file, experiment_conf, gzserver_host,

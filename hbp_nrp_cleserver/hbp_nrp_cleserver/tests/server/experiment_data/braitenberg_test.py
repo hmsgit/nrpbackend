@@ -6,8 +6,7 @@ This is a minimal brain with 2 neurons connected together.
 
 __author__ = 'Template'
 
-from hbp_nrp_cle.brainsim import simulator as sim
-import numpy as np
+import pyNN.nest as sim
 import logging
 
 logger = logging.getLogger(__name__)

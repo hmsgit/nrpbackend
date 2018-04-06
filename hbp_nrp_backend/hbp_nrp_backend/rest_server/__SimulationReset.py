@@ -30,7 +30,6 @@ __author__ = "Alessandro Ambrosano"
 import os
 import logging
 import json
-import tempfile
 
 from flask import request
 from flask_restful import Resource, fields
@@ -46,7 +45,6 @@ from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
-from hbp_nrp_backend.rest_server.__ExperimentService import get_model_basepath
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
@@ -209,7 +207,6 @@ class SimulationReset(Resource):
 
         experiments_base_path = os.path.join(
             get_experiment_basepath(), sim.experiment_conf)
-        models_base_path = get_model_basepath()
         _, bibi_conf = get_experiment_data(str(experiments_base_path))
         if bibi_conf is None:
             return
@@ -228,24 +225,22 @@ class SimulationReset(Resource):
                 v['step'] = s.step
 
             neurons_config[name] = v
-
         neurons_config = json.dumps(neurons_config)
-        if 'storage://' in bibi_conf.brainModel.file:
-            for entry in os.listdir(tempfile.gettempdir()):
-                if entry.startswith('nrpTemp'):
-                    brain_path = os.path.join(tempfile.gettempdir(),
-                                              entry,
-                                              os.path.basename(bibi_conf.brainModel.file))
-        else:
-            brain_path = os.path.join(
-                models_base_path, bibi_conf.brainModel.file)
+
+        from hbp_nrp_backend.storage_client_api.StorageClient \
+            import find_file_in_paths, get_model_basepath
+        brain_path = find_file_in_paths(
+            bibi_conf.brainModel.file, get_model_basepath())
+        if not brain_path:
+            raise NRPServicesGeneralException(
+                "Brain file specified in bibi not found.", 404)
 
         with open(brain_path, 'r') as myfile:
             data = myfile.read()
             DO_CHANGE_POPULATION = 1
             result = sim.cle.set_simulation_brain('py', data, "text", neurons_config,
                                                   DO_CHANGE_POPULATION)
-            if result.error_message is not "":
+            if result.error_message:
                 # Error in given brain
                 raise ROSCLEClientException('{}, line:{}, column:{}, population_change:{}'
                                             .format(result.error_message, result.error_line,

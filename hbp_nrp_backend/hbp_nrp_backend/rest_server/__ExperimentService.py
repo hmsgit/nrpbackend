@@ -372,15 +372,15 @@ def get_experiment_basepath():
 
 def get_model_basepath():
     """
-    :return: path given in the environment variable 'NRP_MODELS_DIRECTORY'
+    :return: path given in the environment variable 'NRP_MODELS_PATHS'
     """
+    paths = os.environ.get('NRP_MODELS_PATHS')
+    if paths is None:
+        raise Exception("Server Error. NRP_MODELS_PATHS not defined.")
 
-    path = os.environ.get('NRP_MODELS_DIRECTORY')
-    if path is None:
-        raise NRPServicesGeneralException(
-            ErrorMessages.MOD_VARIABLE_ERROR, "Server Error", 500)
+    models_dirs = [x for x in paths.split(':') if os.path.isdir(x)]
 
-    return path
+    return models_dirs
 
 
 def get_experiment_rel(exp_id):

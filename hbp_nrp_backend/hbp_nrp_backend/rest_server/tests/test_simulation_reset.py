@@ -38,7 +38,7 @@ from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
-
+from hbp_nrp_backend.storage_client_api import StorageClient
 from mock import patch, Mock, mock_open
 
 PATH = os.path.split(__file__)[0]
@@ -91,8 +91,9 @@ class TestSimulationReset(RestTest):
         self.assertEqual(500, response.status_code)
 
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
-    @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_model_basepath")
-    def test_reset_is_called_properly(self, mock_get_model_path, mock_get_experiment_path):
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
+    def test_reset_is_called_properly(self,mock_find_file_path, mock_get_model_path, mock_get_experiment_path):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
         simulations[0].cle.set_simulation_brain.return_value = Mock(
@@ -102,7 +103,8 @@ class TestSimulationReset(RestTest):
 
         mock_get_experiment_path.return_value = PATH
         mock_get_model_path.return_value = os.path.join(PATH, 'models')
-
+        mock_find_file_path.return_value = os.path.join(
+            PATH, 'models/braitenberg.h5')
         response = self.client.put('/simulation/0/reset', data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
         }))
@@ -125,18 +127,19 @@ class TestSimulationReset(RestTest):
         self.assertEqual(200, response.status_code)
 
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
-    @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_model_basepath")
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_data")
-    def test_brain_reset_from_storage(self, mock_get_exp_data, mock_get_model_path, mock_get_experiment_path):
+    def test_brain_reset_from_storage(self, mock_get_exp_data, mock_find_file_path, mock_get_model_path, mock_get_experiment_path):
         simulations.append(Simulation(
             3, 'experiments/experiment_data/test_5.exc', None, 'default-owner', 'created'))
         simulations[2].cle = mock.MagicMock()
         simulations[2].cle.set_simulation_brain.return_value = Mock(
             error_message="")
-
         mock_get_experiment_path.return_value = PATH
         mock_get_model_path.return_value = os.path.join(PATH, 'models')
-
+        mock_find_file_path.return_value = os.path.join(
+            PATH, 'models/braitenberg.h5')
         bibi_path = os.path.join(
             PATH, 'experiments/experiment_data/bibi_4.bibi')
         experiment_file_path = os.path.join(
@@ -150,13 +153,13 @@ class TestSimulationReset(RestTest):
             bibi = bibi_api_gen.CreateFromDocument(b_file.read())
 
         mock_get_exp_data.return_value = experiment, bibi
-        
+
         with patch("__builtin__.open", mock_open(read_data="data")) as mock_file, \
                 patch('os.listdir', return_value=['nrpTemp']) as mock_tempfile:
-                    response = self.client.put('/simulation/2/reset', data=json.dumps({
-                        'resetType': ResetSimulationRequest.RESET_BRAIN
-                    }))
-                    self.assertEqual(200, response.status_code)
+            response = self.client.put('/simulation/2/reset', data=json.dumps({
+                'resetType': ResetSimulationRequest.RESET_BRAIN
+            }))
+            self.assertEqual(200, response.status_code)
 
 
 if __name__ == '__main__':

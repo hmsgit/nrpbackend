@@ -131,7 +131,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         zipped_model_path = [
             path for path in paths_list if experiment.environmentModel.customModelPath in path]
         if len(zipped_model_path):
-            environment_path = os.path.join(client.get_temp_directory(),
+            environment_path = os.path.join(client.get_simulation_directory(),
                                             os.path.basename(experiment.environmentModel.src))
             model_data = {}
             model_data['uuid'] = zipped_model_path[0]
@@ -142,13 +142,13 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             env_sdf_name = os.path.basename(
                 experiment.environmentModel.src)
             env_path = os.path.join(
-                client.get_temp_directory(),
+                client.get_simulation_directory(),
                 experiment.environmentModel.customModelPath)
             with open(env_path, 'w') as environment_zip:
                 environment_zip.write(storage_env_zip_data)
             with zipfile.ZipFile(env_path) as env_zip_to_extract:
                 env_zip_to_extract.extractall(
-                    path=os.path.join(client.get_temp_directory(), 'environmentData'))
+                    path=os.path.join(client.get_simulation_directory(), 'assets'))
             # copy back the .sdf from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
             client.clone_file(env_sdf_name, UserAuthentication.get_header_token(request),
@@ -172,7 +172,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
-        environment_path = os.path.join(client.get_temp_directory(),
+        environment_path = os.path.join(client.get_simulation_directory(),
                                         os.path.basename(experiment.environmentModel.src))
         with open(environment_path, "w") as f:
             f.write(client.get_file(
@@ -208,7 +208,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                         experiment)
         else:
             if not environment_path and 'storage://' in experiment.environmentModel.src:
-                environment_path = os.path.join(client.get_temp_directory(),
+                environment_path = os.path.join(client.get_simulation_directory(),
                                                 os.path.basename(experiment.environmentModel.src))
                 with open(environment_path, "w") as f:
                     f.write(client.get_file(
@@ -229,8 +229,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to be initialized
         """
-        # TODO: fix dependencies so these import are not necessary
-        # anymore
+        # TODO: fix dependencies so these import are not necessary anymore
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         simulation = self.simulation
         try:

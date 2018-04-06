@@ -169,7 +169,12 @@ def mocked_get_custom_models_ok(*args, **kwargs):
 def mocked_get_custom_model_ok(*args, **kwargs):
     return MockResponse({'name': 'testZip1'}, 200, content='Test')
 
+MockOs = Mock()
+MockOs.environ = {'NRP_SIMULATION_DIR': '/somewhere/near/the/rainbow', 'NRP_MODELS_PATHS': "/somewhere/near/the/rainbows"}
 
+MockOs2 = Mock()
+MockOs2.environ = {'NRP_SIMULATION_DIR': '/somewhere/near/the/rainbow'}
+@patch("hbp_nrp_backend.storage_client_api.StorageClient.os", new=MockOs)
 class TestNeuroroboticsStorageClient(unittest.TestCase):
 
     def setUp(self):
@@ -195,16 +200,16 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 patch('tempfile.mkdtemp', return_value='/tmp/nrpTemp') as mock_temp_make:
 
             client = StorageClient.StorageClient()
-            fake_temp_directory = client.get_temp_directory()
-            self.assertEqual(fake_temp_directory, '/tmp/nrpTemp')
+            fake_temp_directory = client.get_simulation_directory()
+            self.assertEqual(fake_temp_directory, MockOs.environ['NRP_SIMULATION_DIR'])
 
     def test_temp_folder_not_exists(self):
         with patch('os.listdir', return_value=['/tmp/other']) as mock_temp, \
                 patch('tempfile.mkdtemp', return_value='/tmp/nrpTemp') as mock_temp_make:
 
             client = StorageClient.StorageClient()
-            fake_temp_directory = client.get_temp_directory()
-            self.assertEqual(fake_temp_directory, '/tmp/nrpTemp')
+            fake_temp_directory = client.get_simulation_directory()
+            self.assertEqual(fake_temp_directory, MockOs.environ['NRP_SIMULATION_DIR'])
 
     # AUTHENTICATE
     @patch('requests.post', side_effect=mocked_authenticate_post_ok)
@@ -474,12 +479,13 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 "modelZipPath")
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
-    # Resources
+ # Resources
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_files')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_file')
-    def test_copy_resources_folders_content_to_tmp(self, mocked_get, mocked_list_files):
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.copy_file_content')
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_simulation_directory')
+    def test_copy_resources_folders_content_to_tmp(self,mocked_get_sim_dir,mocked_copy_file_content, mocked_get, mocked_list_files):
         client = StorageClient.StorageClient()
-       # mocked_get_files.side_effect = None
         resources_item = {
             "uuid": "89857775-6215-4d53-94ee-fb6c18b9e2f8",
             "name": "resources",
@@ -494,22 +500,26 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                 "type": "file"
             }
         ]
+        mocked_get_sim_dir.return_value = os.path.split(__file__)[0]
+        mocked_copy_file_content = ''
         mocked_get.return_value = 'test'
         client.copy_folder_content_to_tmp(
             "fakeToken",
             resources_item)
+
         self.assertTrue(client.list_files.called)
         file_path = os.path.join(
             'resources', 'fakeFileName')
         tmp_path = os.path.join(
-            client.get_temp_directory(), file_path)
+            client.get_simulation_directory(), file_path)
         with open(tmp_path) as tmp_file:
             self.assertEqual(tmp_file.read(), 'test')
 
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_files')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.copy_folder_content_to_tmp')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_file')
-    def test_copy_resources_folders_to_tmp(self, mocked_get, mocked_copy_folder_content_to_tmp, mocked_list_files):
+    @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.delete_directory_content')
+    def test_copy_resources_folders_to_tmp(self,mocked_delete_directory_content, mocked_get, mocked_copy_folder_content_to_tmp, mocked_list_files):
         client = StorageClient.StorageClient()
         mocked_list_files.return_value = [{
             "uuid": "3ce08569-bdb7-49ee-a751-5640f4b8745646",
@@ -522,6 +532,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
             "fakeToken",
             "fakeExperiment"
         )
+        mocked_delete_directory_content.return_value = ""
         self.assertTrue(client.copy_folder_content_to_tmp.called)
 
     # LIST FILES
@@ -619,20 +630,17 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
             with patch("__builtin__.open", mock_open(read_data="data")) as mock_file:
                 res = client.clone_all_experiment_files("fakeToken",
                                                         "fakeExperiment")
-
-                self.assertIn('nrpTemp', res[0])
+                self.assertIn(MockOs.environ['NRP_SIMULATION_DIR'], res[0])
 
     @patch('os.environ.get')
     def test_get_model_basepath_ok(self, mock_env_get):
         mock_env_get.return_value = 'NRP/Models'
         path = StorageClient.get_model_basepath()
-        self.assertEqual('NRP/Models', path)
+        self.assertEqual(MockOs.environ['NRP_MODELS_PATHS'], path[0])
 
-    @patch('os.environ.get')
-    def test_get_model_basepath_not_ok(self, mock_env_get):
-        mock_env_get.return_value = None
-        self.assertRaises(Exception, StorageClient.get_model_basepath)
-
+    def test_get_model_basepath_not_ok(self):
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.os", MockOs2):
+            self.assertRaises(Exception, StorageClient.get_model_basepath)
 
 if __name__ == '__main__':
     unittest.main()

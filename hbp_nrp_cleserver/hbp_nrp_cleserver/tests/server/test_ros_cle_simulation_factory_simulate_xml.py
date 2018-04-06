@@ -36,10 +36,10 @@ from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFac
 from mock import Mock, patch
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance
+from hbp_nrp_backend.storage_client_api import StorageClient
 MODELS_PATH = os.path.split(__file__)[0]
 EXPERIMENTS_PATH = os.path.join(MODELS_PATH, 'experiment_data')
 tz = pytz.timezone("Europe/Zurich")
-
 
 
 class MockedServiceRequest(object):
@@ -78,7 +78,10 @@ class MockOs(object):
     environ = os.environ
     system = Mock()
 
-
+@patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths",
+       new=Mock(return_value=os.path.join(MODELS_PATH, 'braitenberg.py')))
+@patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath",
+       new=Mock(return_value=[os.path.join(MODELS_PATH, 'husky_model')]))
 @patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
@@ -87,8 +90,8 @@ class MockOs(object):
 @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp.config.active_node", new=Mock())
 @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
-    new=Mock(return_value=EXPERIMENTS_PATH)
-)
+       new=Mock(return_value=EXPERIMENTS_PATH)
+       )
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", EXPERIMENTS_PATH)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LuganoVizClusterGazebo",
        new=lambda x, y: LocalGazeboServerInstance())
@@ -100,20 +103,21 @@ class MockOs(object):
 class SimulationTestCase(unittest.TestCase):
 
     def test_simulation_local(self):
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
+            factory=ROSCLESimulationFactory()
+            factory.create_new_simulation(MockedServiceRequest())
 
-        factory = ROSCLESimulationFactory()
-        factory.create_new_simulation(MockedServiceRequest())
-
-        factory.simulation_terminate_event.wait()
+            factory.simulation_terminate_event.wait()
 
     def test_simulation_lugano(self):
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
 
-        MockedServiceRequest.gzserver_host = 'lugano'
+            MockedServiceRequest.gzserver_host='lugano'
 
-        factory = ROSCLESimulationFactory()
-        factory.create_new_simulation(MockedServiceRequest())
+            factory=ROSCLESimulationFactory()
+            factory.create_new_simulation(MockedServiceRequest())
 
-        factory.simulation_terminate_event.wait()
+            factory.simulation_terminate_event.wait()
 
 
 if __name__ == '__main__':
