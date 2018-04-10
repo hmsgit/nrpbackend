@@ -109,18 +109,19 @@ class ExperimentTransferfunctions(Resource):
 
         :param path experiment_id: The experiment_id of the experiment where the transfer functions
          will be saved
-        :<json body json array of string transfer_functions: the transfer functions as python
+
+        :< json body json array of string transfer_functions: the transfer functions as python
+
         :status 500: BIBI configuration file not found
         :status 500: Error saving file
-        :status 404: The experiment_id with the given expreiment ID was not found
+        :status 404: The experiment_id with the given experiment ID was not found
         :status 404: The request body is malformed
         :status 200: Success. File written.
         """
         # pylint: disable=too-many-locals
         # Done here in order to avoid circular dependencies introduced by the
         # way we __init__ the rest_server module
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
         body = request.get_json(force=True)
         if 'transfer_functions' not in body:

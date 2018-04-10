@@ -188,24 +188,22 @@ class StorageClient(object):
     def create_or_update(self, token, experiment, filename, content, content_type):
         """
         Creates or updates a file under an experiment
+
         :param token: a valid token to be used for the request
         :param experiment: the name of the experiment
         :param filename: the name of the file to update/create
         :param content: the content of the file
         :param content_type: the content type of the file i.e. text/plain or
-        aplication/octet-stream
+                             application/octet-stream
         """
         try:
-            headers = {'content-type': content_type,
-                       'Authorization': 'Bearer ' + token}
-            res = requests.post(self.__proxy_url +
-                                '/storage/{0}/{1}'.format(
-                                    experiment, filename),
+            headers = {'content-type': content_type, 'Authorization': 'Bearer ' + token}
+            res = requests.post(self.__proxy_url + '/storage/{0}/{1}'.format(experiment, filename),
                                 headers=headers, data=content)
+
             if res.status_code < 200 or res.status_code >= 300:
-                raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                raise Exception('Failed to communicate with the storage server, status code ' +
+                                str(res.status_code))
             else:
                 return res.status_code
         except requests.exceptions.ConnectionError, err:
@@ -388,6 +386,7 @@ class StorageClient(object):
         """
         Parses a file and checks if it corresponds to its instance type and
         can be created into its object
+
         :param filepath: The path of the file
         :param create_obj_function: The function to create the object
         :param instance_type: The required instance type of the file

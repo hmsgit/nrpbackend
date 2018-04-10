@@ -63,8 +63,7 @@ class StateMachines(object):
 
 
 @swagger.model
-@swagger.nested(control=StateMachines.__name__,
-                evaluation=StateMachines.__name__)
+@swagger.nested(control=StateMachines.__name__, evaluation=StateMachines.__name__)
 class ReturnObject(object):
     """
     Get and Set Experiment State Machine
@@ -76,6 +75,27 @@ class ReturnObject(object):
         'evaluation': fields.Nested(StateMachines.resource_fields)
     }
     required = ['control', 'evaluation']
+
+
+@swagger.model
+class StateMachineDict(object):
+    """
+    Swagger Object
+    """
+
+    resource_fields = {'state_machine_name': fields.String()}
+    required = ['state_machine_name']
+
+
+@swagger.model
+@swagger.nested(state_machines=StateMachineDict.__name__)
+class SaveStateMachineRequest(object):
+    """
+    Swagger Object
+    """
+
+    resource_fields = {'state_machines': fields.Nested(StateMachineDict.resource_fields)}
+    required = ['state_machines']
 
 
 class ExperimentGetStateMachines(Resource):
@@ -243,6 +263,7 @@ class ExperimentStorageStateMachine(Resource):
     """
     The resource to save experiment state machine files
     """
+
     @swagger.operation(
         notes='Saves state machines of an experiment to the storage',
         parameters=[
@@ -254,11 +275,12 @@ class ExperimentStorageStateMachine(Resource):
                 "dataType": basestring.__name__
             },
             {
-                "name": "state_machines",
+                "name": "body",
                 "required": True,
-                "description": "The state machine code",
+                "description": "A dictionary indexed by state machine names and contains state "
+                               "machines' source code.",
                 "paramType": "body",
-                "dataType": basestring.__name__
+                "dataType": SaveStateMachineRequest.__name__
             }
         ],
         responseMessages=[
@@ -281,8 +303,8 @@ class ExperimentStorageStateMachine(Resource):
         """
         Save state machines to the storage
 
-        :param path experiment_id: The experiment_id id of the experiment
-        :param body source_code: Source code of the state machine as string.
+        :param experiment_id: The experiment_id id of the experiment
+
         :status 500: The experiment xml either could not be found or read
         :status 200: Success. File written.
         """
@@ -290,19 +312,15 @@ class ExperimentStorageStateMachine(Resource):
         # way we __init__ the rest_server module.
         body = request.get_json(force=True)
         if 'state_machines' not in body:
-            raise NRPServicesClientErrorException(
-                "State machine code should be sent in "
-                "the body under the 'state_machines' key"
-            )
+            raise NRPServicesClientErrorException("State machine code should be sent in the body "
+                                                  "under the 'state_machines' key")
 
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
         client = StorageClient()
 
         exp_xml_file_path = client.clone_file('experiment_configuration.exc',
-                                              UserAuthentication.get_header_token(
-                                                  request),
+                                              UserAuthentication.get_header_token(request),
                                               experiment_id)
 
         if not exp_xml_file_path:
@@ -317,32 +335,29 @@ class ExperimentStorageStateMachine(Resource):
             return {"message": "Failed to parse experiment configuration file"}, 500
 
         threads = []
+        exp_control = exp_conf_api_gen.ExperimentControl()
         for sm_name in body['state_machines']:
             sm_node = exp_conf_api_gen.SMACHStateMachine()
             sm_node.id = os.path.splitext(sm_name)[0]
-            sm_node.src = sm_name if sm_name.endswith(
-                ".exd") else sm_name + ".exd"
-            exp_control = exp_conf_api_gen.ExperimentControl()
+            sm_node.src = sm_name if sm_name.endswith(".exd") else sm_name + ".exd"
             exp_control.stateMachine.append(sm_node)
-            experiment.experimentControl = exp_control
-            t = Thread(target=client.create_or_update, kwargs={
-                'token': UserAuthentication.get_header_token(request),
-                'experiment': experiment_id,
-                'filename': sm_node.src,
-                'content': body['state_machines'][sm_name],
-                'content_type': "application/hbp-neurorobotics.sm+python"})
+            kwargs = {'token': UserAuthentication.get_header_token(request),
+                      'experiment': experiment_id,
+                      'filename': sm_node.src,
+                      'content': body['state_machines'][sm_name],
+                      'content_type': "application/hbp-neurorobotics.sm+python"}
+            t = Thread(target=client.create_or_update, kwargs=kwargs)
             t.start()
             threads.append(t)
-        t = Thread(target=client.create_or_update,
-                   kwargs={
-                       'token': UserAuthentication.get_header_token(request),
-                       'experiment': experiment_id,
-                       'filename': 'experiment_configuration.exc',
-                       'content': xml.dom.minidom.parseString(
-                           experiment.toxml("utf-8")).toprettyxml(),
-                       'content_type': "application/hbp-neurorobotics+xml"})
+
+        experiment.experimentControl = exp_control
+        kwargs['filename'] = 'experiment_configuration.exc'
+        kwargs['content'] = xml.dom.minidom.parseString(experiment.toxml("utf-8")).toprettyxml()
+        t = Thread(target=client.create_or_update, kwargs=kwargs)
         t.start()
         threads.append(t)
+
         for thread in threads:
             thread.join()
+
         return {"message": "Success. Files written to the storage"}, 200

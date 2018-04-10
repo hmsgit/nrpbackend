@@ -363,8 +363,7 @@ class GazeboSimulationAssembly(SimulationAssembly):
 
         :param notifications: A flag indicating whether notifications should be attempted to send
         """
-        raise NotImplementedError(
-            "This method must be overridden in inherited classes")
+        raise NotImplementedError("This method must be overridden in inherited classes")
 
 
 class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
@@ -379,8 +378,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         :param exc: The experiment configuration
         :param bibi: The BIBI configuration
         """
-        super(CLEGazeboSimulationAssembly, self).__init__(
-            sim_id, exc, bibi, **par)
+        super(CLEGazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, **par)
         self.__tmp_robot_dir = None
         self.__dependencies = compute_dependencies(bibi)
         self.cle_server = None
@@ -542,17 +540,17 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 "Zipped model retrieval failed")
         return robot_path
 
+    # pylint: disable-msg=too-many-branches
     def _load_environment(self, world_file, robot_file_abs):
         """
         Loads the environment and robot in Gazebo
 
-        : param world_file Backwards compatibility for world file specified through webpage
+        :param world_file Backwards compatibility for world file specified through webpage
         """
 
         # load the world file if provided first
         self._notify("Loading experiment environment")
-        w_models, w_lights = self._gazebo_helper.parse_gazebo_world_file(
-            world_file)
+        w_models, w_lights = self._gazebo_helper.parse_gazebo_world_file(world_file)
 
         # Create interfaces to Gazebo
         self._notify("Loading robot")
@@ -586,9 +584,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 if robot_initial_pose.yaw is not None:
                     yaw = robot_initial_pose.yaw
 
-                quaternion = transformations.quaternion_from_euler(
-                    roll, pitch, yaw
-                )
+                quaternion = transformations.quaternion_from_euler(roll, pitch, yaw)
 
                 rpose.orientation.x = quaternion[0]
                 rpose.orientation.y = quaternion[1]
@@ -633,17 +629,17 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         Creates the adapter components for the robot side
 
-        : return: A tuple of the communication and control adapter for the robot side
+        :return: A tuple of the communication and control adapter for the robot side
         """
-        raise NotImplementedError(
-            "This method must be overridden in an implementation")
+        raise NotImplementedError("This method must be overridden in an implementation")
 
     def _load_brain(self, rng_seed):
         """
         Loads the neural simulator, interfaces, and configuration
 
-        : param rng_seed RNG seed to spawn Nest with
+        :param rng_seed RNG seed to spawn Nest with
         """
+
         # Create interfaces to brain
         self._notify("Loading neural simulator")
         brainconfig.rng_seed = rng_seed
@@ -732,10 +728,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         Creates the adapter components for the neural simulator
 
-        : return: A tuple of the communication and control adapter for the neural simulator
+        :return: A tuple of the communication and control adapter for the neural simulator
         """
-        raise NotImplementedError(
-            "This method must be overridden in an implementation")
+        raise NotImplementedError("This method must be overridden in an implementation")
 
     # pylint: disable=too-many-arguments
     def __load_cle(self, roscontrol, roscomm, braincontrol, braincomm,
@@ -744,15 +739,15 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         Load the ClosedLoopEngine and initializes all interfaces
 
-        : param roscontrol Robot Control Adapter to use
-        : param roscomm Robot Communication Adapter to use
-        : param braincontrol Brain Control Adapter to use
-        : param braincomm Brain Communication Adapter to use
-        : param brain_file_path Accessible path to brain file
-        : param neurons_config Neuron configuration specified in the BIBI
-        : param robot_post Initial robot pose
-        : param models Initial models loaded into the environment
-        : param lights Initial lights loaded into the environment
+        :param roscontrol Robot Control Adapter to use
+        :param roscomm Robot Communication Adapter to use
+        :param braincontrol Brain Control Adapter to use
+        :param braincomm Brain Communication Adapter to use
+        :param brain_file_path Accessible path to brain file
+        :param neurons_config Neuron configuration specified in the BIBI
+        :param robot_post Initial robot pose
+        :param models Initial models loaded into the environment
+        :param lights Initial lights loaded into the environment
         """
 
         # Needed in order to cleanup global static variables
@@ -829,7 +824,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         Handles the case that Gazebo was shut down
 
-        : param close_error: Any exception happened while closing Gazebo
+        :param close_error: Any exception happened while closing Gazebo
         """
         super(CLEGazeboSimulationAssembly, self)._handle_gazebo_shutdown()
         if self.cle_server is not None and self.cle_server.lifecycle is not None:
@@ -848,7 +843,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         Shutdown the CLE and any hooks before shutting down Gazebo
 
-        : param notifications: A flag indicating whether notifications should be attempted to send
+        :param notifications: A flag indicating whether notifications should be attempted to send
         """
         try:
             if notifications:
@@ -871,6 +866,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         This horrible hack is supposed to be dropped when we remove support for SDF cloning
         when we have introduced robot and env libraries.
-        : return: true if we detect we are in collab models
+        :return: true if we detect we are in collab models
         """
         return self.exc.dir.startswith(tempfile.gettempdir())
