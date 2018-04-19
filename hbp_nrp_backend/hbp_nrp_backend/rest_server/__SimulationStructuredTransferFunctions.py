@@ -37,6 +37,8 @@ from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_a
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 from hbp_nrp_commons.bibi_functions import docstring_parameter
+from hbp_nrp_cleserver.bibi_config.StructuredTransferFunction import \
+    generate_code_from_structured_tf
 
 
 __author__ = "Georg Hinkel"
@@ -157,6 +159,51 @@ class SimulationStructuredTransferFunctions(Resource):
     """
     The resource for structured transfer functions
     """
+    @staticmethod
+    def serializeTF(tf):
+        """
+        Serialize a TF to a dictionary
+        """
+
+        devices = [{
+            'name': dev.name,
+            'type': dev.type,
+            'neurons': {
+                'name': dev.neurons.name,
+                'type': dev.neurons.type,
+                'ids': [
+                    {
+                        'id': n_id
+                    } for n_id in dev.neurons.ids
+                ],
+                'start': dev.neurons.start,
+                'stop': dev.neurons.stop,
+                'step': dev.neurons.step
+            }
+        } for dev in tf.devices]
+
+        topics = [{
+            'name': top.name,
+            'topic': top.topic,
+            'type': top.type,
+            'publishing': top.publishing
+        } for top in tf.topics]
+
+        variables = [{
+            'name': var.name,
+            'type': var.type,
+            'initial_value': var.initial_value
+        } for var in tf.variables]
+
+        tf_e = {
+            'name': tf.name,
+            'code': tf.code,
+            'type': tf.type,
+            'devices': devices,
+            'topics': topics,
+            'variables': variables
+        }
+        return tf_e
 
     @swagger.operation(
         notes='Get transfer functions in a structured format',
@@ -196,44 +243,7 @@ class SimulationStructuredTransferFunctions(Resource):
         tfs = []
         transfer_functions_list = simulation.cle.get_structured_transfer_functions()
         for tf in transfer_functions_list:
-            devices = [{
-                'name': dev.name,
-                'type': dev.type,
-                'neurons': {
-                    'name': dev.neurons.name,
-                    'type': dev.neurons.type,
-                    'ids': [
-                        {
-                            'id': n_id
-                        } for n_id in dev.neurons.ids
-                    ],
-                    'start': dev.neurons.start,
-                    'stop': dev.neurons.stop,
-                    'step': dev.neurons.step
-                }
-            } for dev in tf.devices]
-
-            topics = [{
-                'name': top.name,
-                'topic': top.topic,
-                'type': top.type,
-                'publishing': top.publishing
-            } for top in tf.topics]
-
-            variables = [{
-                'name': var.name,
-                'type': var.type,
-                'initial_value': var.initial_value
-            } for var in tf.variables]
-
-            tf_e = {
-                'name': tf.name,
-                'code': tf.code,
-                'type': tf.type,
-                'devices': devices,
-                'topics': topics,
-                'variables': variables
-            }
+            tf_e = SimulationStructuredTransferFunctions.serializeTF(tf)
             tfs.append(tf_e)
         return {'transferFunctions': tfs}, 200
 
@@ -309,3 +319,86 @@ class SimulationStructuredTransferFunctions(Resource):
                 + request.data
             )
         return 200
+
+
+# pylint: disable=no-self-use
+class SimulationConvertStructuredTransferFunctionToRaw(Resource):
+    """
+    Convert structured transfer function to raw
+    """
+
+    @swagger.operation(
+        notes='Convert structured transfer function to raw',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "transfer_function",
+                "description": "The structured transfer function",
+                "required": True,
+                "paramType": "body",
+                "dataType": TransferFunctionsData.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "Success. The transfer function was successfully converted"
+            }
+        ]
+    )
+    #pylint: disable=unused-argument
+    def put(self, sim_id):
+        """
+        Puts the structured transfer functions and returned raw function
+
+        :status 200: Success. The transfer function was successfully converted
+        """
+
+        transfer_function = json.loads(request.data, object_hook=JSONObject)
+        raw = generate_code_from_structured_tf(transfer_function)
+
+        return {'rawScript': raw}, 200
+
+
+# pylint: disable=no-self-use
+class SimulationConvertRawToStructuredTransferFunction(Resource):
+    """
+    Convert raw transfer function to structured
+    """
+
+    @swagger.operation(
+        notes='Convert raw transfer function to structured',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "transfer_function",
+                "description": "The raw transfer function",
+                "required": True,
+                "paramType": "body",
+                "dataType": TransferFunctionsData.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "Success. The transfer function was successfully converted"
+            }
+        ]
+    )
+    def put(self, sim_id):
+        """
+        Puts the raw transfer functions and returned structured function
+
+        :status 200: Success. The transfer function was successfully converted
+        """
+
+        transfer_function = json.loads(request.data, object_hook=JSONObject)
+        simulation = _get_simulation_or_abort(sim_id)
+
+        result = simulation.cle.convert_transfer_function_raw_to_structured(transfer_function)
+
+        if result.error_message is not None and len(result.error_message):
+            return {'name': transfer_function.name, 'error': result.error_message}, 200
+
+        structured = SimulationStructuredTransferFunctions.serializeTF(result.transfer_function)
+        return {'structuredScript': structured}, 200

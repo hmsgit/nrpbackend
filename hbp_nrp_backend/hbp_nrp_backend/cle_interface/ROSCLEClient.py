@@ -39,7 +39,8 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION, \
-    SERVICE_SIMULATION_RECORDER
+    SERVICE_SIMULATION_RECORDER, \
+    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -176,6 +177,10 @@ class ROSCLEClient(object):
         self.__cle_get_structured_transfer_functions = ROSCLEServiceWrapper(
             SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(sim_id),
             srv.GetStructuredTransferFunctions, self)
+
+        self.__cle_convert_transfer_function_raw_to_structured = ROSCLEServiceWrapper(
+            SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED(sim_id),
+            srv.ConvertTransferFunctionRawToStructured, self)
 
         self.__cle_set_structured_transfer_function = ROSCLEServiceWrapper(
             SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(sim_id),
@@ -343,6 +348,19 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_activate_transfer_function(transfer_function_name,
                                                      activate_transfer_function).error_message
+
+    def convert_transfer_function_raw_to_structured(self, transfer_function):
+        """
+        Convert raw tf to structured tf
+        :param transfer_function_name: the name of the tf to be converted
+        :param transfer_function: the transfer function in raw format
+        :return: a strucuted TF
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        result = self.__cle_convert_transfer_function_raw_to_structured(transfer_function.name,
+                                                                        transfer_function.source)
+        return result
 
     def get_structured_transfer_functions(self):
         """

@@ -104,7 +104,8 @@ from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__SimulationPopulations import SimulationPopulations
 from hbp_nrp_backend.rest_server.__SimulationStructuredTransferFunctions import \
-    SimulationStructuredTransferFunctions
+    SimulationStructuredTransferFunctions, SimulationConvertStructuredTransferFunctionToRaw, \
+    SimulationConvertRawToStructuredTransferFunction
 from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
 from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
@@ -163,6 +164,10 @@ api.add_resource(SimulationRecorder,
                  '/simulation/<int:sim_id>/recorder/<string:command>')
 api.add_resource(SimulationResourcesCloner,
                  '/simulation/clone-resources-files')
+api.add_resource(SimulationConvertStructuredTransferFunctionToRaw,
+                 '/simulation/<int:sim_id>/convert-structured-tf-to-raw')
+api.add_resource(SimulationConvertRawToStructuredTransferFunction,
+                 '/simulation/<int:sim_id>/convert-raw-tf-to-structured')
 
 # This should not be on the /simulation path ... as it does not apply to a
 # running simulation
