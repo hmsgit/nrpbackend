@@ -188,7 +188,8 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 patch('os.path.split', return_value=['foo', 'bar']) as mock_split, \
                 patch('shutil.rmtree') as mock_rmtree, \
                 patch('os.listdir') as mock_list_dir, \
-                patch('tempfile.mkdtemp') as mock_mkdir:
+                patch('tempfile.mkdtemp') as mock_mkdir, \
+                patch('os.makedirs') as mock_makedirs:
 
             self.lifecycle.stop(Mock())
             mock_tempfile.assert_called_once()
@@ -196,6 +197,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
             mock_rmtree.assert_called_once()
             mock_list_dir.assert_called_once()
             mock_mkdir.assert_called_once()
+            mock_makedirs.assert_called_once()
 
         # Assert State Machines have been terminated
         self.assertTrue(self.simulation.state_machine_manager.shutdown.called)
