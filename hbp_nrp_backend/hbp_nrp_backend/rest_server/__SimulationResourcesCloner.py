@@ -34,7 +34,6 @@ from flask import request
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, ErrorMessages
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 
 class SimulationResourcesCloner(Resource):
@@ -73,6 +72,7 @@ class SimulationResourcesCloner(Resource):
         """
         body = request.get_json(force=True)
         exp_id = body.get('exp_id', None)
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
         try:
             client.copy_resources_folders_to_tmp(UserAuthentication.get_header_token(
