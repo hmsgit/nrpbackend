@@ -2,9 +2,17 @@ import functools
 import inspect
 import os
 import re
+import six
+
+try:
+    # urlparse is renamed to urllib.parse in python 3
+    import urlparse
+except ImportError:
+    from urllib import parse as urlparse
+
 
 from flask import request, abort, Response
-from flask.ext.restful import Resource, fields
+from flask_restful import Resource, fields
 from flask_restful_swagger import (
   registry, api_spec_static)
 from jinja2 import Template
@@ -21,25 +29,26 @@ def docs(api, apiVersion='0.0', swaggerVersion='1.2',
 
   api_add_resource = api.add_resource
 
-  def add_resource(resource, path, *args, **kvargs):
+  def add_resource(resource, *urls, **kvargs):
     register_once(api, api_add_resource, apiVersion, swaggerVersion, basePath,
                   resourcePath, produces, api_spec_url, description)
 
     resource = make_class(resource)
-    endpoint = swagger_endpoint(api, resource, path)
+    for url in urls:
+      endpoint = swagger_endpoint(api, resource, url)
 
-    # Add a .help.json help url
-    swagger_path = extract_swagger_path(path)
+      # Add a .help.json help url
+      swagger_path = extract_swagger_path(url)
 
-    # Add a .help.html help url
-    endpoint_html_str = '{0}/help'.format(swagger_path)
-    api_add_resource(
-      endpoint,
-      "{0}.help.json".format(swagger_path),
-      "{0}.help.html".format(swagger_path),
-      endpoint=endpoint_html_str)
+      # Add a .help.html help url
+      endpoint_html_str = '{0}/help'.format(swagger_path)
+      api_add_resource(
+        endpoint,
+        "{0}.help.json".format(swagger_path),
+        "{0}.help.html".format(swagger_path),
+        endpoint=endpoint_html_str)
 
-    return api_add_resource(resource, path, *args, **kvargs)
+    return api_add_resource(resource, *urls, **kvargs)
 
   api.add_resource = add_resource
 
@@ -148,7 +157,9 @@ def _get_current_registry(api=None):
     app_name = api.blueprint.name if api.blueprint else None
   else:
     app_name = request.blueprint
-    overrides = {'basePath': request.url_root.rstrip('/')}
+    urlparts =  urlparse.urlparse(request.url_root.rstrip('/'))
+    proto = request.headers.get("x-forwarded-proto") or urlparts[0]
+    overrides = {'basePath': urlparse.urlunparse([proto] + list(urlparts[1:]))}
 
   if not app_name:
     app_name = 'app'
@@ -158,7 +169,7 @@ def _get_current_registry(api=None):
   reg = registry.setdefault(app_name, {})
   reg.update(overrides)
 
-  reg['basePath'] = reg['basePath'] + reg.get('x-api-prefix', '')
+  reg['basePath'] = reg['basePath'] + (reg.get('x-api-prefix', '') or '')
 
   return reg
 
@@ -298,12 +309,12 @@ class SwaggerEndpoint(object):
         # This method was annotated with @swagger.operation
         decorators = method_impl.__dict__['__swagger_attr']
         for att_name, att_value in list(decorators.items()):
-          if isinstance(att_value, (str, int, list)):
+          if isinstance(att_value, six.string_types + (int, list)):
             if att_name == 'parameters':
               op['parameters'] = merge_parameter_list(
                 op['parameters'], att_value)
             else:
-              if att_name in op and att_name is not 'nickname':
+              if op.get(att_name) and att_name is not 'nickname':
                 att_value = '{0}<br/>{1}'.format(att_value, op[att_name])
               op[att_name] = att_value
           elif isinstance(att_value, object):
@@ -425,7 +436,9 @@ def add_model(model_class):
   if 'swagger_metadata' in dir(model_class):
     for field_name, field_metadata in model_class.swagger_metadata.items():
         if field_name in properties:
-            properties[field_name] = dict(properties[field_name].items() + field_metadata.items())
+            # does not work for Python 3.x; see: http://stackoverflow.com/questions/38987/how-can-i-merge-two-python-dictionaries-in-a-single-expression
+            # properties[field_name] = dict(properties[field_name].items() + field_metadata.items())
+            properties[field_name].update(field_metadata)
 
 def deduce_swagger_type(python_type_or_object, nested_type=None):
     import inspect
@@ -434,7 +447,7 @@ def deduce_swagger_type(python_type_or_object, nested_type=None):
         predicate = issubclass
     else:
         predicate = isinstance
-    if predicate(python_type_or_object, (str,
+    if predicate(python_type_or_object, six.string_types + (
                                          fields.String,
                                          fields.FormattedString,
                                          fields.Url,
@@ -471,7 +484,7 @@ def deduce_swagger_type_flat(python_type_or_object, nested_type=None):
         predicate = issubclass
     else:
         predicate = isinstance
-    if predicate(python_type_or_object, (str,
+    if predicate(python_type_or_object, six.string_types + (
                                          fields.String,
                                          fields.FormattedString,
                                          fields.Url)):
