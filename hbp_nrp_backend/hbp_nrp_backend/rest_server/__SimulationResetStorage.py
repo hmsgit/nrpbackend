@@ -42,8 +42,8 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException, \
-    NRPServicesTransferFunctionException, ErrorMessages
+    NRPServicesWrongUserException, NRPServicesClientErrorException,\
+    ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf, \
@@ -305,16 +305,12 @@ class SimulationResetStorage(Resource):
             tf_code = tf_code.strip() + "\n"
             logger.info(" RESET TF: " + tf.name + "\n" + tf_code + '\n')
 
-            error_message = simulation.cle.add_simulation_transfer_function(
+            # adding original TFs from the bibi
+            # do not check the error message.
+            # CLE will handle also invalid TFs
+            simulation.cle.add_simulation_transfer_function(
                 str(tf_code)
             )
-            if error_message:
-                raise NRPServicesTransferFunctionException(
-                    "Transfer function patch failed: "
-                    + str(error_message) + "\n"
-                    + "Updated source:\n"
-                    + str(tf_code)
-                )
 
     @staticmethod
     def _compute_payload(reset_type, experiment_id, context_id):

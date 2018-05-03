@@ -38,8 +38,8 @@ from flask_restful_swagger import swagger
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException, \
-    NRPServicesTransferFunctionException, ErrorMessages
+    NRPServicesWrongUserException, NRPServicesClientErrorException,\
+    ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
@@ -55,6 +55,7 @@ from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 logger = logging.getLogger(__name__)
+
 
 # pylint: disable=no-self-use
 
@@ -143,12 +144,12 @@ class SimulationReset(Resource):
         for par in SimulationReset.ResetRequest.required:
             if par not in body:
                 raise NRPServicesClientErrorException(
-                    'Missing parameter %s' % (par, ))
+                    'Missing parameter %s' % (par,))
 
         for par in body:
             if par not in SimulationReset.ResetRequest.resource_fields:
                 raise NRPServicesClientErrorException(
-                    'Invalid parameter %s' % (par, ))
+                    'Invalid parameter %s' % (par,))
 
         try:
             reset_type = body.get('resetType')
@@ -272,13 +273,9 @@ class SimulationReset(Resource):
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
 
-            error_message = sim.cle.add_simulation_transfer_function(
+            # adding original TFs from the bibi
+            # do not check the error message.
+            # CLE will handle also invalid TFs
+            sim.cle.add_simulation_transfer_function(
                 str(tf_code)
             )
-            if error_message:
-                raise NRPServicesTransferFunctionException(
-                    "Transfer function patch failed: "
-                    + str(error_message) + "\n"
-                    + "Updated source:\n"
-                    + str(tf_code)
-                )
