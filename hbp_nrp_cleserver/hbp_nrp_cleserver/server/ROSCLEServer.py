@@ -54,7 +54,8 @@ from hbp_nrp_cleserver.server import \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
-    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION
+    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION, \
+    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
 from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
 import hbp_nrp_cle.tf_framework as tf_framework
@@ -120,6 +121,7 @@ class ROSCLEServer(SimulationServer):
         self.__service_activate_transfer_function = None
         self.__service_get_structured_transfer_functions = None
         self.__service_set_structured_transfer_function = None
+        self.__service_convert_transfer_function_raw_to_structured = None
         self.__service_delete_transfer_function = None
         self.__service_get_brain = None
         self.__service_set_brain = None
@@ -228,6 +230,12 @@ class ROSCLEServer(SimulationServer):
             SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(self.simulation_id),
             srv.GetStructuredTransferFunctions,
             self.__get_structured_transfer_functions
+        )
+
+        self.__service_convert_transfer_function_raw_to_structured = rospy.Service(
+            SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED(self.simulation_id),
+            srv.ConvertTransferFunctionRawToStructured,
+            self.__convert_transfer_function_raw_to_structured
         )
 
         self.__service_set_structured_transfer_function = rospy.Service(
@@ -780,6 +788,27 @@ class ROSCLEServer(SimulationServer):
 
         return self.__set_transfer_function(edit_tf_request, False)
 
+    def __convert_transfer_function_raw_to_structured(self, request):
+        """
+        Convert a raw tf to structured format
+
+        :param request: The mandatory rospy request parameter
+        :return: The converted TF.__conv
+        """
+
+        if tf_framework.get_flawed_transfer_function(request.transfer_function_name):
+            error = self.__set_flawed_transfer_function(request)
+        else:
+            error = self.__set_transfer_function(request, False)
+
+        if len(error) == 0:
+            tfs = tf_framework.get_transfer_functions(flawed=False)
+            for tf in tfs:
+                if tf.name == request.transfer_function_name:
+                    return StructuredTransferFunction.extract_structure(tf), None
+
+        return None, error
+
     def __delete_transfer_function(self, request):
         """
         Delete an existing transfer function
@@ -819,6 +848,7 @@ class ROSCLEServer(SimulationServer):
             logger.info("Shutting down get_transfer_functions service")
             self.__service_get_transfer_functions.shutdown()
             self.__service_get_structured_transfer_functions.shutdown()
+            self.__service_convert_transfer_function_raw_to_structured.shutdown()
             logger.info("Shutting down add_transfer_function service")
             self.__service_add_transfer_function.shutdown()
             logger.info("Shutting down set_transfer_function services")

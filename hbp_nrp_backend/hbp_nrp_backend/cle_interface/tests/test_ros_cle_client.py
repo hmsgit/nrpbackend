@@ -33,7 +33,8 @@ from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIMULATION_RECORDER
+    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIMULATION_RECORDER, \
+    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
 from cle_ros_msgs.srv import ResetSimulationRequest, \
     SimulationRecorderRequest
 from std_srvs.srv import Empty
@@ -70,7 +71,8 @@ class TestROSCLEClient(unittest.TestCase):
             SERVICE_EDIT_TRANSFER_FUNCTION(0), SERVICE_ADD_TRANSFER_FUNCTION(0),
             SERVICE_DELETE_TRANSFER_FUNCTION(0), SERVICE_GET_BRAIN(0), SERVICE_SET_BRAIN(0),
             SERVICE_GET_POPULATIONS(0), SERVICE_GET_CSV_RECORDERS_FILES(0),
-            SERVICE_SIMULATION_RECORDER(0)
+            SERVICE_SIMULATION_RECORDER(0),
+            SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED(0)
         ]
         self.assertNotIn(False, [x in listened_services for x in expected_services])
 
@@ -114,7 +116,8 @@ class TestROSCLEClient(unittest.TestCase):
                                                             invalidate_on_failure=True)
         self.assertRaises(ROSCLEClient.ROSCLEClientException, service_wrapper)
 
-    def test_get_simulation_transfer_functions(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_get_simulation_transfer_functions(self, service_proxy_mock):
         msg = GetTransferFunctions()
         msg.transfer_functions = ['some', 'source', 'code']
         msg.active = [True, False, True]
@@ -130,7 +133,8 @@ class TestROSCLEClient(unittest.TestCase):
         response = client.get_simulation_transfer_functions()
         self.assertEqual(response, ([], []))
 
-    def test_add_simulation_transfer_function(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_add_simulation_transfer_function(self, service_proxy_mock):
         msg = AddTransferFunction()
         resp = msg._response_class(error_message="Some error message")
 
@@ -146,7 +150,8 @@ class TestROSCLEClient(unittest.TestCase):
         with self.assertRaises(ROSCLEClientException):
             client.add_simulation_transfer_function("def tf_1(): \n return 1")
 
-    def test_edit_simulation_transfer_function(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_edit_simulation_transfer_function(self, service_proxy_mock):
         msg = EditTransferFunction()
         resp = msg._response_class(error_message="Some error message")
 
@@ -161,7 +166,8 @@ class TestROSCLEClient(unittest.TestCase):
         with self.assertRaises(ROSCLEClientException):
             client.edit_simulation_transfer_function("tf_1", "def tf_1(): \n return 1")
 
-    def test_delete_simulation_transfer_function(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_delete_simulation_transfer_function(self, service_proxy_mock):
         msg = DeleteTransferFunction()
         resp = msg._response_class(success=True)
 
@@ -173,7 +179,8 @@ class TestROSCLEClient(unittest.TestCase):
         client.stop_communication("Test stop")
         self.assertFalse(client.delete_simulation_transfer_function("tf_1"))
 
-    def test_activate_transfer_function(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_activate_transfer_function(self, service_proxy_mock):
 
         msg = ActivateTransferFunction()
         resp = msg._response_class(error_message="")
@@ -187,7 +194,8 @@ class TestROSCLEClient(unittest.TestCase):
         with self.assertRaises(ROSCLEClientException):
             client.activate_simulation_transfer_function("tf_1", True)
 
-    def test_get_brain(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_get_brain(self, service_proxy_mock):
         msg = GetBrain()
         resp = msg._response_class(brain_data='the brain data', brain_type='the brain type',
                                    data_type='the data type')
@@ -201,7 +209,8 @@ class TestROSCLEClient(unittest.TestCase):
         with self.assertRaises(ROSCLEClientException):
             client.get_simulation_brain()
 
-    def test_set_brain(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_set_brain(self, service_proxy_mock):
         msg = SetBrain()
         resp = msg._response_class(error_message='error message', error_line=-1, error_column=-1)
 
@@ -219,7 +228,8 @@ class TestROSCLEClient(unittest.TestCase):
         with self.assertRaises(ROSCLEClientException):
             client.set_simulation_brain('data', 'py', 'text', '{"population_1": 2}', change_population)
 
-    def test_get_populations(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_get_populations(self, service_proxy_mock):
         client = ROSCLEClient.ROSCLEClient(0)
 
         populations = Mock()
@@ -240,7 +250,8 @@ class TestROSCLEClient(unittest.TestCase):
             ]
         })
 
-    def test_reset(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_reset(self, service_proxy_mock):
         client = ROSCLEClient.ROSCLEClient(0)
 
         simulation_recorder = Mock()
@@ -274,7 +285,8 @@ class TestROSCLEClient(unittest.TestCase):
         client.stop_communication("Test stop")
         self.assertRaises(ROSCLEClientException, client.reset, ResetSimulationRequest.RESET_FULL)
 
-    def test_get_csv_files(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_get_csv_files(self, service_proxy_mock):
         client = ROSCLEClient.ROSCLEClient(0)
 
         files = Mock()
@@ -288,7 +300,8 @@ class TestROSCLEClient(unittest.TestCase):
         client.stop_communication("Test stop")
         self.assertEqual(client.get_simulation_CSV_recorders_files(), files.files)
 
-    def test_command_simulation_recorder(self):
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_command_simulation_recorder(self, service_proxy_mock):
         client = ROSCLEClient.ROSCLEClient(0)
 
         client._ROSCLEClient__simulation_recorder = Mock(return_value=['foo', 'bar'])
