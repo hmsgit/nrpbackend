@@ -126,7 +126,8 @@ class Simulation(object):
         """
         :return: the number of errors for the current simulation
         """
-        return 1 if self.state in ['failed', 'halted'] else 0
+
+        return 1 if not self.cle.valid or self.state in ['failed', 'halted'] else 0
 
     @property
     def kill_datetime(self):

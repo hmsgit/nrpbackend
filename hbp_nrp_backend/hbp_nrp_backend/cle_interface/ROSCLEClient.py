@@ -84,7 +84,7 @@ class ROSCLEServiceWrapper(object):
     """
     ROS_SERVICE_TIMEOUT = 180
 
-    def __init__(self, service_name, service_class, ros_cle_client, invalidate_on_failure=False):
+    def __init__(self, service_name, service_class, ros_cle_client, invalidate_on_failure=True):
         """
         :param service_name: the name of the ROS service.
         :param service_class: the class of the ROS service parameter.
@@ -156,6 +156,9 @@ class ROSCLEClient(object):
 
         :param sim_id: The simulation id
         """
+
+        self.valid = True
+
         self.__cle_reset = ROSCLEServiceWrapper(
             SERVICE_SIM_RESET_ID(sim_id), srv.ResetSimulation, self)
 

@@ -42,13 +42,16 @@ class SimulationMock(object):
 
     def __init__(self):
         self.creation_datetime = datetime.now(tz)
-
+class CleMock(object):
+    valid = True
+    pass
 
 class TestHealth(RestTest):
 
     def _create_simulation(self, sim_id, experiment_conf, owner, gzserver_host, state):
         m = SimulationMock()
         m.sim_id = sim_id
+        m.cle = CleMock()
         m.experiment_conf = experiment_conf
         m.owner = owner
         m.gzserver_host = gzserver_host
