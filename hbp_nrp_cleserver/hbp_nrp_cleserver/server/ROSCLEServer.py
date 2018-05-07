@@ -476,7 +476,8 @@ class ROSCLEServer(SimulationServer):
             return_value = [e.message, -1, -1, 0]
         except Exception, e:
             logger.exception(e)
-            return_value = ["Error changing neuronal network: " + str(e), 0, 0, 0]
+            line_no = extract_line_number(sys.exc_info()[2], tmp.name)
+            return_value = ["Error changing neuronal network: " + str(e), line_no, 0, 0]
 
         return return_value
 
