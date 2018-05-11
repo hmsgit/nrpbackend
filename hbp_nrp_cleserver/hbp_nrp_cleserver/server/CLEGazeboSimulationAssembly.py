@@ -411,7 +411,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # find robot
         robot_file = self.bibi.bodyModel
-        #logger.info("Robot: " + str(robot_file))
+
         robot_file_abs = self._get_robot_abs_path(robot_file)
 
         # start Gazebo simulator and bridge
@@ -456,7 +456,14 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         :param robot_file: The robot file
         :return: the absolute path to the robot file
         """
-        if robot_file.customModelPath:
+
+        if hasattr(robot_file, 'customModelPath') and robot_file.customModelPath is not None:
+            robot_file.customAsset = True
+            robot_file.assetPath = robot_file.customModelPath
+        else:
+            robot_file.customAsset = False
+
+        if robot_file.customAsset:
             return self._extract_robot_zip(robot_file)
         if 'storage://' in robot_file.value():
             from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
@@ -526,11 +533,14 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         paths_list = [robot['path']
                       for robot in robots_list]
 
+
+        from pprint import pprint
+        pprint(robots_list)
+        pprint(robot_file.assetPath)
         # check if the zip is in the user storage
         zipped_model_path = [
-            path
-            for path in paths_list
-                if robot_file.customModelPath in path
+            path for path in paths_list
+                if robot_file.assetPath in path
             ]
         if zipped_model_path:
             robot_path = os.path.join(client.get_simulation_directory(),
@@ -545,7 +555,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 os.path.basename(robot_file.value()))
             rob_zip_path = os.path.join(
                 client.get_simulation_directory(),
-                robot_file.customModelPath)
+                robot_file.assetPath)
             with open(rob_zip_path, 'w') as robot_zip:
                 robot_zip.write(storage_robot_zip_data)
             with zipfile.ZipFile(rob_zip_path) as robot_zip_to_extract:
