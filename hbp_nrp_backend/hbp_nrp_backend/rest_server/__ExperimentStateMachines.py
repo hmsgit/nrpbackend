@@ -334,6 +334,10 @@ class ExperimentStorageStateMachine(Resource):
         if not experiment:
             return {"message": "Failed to parse experiment configuration file"}, 500
 
+        kwargs = {'token': UserAuthentication.get_header_token(request),
+                  'experiment': experiment_id,
+                  'content_type': "application/hbp-neurorobotics.sm+python"}
+
         threads = []
         exp_control = exp_conf_api_gen.ExperimentControl()
         for sm_name in body['state_machines']:
@@ -341,16 +345,14 @@ class ExperimentStorageStateMachine(Resource):
             sm_node.id = os.path.splitext(sm_name)[0]
             sm_node.src = sm_name if sm_name.endswith(".exd") else sm_name + ".exd"
             exp_control.stateMachine.append(sm_node)
-            kwargs = {'token': UserAuthentication.get_header_token(request),
-                      'experiment': experiment_id,
-                      'filename': sm_node.src,
-                      'content': body['state_machines'][sm_name],
-                      'content_type': "application/hbp-neurorobotics.sm+python"}
+
+            kwargs['filename'] = sm_node.src
+            kwargs['content'] = body['state_machines'][sm_name]
             t = Thread(target=client.create_or_update, kwargs=kwargs)
             t.start()
             threads.append(t)
 
-        experiment.experimentControl = exp_control
+        experiment.experimentControl = exp_control if body['state_machines'] else None
         kwargs['filename'] = 'experiment_configuration.exc'
         kwargs['content'] = xml.dom.minidom.parseString(experiment.toxml("utf-8")).toprettyxml()
         t = Thread(target=client.create_or_update, kwargs=kwargs)

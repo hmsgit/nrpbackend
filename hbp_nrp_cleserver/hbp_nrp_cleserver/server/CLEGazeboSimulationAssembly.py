@@ -533,7 +533,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         paths_list = [robot['path']
                       for robot in robots_list]
 
-
         from pprint import pprint
         pprint(robots_list)
         pprint(robot_file.assetPath)
