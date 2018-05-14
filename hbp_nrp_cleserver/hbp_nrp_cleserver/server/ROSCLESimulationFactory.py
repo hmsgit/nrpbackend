@@ -430,11 +430,19 @@ def main():
                         help='specify the CLE logfile')
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                         action="store_true")
+    parser.add_argument("--vsdebug",
+                        default=os.environ.get('CLE_DEBUG', None),
+                        help="enable vscode debugging",
+                        action="store_true")
     parser.add_argument('-p', '--pycharm',
                         dest='pycharm',
                         help='debug with pyCharm. IP adress and port are needed.',
                         nargs='+')
     args = parser.parse_args()
+
+    if args.vsdebug:  # pragma: no cover
+        import ptvsd
+        ptvsd.enable_attach("my_secret", address=('0.0.0.0', 9992))
 
     if args.pycharm:  # pragma: no cover
         # pylint: disable=import-error

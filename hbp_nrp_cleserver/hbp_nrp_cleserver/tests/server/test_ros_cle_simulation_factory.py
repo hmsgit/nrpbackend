@@ -250,6 +250,7 @@ class Args(object):
     logfile = None
     pycharm = False
     verbose = False
+    vsdebug = False
 
 class TestSimulationFactoryMain(unittest.TestCase):
     @patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.argparse.ArgumentParser.parse_args")
