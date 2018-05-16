@@ -280,22 +280,13 @@ def __get_tf_code(tf):
     :param tf: The transfer function
     :return: The extracted body of the transfer function
     """
-    source = tf.source.splitlines()
-    start = None
-    stop = None
-    for i in range(0, len(source)):
-        if start is None:
-            if source[i].startswith("def " + tf.name):
-                start = i
-        else:
-            if not source[i].startswith(" ") and not source[i] == "":
-                stop = i
-                break
-    if start is None:
+    import re
+    fnbody = re.search(r".*\ndef " + tf.name + r"[^\)]*[^\n]*(?P<body>(\n( [^\n]*|))*)", tf.source)
+    if fnbody:
+        fnbody = fnbody.group('body')
+    if not fnbody:
         return tf.source
-    if stop is None:
-        stop = len(source)
-    return textwrap.dedent("\n".join(source[start + 1:stop]))
+    return textwrap.dedent(fnbody[1:]).rstrip('\n')
 
 
 def extract_structure(transfer_function):

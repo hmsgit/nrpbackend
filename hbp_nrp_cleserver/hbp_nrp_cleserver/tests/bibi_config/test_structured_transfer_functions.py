@@ -47,7 +47,8 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         @MapRobotPublisher("pub", Topic("/foo", Device))
         @MapSpikeSink("neuron", brain.sensors[4], leaky_integrator_alpha)
         @Neuron2Robot(Topic('/bar', TF))
-        def test_tf(t, pub, neuron):
+        def test_tf(t, pub,
+                        neuron):
             print '42'
 
         return test_tf
