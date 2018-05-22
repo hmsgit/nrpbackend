@@ -81,11 +81,20 @@ def __process_args():  # pragma: no cover
                         help='specify the logfile for the ExDBackend')
     parser.add_argument('--port', dest='port',
                         help='specify the application server\'s port')
+    parser.add_argument("--vsdebug",
+                        default=os.environ.get('CLE_DEBUG', None),
+                        help="enable vscode debugging",
+                        action="store_true")
     parser.add_argument('-p', '--pycharm',
                         dest='pycharm',
                         help='debug with pyCharm. IP adress and port are needed.',
                         nargs='+')
     args = parser.parse_args()
+
+    if args.vsdebug:
+        # pylint: disable=import-error
+        import ptvsd
+        ptvsd.enable_attach("my_secret", address=('0.0.0.0', 9991))
 
     if args.pycharm:
         # pylint: disable=import-error
