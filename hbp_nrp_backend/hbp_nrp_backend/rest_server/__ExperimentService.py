@@ -72,11 +72,10 @@ class ExperimentObject(object):
         "cameraPose": fields.List(fields.Float),
         "visualModel": fields.String(),
         "visualModelParams": fields.List(fields.Float),
-        "brainProcesses": fields.Integer(),
-        "physicsEngine": fields.String()
+        "brainProcesses": fields.Integer()
     }
     required = ['name', 'experimentConfiguration', 'description', 'tags', 'timeout', 'maturity',
-                'cameraPose', 'visualModel', 'visualModelParams', 'brainProcesses', 'physicsEngine']
+                'cameraPose', 'visualModel', 'visualModelParams', 'brainProcesses']
 
 
 @swagger.model
@@ -238,7 +237,6 @@ def get_storage_experiment(experiment_id):
     current_exp = _make_experiment(experiment)
     result = {os.path.splitext(os.path.split(
         exp_xml_file_path)[-1])[0]: current_exp}
-
     return result
 
 
@@ -264,7 +262,6 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
     _visualModel = None
     _visualModelParams = None
     _brainProcesses = experiment.bibiConf.processes
-    _physicsEngine = experiment.physicsEngine
 
     if _timeout is None:
         _timeout = 600
@@ -319,8 +316,7 @@ def _make_experiment(experiment, experiment_file='', experiment_dir=''):
                        cameraPose=_cameraPose,
                        visualModel=_visualModel,
                        visualModelParams=_visualModelParams,
-                       brainProcesses=_brainProcesses,
-                       physicsEngine=_physicsEngine)
+                       brainProcesses=_brainProcesses)
     return current_exp
 
 
