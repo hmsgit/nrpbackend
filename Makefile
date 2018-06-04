@@ -14,6 +14,8 @@ COVER_PACKAGES=hbp_nrp_commons hbp_nrp_watchdog hbp_nrp_cleserver hbp_nrp_backen
 #documentation to build
 DOC_MODULES=hbp_nrp_commons/doc hbp_nrp_watchdog/doc hbp_nrp_cleserver/doc hbp_nrp_backend/doc
 
+PYTHON_PIP_VERSION?=pip==9.0.3
+
 ##
 ## Individual Component Release Targets
 ##
@@ -37,6 +39,5 @@ else
                         git clone $(CI_REPO) $(CI_DIR) > /dev/null ;\
                 fi;\
                 echo $(CI_DIR) )
-
         include $(FETCH_CI)/python/common_makefile
 endif
