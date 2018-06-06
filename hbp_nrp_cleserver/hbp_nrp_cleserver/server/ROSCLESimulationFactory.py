@@ -149,7 +149,7 @@ class ROSCLESimulationFactory(object):
             gzserver_host = service_request.gzserver_host
             reservation = service_request.reservation
             sim_id = service_request.sim_id
-            exd_config_file = service_request.exd_config_file
+            exc_config_file = service_request.exd_config_file
             timeout = self.__get_timeout(service_request)
             playback_path = service_request.playback_path
             token = service_request.token
@@ -159,14 +159,14 @@ class ROSCLESimulationFactory(object):
             logger.info(
                 "Preparing new simulation with environment file: %s "
                 "and ExD config file: %s.",
-                environment_file, exd_config_file
+                environment_file, exc_config_file
             )
             logger.info("Starting the experiment closed loop engine.")
 
             # Initializing the simulation
             try:
                 logger.info("Read XML Files")
-                exd, bibi = get_experiment_data(exd_config_file)
+                exd, bibi = get_experiment_data(exc_config_file)
 
                 # user override for number of brain processes
                 if exd.bibiConf.processes != service_request.brain_processes:
@@ -314,9 +314,9 @@ def get_experiment_data(experiment_file_path):
     @param experiment_file: experiment file
     @return experiment, bibi, parsed experiment and bibi
     """
-    with open(experiment_file_path) as exd_file:
+    with open(experiment_file_path) as exc_file:
         try:
-            experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+            experiment = exp_conf_api_gen.CreateFromDocument(exc_file.read())
             experiment.path = experiment_file_path
         except ValidationError, ve:
             raise Exception("Could not parse experiment configuration {0:s} due to validation "
