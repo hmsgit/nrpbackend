@@ -524,10 +524,10 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertIn("multiple definition names", response)
 
         # test add faulty tf
-        with patch('hbp_nrp_cleserver.server.ROSCLEServer.compile_restricted') as compile_restricted:
+        with patch.object(self.__ros_cle_server, '_ROSCLEServer__compile') as compile:
             request.transfer_function_name = "tf_4"
             request.transfer_function_source = "def tf_4(): \n return 0"
-            compile_restricted.side_effect = Exception("foo")
+            compile.side_effect = Exception("foo")
             response = add_transfer_function_handler(request)
             self.assertNotEquals("", response)
 
