@@ -409,11 +409,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             rng_seed = random.randint(1, sys.maxint)
         logger.info('RNG seed = %i', rng_seed)
 
-        # find robot
-        robot_file = self.bibi.bodyModel
-
-        robot_file_abs = self._get_robot_abs_path(robot_file)
-
         # start Gazebo simulator and bridge
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         self._start_gazebo(
@@ -425,15 +420,18 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             environment)
 
         # load environment and robot models
-        robot_pose, models, lights = self._load_environment(
-            environment, robot_file_abs)
+        models, lights = self._load_environment(environment)
+
+        # find robot
+        robot_pose = None
+        if (self.bibi.bodyModel):
+            robot_pose = self._load_robot(self._get_robot_abs_path(self.bibi.bodyModel))
 
         # load robot adapters
         robotcomm, robotcontrol = self._create_robot_adapters()
 
         # load the brain
-        braincontrol, braincomm, brainfile, brainconf = self._load_brain(
-            rng_seed)
+        braincontrol, braincomm, brainfile, brainconf = self._load_brain(rng_seed)
 
         # initialize the cle server and services
         logger.info("Preparing CLE Server")
@@ -575,7 +573,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         return robot_path
 
     # pylint: disable-msg=too-many-branches
-    def _load_environment(self, world_file, robot_file_abs):
+    def _load_environment(self, world_file):
         """
         Loads the environment and robot in Gazebo
 
@@ -587,6 +585,16 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self._notify("Loading experiment environment")
         w_models, w_lights = self._gazebo_helper.parse_gazebo_world_file(world_file)
 
+        return w_models, w_lights
+
+    # pylint: disable-msg=too-many-branches
+    def _load_robot(self, robot_file_abs):
+        """
+        Loads the environment and robot in Gazebo
+
+        :param robot_file_abs Robot model to load
+        """
+        # pylint: disable=too-many-locals
         # Create interfaces to Gazebo
         self._notify("Loading robot")
 
@@ -660,7 +668,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     self.shutdown()
                     return
 
-        return rpose, w_models, w_lights
+        return rpose
 
     def _create_robot_adapters(self):  # pragma: no cover
         """
@@ -684,13 +692,17 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         self._notify("Loading brain and population configuration")
         # load brain
+
+        # find robot
+        if (not self.bibi.brainModel):
+            return braincontrol, braincomm, None, None
+
         brainfilepath = self.bibi.brainModel.file
         if self.bibi.brainModel.customModelPath:
             self._extract_brain_zip()
         if self.__is_collab_hack():
             if self.exc.dir is not None:
-                brainfilepath = os.path.join(
-                    self.exc.dir, brainfilepath)
+                brainfilepath = os.path.join(self.exc.dir, brainfilepath)
         elif 'storage://' in brainfilepath:
             from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
             client = StorageClient()
@@ -824,7 +836,11 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self._notify("Initializing CLE")
         cle = DeterministicClosedLoopEngine(roscontrol, roscomm,
                                             braincontrol, braincomm, tfmanager, timestep)
-        cle.initialize(brain_file_path, **neurons_config)
+
+        if (brain_file_path):
+            cle.initialize(brain_file_path, **neurons_config)
+        else:
+            cle.initialize()
 
         # Set initial pose
         cle.initial_robot_pose = robot_pose

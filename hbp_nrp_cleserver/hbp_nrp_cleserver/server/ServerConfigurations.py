@@ -155,15 +155,23 @@ class SynchronousRobotRosNest(CLEGazeboSimulationAssembly):
     and a real robotic platform that uses ROS
     """
 
-    def _load_environment(self, world_file, robot_file_abs):
+    def _load_environment(self, world_file):
         """
-        Loads the environment and robot in Gazebo
+        Loads the environment in Gazebo
 
         :param world_file Backwards compatibility for world file specified through webpage
         """
         unused(world_file)
+        return None, None
+
+    def _load_robot(self, robot_file_abs):
+        """
+        Loads the robot in Gazebo
+
+        :param robot_file_abs Robot model to be loaded
+        """
         unused(robot_file_abs)
-        return None, None, None
+        return None
 
     def _create_robot_adapters(self):
         """
