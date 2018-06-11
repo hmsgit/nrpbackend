@@ -40,7 +40,7 @@ from cle_ros_msgs.srv import SetBrainRequest
 import textwrap
 import re
 
-from RestrictedPython import compile_restricted
+from RestrictedPython.RCompile import RModule, RestrictionMutator
 
 
 # This package comes from the catkin package ROSCLEServicesDefinitions
@@ -649,6 +649,28 @@ class ROSCLEServer(SimulationServer):
 
         return self.__set_transfer_function(request, True)
 
+    def __compile(self, source):
+        """
+        Compiles code source with customized rules
+        """
+
+        class FileRestrictionMutator(RestrictionMutator):
+            """
+            Custom RestrictionMutator
+            ie: accepts accessing to private atribute '__file__'
+            """
+            ALLOWED_ATTRS = set(['__file__'])
+
+            def checkAttrName(self, node):
+                if node.attrname in self.ALLOWED_ATTRS:
+                    return
+                return RestrictionMutator.checkAttrName(self, node)
+
+        gen = RModule(source, '<string>')
+        gen.rm = FileRestrictionMutator()
+        gen.compile()
+        return gen.getCode()
+
     # pylint: disable=R0911,too-many-branches,too-many-statements,too-many-locals
     def __set_transfer_function(self, request, new):
         """
@@ -701,7 +723,7 @@ class ROSCLEServer(SimulationServer):
         # Compile (synchronously) transfer function's new code in restricted mode
         new_code = None
         try:
-            new_code = compile_restricted(new_source, '<string>', 'exec')
+            new_code = self.__compile(new_source)
         # pylint: disable=broad-except
         except Exception as e:
             message = "Error while compiling the updated" \
