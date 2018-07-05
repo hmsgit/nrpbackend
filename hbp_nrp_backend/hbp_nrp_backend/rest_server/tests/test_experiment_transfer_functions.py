@@ -77,6 +77,6 @@ class TestExperimentTransferFunctions(RestTest):
 
         self.mock_storageClient_instance.get_file.return_value = exp
         self.mock_storageClient_instance.parse_and_check_file_is_valid.return_value = bibi
-        
+
         response = self.client.put('/experiment/' + experiment_id + '/transfer-functions', data=json.dumps(data))
         self.assertEqual(response.status_code, 200)

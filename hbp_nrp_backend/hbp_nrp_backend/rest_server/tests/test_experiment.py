@@ -36,8 +36,7 @@ from mock import patch, MagicMock
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.rest_server.__ExperimentService import \
     ErrorMessages, get_experiment_basepath, save_file, \
-    get_control_state_machine_files, get_evaluation_state_machine_files, get_experiments, \
-    get_experiment_rel
+    get_experiments, get_experiment_rel
 from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
 
@@ -147,25 +146,6 @@ class TestExperimentService(RestTest):
         response = self.client.get('/experiment/test_1/preview')
         self.assertEqual(response.status_code, 200)
 
-    # Test State Machine
-    def test_get_control_state_machine_files(self, mock_bp0):
-        mock_bp0.return_value = EXPERIMENTS_PATH
-
-        files = get_control_state_machine_files("test_sm")
-        self.assertEqual(len(files), 1)
-
-        files = get_control_state_machine_files("test_1")
-        self.assertEqual(len(files), 0)
-
-    def test_get_evaluation_state_machine_files(self, mock_bp0):
-        mock_bp0.return_value = EXPERIMENTS_PATH
-
-        files = get_evaluation_state_machine_files("test_sm")
-        self.assertEqual(len(files), 1)
-
-        files = get_evaluation_state_machine_files("test_1")
-        self.assertEqual(len(files), 0)
-
 
 class TestExperimentService2(unittest.TestCase):
 
@@ -214,6 +194,6 @@ class TestExperimentService2(unittest.TestCase):
                                              'name': u'Empty template experiment'}}
         experiment_file = get_experiment_rel('newExperiment')
         self.assertEqual(experiment_file, os.path.join(EXPERIMENTS_PATH, ".empty_experiment","TemplateEmpty.exc"))
- 
+
 if __name__ == '__main__':
     unittest.main()
