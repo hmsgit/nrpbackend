@@ -873,6 +873,8 @@ class ROSCLEServer(SimulationServer):
             self.__service_get_transfer_functions.shutdown()
             self.__service_get_structured_transfer_functions.shutdown()
             self.__service_convert_transfer_function_raw_to_structured.shutdown()
+            logger.info("Shutting down activate_transfer_function service")
+            self.__service_activate_transfer_function.shutdown()
             logger.info("Shutting down add_transfer_function service")
             self.__service_add_transfer_function.shutdown()
             logger.info("Shutting down set_transfer_function services")

@@ -587,24 +587,40 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertEqual(mock_tf.source, "tf_source new_node_name")
 
     def test_shutdown(self):
+        self.__ros_cle_server._ROSCLEServer__current_task = None
+
         z = self.__ros_cle_server._ROSCLEServer__cle = MagicMock()
-        a = self.__ros_cle_server._SimulationServer__service_reset = MagicMock()
-        b = self.__ros_cle_server._ROSCLEServer__current_task = None
-        c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = MagicMock()
-        d = self.__ros_cle_server._SimulationServer__service_extend_timeout = MagicMock()
-        e = self.__ros_cle_server._ROSCLEServer__service_add_transfer_function = MagicMock()
-        f = self.__ros_cle_server._ROSCLEServer__service_edit_transfer_function = MagicMock()
-        g = self.__ros_cle_server._ROSCLEServer__service_get_brain = MagicMock()
-        h = self.__ros_cle_server._ROSCLEServer__service_set_brain = MagicMock()
-        i = self.__ros_cle_server._ROSCLEServer__service_get_populations = MagicMock()
-        j = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files = MagicMock()
-        k = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = MagicMock()
-        l = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = MagicMock()
-        m = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = MagicMock()
-        n = self.__ros_cle_server._ROSCLEServer__service_delete_transfer_function = MagicMock()
+        a = self.__ros_cle_server._SimulationServer__service_reset = \
+            MagicMock(name="service_reset")
+        c = self.__ros_cle_server._ROSCLEServer__service_get_transfer_functions = \
+            MagicMock(name="service_get_transfer_functions")
+        d = self.__ros_cle_server._SimulationServer__service_extend_timeout = \
+            MagicMock(name="service_extend_timeout")
+        e = self.__ros_cle_server._ROSCLEServer__service_add_transfer_function = \
+            MagicMock(name="service_add_transfer_function")
+        f = self.__ros_cle_server._ROSCLEServer__service_edit_transfer_function = \
+            MagicMock(name="service_edit_transfer_function")
+        g = self.__ros_cle_server._ROSCLEServer__service_get_brain = \
+            MagicMock(name="service_get_brain")
+        h = self.__ros_cle_server._ROSCLEServer__service_set_brain = \
+            MagicMock(name="service_set_brain")
+        i = self.__ros_cle_server._ROSCLEServer__service_get_populations = \
+            MagicMock(name="service_get_populations")
+        j = self.__ros_cle_server._ROSCLEServer__service_get_CSV_recorders_files =\
+            MagicMock(name="service_get_CSV_recorders_files")
+        k = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = \
+            MagicMock(name="service_clean_CSV_recorders_files")
+        l = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = \
+            MagicMock(name="service_get_structured_transfer_function")
+        m = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = \
+            MagicMock(name="service_set_structured_transfer_function")
+        n = self.__ros_cle_server._ROSCLEServer__service_delete_transfer_function = \
+            MagicMock(name="service_delete_transfer_function")
+        o = self.__ros_cle_server._ROSCLEServer__service_activate_transfer_function = \
+            MagicMock(name="service_activate_transfer_function")
 
         self.__ros_cle_server.shutdown()
-        for x in [a, c, d, e, f, g, h, i, j, k, l, m, n, z]:
+        for x in [a, c, d, e, f, g, h, i, j, k, l, m, n, o, z]:
             self.assertEquals(x.shutdown.call_count, 1, repr(x) + " not shutdown")
 
 
