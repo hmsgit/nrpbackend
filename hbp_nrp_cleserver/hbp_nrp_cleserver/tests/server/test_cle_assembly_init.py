@@ -85,7 +85,7 @@ class TestCLELauncherInit(unittest.TestCase):
         with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         exd.path = "/somewhere/over/the/rainbow/exc"
-        exd.dir = "/somewhere/over/the/rainbow"
+        exd.dir = os.path.join(dir, "experiment_data")
         bibi.path = "/somewhere/over/the/rainbow/bibi"
 
         models_path_patch = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", "/somewhere/near/the/rainbow")

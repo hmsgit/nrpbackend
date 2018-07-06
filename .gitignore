@@ -32,3 +32,4 @@ hbp_nrp_commons/hbp_nrp_commons/generated/robot_conf_api_gen.py
 hbp_nrp_commons/hbp_nrp_commons/generated/_sc.py
 hbp_nrp_commons/hbp_nrp_commons/generated/environment_conf_api_gen.py
 hbp_nrp_commons/hbp_nrp_commons/generated/robot_conf_api_gen.py
+htmlcov/*

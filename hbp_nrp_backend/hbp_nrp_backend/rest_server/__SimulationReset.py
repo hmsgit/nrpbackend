@@ -269,7 +269,7 @@ class SimulationReset(Resource):
             bibi_conf, os.path.dirname(experiment_basepath))
 
         for tf in bibi_conf.transferFunction:
-            tf_code = generate_tf(tf, bibi_conf)
+            tf_code = generate_tf(tf)
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
 

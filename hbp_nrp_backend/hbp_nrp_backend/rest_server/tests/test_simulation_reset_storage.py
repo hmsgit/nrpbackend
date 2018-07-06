@@ -524,7 +524,7 @@ class TestSimulationResetStorage(RestTest):
             __file__)[0], "experiments", "experiment_data", "bibi_1.bibi")
         with open(bibi_file_abs) as b_file:
             bibi = bibi_api_gen.CreateFromDocument(b_file.read())
-        SimulationResetStorage.resetTransferFunctions(simulations[0], bibi, PATH)
+        SimulationResetStorage.resetTransferFunctions(simulations[0], bibi, EXPERIMENT_DATA_PATH)
         simulations[0].cle.get_simulation_transfer_functions.assert_called()
         simulations[0].cle.delete_simulation_transfer_function.assert_called_with('grab_image')
 

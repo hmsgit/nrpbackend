@@ -25,7 +25,6 @@
 This module contains the abstract base class of a simulation assembly using the CLE and Gazebo
 """
 
-import importlib
 import logging
 import netifaces
 import os
@@ -42,7 +41,6 @@ from RestrictedPython import compile_restricted
 from hbp_nrp_cle.cle import config
 from geometry_msgs.msg import Pose
 from hbp_nrp_cleserver.bibi_config.notificator import NotificatorHandler
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import compute_dependencies
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
 from hbp_nrp_cleserver.server.SimulationAssembly import SimulationAssembly
@@ -383,7 +381,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         super(CLEGazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, **par)
         self.__tmp_robot_dir = ''
-        self.__dependencies = compute_dependencies(bibi)
         self.cle_server = None
 
     def _initialize(self, environment, except_hook):
@@ -822,10 +819,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         tfmanager.robot_adapter = roscomm
         tfmanager.brain_adapter = braincomm
 
-        # Import dependencies
-        for dep in self.__dependencies:
-            importlib.import_module(dep[:dep.rfind('.')])
-
         # integration timestep between simulators, convert from ms to s
         # (default to CLE value)
         timestep = ClosedLoopEngine.DEFAULT_TIMESTEP
@@ -861,7 +854,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         for i, tf in enumerate(self.bibi.transferFunction):
             self._notify("Generating transfer function: %i" % (i + 1))
-            tf_code = generate_tf(tf, self.bibi)
+            tf_code = generate_tf(tf)
             self._notify("Loading transfer function: %s" % tf.name)
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"

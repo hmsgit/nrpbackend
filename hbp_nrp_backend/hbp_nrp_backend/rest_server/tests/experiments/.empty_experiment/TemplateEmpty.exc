@@ -11,6 +11,9 @@
     <environmentModel src="empty_world/empty_world.sdf">
         <robotPose x="0.0" y="0.0" z="0.5" roll="0.0" pitch="-0.0" yaw="0.0"/>
     </environmentModel>
+    <visualModel src="mouse_v2_model/meshes/mouse_v2_model_animated.dae" scale="0.01">
+        <visualPose x="1.715" y="-0.851" z="1.319" roll="0.0" pitch="-0.0" yaw="1.5708"/>
+    </visualModel>
     <bibiConf src="TemplateEmpty.bibi"/>
     <cameraPose>
         <cameraPosition x="4.5" y="0" z="1.8"/>

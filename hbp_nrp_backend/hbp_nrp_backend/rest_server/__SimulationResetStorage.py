@@ -300,7 +300,7 @@ class SimulationResetStorage(Resource):
         import_referenced_python_tfs(bibi_conf, base_path)
 
         for tf in bibi_conf.transferFunction:
-            tf_code = generate_tf(tf, bibi_conf)
+            tf_code = generate_tf(tf)
             tf_code = correct_indentation(tf_code, 0)
             tf_code = tf_code.strip() + "\n"
             logger.info(" RESET TF: " + tf.name + "\n" + tf_code + '\n')
