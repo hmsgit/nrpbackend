@@ -233,7 +233,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         simulation = self.simulation
         try:
-            using_storage = simulation.private is not None
+            using_storage = simulation.private
             if using_storage:
                 client = StorageClient()
                 clone_folder, experiment_paths = client.clone_all_experiment_files(
