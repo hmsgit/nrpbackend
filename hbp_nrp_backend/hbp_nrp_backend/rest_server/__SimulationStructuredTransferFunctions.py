@@ -31,12 +31,8 @@ from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
 
-from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException, \
-    NRPServicesWrongUserException, ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
-from hbp_nrp_commons.bibi_functions import docstring_parameter
 from hbp_nrp_cleserver.bibi_config.StructuredTransferFunction import \
     generate_code_from_structured_tf
 
@@ -155,10 +151,50 @@ class TransferFunctionsData(object):
 
 
 # pylint: disable=no-self-use
-class SimulationStructuredTransferFunctions(Resource):
+class SimulationConvertStructuredTransferFunctionToRaw(Resource):
     """
-    The resource for structured transfer functions
+    Convert structured transfer function to raw
     """
+
+    @swagger.operation(
+        notes='Convert structured transfer function to raw',
+        responseClass=int.__name__,
+        parameters=[
+            {
+                "name": "transfer_function",
+                "description": "The structured transfer function",
+                "required": True,
+                "paramType": "body",
+                "dataType": TransferFunctionsData.__name__
+            }
+        ],
+        responseMessages=[
+            {
+                "code": 200,
+                "message": "Success. The transfer function was successfully converted"
+            }
+        ]
+    )
+    #pylint: disable=unused-argument
+    def put(self, sim_id):
+        """
+        Puts the structured transfer functions and returned raw function
+
+        :status 200: Success. The transfer function was successfully converted
+        """
+
+        transfer_function = json.loads(request.data, object_hook=JSONObject)
+        raw = generate_code_from_structured_tf(transfer_function)
+
+        return {'rawScript': raw}, 200
+
+
+# pylint: disable=no-self-use
+class SimulationConvertRawToStructuredTransferFunction(Resource):
+    """
+    Convert raw transfer function to structured
+    """
+
     @staticmethod
     def serializeTF(tf):
         """
@@ -206,167 +242,6 @@ class SimulationStructuredTransferFunctions(Resource):
         return tf_e
 
     @swagger.operation(
-        notes='Get transfer functions in a structured format',
-        responseClass=TransferFunctionsData.__name__,
-        parameters=[
-            {
-                "name": "sim_id",
-                "required": True,
-                "description": "The ID of the simulation whose transfer functions are obtained",
-                "paramType": "path",
-                "dataType": int.__name__
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 404,
-                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
-            },
-            {
-                "code": 200,
-                "message": "Success. The transfer functions were returned"
-            }
-        ]
-    )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
-    def get(self, sim_id):
-        """
-        Gets the structured transfer functions
-
-        :param sim_id: The simulation id
-
-        :status 404: {0}
-        :status 200: Success. The transfer functions were returned
-        """
-        simulation = _get_simulation_or_abort(sim_id)
-
-        tfs = []
-        transfer_functions_list = simulation.cle.get_structured_transfer_functions()
-        for tf in transfer_functions_list:
-            tf_e = SimulationStructuredTransferFunctions.serializeTF(tf)
-            tfs.append(tf_e)
-        return {'transferFunctions': tfs}, 200
-
-    @swagger.operation(
-        notes='Applies user changes to a structured transfer function.',
-        responseClass=int.__name__,
-        parameters=[
-            {
-                "name": "sim_id",
-                "required": True,
-                "description": "The ID of the simulation whose transfer function will be modified",
-                "paramType": "path",
-                "dataType": int.__name__
-            },
-            {
-                "name": "transfer_function",
-                "description": "The structured transfer function",
-                "required": True,
-                "paramType": "body",
-                "dataType": TransferFunctionsData.__name__
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 500,
-                "message": "Simulation in state [STATE]. Can't update transfer function"
-            },
-            {
-                "code": 404,
-                "message": ErrorMessages.SIMULATION_NOT_FOUND_404
-            },
-            {
-                "code": 401,
-                "message": ErrorMessages.SIMULATION_PERMISSION_401
-            },
-            {
-                "code": 400,
-                "message": ErrorMessages.SOURCE_CODE_ERROR_400
-            },
-            {
-                "code": 200,
-                "message": "Success. The transfer function was successfully patched"
-            }
-        ]
-    )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
-                         ErrorMessages.SIMULATION_PERMISSION_401,
-                         ErrorMessages.SOURCE_CODE_ERROR_400)
-    def put(self, sim_id):
-        """
-        Puts the structured transfer functions
-
-        :param sim_id: The simulation id
-
-        :status 500: Simulation in state [STATE]. Can't update transfer function
-        :status 404: {0}
-        :status 401: {1}
-        :status 400: {2}
-        :status 200: Success. The transfer function was successfully patched
-        """
-        simulation = _get_simulation_or_abort(sim_id)
-
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
-            raise NRPServicesWrongUserException()
-
-        transfer_function = json.loads(request.data, object_hook=JSONObject)
-        error_message = simulation.cle.set_structured_transfer_function(transfer_function)
-        if error_message:
-            raise NRPServicesTransferFunctionException(
-                "Transfer function patch failed: "
-                + error_message + "\n"
-                + "Transfer function:\n"
-                + request.data
-            )
-        return 200
-
-
-# pylint: disable=no-self-use
-class SimulationConvertStructuredTransferFunctionToRaw(Resource):
-    """
-    Convert structured transfer function to raw
-    """
-
-    @swagger.operation(
-        notes='Convert structured transfer function to raw',
-        responseClass=int.__name__,
-        parameters=[
-            {
-                "name": "transfer_function",
-                "description": "The structured transfer function",
-                "required": True,
-                "paramType": "body",
-                "dataType": TransferFunctionsData.__name__
-            }
-        ],
-        responseMessages=[
-            {
-                "code": 200,
-                "message": "Success. The transfer function was successfully converted"
-            }
-        ]
-    )
-    #pylint: disable=unused-argument
-    def put(self, sim_id):
-        """
-        Puts the structured transfer functions and returned raw function
-
-        :status 200: Success. The transfer function was successfully converted
-        """
-
-        transfer_function = json.loads(request.data, object_hook=JSONObject)
-        raw = generate_code_from_structured_tf(transfer_function)
-
-        return {'rawScript': raw}, 200
-
-
-# pylint: disable=no-self-use
-class SimulationConvertRawToStructuredTransferFunction(Resource):
-    """
-    Convert raw transfer function to structured
-    """
-
-    @swagger.operation(
         notes='Convert raw transfer function to structured',
         responseClass=int.__name__,
         parameters=[
@@ -400,5 +275,6 @@ class SimulationConvertRawToStructuredTransferFunction(Resource):
         if result.error_message is not None and len(result.error_message):
             return {'name': transfer_function.name, 'error': result.error_message}, 200
 
-        structured = SimulationStructuredTransferFunctions.serializeTF(result.transfer_function)
+        tf = result.transfer_function
+        structured = SimulationConvertRawToStructuredTransferFunction.serializeTF(tf)
         return {'structuredScript': structured}, 200

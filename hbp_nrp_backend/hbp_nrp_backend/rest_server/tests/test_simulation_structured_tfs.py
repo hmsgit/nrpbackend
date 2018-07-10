@@ -118,26 +118,5 @@ class TestSimulationTransferFunctions(RestTest):
                     }]
                 }
 
-    def test_structured_tf_get(self):
-        self.sim.cle.get_structured_transfer_functions.return_value = self.object_tfs
-        response = self.client.get('/simulation/0/simulation-structured-transfer-functions')
-        self.assertEqual(response.status_code, 200)
-        self.sim.cle.get_structured_transfer_functions.assert_called_once_with()
-        json_tfs = json.loads(response.data)
-        self.maxDiff = None
-        self.assertDictEqual(json_tfs, {
-            u'transferFunctions': [
-                self.dict_tf
-            ]
-        })
-
-    def test_structured_tf_put(self):
-        self.sim.cle.set_structured_transfer_function.return_value = ""
-        response = self.client.put('/simulation/0/simulation-structured-transfer-functions',
-                                   data=json.dumps(self.dict_tf))
-        self.assertEqual(response.status_code, 200)
-        self.sim.cle.set_structured_transfer_function.assert_called_once()
-
-
 if __name__ == '__main__':
     unittest.main()

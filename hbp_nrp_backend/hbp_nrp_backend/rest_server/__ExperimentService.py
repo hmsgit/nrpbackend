@@ -41,7 +41,7 @@ from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
 
-from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen
+from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 from flask import request
@@ -374,19 +374,6 @@ def get_experiment_basepath():
     return path
 
 
-def get_model_basepath():
-    """
-    :return: path given in the environment variable 'NRP_MODELS_PATHS'
-    """
-    paths = os.environ.get('NRP_MODELS_PATHS')
-    if paths is None:
-        raise Exception("Server Error. NRP_MODELS_PATHS not defined.")
-
-    models_dirs = [x for x in paths.split(':') if os.path.isdir(x)]
-
-    return models_dirs
-
-
 def get_experiment_rel(exp_id):
     """
     Given an experiment id it returns the experiment dictionary containing the experiment files'
@@ -412,51 +399,3 @@ def get_experiment_rel(exp_id):
     # Gets Experiments relative filename
     experiment_file = experiment_dict[exp_id]['experimentConfiguration']
     return experiment_file
-
-
-def get_experiment_conf(exp_id):
-    """
-    Gets the filename of the conf file
-
-    :param exp_id: id of the experiment
-    :return Absolute path to experiment xml file
-    """
-    experiment_file = get_experiment_rel(exp_id)
-    experiment_conf = os.path.join(get_experiment_basepath(), experiment_file)
-    return experiment_conf
-
-
-def get_bibi_file(exp_id, experiment_file=None):
-    """
-    Gets the filename of the bibi file
-
-    :param exp_id: id of the experiment
-    :param experiment_file: The experiment file path
-    :return Absolute path to experiment bibi file
-    """
-    if experiment_file is None:
-        experiment_file = get_experiment_conf(exp_id)
-
-    # parse experiment configuration
-    with open(experiment_file) as exd_file:
-        experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-    assert isinstance(experiment, exp_conf_api_gen.ExD_)
-    bibi_file = experiment.bibiConf.src
-    bibi_conf = os.path.join(os.path.dirname(experiment_file), bibi_file)
-    return bibi_conf
-
-
-def get_brain_file(exp_id):
-    """
-    Gets the brain filename
-
-    :param exp_id: id of the experiment
-    :return: Absolute path to experiment brain file
-    """
-    experiment_file = get_experiment_conf(exp_id)
-    bibi_file_name = get_bibi_file(exp_id, experiment_file)
-    with open(bibi_file_name) as bibi_file:
-        bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        assert isinstance(bibi, bibi_api_gen.BIBIConfiguration)
-        brain_file_name = bibi.brainModel.file
-        return os.path.join(os.path.dirname(experiment_file), brain_file_name)

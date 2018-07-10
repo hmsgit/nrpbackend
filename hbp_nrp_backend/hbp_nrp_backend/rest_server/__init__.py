@@ -80,7 +80,6 @@ import hbp_nrp_backend.rest_server.__ErrorHandlers
 from hbp_nrp_backend.rest_server.__SimulationResources import SimulationResources
 from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
 from hbp_nrp_backend.rest_server.__ExperimentService import Experiment, StorageExperiment
-from hbp_nrp_backend.rest_server.__ExperimentTransferfunctions import ExperimentTransferfunctions
 from hbp_nrp_backend.rest_server.__ExperimentWorldSDF import ExperimentWorldSDF
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFile
@@ -99,7 +98,7 @@ from hbp_nrp_backend.rest_server.__Version import Version
 from hbp_nrp_backend.rest_server.__WorldSDFService import WorldSDFService
 from hbp_nrp_backend.rest_server.__SimulationPopulations import SimulationPopulations
 from hbp_nrp_backend.rest_server.__SimulationStructuredTransferFunctions import \
-    SimulationStructuredTransferFunctions, SimulationConvertStructuredTransferFunctionToRaw, \
+    SimulationConvertStructuredTransferFunctionToRaw, \
     SimulationConvertRawToStructuredTransferFunction
 from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
@@ -110,8 +109,6 @@ from hbp_nrp_backend.rest_server.__SimulationResourcesCloner import SimulationRe
 api.add_resource(Experiment, '/experiment')
 api.add_resource(StorageExperiment, '/experiment/<string:experiment_id>')
 api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
-api.add_resource(ExperimentTransferfunctions,
-                 '/experiment/<string:experiment_id>/transfer-functions')
 api.add_resource(ExperimentWorldSDF,
                  '/experiment/<string:experiment_id>/sdf_world')
 
@@ -142,8 +139,6 @@ api.add_resource(SimulationTransferFunctions,
                  '/simulation/<int:sim_id>/transfer-functions')
 api.add_resource(SimulationCSVRecorders,
                  '/simulation/<int:sim_id>/csv-recorders')
-api.add_resource(SimulationStructuredTransferFunctions,
-                 '/simulation/<int:sim_id>/simulation-structured-transfer-functions')
 api.add_resource(SimulationTopics, '/simulation/topics')
 api.add_resource(SimulationRecorder,
                  '/simulation/<int:sim_id>/recorder/<string:command>')
