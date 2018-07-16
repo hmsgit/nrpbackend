@@ -58,18 +58,6 @@ class SimulationCSVRecorders(Resource):
         Resource.__init__(self)
 
     @swagger.model
-    class CsvRecorder(object):
-        """
-        Csv recorder
-        """
-
-        resource_fields = {
-            'file': fields.String,
-            'data': fields.List(fields.List(fields.String)),
-        }
-        required = ['file', 'data']
-
-    @swagger.model
     class CsvRecorderList(object):
         """
         Csv recorder list

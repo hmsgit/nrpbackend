@@ -26,7 +26,6 @@ PlaybackClient unit test
 """
 
 import rospy
-from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState
 from hbp_nrp_backend.cle_interface import PlaybackClient, \
     SERVICE_SIM_RESET_ID, SERVICE_SIM_EXTEND_TIMEOUT_ID
 from mock import patch, MagicMock, Mock

@@ -31,7 +31,7 @@ import os
 import shutil
 import tempfile
 import json
-from mock import MagicMock, patch, ANY
+from mock import MagicMock, patch
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_commons.generated import exp_conf_api_gen
 
@@ -64,6 +64,8 @@ class MockServiceResponse:
     </sdf>
     """
 
+class MockedSimulation:
+    experiment_id = False
 
 class TestExperimentWorldSDF(RestTest):
 
@@ -75,9 +77,14 @@ class TestExperimentWorldSDF(RestTest):
         self.test_directory = os.path.split(__file__)[0]
         self.temp_directory = tempfile.mkdtemp()
 
-    @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
-    def test_experiment_world_sdf_put(self, mocked_rospy):
-        experiment_id = '123456'
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService._get_simulation_or_abort')
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
+    def test_experiment_world_sdf_put(self, mocked_rospy, path_get_sim):
+
+        sim = MockedSimulation()
+        sim.experiment_id = '123456'
+        path_get_sim.return_value = sim
+
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
 
@@ -88,17 +95,20 @@ class TestExperimentWorldSDF(RestTest):
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
         def empty(a,b,c,d,e):
             return
-        body = {'context_id': 'fake'}
         self.mock_storageClient_instance.clone_file.return_value =  exd_conf_temp_path
         self.mock_storageClient_instance.create_or_update = empty
         self.mock_storageClient_instance.parse_and_check_file_is_valid.return_value =  exp
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
+        response = self.client.post('/simulation/0/sdf_world')
         self.assertEqual(response.status_code, 200)
 
 
-    @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
-    def test_experiment_world_sdf_put_storage(self, mocked_rospy):
-        experiment_id = '123456'
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService._get_simulation_or_abort')
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
+    def test_experiment_world_sdf_put_storage(self, mocked_rospy, path_get_sim):
+        sim = MockedSimulation()
+        sim.experiment_id = '123456'
+        path_get_sim.return_value = sim
+
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
 
@@ -109,28 +119,34 @@ class TestExperimentWorldSDF(RestTest):
             exp = exp_conf_api_gen.CreateFromDocument(exp_xml.read())
         def empty(a,b,c,d,e):
             return
-        body = {'context_id': 'fake'}
         self.mock_storageClient_instance.parse_and_check_file_is_valid.return_value = exp
         self.mock_storageClient_instance.clone_file.return_value =  exd_conf_temp_path
         self.mock_storageClient_instance.create_or_update = empty
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
+        response = self.client.post('/simulation/0/sdf_world')
         self.assertEqual(response.status_code, 200)
 
-    @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
-    def test_experiment_world_sdf_wrong_xml_1(self, mocked_rospy):
-        experiment_id = '123456'
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService._get_simulation_or_abort')
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
+    def test_experiment_world_sdf_wrong_xml_1(self, mocked_rospy, path_get_sim):
+        sim = MockedSimulation()
+        sim.experiment_id = '123456'
+        path_get_sim.return_value = sim
+
         MockServiceResponse.sdf_dump = "<invalid xml><><><<,,.asdf"
         mocked_rospy.wait_for_service = MagicMock(return_value=None)
         mocked_rospy.ServiceProxy = MagicMock(return_value=MockServiceResponse)
-        body = {'context_id': 'fake'}
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
+        response = self.client.post('/simulation/0/sdf_world')
         self.assertEqual(response.status_code, 500)
 
-    @patch('hbp_nrp_backend.rest_server.__ExperimentWorldSDF.rospy')
-    def test_experiment_world_sdf_wrong_xml_2(self, mocked_rospy):
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService._get_simulation_or_abort')
+    @patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
+    def test_experiment_world_sdf_wrong_xml_2(self, mocked_rospy, path_get_sim):
+        sim = MockedSimulation()
+        sim.experiment_id = '123456'
+        path_get_sim.return_value = sim
+
         experiment_id = '123456'
         MockServiceResponse.sdf_dump = "<sdf/>"
         mocked_rospy.wait_for_service.side_effect = rospy.ROSException('Mocked ROSException')
-        body = {'context_id': 'fake'}
-        response = self.client.post('/experiment/' + experiment_id + '/sdf_world',data=json.dumps(body))
+        response = self.client.post('/simulation/0/sdf_world')
         self.assertEqual(response.status_code, 500)

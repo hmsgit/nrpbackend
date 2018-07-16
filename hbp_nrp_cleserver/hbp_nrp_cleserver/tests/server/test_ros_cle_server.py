@@ -113,7 +113,7 @@ class TestROSCLEServer(unittest.TestCase):
 
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
-        self.assertEqual(13, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(11, self.__mocked_rospy.Service.call_count)
         self.assertEqual(2, self.__mock_base_rospy.Service.call_count)
 
     def test_reset_simulation(self):
@@ -409,28 +409,6 @@ class TestROSCLEServer(unittest.TestCase):
         self.assertIn("not found", response_message)  # no error
         self.assertEqual(self.__mocked_notificator.publish_error.call_count, 1)  # publish error message
 
-    @patch('hbp_nrp_cleserver.server.ROSCLEServer.StructuredTransferFunction')
-    def test_set_structured_transfer_function(self, mocked_structured_tf):
-
-        ros_callbacks = self.__get_handlers_for_testing_main()
-        set_structured_transfer_function_handler = ros_callbacks['set_structured_transfer_function']
-
-        mock_tf_name = "tf_0"
-        mock_tf_source = "Some python code"
-        mocked_structured_tf.generate_code_from_structured_tf = \
-            MagicMock(return_value=mock_tf_source)
-
-        mock_request = MagicMock(transfer_function=MagicMock())
-        mock_request.transfer_function.name = mock_tf_name
-
-        with patch.object(self.__ros_cle_server,
-                          '_ROSCLEServer__set_transfer_function') as set_tf_mock:
-            set_structured_transfer_function_handler(mock_request)
-            request_arg = set_tf_mock.call_args[0][0]
-
-        self.assertEqual(request_arg.transfer_function_name, mock_tf_name)
-        self.assertEqual(request_arg.transfer_function_source, mock_tf_source)
-
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
     def test_edit_flawed_transfer_function(self, mocked_tf_framework):
         mocked_tf_framework.delete_flawed_transfer_function = MagicMock()
@@ -610,17 +588,13 @@ class TestROSCLEServer(unittest.TestCase):
             MagicMock(name="service_get_CSV_recorders_files")
         k = self.__ros_cle_server._ROSCLEServer__service_clean_CSV_recorders_files = \
             MagicMock(name="service_clean_CSV_recorders_files")
-        l = self.__ros_cle_server._ROSCLEServer__service_get_structured_transfer_functions = \
-            MagicMock(name="service_get_structured_transfer_function")
-        m = self.__ros_cle_server._ROSCLEServer__service_set_structured_transfer_function = \
-            MagicMock(name="service_set_structured_transfer_function")
         n = self.__ros_cle_server._ROSCLEServer__service_delete_transfer_function = \
             MagicMock(name="service_delete_transfer_function")
         o = self.__ros_cle_server._ROSCLEServer__service_activate_transfer_function = \
             MagicMock(name="service_activate_transfer_function")
 
         self.__ros_cle_server.shutdown()
-        for x in [a, c, d, e, f, g, h, i, j, k, l, m, n, o, z]:
+        for x in [a, c, d, e, f, g, h, i, j, k, n, o, z]:
             self.assertEquals(x.shutdown.call_count, 1, repr(x) + " not shutdown")
 
 

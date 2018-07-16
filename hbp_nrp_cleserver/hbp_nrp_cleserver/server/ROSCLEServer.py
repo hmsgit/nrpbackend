@@ -54,7 +54,6 @@ from hbp_nrp_cleserver.server import \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
-    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
 from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
@@ -119,8 +118,6 @@ class ROSCLEServer(SimulationServer):
         self.__service_add_transfer_function = None
         self.__service_edit_transfer_function = None
         self.__service_activate_transfer_function = None
-        self.__service_get_structured_transfer_functions = None
-        self.__service_set_structured_transfer_function = None
         self.__service_convert_transfer_function_raw_to_structured = None
         self.__service_delete_transfer_function = None
         self.__service_get_brain = None
@@ -226,22 +223,10 @@ class ROSCLEServer(SimulationServer):
             self.__activate_transfer_function
         )
 
-        self.__service_get_structured_transfer_functions = rospy.Service(
-            SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(self.simulation_id),
-            srv.GetStructuredTransferFunctions,
-            self.__get_structured_transfer_functions
-        )
-
         self.__service_convert_transfer_function_raw_to_structured = rospy.Service(
             SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED(self.simulation_id),
             srv.ConvertTransferFunctionRawToStructured,
             self.__convert_transfer_function_raw_to_structured
-        )
-
-        self.__service_set_structured_transfer_function = rospy.Service(
-            SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(self.simulation_id),
-            srv.SetStructuredTransferFunction,
-            self.__set_structured_transfer_function
         )
 
         self.__service_delete_transfer_function = rospy.Service(
@@ -871,7 +856,6 @@ class ROSCLEServer(SimulationServer):
             time.sleep(1)
             logger.info("Shutting down get_transfer_functions service")
             self.__service_get_transfer_functions.shutdown()
-            self.__service_get_structured_transfer_functions.shutdown()
             self.__service_convert_transfer_function_raw_to_structured.shutdown()
             logger.info("Shutting down activate_transfer_function service")
             self.__service_activate_transfer_function.shutdown()
@@ -879,7 +863,6 @@ class ROSCLEServer(SimulationServer):
             self.__service_add_transfer_function.shutdown()
             logger.info("Shutting down set_transfer_function services")
             self.__service_edit_transfer_function.shutdown()
-            self.__service_set_structured_transfer_function.shutdown()
             logger.info("Shutting down delete_transfer_function services")
             self.__service_delete_transfer_function.shutdown()
             logger.info("Shutting down get_brain service")
