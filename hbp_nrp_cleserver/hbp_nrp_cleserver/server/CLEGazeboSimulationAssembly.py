@@ -29,7 +29,6 @@ import logging
 import netifaces
 import os
 import random
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -914,11 +913,10 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             logger.error("The cle server could not be shut down")
             logger.exception(e)
 
-        # Delete temporary robot folder, if any
-        if not self.__tmp_robot_dir:
-            logger.info("Deleting temporary directory {temp}".format(
-                temp=self.__tmp_robot_dir))
-            shutil.rmtree(self.__tmp_robot_dir, ignore_errors=True)
+        finally:
+            from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+            client = StorageClient()
+            client.remove_temp_directory()
 
     def __is_collab_hack(self):
         """
