@@ -295,7 +295,10 @@ class SimulationResetStorage(Resource):
         """
         old_tfs, _ = simulation.cle.get_simulation_transfer_functions()
         for tf in old_tfs:
-            simulation.cle.delete_simulation_transfer_function(get_tf_name(tf))
+            #ignore broken TFs
+            tfName = get_tf_name(tf)
+            if tfName:
+                simulation.cle.delete_simulation_transfer_function(tfName)
 
         import_referenced_python_tfs(bibi_conf, base_path)
 

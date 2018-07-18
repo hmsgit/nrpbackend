@@ -122,7 +122,7 @@ def get_tf_name(tf_code):
 
     p = re.compile(ur'^.*def\s+(\w+)\s*\(.*', re.MULTILINE)
     ret = re.findall(p, tf_code)
-    return ret[0]
+    return ret[0] if ret else None
 
 
 def generate_tf(tf):
