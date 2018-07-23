@@ -322,10 +322,6 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             sm.sm_id, str(sm.result)) for sm in self.simulation.state_machines))
 
         self.simulation.state_machine_manager.shutdown()
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        client = StorageClient()
-        # TODO: Find solution to avoid race condition with the CLE
-        client.remove_temp_directory()
 
     def pause(self, state_change):
         """

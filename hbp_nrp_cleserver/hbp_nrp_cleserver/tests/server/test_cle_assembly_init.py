@@ -54,12 +54,11 @@ class MockedClosedLoopEngine(Mock):
 
 MockOs = Mock()
 MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
-                  'ROS_MASTER_URI': "localhost:0815"}
-MockOs.path.join.return_value = "/a/really/nice/place"
+                  'ROS_MASTER_URI': "localhost:0815",
+                  'NRP_SIMULATION_DIR': '/somewhere/near/the/rainbow'}
 
 class SomeWeirdTFException(Exception):
     pass
-
 
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.os", new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
@@ -78,7 +77,6 @@ class TestCLELauncherInit(unittest.TestCase):
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboServerInstance")
     def setUp(self, mock_gazebo):
         self.mock_gazebo = mock_gazebo
-
         dir = os.path.split(__file__)[0]
         with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
@@ -96,7 +94,8 @@ class TestCLELauncherInit(unittest.TestCase):
             self.launcher = CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly(42, exd, bibi, gzserver_host="local")
 
     def tearDown(self):
-        self.launcher.shutdown()
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient"):
+            self.launcher.shutdown()
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     def test_gazebo_start_exception_catches_xvfbxvn_error(self, mock_server):

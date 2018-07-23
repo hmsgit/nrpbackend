@@ -27,7 +27,7 @@ This module contains the unit tests for the cle launcher shutdown
 
 import unittest
 import os
-from mock import patch, Mock
+from mock import patch, Mock, MagicMock
 from hbp_nrp_cleserver.server import CLEGazeboSimulationAssembly
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
@@ -38,6 +38,7 @@ MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
 MockOs.path.join.return_value = "/a/really/nice/place"
 
 
+@patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient", new = MagicMock())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=Mock())
 class TestCLELauncherShutdown(unittest.TestCase):
     def setUp(self):
