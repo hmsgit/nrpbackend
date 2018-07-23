@@ -26,7 +26,6 @@ ROSCLEClient unit test
 """
 
 import rospy
-from hbp_nrp_backend.cle_interface.ROSCLEState import ROSCLEState
 from hbp_nrp_backend.cle_interface import ROSCLEClient, \
     SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
     SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \

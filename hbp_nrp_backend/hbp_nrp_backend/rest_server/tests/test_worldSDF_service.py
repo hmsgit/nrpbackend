@@ -51,7 +51,7 @@ class TestWorldSDFService(RestTest):
         mckd_rospy.ServiceProxy = mock.MagicMock(return_value=MockServiceResponse)
 
         # call the service
-        response = self.client.get('/simulation/sdf_world')
+        response = self.client.get('/simulation/0/sdf_world')
 
         expected_response_data = json.dumps({'sdf': '<sdf>Dummy</sdf>'})
 
@@ -65,7 +65,7 @@ class TestWorldSDFService(RestTest):
         mckd_wait_for_service.side_effect = rospy.ROSException('Mocked ROSException')
 
         # call the service
-        response = self.client.get('/simulation/sdf_world')
+        response = self.client.get('/simulation/0/sdf_world')
 
         # check the status code
         self.assertEqual(response.status_code, 500)
@@ -77,7 +77,7 @@ class TestWorldSDFService(RestTest):
             side_effect=rospy.ServiceException('Mocked ServiceException'))
 
         # call the service
-        response = self.client.get('/simulation/sdf_world')
+        response = self.client.get('/simulation/0/sdf_world')
 
         # check the status code
         self.assertEqual(response.status_code, 400)

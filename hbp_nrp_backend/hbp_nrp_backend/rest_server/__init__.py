@@ -8,8 +8,6 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
-import hbp_nrp_backend as backend
-import multiprocessing
 
 from hbp_nrp_backend import NRPServicesGeneralException, NRPServicesClientErrorException, \
     NRPServicesStateException, NRPServicesTransferFunctionException, \
@@ -37,15 +35,10 @@ class ErrorMessages(object):
     """
     Definition of error strings
     """
-    EXPERIMENT_BRAIN_FILE_NOT_FOUND_500 = "The experiment brain file was not found"
-    EXPERIMENT_CONF_FILE_INVALID_500 = "The experiment configuration file is not valid"
-    EXPERIMENT_PREVIEW_INVALID_500 = "The experiment preview image is not valid"
     ERROR_SAVING_FILE_500 = "Error saving file"
     SERVER_ERROR_500 = "The query failed due to an internal server error"
 
-    STORAGE_NOT_FOUND_404 = "The storage with the given context ID was not found"
     EXPERIMENT_NOT_FOUND_404 = "The experiment with the given ID was not found"
-    EXPERIMENT_PREVIEW_NOT_FOUND_404 = "The experiment has no preview image"
     EXPERIMENT_BIBI_FILE_NOT_FOUND_404 = "The experiment BIBI file was not found"
     EXPERIMENT_CONF_FILE_NOT_FOUND_404 = "The experiment configuration file was not found"
     SIMULATION_NOT_FOUND_404 = "The simulation with the given ID was not found"
@@ -57,7 +50,6 @@ class ErrorMessages(object):
     SIMULATION_PERMISSION_401 = "Insufficient permissions to apply changes. Operation only allowed"\
                                 " by simulation owner"
 
-    INVALID_PARAMETERS_400 = "Provided parameters are invalid"
     SOURCE_CODE_ERROR_400 = "The source code is invalid: [ERROR-MESSAGE]"
     ACTIVATION_ERROR_400 = "The (de-)activation of the Transfer Function has failed"
     ERROR_IN_BASE64_400 = "Error in base64: {0}"
@@ -78,9 +70,6 @@ api = swagger.docs(NRPServicesExtendedApi(app), apiVersion='0.1')
 import hbp_nrp_backend.rest_server.__ErrorHandlers
 
 from hbp_nrp_backend.rest_server.__SimulationResources import SimulationResources
-from hbp_nrp_backend.rest_server.__ExperimentPreview import ExperimentPreview
-from hbp_nrp_backend.rest_server.__ExperimentService import Experiment, StorageExperiment
-from hbp_nrp_backend.rest_server.__ExperimentWorldSDF import ExperimentWorldSDF
 from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErrorCheck
 from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFile
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
@@ -105,12 +94,6 @@ from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
 from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 from hbp_nrp_backend.rest_server.__SimulationResourcesCloner import SimulationResourcesCloner
 
-# Register /experiment
-api.add_resource(Experiment, '/experiment')
-api.add_resource(StorageExperiment, '/experiment/<string:experiment_id>')
-api.add_resource(ExperimentPreview, '/experiment/<string:exp_id>/preview')
-api.add_resource(ExperimentWorldSDF,
-                 '/experiment/<string:experiment_id>/sdf_world')
 
 # Register /simulation
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
@@ -151,7 +134,7 @@ api.add_resource(SimulationConvertRawToStructuredTransferFunction,
 
 # This should not be on the /simulation path ... as it does not apply to a
 # running simulation
-api.add_resource(WorldSDFService, '/simulation/sdf_world')
+api.add_resource(WorldSDFService, '/simulation/<int:sim_id>/sdf_world')
 
 # Register /health
 api.add_resource(TotalErrorCheck, '/health/errors')

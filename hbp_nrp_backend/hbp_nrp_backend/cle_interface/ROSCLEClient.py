@@ -38,7 +38,6 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_ACTIVATE_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
-    SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS, SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION, \
     SERVICE_SIMULATION_RECORDER, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
 
@@ -177,17 +176,9 @@ class ROSCLEClient(object):
         self.__cle_edit_transfer_function = ROSCLEServiceWrapper(
             SERVICE_EDIT_TRANSFER_FUNCTION(sim_id), srv.EditTransferFunction, self)
 
-        self.__cle_get_structured_transfer_functions = ROSCLEServiceWrapper(
-            SERVICE_GET_STRUCTURED_TRANSFER_FUNCTIONS(sim_id),
-            srv.GetStructuredTransferFunctions, self)
-
         self.__cle_convert_transfer_function_raw_to_structured = ROSCLEServiceWrapper(
             SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED(sim_id),
             srv.ConvertTransferFunctionRawToStructured, self)
-
-        self.__cle_set_structured_transfer_function = ROSCLEServiceWrapper(
-            SERVICE_SET_STRUCTURED_TRANSFER_FUNCTION(sim_id),
-            srv.SetStructuredTransferFunction, self)
 
         self.__cle_delete_transfer_function = ROSCLEServiceWrapper(
             SERVICE_DELETE_TRANSFER_FUNCTION(sim_id), srv.DeleteTransferFunction, self)
@@ -364,26 +355,6 @@ class ROSCLEClient(object):
         result = self.__cle_convert_transfer_function_raw_to_structured(transfer_function.name,
                                                                         transfer_function.source)
         return result
-
-    def get_structured_transfer_functions(self):
-        """
-        Gets the transfer functions in a structured format
-        """
-        if self.__stop_reason is not None:
-            raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_get_structured_transfer_functions().transfer_functions
-
-    def set_structured_transfer_function(self, transfer_function):
-        """
-        Sets the given structured transfer function
-
-        :param transfer_function: The new transfer function in a structured format
-        :returns: "" if the call to ROS is successful,
-                     a string containing an error message otherwise
-        """
-        if self.__stop_reason is not None:
-            raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_set_structured_transfer_function(transfer_function).error_message
 
     def get_populations(self):
         """

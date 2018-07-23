@@ -48,24 +48,6 @@ from sys import exc_info
 logger = logging.getLogger(__name__)
 
 
-def pause_simulation_or_raise(simulation):
-    """
-    Pauses the simulation and raise an exception in case of failure.
-    This is needed before an update of a state machine code
-
-    :param simulation: The simulation to be reset
-    """
-    state = simulation.state
-    if state == 'paused' or state == 'started':
-        state = simulation.state = 'paused'
-
-    if state != 'paused':
-        raise NRPServicesGeneralException(
-            "Simulation in state {0}. Can't update the state machine".format(state),
-            "Server error", error_code=403
-        )
-
-
 @swagger.model
 class StateMachineDictionary(object):
     """
