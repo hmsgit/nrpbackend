@@ -420,7 +420,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # find robot
         robot_pose = None
-        if (self.bibi.bodyModel):
+        if self.bibi.bodyModel:
             robot_pose = self._load_robot(self._get_robot_abs_path(self.bibi.bodyModel))
 
         # load robot adapters
@@ -459,40 +459,44 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         if robot_file.customAsset:
             return self._extract_robot_zip(robot_file)
-        if 'storage://' in robot_file.value():
-            from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-            client = StorageClient()
-            abs_file = os.path.join(client.get_simulation_directory(),
-                                    os.path.basename(robot_file.value()))
-            name, ext = os.path.splitext(abs_file)
-            ext = ext.lower()
-            zipped = False
-            if ext == '.zip':
-                zipped = True
-            with open(abs_file, "w") as f:
-                f.write(client.get_file(
-                    self.token,
-                    client.get_folder_uuid_by_name(
-                        self.token, self.ctx_id, 'robots'),
-                    os.path.basename(robot_file.value()),
-                    byname=True, zipped=zipped))
-        elif self.__is_collab_hack():
-            abs_file = os.path.join(
-                self.exc.dir, os.path.basename(robot_file.value()))
-        else:
-            from hbp_nrp_backend.storage_client_api.StorageClient \
-                import get_model_basepath, find_file_in_paths
-            abs_file = find_file_in_paths(robot_file.value(), get_model_basepath())
 
+        if hasattr(robot_file, 'assetPath') and robot_file.assetPath is None:
+            robot_file.assetPath = "."
+
+        from hbp_nrp_backend.storage_client_api.StorageClient import \
+            StorageClient, find_file_in_paths, get_model_basepath
+
+        client = StorageClient()
+        simulation_directory = client.get_simulation_directory()
+        if 'storage://' in robot_file.value():
+            abs_file = os.path.join(simulation_directory,
+                                    os.path.basename(robot_file.value()))
+            _, ext = os.path.splitext(abs_file)
+
+            with open(abs_file, "w") as f:
+                f.write(
+                    client.get_file(
+                        self.token,
+                        client.get_folder_uuid_by_name(self.token, self.ctx_id, 'robots'),
+                        os.path.basename(robot_file.value()),
+                        byname=True,
+                        zipped=(ext.lower() == '.zip')
+                    )
+                )
+        else:
+            abs_file = find_file_in_paths(
+                robot_file.value(),
+                get_model_basepath()
+            )
             if not abs_file:
                 raise Exception("Could not find robot file: ".format(robot_file.value()))
 
-        name, ext = os.path.splitext(abs_file)
+        name, ext = os.path.splitext(robot_file.value())
         ext = ext.lower()
         if ext == ".sdf":
             return abs_file
         elif ext == ".zip":
-            name = os.path.split(name)[1] + "/model.sdf"
+            name = os.path.join(os.path.split(name)[1], "model.sdf")
             with zipfile.ZipFile(abs_file) as robot_zip:
                 try:
                     robot_zip.getinfo(name)
@@ -500,8 +504,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     raise Exception("The robot zip archive must contain an sdf file named {0} "
                                     "at the root of the archive, but does not.".format(name))
                 self.__tmp_robot_dir = os.path.join(
-                    StorageClient().get_simulation_directory(),
-                    'robot')
+                    simulation_directory,
+                    'robots'
+                )
                 robot_zip.extractall(path=self.__tmp_robot_dir)
             return os.path.join(self.__tmp_robot_dir, name)
 
@@ -531,15 +536,11 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         pprint(robots_list)
         pprint(robot_file.assetPath)
         # check if the zip is in the user storage
-        zipped_model_path = [
-            path for path in paths_list
-                if robot_file.assetPath in path
-            ]
+        zipped_model_path = [path for path in paths_list if robot_file.assetPath in path]
         if zipped_model_path:
             robot_path = os.path.join(client.get_simulation_directory(),
                                       os.path.basename(robot_file.value()))
-            model_data = {}
-            model_data['uuid'] = zipped_model_path[0]
+            model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
             storage_robot_zip_data = client.get_custom_model(
                 self.token,
@@ -690,7 +691,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # load brain
 
         # find robot
-        if (not self.bibi.brainModel):
+        if not self.bibi.brainModel:
             return braincontrol, braincomm, None, None
 
         brainfilepath = self.bibi.brainModel.file
@@ -747,8 +748,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         zipped_model_path = [
             path for path in paths_list if self.bibi.brainModel.customModelPath in path]
         if len(zipped_model_path):
-            model_data = {}
-            model_data['uuid'] = zipped_model_path[0]
+            model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
             storage_brain_zip_data = client.get_custom_model(
                 self.token,

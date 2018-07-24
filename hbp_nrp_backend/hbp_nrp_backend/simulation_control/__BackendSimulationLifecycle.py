@@ -133,8 +133,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         if len(zipped_model_path):
             environment_path = os.path.join(client.get_simulation_directory(),
                                             os.path.basename(experiment.environmentModel.src))
-            model_data = {}
-            model_data['uuid'] = zipped_model_path[0]
+            model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
             storage_env_zip_data = client.get_custom_model(
                 UserAuthentication.get_header_token(request),
@@ -197,6 +196,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
+
         if using_storage:
             custom = experiment.environmentModel.customModelPath
             if custom:
@@ -232,6 +232,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         # TODO: fix dependencies so these import are not necessary anymore
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         simulation = self.simulation
+
         try:
             using_storage = simulation.private is not None
             if using_storage:

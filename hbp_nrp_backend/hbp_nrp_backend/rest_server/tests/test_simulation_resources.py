@@ -28,7 +28,9 @@ __author__ = 'Yves Schmid Dornbierer'
 
 
 import os
+import unittest
 from mock import patch
+import json
 from hbp_nrp_backend.rest_server.tests import RestTest
 
 
@@ -56,6 +58,8 @@ class TestSimulationResources(RestTest):
         sim.lifecycle.experiment_path = os.path.join(
             self.test_directory, "experiments", "experiment_data", "testsimulationresources.exc")
 
+        expected_file_list = ['test.json', 'brain_visualizer/brainvisualiserdata.json']
+
         sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
@@ -63,8 +67,12 @@ class TestSimulationResources(RestTest):
         sim.private = None
 
         resources = self.client.get('/simulation/0/resources')
+        resources_data = json.loads(resources.data.strip())['resources']
 
         self.assertEqual(resources.status_code, 200)
+
+        for datum in resources_data:
+            self.assertIn(datum['file'][datum['file_offset']:], expected_file_list)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResources._get_simulation_or_abort')
     def test_no_simulation_xml_resources(self, patch_SimulationControl):
@@ -111,3 +119,7 @@ class TestSimulationResources(RestTest):
         resources = self.client.get('/simulation/0/resources')
 
         self.assertEqual(resources.status_code, 200)
+
+
+if __name__ == '__main__':
+    unittest.main()

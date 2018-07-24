@@ -54,10 +54,11 @@ class SimulationResource(object):
 
     resource_fields = {
         'file': fields.String,
+        'file_offset': fields.String,  # len(root_dir)+1
         'type': fields.String
     }
 
-    required = ['file', 'type']
+    required = ['file', 'type', 'file_offset']
 
 
 @swagger.model
@@ -155,17 +156,22 @@ class SimulationResources(Resource):
             resources.append({'file': conf.src, 'type': conf.type})
 
         if simulation.private:
-            for conf in resources:
-                conf['file'] = os.path.join('/config-from-cloned-folder', os.path.basename(
-                    simulation.lifecycle.simulation_root_folder), os.path.basename(conf['file']))
+            root_dir = os.path.join(
+                '/config-from-cloned-folder',
+                os.path.basename(simulation.lifecycle.simulation_root_folder)
+            )
         else:
             # Get the template experiment folder name, e.g., "template_husky"
-            experiment_folder = os.path.basename(os.path.dirname(experiment_file))
-            for conf in resources:
-                conf['file'] = os.path.join(
-                    '/config-from-template-folder',
-                    experiment_folder,
-                    conf['file']
-                )
+            root_dir = os.path.join(
+                '/config-from-template-folder',
+                os.path.basename(os.path.dirname(experiment_file))
+            )
+
+        for conf in resources:
+            conf['file'] = os.path.join(
+                root_dir,
+                conf['file']
+            )
+            conf['file_offset'] = len(root_dir) + 1
 
         return {'resources': resources}, 200

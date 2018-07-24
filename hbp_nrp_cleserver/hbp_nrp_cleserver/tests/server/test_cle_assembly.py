@@ -32,7 +32,6 @@ from hbp_nrp_cleserver.server.ServerConfigurations import SynchronousNestSimulat
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_backend import NRPServicesGeneralException
-from hbp_nrp_backend.storage_client_api import StorageClient
 
 PATH = os.path.split(__file__)[0]
 
@@ -70,7 +69,7 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    def test_robot_path_sdf(self,mocked_get_model_basepath, mock_find_file_path, mocked_storage):
+    def test_robot_path_sdf(self, mocked_get_model_basepath, mock_find_file_path, mocked_storage):
         mocked_get_model_basepath.return_value = PATH
         mock_find_file_path.return_value = os.path.join(
             PATH, 'this_is_a_robot.sdf')
@@ -79,18 +78,17 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         self.assertEqual(
             robot_file, os.path.join(
                 PATH, 'this_is_a_robot.sdf'))
-        self.assertEqual("",
-                         self.launcher._CLEGazeboSimulationAssembly__tmp_robot_dir)
+        self.assertEqual("", self.launcher._CLEGazeboSimulationAssembly__tmp_robot_dir)
 
     @patch("tempfile.mkdtemp")
     @patch("zipfile.ZipFile")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    def test_robot_path_zip(self, mocked_get_model_basepath,mock_find_file_path, mocked_zip, mocked_temp, mocked_storage):
+    def test_robot_path_zip(self, mocked_get_model_basepath, mock_find_file_path, mocked_zip,
+                            mocked_temp, mocked_storage):
         mocked_get_model_basepath.return_value = PATH
         mock_find_file_path.return_value = os.path.join(
             PATH, 'this_is_a_robot.sdf')
-        #mocked_storage().find_file_in_paths.return_value = PATH
         mocked_temp.return_value = "/tmp/under/the/rainbow"
         robot_file = self.launcher._get_robot_abs_path(
             CustomModel())
@@ -100,7 +98,7 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    def test_robot_path_storage(self,mocked_get_model_basepath, mock_find_file_path, mocked_storage):
+    def test_robot_path_storage(self, mocked_get_model_basepath, mock_find_file_path, mocked_storage):
         mocked_get_model_basepath.return_value = PATH
         mock_find_file_path.return_value = os.path.join(
             PATH, 'this_is_a_robot.sdf')
@@ -131,13 +129,15 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         robot_file = self.launcher._get_robot_abs_path(
             robot)
         self.assertEqual(
-            robot_file, os.path.join(PATH, 'robot', 'this_is_a_robot', 'model.sdf'))
+            robot_file,
+            os.path.join(PATH, 'robots', 'this_is_a_robot', 'model.sdf')
+        )
 
         mocked_zip.assert_called_once_with(
             os.path.join(PATH, "this_is_a_robot.zip"))
         mocked_zip().__enter__().getinfo.assert_called_once_with("this_is_a_robot/model.sdf")
         mocked_zip().__enter__().extractall.assert_called_once_with(
-            path=os.path.join(PATH, "robot"))
+            path=os.path.join(PATH, "robots"))
 
     def test_custom_robot_fails(self, mocked_storage):
         def val():
@@ -259,3 +259,7 @@ class TestCLEGazeboSimulationAssemblyRobot(TestCLEGazeboSimulationAssembly):
         (comm, ctrl) = self.launcher._create_robot_adapters()
         self.assertIsNotNone(comm)
         self.assertIsNotNone(ctrl)
+
+
+if __name__ == '__main__':
+    unittest.main()

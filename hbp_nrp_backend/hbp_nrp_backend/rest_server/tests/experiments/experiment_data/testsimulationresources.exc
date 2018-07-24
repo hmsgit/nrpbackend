@@ -7,6 +7,7 @@
         utilizes multiple brain processes.
     </description>
     <timeout>840</timeout>
+    <configuration type="brainvisualizer" src="brain_visualizer/brainvisualiserdata.json" />
     <configuration type="3d-settings" src="test.json"/>
     <maturity>development</maturity>
     <environmentModel src="virtual_room/virtual_room.sdf">

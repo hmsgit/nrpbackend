@@ -135,6 +135,7 @@ class StorageClient(object):
         :param token: a valid token to be used for the request
         :param experiment: the name of the experiment
         :param filename: the name of the file to return
+        :param zipped: flag denoting that "filename" is a zip file
         :return: if successful, the content of the file
         """
         try:
@@ -241,8 +242,9 @@ class StorageClient(object):
         experiment name and the user token
         :param token: a valid token to be used for the request
         :param experiment: the name of the experiment
+        :param folder: it is a boolean variable that indicates if list_files returns folders or not.
+
         :return: if successful, the files under the experiment
-        :folder: it is a boolean variable that indicates if list_files returns folders or not.
         """
         try:
             headers = {
@@ -353,9 +355,16 @@ class StorageClient(object):
         :param dest_folder: folder location where it will be copy to
         :param filename: name of the file to be copied.
         """
+        _, ext = os.path.splitext(filename)
+
         with open(os.path.join(src_folder, filename), "w") as f:
-            f.write(self.get_file(
-                    token, dest_folder, filename, byname=True))
+            f.write(
+                self.get_file(
+                    token,
+                    dest_folder, filename,
+                    byname=True, zipped=(ext.lower() == ".zip")
+                )
+            )
 
     # pylint: disable=no-self-use
     def check_create_folder(self, folder_path):
@@ -381,8 +390,8 @@ class StorageClient(object):
         :param folder: the folder in the storage folder to copy in tmp folder,
                        it has included the uuid of the experiment
         """
-        child_folders = []
-        child_folders.append(folder)
+        child_folders = [folder]
+
         folder_path = ''
         while child_folders:
             actual_folder = child_folders.pop()
@@ -443,30 +452,38 @@ class StorageClient(object):
         as well as the path to the simulation folder
         """
         experiment_paths = dict()
-        list_files_to_clone = self.list_files(token, experiment)
+        list_entries_to_clone = self.list_files(token, experiment, folder=True)
+
         self.copy_resources_folders_to_tmp(token, experiment)
+
         if new_folder:
             destination_directory = tempfile.mkdtemp()
         else:
             destination_directory = self.get_simulation_directory()
-        for file_under_experiment in list_files_to_clone:
-            file_clone_destination = os.path.join(
-                destination_directory, file_under_experiment['name'])
-            with open(file_clone_destination, "w") as f:
-                zipped = os.path.splitext(file_under_experiment['name'])[
-                    1].lower() == '.zip'
-                file_contents = self.get_file(
-                    token, experiment, file_under_experiment['name'], byname=True, zipped=zipped)
-                # in order to return the environment and experiment path we have
-                # to read the .exc
-                if 'experiment_configuration.exc' in str(file_clone_destination):
-                    experiment_paths[
-                        'experiment_conf'] = file_clone_destination
-                    env_filename = exp_conf_api_gen.CreateFromDocument(
-                        file_contents).environmentModel.src
-                    experiment_paths['environment_conf'] = os.path.join(
-                        destination_directory, env_filename)
-                f.write(file_contents)
+
+        for entry_to_clone in list_entries_to_clone:
+            if entry_to_clone['type'] == 'folder':
+                self.copy_folder_content_to_tmp(token, entry_to_clone)
+            else:  # file
+                file_clone_destination = os.path.join(
+                    destination_directory, entry_to_clone['name'])
+                with open(file_clone_destination, "w") as f:
+
+                    zipped = os.path.splitext(entry_to_clone['name'])[1].lower() == '.zip'
+
+                    file_contents = self.get_file(
+                        token, experiment, entry_to_clone['name'],
+                        byname=True, zipped=zipped)
+                    # in order to return the environment and experiment path
+                    # we have to read the .exc
+                    if 'experiment_configuration.exc' in str(file_clone_destination):
+                        experiment_paths['experiment_conf'] = file_clone_destination
+                        env_filename = \
+                            exp_conf_api_gen.CreateFromDocument(file_contents).environmentModel.src
+                        experiment_paths['environment_conf'] = \
+                            os.path.join(destination_directory, env_filename)
+                    f.write(file_contents)
+
         return destination_directory, experiment_paths
 
     @staticmethod
