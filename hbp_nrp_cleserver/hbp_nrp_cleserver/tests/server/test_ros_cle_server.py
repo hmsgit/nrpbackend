@@ -126,7 +126,7 @@ class TestROSCLEServer(unittest.TestCase):
         response, message = self.__ros_cle_server.reset_simulation(msg)
         self.assertEqual("", message)
         self.assertTrue(response)
-        self.assertEqual(1, self.__mocked_cle.reset_robot_pose.call_count)
+        self.assertEqual(2, self.__mocked_cle.reset_robot_pose.call_count)
         self.__mocked_cle.reset_mock()
 
         # Reset Brain without Collab

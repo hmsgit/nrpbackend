@@ -381,6 +381,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         super(CLEGazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, **par)
         self.__tmp_robot_dir = ''
         self.cle_server = None
+        self.robots = {}
 
     def _initialize(self, environment, except_hook):
         """
@@ -419,9 +420,18 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         models, lights = self._load_environment(environment)
 
         # find robot
-        robot_pose = None
-        if self.bibi.bodyModel:
-            robot_pose = self._load_robot(self._get_robot_abs_path(self.bibi.bodyModel))
+        robot_poses = {}
+        self.robots.clear()
+        if (self.bibi.bodyModel):
+            for robot in self.bibi.bodyModel:
+                if (robot.robotId is None):
+                    robot.robotId = 'robot'
+                elif (not robot.robotId or robot.robotId in self.robots.keys()):
+                    raise Exception("Multiple bodyModels has been defined with same or no names."
+                                    "Please check bibi config file.")
+                self.robots[robot.robotId] = robot
+                path, pose = self._get_robot_abs_path(robot)
+                robot_poses[robot.robotId] = self._load_robot(robot.robotId, path, pose)
 
         # load robot adapters
         robotcomm, robotcontrol = self._create_robot_adapters()
@@ -432,7 +442,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # initialize the cle server and services
         logger.info("Preparing CLE Server")
         self.cle_server.cle = self.__load_cle(robotcontrol, robotcomm, braincontrol, braincomm,
-                                              brainfile, brainconf, robot_pose, models, lights)
+                                              brainfile, brainconf, robot_poses, models, lights)
         self.cle_server.prepare_simulation(except_hook)
 
         # load transfer functions
@@ -451,6 +461,11 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         :return: the absolute path to the robot file
         """
 
+        robot_initial_pose = None
+        for rpose in self.exc.environmentModel.robotPose:
+            if not (rpose.robotId) or rpose.robotId == robot_file.robotId:
+                robot_initial_pose = rpose
+
         if hasattr(robot_file, 'customModelPath') and robot_file.customModelPath is not None:
             robot_file.customAsset = True
             robot_file.assetPath = robot_file.customModelPath
@@ -458,7 +473,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             robot_file.customAsset = False
 
         if robot_file.customAsset:
-            return self._extract_robot_zip(robot_file)
+            return self._extract_robot_zip(robot_file), robot_initial_pose
 
         if hasattr(robot_file, 'assetPath') and robot_file.assetPath is None:
             robot_file.assetPath = "."
@@ -468,6 +483,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         client = StorageClient()
         simulation_directory = client.get_simulation_directory()
+
         if 'storage://' in robot_file.value():
             abs_file = os.path.join(simulation_directory,
                                     os.path.basename(robot_file.value()))
@@ -494,7 +510,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         name, ext = os.path.splitext(robot_file.value())
         ext = ext.lower()
         if ext == ".sdf":
-            return abs_file
+            return abs_file, robot_initial_pose
         elif ext == ".zip":
             name = os.path.join(os.path.split(name)[1], "model.sdf")
             with zipfile.ZipFile(abs_file) as robot_zip:
@@ -508,7 +524,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     'robots'
                 )
                 robot_zip.extractall(path=self.__tmp_robot_dir)
-            return os.path.join(self.__tmp_robot_dir, name)
+            return os.path.join(self.__tmp_robot_dir, name), robot_initial_pose
 
     def _extract_robot_zip(self, robot_file):
         """
@@ -585,7 +601,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         return w_models, w_lights
 
     # pylint: disable-msg=too-many-branches
-    def _load_robot(self, robot_file_abs):
+    def _load_robot(self, rid, robot_file_abs, initial_pose):
         """
         Loads the environment and robot in Gazebo
 
@@ -595,7 +611,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # Create interfaces to Gazebo
         self._notify("Loading robot")
 
-        robot_initial_pose = self.exc.environmentModel.robotPose
+        robot_initial_pose = initial_pose
         if robot_initial_pose is not None:
             rpose = Pose()
             rpose.position.x = robot_initial_pose.x
@@ -645,7 +661,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # spawn robot model
         self._gazebo_helper \
-            .load_gazebo_model_file('robot', robot_file_abs, rpose, retina_config_path)
+            .load_gazebo_model_file(str(rid), robot_file_abs, rpose, retina_config_path)
 
         # load external robot controller
         if self.bibi.extRobotController is not None:
@@ -792,7 +808,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
     # pylint: disable=too-many-arguments
     def __load_cle(self, roscontrol, roscomm, braincontrol, braincomm,
                    brain_file_path, neurons_config,
-                   robot_pose, models, lights):
+                   robot_poses, models, lights):
         """
         Load the ClosedLoopEngine and initializes all interfaces
 
@@ -824,10 +840,15 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         if self.bibi.timestep is not None:
             timestep = float(self.bibi.timestep) / 1000.0
 
+        roscontrol.set_robots(self.robots)
+
         # initialize CLE
         self._notify("Initializing CLE")
+
         cle = DeterministicClosedLoopEngine(roscontrol, roscomm,
-                                            braincontrol, braincomm, tfmanager, timestep)
+                                            braincontrol, braincomm,
+                                            tfmanager, timestep
+                                            )
 
         if (brain_file_path):
             cle.initialize(brain_file_path, **neurons_config)
@@ -835,7 +856,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             cle.initialize()
 
         # Set initial pose
-        cle.initial_robot_pose = robot_pose
+        cle.initial_robot_poses = robot_poses
         # Set initial models and lights
         cle.initial_models = models
         cle.initial_lights = lights

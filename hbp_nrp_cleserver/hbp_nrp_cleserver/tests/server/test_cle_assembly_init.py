@@ -71,7 +71,7 @@ class SomeWeirdTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_brain_adapters", new=Mock(return_value=(Mock(), Mock())))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_robot_adapters", new=Mock(return_value=(Mock(), Mock())))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=MockOs)
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._get_robot_abs_path", new=Mock(return_value="/a/robot/under/the/rainbow/model.sdf"))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._get_robot_abs_path", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf", Mock())))
 class TestCLELauncherInit(unittest.TestCase):
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboServerInstance")

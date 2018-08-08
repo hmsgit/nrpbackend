@@ -907,6 +907,15 @@ class ROSCLEServer(SimulationServer):
         else:
             self.__cle.reset_brain()
 
+    def _reset_robot_pose(self):
+        """
+        Helper function for reset() call, it handles the reset robot pose message.
+        """
+        self.__cle.reset_robot_pose()
+        with self._notificator.task_notifier("Resetting the robot pose", ""):
+            self._notificator.update_task("Restoring the robot pose", False, True)
+            self.__cle.reset_robot_pose()
+
     def _reset_full(self, request):
         """
         Helper function for reset() call, it handles the RESET_FULL message.
@@ -965,7 +974,6 @@ class ROSCLEServer(SimulationServer):
 
         rsr = srv.ResetSimulationRequest
         reset_type = request.reset_type
-
         if reset_type == rsr.RESET_OLD:
             # Member added by transitions library
             # pylint: disable=no-member
@@ -974,7 +982,7 @@ class ROSCLEServer(SimulationServer):
             try:
                 self.start_fetching_gazebo_logs()
                 if reset_type == rsr.RESET_ROBOT_POSE:
-                    self.__cle.reset_robot_pose()
+                    self._reset_robot_pose()
                 elif reset_type == rsr.RESET_WORLD:
                     self._reset_world(request)
                 elif reset_type == rsr.RESET_BRAIN:
