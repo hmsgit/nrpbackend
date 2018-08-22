@@ -234,7 +234,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         simulation = self.simulation
 
         try:
-            using_storage = simulation.private is not None
+            using_storage = simulation.private
             if using_storage:
                 client = StorageClient()
                 clone_folder, experiment_paths = client.clone_all_experiment_files(

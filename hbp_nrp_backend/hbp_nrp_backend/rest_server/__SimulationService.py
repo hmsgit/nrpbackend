@@ -164,7 +164,7 @@ class SimulationService(Resource):
         playback_path = body.get('playbackPath', None)
         sim_owner = UserAuthentication.get_x_user_name_header(request)
         sim_brain_processes = body.get('brainProcesses', 1)
-        private = body.get('private', None)
+        private = body.get('private', False)
         ctx_id = body.get('ctxId', None)
 
         sim = Simulation(sim_id,
