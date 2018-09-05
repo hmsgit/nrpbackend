@@ -1,0 +1,72 @@
+# This is a sample build configuration for Docker.
+# Check our guides at https://confluence.atlassian.com/x/O1toN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: hbpneurorobotics/nrp:dev
+
+pipelines:
+  default:
+    - step:
+        name: Build
+        script:
+          # Configure build has to be placed before make devinstall
+          - git clone git@bitbucket.org:hbpneurorobotics/admin-scripts.git admin-scripts --depth=1 --branch=master
+          - ln -s admin-scripts/ContinuousIntegration
+          - export VIRTUAL_ENV_PATH=$VIRTUAL_ENV
+          - export NRP_INSTALL_MODE=dev
+          - export PYTHONPATH=$VIRTUAL_ENV_PATH/lib/python2.7/site-packages:$PYTHONPATH
+
+          # Clone repos that this plan depends on
+          - rm -rf $HBP/ExDBackend $HBP/ExperimentControl $HBP/CLE $HBP/BrainSimulation $HBP/Experiments $HBP/Models
+          - git clone https://poupa29@bitbucket.org/hbpneurorobotics/experimentcontrol.git ExperimentControl --depth=1 ## TODO: add --branch=development when this repo is in bitbucket
+          - git clone https://poupa29@bitbucket.org/hbpneurorobotics/cle.git CLE --depth=1 --branch=development
+          - git clone https://poupa29@bitbucket.org/hbpneurorobotics/brainsimulation.git BrainSimulation --depth=1 ## TODO: add --branch=development when this repo is in bitbucket
+          - git archive --remote=ssh://git@bitbucket.org/hbpneurorobotics/experiments.git refs/heads/development "*.xsd" | tar xf -
+          - git archive --remote=ssh://git@bitbucket.org/hbpneurorobotics/models.git refs/heads/development "*.xsd" | tar xf -
+          - export PYTHONPATH=hbp_nrp_commons:hbp_nrp_backend:hbp_nrp_cleserver:hbp_nrp_watchdog:hbp-flask-restful-swagger-master:ExperimentControl/hbp_nrp_excontrol:ExperimentControl/hbp_nrp_scxml:CLE/hbp_nrp_cle:BrainSimulation/hbp_nrp_music_xml:BrainSimulation/hbp_nrp_music_interface:$PYTHONPATH
+
+          # Concatenate all build requirements, ensure newline in between
+          - (echo; cat $PWD/ExperimentControl/hbp_nrp_excontrol/requirements.txt) >> hbp_nrp_backend/requirements.txt
+          - (echo; cat $PWD/CLE/hbp_nrp_cle/requirements.txt) >> hbp_nrp_backend/requirements.txt
+          - (echo; cat $PWD/BrainSimulation/hbp_nrp_music_xml/requirements.txt) >> hbp_nrp_backend/requirements.txt
+          - (echo; cat $PWD/BrainSimulation/hbp_nrp_music_interface/requirements.txt) >> hbp_nrp_backend/requirements.txt
+
+          # Checkout config.ini.sample from user-scripts
+          - git archive --remote=ssh://git@bitbucket.org/hbpneurorobotics/user-scripts.git refs/heads/development config_files/CLE/config.ini.sample | tar xf -
+          - cp config_files/CLE/config.ini.sample CLE/hbp_nrp_cle/hbp_nrp_cle/config.ini.sample
+          - cp CLE/hbp_nrp_cle/hbp_nrp_cle/config.ini.sample CLE/hbp_nrp_cle/hbp_nrp_cle/config.ini
+
+          # Copy bbp-client from user-scripts (before make devinstall)
+          - git archive --remote=ssh://git@bitbucket.org/hbpneurorobotics/user-scripts.git refs/heads/development config_files/platform_venv | tar xf -
+          - cp -af config_files/platform_venv/* $VIRTUAL_ENV_PATH/lib/python2.7/site-packages/
+
+          # Generate schemas
+          - make devinstall # Otherwise it can't find pyxbgen
+          - . $VIRTUAL_ENV_PATH/bin/activate && pyxbgen -u bibi_configuration.xsd -m bibi_api_gen && pyxbgen -u ExDConfFile.xsd -m exp_conf_api_gen && pyxbgen -u robot_model_configuration.xsd -m robot_conf_api_gen && pyxbgen -u environment_model_configuration.xsd -m environment_conf_api_gen
+          - mv bibi_api_gen.py hbp_nrp_commons/hbp_nrp_commons/generated
+          - mv exp_conf_api_gen.py hbp_nrp_commons/hbp_nrp_commons/generated
+          - mv _sc.py hbp_nrp_commons/hbp_nrp_commons/generated
+          - mv robot_conf_api_gen.py hbp_nrp_commons/hbp_nrp_commons/generated
+          - mv environment_conf_api_gen.py hbp_nrp_commons/hbp_nrp_commons/generated
+          - touch hbp_nrp_commons/hbp_nrp_commons/generated/__init__.py
+          - deactivate
+
+          # config.py (declare path and inject password)
+          - export PYTHONPATH=$PYTHONPATH:$PWD/config
+          - mkdir -p config
+          - cp hbp_nrp_backend/hbp_nrp_backend/config.py config
+          - export APP_SETTINGS=config.TestConfig
+          - sed -i "s/WRITE_THE_TEST_USER_PASSWORD_HERE/$neurorobotics_collab_test_password/g" config/config.py
+
+          # version.txt
+          - if [ -f "version.txt" ]; then sed -i -f version.txt hbp_nrp_backend/hbp_nrp_backend/version.py hbp_nrp_backend/requirements.txt; sed -i -f version.txt hbp_nrp_commons/hbp_nrp_commons/version.py hbp_nrp_commons/requirements.txt; sed -i -f version.txt hbp_nrp_cleserver/hbp_nrp_cleserver/version.py hbp_nrp_cleserver/requirements.txt; fi
+
+          # Run tests
+          - export IGNORE_LINT='Experiments/|Models/|platform_venv|ExperimentControl|admin-scripts|CLE|BrainSimulation|hbp_nrp_backend/hbp_nrp_backend/exd_config/generated|hbp_nrp_commons/hbp_nrp_commons/generated|hbp-flask-restful-swagger-master|GazeboRosPackages|migrations|nest'
+          # Egg-links have to be removed because make devinstall set them up wrongly
+          - pushd $VIRTUAL_ENV_PATH/lib/python2.7/site-packages && rm -f hbp-nrp-backend.egg-link hbp-nrp-cleserver.egg-link hbp-nrp-watchdog.egg-link hbp-nrp-commons.egg-link hbp-flask-restful-swagger.egg-link && popd
+          - . $VIRTUAL_ENV_PATH/bin/activate && source /opt/ros/kinetic/setup.$CURR_SHELL && echo "PYTHONPATH $PYTHONPATH" && make verify_base || { if [ -f pylint.txt ]; then echo "----------"; echo "PYLINT.TXT"; echo "----------";cat pylint.txt; fi; if [ -f pep8.txt ]; then echo "----------"; echo "PEP8.TXT"; echo "----------";cat pep8.txt; fi; exit 1; }
+
+          # Coverage check
+          - admin-scripts/nrp_cobertura_check coverage.xml
