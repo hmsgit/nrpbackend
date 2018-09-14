@@ -46,6 +46,7 @@ SERVICE_SIM_PAUSE_ID = lambda sim_id: '/%s/%d/pause' % (ROS_CLE_NODE_NAME, sim_i
 SERVICE_SIM_RESET_ID = lambda sim_id: '/%s/%d/reset' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SIM_EXTEND_TIMEOUT_ID = lambda sim_id: '/%s/%d/extend_timeout' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SIM_STATE_ID = lambda sim_id: '/%s/%d/state' % (ROS_CLE_NODE_NAME, sim_id)
+
 SERVICE_GET_TRANSFER_FUNCTIONS = lambda sim_id: \
     '/%s/%d/get_transfer_functions' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_ADD_TRANSFER_FUNCTION = lambda sim_id: \
@@ -56,6 +57,7 @@ SERVICE_ACTIVATE_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/activate_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_DELETE_TRANSFER_FUNCTION = lambda sim_id: \
     '/%s/%d/delete_transfer_function' % (ROS_CLE_NODE_NAME, sim_id)
+
 SERVICE_GET_BRAIN = lambda sim_id: '/%s/%d/get_brain' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SET_BRAIN = lambda sim_id: '/%s/%d/set_brain' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_POPULATIONS = lambda sim_id: '/%s/%d/get_populations' % (ROS_CLE_NODE_NAME, sim_id)
@@ -67,6 +69,9 @@ SERVICE_SIMULATION_RECORDER = lambda sim_id:\
     '/%s/%d/simulation_recorder' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED = lambda sim_id:\
     '/%s/%d/convert_transfer_function_raw_to_structured' % (ROS_CLE_NODE_NAME, sim_id)
+
+SERVICE_GET_ROBOTS = lambda sim_id: '/%s/%d/get_robots' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_ADD_ROBOT = lambda sim_id: '/%s/%d/add_robot' % (ROS_CLE_NODE_NAME, sim_id)
 
 
 def ros_handler(func):

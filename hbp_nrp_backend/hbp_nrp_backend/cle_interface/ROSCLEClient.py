@@ -33,13 +33,15 @@ import rospy
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages repository.
 from cle_ros_msgs import srv
+from cle_ros_msgs import msg
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ACTIVATE_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_SIMULATION_RECORDER, \
-    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
+    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -192,6 +194,10 @@ class ROSCLEClient(object):
 
         self.__simulation_recorder = ROSCLEServiceWrapper(
             SERVICE_SIMULATION_RECORDER(sim_id), srv.SimulationRecorder, self)
+
+        self.__cle_get_robots = ROSCLEServiceWrapper(
+            SERVICE_GET_ROBOTS(sim_id), srv.GetRobots, self)
+        self.__cle_add_robot = ROSCLEServiceWrapper(SERVICE_ADD_ROBOT(sim_id), srv.AddRobot, self)
 
         self.__stop_reason = None
 
@@ -420,3 +426,36 @@ class ROSCLEClient(object):
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
         return self.__simulation_recorder(command)
+
+    @fallback_retval([])
+    def get_simulation_robots(self):
+        """
+        Get the robots in a simulation
+
+        :returns:  List of robots in the simulation
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+
+        response = self.__cle_get_robots()
+        return response.robots
+
+    @fallback_retval((False, "An error occurred while processing request."))
+    def add_simulation_robot(self, robot_id, robot_model_rel_path, is_custom=False):
+        """
+        Add the given transfer function
+
+        :param robot_id: id of the robot to be added
+        :param robot_model_rel_path: a relative path to the SDF or ZIP file
+        :param is_custom: path to a custom robot (zip)
+        :return: True if the call to ROS is successful, False otherwise
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+
+        response = self.__cle_add_robot(
+            msg.RobotInfo(robot_id=robot_id,
+                          robot_model_rel_path=robot_model_rel_path,
+                          is_custom=is_custom)
+        )
+        return response.success, response.error_message

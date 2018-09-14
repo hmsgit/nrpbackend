@@ -27,6 +27,8 @@
 ROS wrapper around the CLE
 """
 
+__author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel, Hossain Mahmud"
+
 import json
 import logging
 import rospy
@@ -40,11 +42,14 @@ from cle_ros_msgs.srv import SetBrainRequest
 import textwrap
 import re
 
+from ._ExcBibiHandler import ExcBibiHandler
+from ._RobotCallHandler import RobotCallHandler
+
 from RestrictedPython.RCompile import RModule, RestrictionMutator
 
 
 # This package comes from the catkin package ROSCLEServicesDefinitions
-# in the GazeboRosPackage folder at the root of this CLE repository.
+# in the GazeboRosPackages folder at the root of this CLE repository.
 from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
@@ -54,7 +59,8 @@ from hbp_nrp_cleserver.server import \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
-    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
+    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS
 from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
 import hbp_nrp_cle.tf_framework as tf_framework
@@ -65,7 +71,6 @@ from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHa
 from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
 from hbp_nrp_commons.bibi_functions import find_changed_strings
 
-__author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
 
 # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
@@ -113,6 +118,8 @@ class ROSCLEServer(SimulationServer):
         """
         super(ROSCLEServer, self).__init__(sim_id, timeout, gzserver, notificator)
         self.__cle = None
+        self._robotHandler = None
+        self._excBibiHandler = None
 
         self.__service_get_transfer_functions = None
         self.__service_add_transfer_function = None
@@ -125,6 +132,8 @@ class ROSCLEServer(SimulationServer):
         self.__service_get_populations = None
         self.__service_get_CSV_recorders_files = None
         self.__service_clean_CSV_recorders_files = None
+        self.__service_get_robots = None
+        self.__service_add_robot = None
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
 
@@ -182,6 +191,16 @@ class ROSCLEServer(SimulationServer):
         Sets the Closed Loop Engine of this server
         """
         self.__cle = value
+
+    def setup_handlers(self, assembly):
+        """
+        Sets up different call handlers for the current assembly.
+
+        :param assembly: CLE assembly of the current simulation
+        :return: -
+        """
+        self._robotHandler = RobotCallHandler(assembly)
+        self._excBibiHandler = ExcBibiHandler(assembly)
 
     def _create_lifecycle(self, except_hook):
         """
@@ -257,6 +276,16 @@ class ROSCLEServer(SimulationServer):
         self.__service_clean_CSV_recorders_files = rospy.Service(
             SERVICE_CLEAN_CSV_RECORDERS_FILES(self.simulation_id), Empty,
             self.__clean_CSV_recorders_files
+        )
+
+        self.__service_get_robots = rospy.Service(
+            SERVICE_GET_ROBOTS(self.simulation_id), srv.GetRobots,
+            self.__get_robots
+        )
+
+        self.__service_add_robot = rospy.Service(
+            SERVICE_ADD_ROBOT(self.simulation_id), srv.AddRobot,
+            self.__add_robot
         )
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
@@ -829,7 +858,7 @@ class ROSCLEServer(SimulationServer):
         if self.__cle is not None:
             logger.info("Shutting down the closed loop service")
             self.__cle.shutdown()
-            time.sleep(1)
+            time.sleep(2)
             logger.info("Shutting down get_transfer_functions service")
             self.__service_get_transfer_functions.shutdown()
             self.__service_convert_transfer_function_raw_to_structured.shutdown()
@@ -851,6 +880,10 @@ class ROSCLEServer(SimulationServer):
             self.__service_get_CSV_recorders_files.shutdown()
             logger.info("Shutting down clean_CSV_recorders_files service")
             self.__service_clean_CSV_recorders_files.shutdown()
+            logger.info("Shutting down get_robots service")
+            self.__service_get_robots.shutdown()
+            logger.info("Shutting down cadd_robot service")
+            self.__service_add_robot.shutdown()
 
     def _reset_world(self, request):
         """
@@ -986,3 +1019,36 @@ class ROSCLEServer(SimulationServer):
             return slice(population_info.start, population_info.stop, population_info.step)
         elif population_info.type == ExperimentPopulationInfo.TYPE_POPULATION_LISTVIEW:
             return population_info.ids
+
+    def __get_robots(self, request):
+        """
+
+        :param request: rospy parameters sent from ROSCLEClient defined at
+                        GetRobot.srv in GazeboRosPackages
+        :return: robots: List of robots
+        """
+        robots = self._robotHandler.get_robots()
+        return srv.GetRobotsResponse(robots)
+
+    def __add_robot(self, request):
+        """
+        :param request: rospy parameters sent from ROSCLEClient defined at
+            AddRobot.srv in GazeboRosPackages
+        :return: Successfully added. (success, error_message) = (True, None)
+            or (False, error_message)
+        """
+        rinfo = request.robot
+        ret, status = self._robotHandler.add_robot(robot_id=rinfo.robot_id,
+                                                   robot_model_rel_path=rinfo.robot_model_rel_path,
+                                                   is_custom=rinfo.is_custom)
+        if ret:
+            # add new tag into bibi and exc
+            try:
+                self._excBibiHandler.add_robotpose(rinfo.robot_id)
+                self._excBibiHandler.add_bodymodel(rinfo.robot_id, status, rinfo.is_custom,
+                                                          rinfo.robot_model_rel_path)
+            except Exception as e:
+                logger.error("An error occured while updating exc and bibi for the newly added "
+                             "robot" + str(e))
+
+        return srv.AddRobotResponse(success=ret, error_message=status)

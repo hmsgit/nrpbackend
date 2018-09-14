@@ -93,6 +93,7 @@ from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
 from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 from hbp_nrp_backend.rest_server.__SimulationResourcesCloner import SimulationResourcesCloner
+from hbp_nrp_backend.rest_server.__SimulationRobot import SimulationRobots
 
 
 # Register /simulation
@@ -120,17 +121,17 @@ api.add_resource(SimulationTransferFunctionActivation,
                  'activation/<string:activate>')
 api.add_resource(SimulationTransferFunctions,
                  '/simulation/<int:sim_id>/transfer-functions')
-api.add_resource(SimulationCSVRecorders,
-                 '/simulation/<int:sim_id>/csv-recorders')
+api.add_resource(SimulationCSVRecorders, '/simulation/<int:sim_id>/csv-recorders')
 api.add_resource(SimulationTopics, '/simulation/topics')
-api.add_resource(SimulationRecorder,
-                 '/simulation/<int:sim_id>/recorder/<string:command>')
+api.add_resource(SimulationRecorder, '/simulation/<int:sim_id>/recorder/<string:command>')
 api.add_resource(SimulationResourcesCloner,
                  '/simulation/clone-resources-files')
 api.add_resource(SimulationConvertStructuredTransferFunctionToRaw,
                  '/simulation/<int:sim_id>/convert-structured-tf-to-raw')
 api.add_resource(SimulationConvertRawToStructuredTransferFunction,
                  '/simulation/<int:sim_id>/convert-raw-tf-to-structured')
+
+api.add_resource(SimulationRobots, '/simulation/<int:sim_id>/robots')
 
 # This should not be on the /simulation path ... as it does not apply to a
 # running simulation

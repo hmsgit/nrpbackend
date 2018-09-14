@@ -33,13 +33,11 @@ import subprocess
 import sys
 import tempfile
 import zipfile
-import tf.transformations as transformations
+import json
 logger = logging.getLogger(__name__)
 
 from RestrictedPython import compile_restricted
 from hbp_nrp_cle.cle import config
-from geometry_msgs.msg import Pose
-from hbp_nrp_cleserver.bibi_config.notificator import NotificatorHandler
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
 from hbp_nrp_cleserver.server.SimulationAssembly import SimulationAssembly
@@ -48,7 +46,7 @@ from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboBridgeInstance, \
     LocalGazeboServerInstance
 from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
 from hbp_nrp_cleserver.server.GazeboSimulationRecorder import GazeboSimulationRecorder
-from hbp_nrp_cle.robotsim.GazeboHelper import GazeboHelper
+from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_backend import NRPServicesGeneralException
 
 # These imports start NEST.
@@ -56,7 +54,6 @@ from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
 from hbp_nrp_cle.cle.ClosedLoopEngine import DeterministicClosedLoopEngine, ClosedLoopEngine
 import hbp_nrp_cle.tf_framework as nrp
 import hbp_nrp_cle.brainsim.config as brainconfig
-import json
 
 
 models_path = os.environ.get('NRP_MODELS_DIRECTORY')
@@ -83,6 +80,8 @@ class GazeboSimulationAssembly(SimulationAssembly):
         if models_path is None:
             raise Exception("Server Error. NRP_MODELS_DIRECTORY not defined.")
 
+        self.robotManager = RobotManager()
+
         # determine the Gazebo simulator target, due to dependencies this must
         # happen here
         gzserver_host = par.get('gzserver_host', 'local')
@@ -102,7 +101,6 @@ class GazeboSimulationAssembly(SimulationAssembly):
 
         self._timeout = timeout
         self.__gzserver_host = gzserver_host
-        self._gazebo_helper = None
         self.experiment_id = experiment_id
         self.gzweb = None
         self.ros_launcher = None
@@ -154,14 +152,6 @@ class GazeboSimulationAssembly(SimulationAssembly):
             gzserver_args += ' --play {path}/gzserver/1.log'.format(
                 path=playback_path)
 
-        # We use the logger hbp_nrp_cle.user_notifications in the CLE to log
-        # information that is useful to know for the user.
-        # In here, we forward any info message sent to this logger to the
-        # notificator
-        gazebo_logger = logging.getLogger('hbp_nrp_cle.user_notifications')
-        gazebo_logger.setLevel(logging.INFO)
-        gazebo_logger.handlers.append(NotificatorHandler())
-
         # optional roslaunch support prior to Gazebo launch
         if self.exc.rosLaunch is not None:
 
@@ -176,8 +166,7 @@ class GazeboSimulationAssembly(SimulationAssembly):
 
         try:
             logger.info("gzserver arguments: " + gzserver_args)
-            self.gzserver.start(
-                ros_master_uri, extra_models, gzserver_args)
+            self.gzserver.start(ros_master_uri, extra_models, gzserver_args)
         except XvfbXvnError as exception:
             logger.error(exception)
             error = "Recoverable error occurred. Please try again. Reason: {0}".format(
@@ -185,7 +174,7 @@ class GazeboSimulationAssembly(SimulationAssembly):
             raise Exception(error)
 
         self._notify("Connecting to Gazebo robotic simulator")
-        self._gazebo_helper = GazeboHelper()
+        self.robotManager.init_scene_handler()
 
         self._notify("Connecting to Gazebo simulation recorder")
         self.gazebo_recorder = GazeboSimulationRecorder(self.sim_id)
@@ -354,8 +343,7 @@ class GazeboSimulationAssembly(SimulationAssembly):
         except Exception, e:
             logger.exception(e)
 
-        os.system(
-            "echo 'y' | timeout -s SIGKILL 10s rosnode cleanup >/dev/null 2>&1")
+        os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup >/dev/null 2>&1")
 
     def _shutdown(self, notifications):  # pragma: no cover
         """
@@ -379,9 +367,27 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         :param bibi: The BIBI configuration
         """
         super(CLEGazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, **par)
-        self.__tmp_robot_dir = ''
         self.cle_server = None
-        self.robots = {}
+        self.tempAssetsDir = 'assets'
+
+        # FIXME: fix dependency loop from the imports
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        self._storageClient = StorageClient()
+        self._simDir = self._storageClient.get_simulation_directory()
+
+    @property
+    def simdir(self):
+        """
+        Gets the simulation directory
+        """
+        return self._simDir
+
+    @property
+    def storage_client(self):
+        """
+        Gets the storage client handler
+        """
+        return self._storageClient
 
     def _initialize(self, environment, except_hook):
         """
@@ -391,14 +397,12 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         # pylint: disable=too-many-locals
 
-        # create the CLE server and lifecycle first to report any failures
-        # properly
+        # create the CLE server and lifecycle first to report any failures properly
         logger.info("Creating CLE Server")
         self.cle_server = ROSCLEServer(self.sim_id, self._timeout, self.gzserver,
                                        self.ros_notificator)
 
-        # RNG seed for components, use config value if specified or
-        # generate a new one
+        # RNG seed for components, use config value if specified or generate a new one
         rng_seed = self.exc.rngSeed
         if rng_seed is None:
             logger.warn(
@@ -407,31 +411,21 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         logger.info('RNG seed = %i', rng_seed)
 
         # start Gazebo simulator and bridge
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        self._start_gazebo(
-            rng_seed,
-            None,       # playback path
-            (self.__tmp_robot_dir
-                + ':' if self.__tmp_robot_dir else ''
-                + StorageClient().get_simulation_directory()),
-            environment)
+        extraModelDirs = os.path.join(self._simDir, self.tempAssetsDir) + ':' + self._simDir
+        playbackPath = None
+        self._start_gazebo(rng_seed, playbackPath, extraModelDirs, environment)
 
         # load environment and robot models
         models, lights = self._load_environment(environment)
 
         # find robot
         robot_poses = {}
-        self.robots.clear()
-        if (self.bibi.bodyModel):
-            for robot in self.bibi.bodyModel:
-                if (robot.robotId is None):
-                    robot.robotId = 'robot'
-                elif (not robot.robotId or robot.robotId in self.robots.keys()):
-                    raise Exception("Multiple bodyModels has been defined with same or no names."
-                                    "Please check bibi config file.")
-                self.robots[robot.robotId] = robot
-                path, pose = self._get_robot_abs_path(robot)
-                robot_poses[robot.robotId] = self._load_robot(robot.robotId, path, pose)
+        self.robotManager.remove_all_robots()
+        self.__read_robot_list()
+
+        for rid, robot in self.robotManager.get_robot_list().iteritems():
+            self._load_robot(robot)
+            robot_poses[rid] = robot.pose
 
         # load robot adapters
         robotcomm, robotcontrol = self._create_robot_adapters()
@@ -444,146 +438,109 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self.cle_server.cle = self.__load_cle(robotcontrol, robotcomm, braincontrol, braincomm,
                                               brainfile, brainconf, robot_poses, models, lights)
         self.cle_server.prepare_simulation(except_hook)
+        self.cle_server.setup_handlers(self)
 
         # load transfer functions
         self.__load_tfs()
 
-        # Wait for the backend rendering environment to load (for any
-        # sensors/cameras)
+        # Wait for the backend rendering environment to load (for any sensors/cameras)
         self._notify("Waiting for Gazebo simulated sensors to be ready")
-        self._gazebo_helper.wait_for_backend_rendering()
+        self.robotManager.scene_handler().wait_for_backend_rendering()
 
-    def _get_robot_abs_path(self, robot_file):
+    # TODO: remove this function when exc and bibi abstraction (SimConf) is implemented
+    def __read_robot_list(self):
         """
-        Gets the absolute path of the given robot file
+        Reads robot list from bibi and poses from exc and populates robot manager
 
-        :param robot_file: The robot file
-        :return: the absolute path to the robot file
+        :return: -
         """
+        # pylint: disable=too-many-branches
+        if (not self.bibi.bodyModel):
+            return
 
-        robot_initial_pose = None
-        for rpose in self.exc.environmentModel.robotPose:
-            if not (rpose.robotId) or rpose.robotId == robot_file.robotId:
-                robot_initial_pose = rpose
+        for modelTag in self.bibi.bodyModel:
+            if (modelTag.robotId is None):
+                modelTag.robotId = 'robot'
+            elif (not modelTag.robotId
+                  or modelTag.robotId in self.robotManager.get_robot_list()):
+                raise Exception("Multiple bodyModels has been defined with same or no names."
+                                "Please check bibi config file.")
 
-        if hasattr(robot_file, 'customModelPath') and robot_file.customModelPath is not None:
-            robot_file.customAsset = True
-            robot_file.assetPath = robot_file.customModelPath
-        else:
-            robot_file.customAsset = False
+            pose = None
+            path = None
+            isCustom = False
+            for rpose in self.exc.environmentModel.robotPose:
+                if not (rpose.robotId) or rpose.robotId == modelTag.robotId:
+                    pose = RobotManager.convertXSDPosetoPyPose(rpose)
 
-        if robot_file.customAsset:
-            return self._extract_robot_zip(robot_file), robot_initial_pose
+            if hasattr(modelTag, 'customModelPath') and modelTag.customModelPath is not None:
+                # this tag is never there, remove this if block?
+                modelTag.assetPath = modelTag.customModelPath
+                isCustom = modelTag.customAsset = True
+            elif hasattr(modelTag, 'customAsset') and modelTag.customAsset is not None:
+                isCustom = modelTag.customAsset
+            else:
+                modelTag.customAsset = False
 
-        if hasattr(robot_file, 'assetPath') and robot_file.assetPath is None:
-            robot_file.assetPath = "."
+            if hasattr(modelTag, 'assetPath') and modelTag.assetPath is None:
+                modelTag.assetPath = "."
 
-        from hbp_nrp_backend.storage_client_api.StorageClient import \
-            StorageClient, find_file_in_paths, get_model_basepath
+            from hbp_nrp_backend.storage_client_api.StorageClient import \
+                find_file_in_paths, get_model_basepath
 
-        client = StorageClient()
-        simulation_directory = client.get_simulation_directory()
+            if isCustom:
+                path = self._extract_robot_zip(modelTag)
+            else:
+                path = find_file_in_paths(modelTag.value(), get_model_basepath())
 
-        if 'storage://' in robot_file.value():
-            abs_file = os.path.join(simulation_directory,
-                                    os.path.basename(robot_file.value()))
-            _, ext = os.path.splitext(abs_file)
-
-            with open(abs_file, "w") as f:
-                f.write(
-                    client.get_file(
-                        self.token,
-                        client.get_folder_uuid_by_name(self.token, self.ctx_id, 'robots'),
-                        os.path.basename(robot_file.value()),
-                        byname=True,
-                        zipped=(ext.lower() == '.zip')
-                    )
-                )
-        else:
-            abs_file = find_file_in_paths(
-                robot_file.value(),
-                get_model_basepath()
+            if not path:
+                raise Exception("Could not find robot file: ".format(modelTag.value()))
+            self.robotManager.add_robot(
+                Robot(modelTag.robotId, path, modelTag.robotId, pose, isCustom)
             )
-            if not abs_file:
-                raise Exception("Could not find robot file: ".format(robot_file.value()))
-
-        name, ext = os.path.splitext(robot_file.value())
-        ext = ext.lower()
-        if ext == ".sdf":
-            return abs_file, robot_initial_pose
-        elif ext == ".zip":
-            name = os.path.join(os.path.split(name)[1], "model.sdf")
-            with zipfile.ZipFile(abs_file) as robot_zip:
-                try:
-                    robot_zip.getinfo(name)
-                except KeyError:
-                    raise Exception("The robot zip archive must contain an sdf file named {0} "
-                                    "at the root of the archive, but does not.".format(name))
-                self.__tmp_robot_dir = os.path.join(
-                    simulation_directory,
-                    'robots'
-                )
-                robot_zip.extractall(path=self.__tmp_robot_dir)
-            return os.path.join(self.__tmp_robot_dir, name), robot_initial_pose
 
     def _extract_robot_zip(self, robot_file):
         """
-        Checks for validity, extracts a zipped robot and returns the path. First we
-        make sure that the zip referenced in the experiment exists in the
-        list of user robots, then we unzip it on the fly in the temporary
-        simulation directory. After the extraction we also make sure to copy
-        the sdf from the experiment folder cause the user may have modified it
-        :param robot_file: The robot file object which contains the custom robot name
-        as well as the sdf name
+        Get the zip from the storage and extract it in the current simulation directory
+
+        :param robot_file: DOM object of <bodyModel> in bibi.
+            Contains SDF path for template robots as value.
+            Or zip path for custom robot as 'assetPath' and SDF location with the zip as value.
+        :return Absolute path to the robot SDF
         """
         # pylint: disable=too-many-locals
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        client = StorageClient()
-        robots_list = client.get_custom_models(self.token,
-                                               self.ctx_id,
-                                               'robots')
-        # we use the paths of the uploaded zips to make sure the selected
-        # zip is there
+        robots_list = self._storageClient.get_custom_models(self.token, self.ctx_id, 'robots')
 
-        paths_list = [robot['path']
-                      for robot in robots_list]
+        # we use the paths of the uploaded zips to make sure the selected zip is there
+        paths_list = [robot['path'] for robot in robots_list]
 
-        from pprint import pprint
-        pprint(robots_list)
-        pprint(robot_file.assetPath)
+        # FIXME: change this implementation. it would fail if there're awesome_husky.zip and \
+        # a husky.zip, and assetPath is set to husky.zip
         # check if the zip is in the user storage
         zipped_model_path = [path for path in paths_list if robot_file.assetPath in path]
         if zipped_model_path:
-            robot_path = os.path.join(client.get_simulation_directory(),
-                                      os.path.basename(robot_file.value()))
             model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
-            storage_robot_zip_data = client.get_custom_model(
+            storage_robot_zip_data = self._storageClient.get_custom_model(
                 self.token,
                 self.ctx_id, json_model_data)
-            robot_sdf_name = os.path.basename(
-                os.path.basename(robot_file.value()))
-            rob_zip_path = os.path.join(
-                client.get_simulation_directory(),
-                robot_file.assetPath)
+
+            rob_zip_path = os.path.join(self._simDir, robot_file.assetPath)
             with open(rob_zip_path, 'w') as robot_zip:
                 robot_zip.write(storage_robot_zip_data)
+
             with zipfile.ZipFile(rob_zip_path) as robot_zip_to_extract:
-                robot_zip_to_extract.extractall(
-                    path=os.path.join(client.get_simulation_directory(), 'assets'))
-            # copy back the .sdf from the experiment folder, cause we don't want the one
-            # in the zip, cause the user might have made manual changes
-            client.clone_file(robot_sdf_name, self.token,
-                              self.experiment_id)
-        # if the zip is not there, prompt the user to check his uploaded
-        # models
+                robot_zip_to_extract.extractall(path=os.path.join(self._simDir, self.tempAssetsDir))
+
+        # if the zip is not there, prompt the user to check his uploaded models
         else:
             raise NRPServicesGeneralException(
                 "Could not find zip file {0} in the list of uploaded models. "
                 .format(robot_file.value()) +
                 "Please make sure that it has been uploaded correctly.",
                 "Zipped model retrieval failed")
-        return robot_path
+
+        return os.path.join(self._simDir, robot_file.value())
 
     # pylint: disable-msg=too-many-branches
     def _load_environment(self, world_file):
@@ -596,72 +553,32 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # load the world file if provided first
         self._notify("Loading experiment environment")
-        w_models, w_lights = self._gazebo_helper.parse_gazebo_world_file(world_file)
+        w_models, w_lights = self.robotManager.scene_handler() \
+            .parse_gazebo_world_file(world_file)
 
         return w_models, w_lights
 
     # pylint: disable-msg=too-many-branches
-    def _load_robot(self, rid, robot_file_abs, initial_pose):
+    def _load_robot(self, robot):
         """
         Loads the environment and robot in Gazebo
 
-        :param robot_file_abs Robot model to load
+        :param robot Robot object to load
         """
         # pylint: disable=too-many-locals
         # Create interfaces to Gazebo
         self._notify("Loading robot")
-
-        robot_initial_pose = initial_pose
-        if robot_initial_pose is not None:
-            rpose = Pose()
-            rpose.position.x = robot_initial_pose.x
-            rpose.position.y = robot_initial_pose.y
-            rpose.position.z = robot_initial_pose.z
-
-            if robot_initial_pose.ux is not None:
-
-                rpose.orientation.x = robot_initial_pose.ux
-                rpose.orientation.y = robot_initial_pose.uy
-                rpose.orientation.z = robot_initial_pose.uz
-                rpose.orientation.w = robot_initial_pose.theta
-
-            else:
-
-                roll = 0
-                pitch = 0
-                yaw = 0
-
-                if robot_initial_pose.roll is not None:
-                    roll = robot_initial_pose.roll
-
-                if robot_initial_pose.pitch is not None:
-                    pitch = robot_initial_pose.pitch
-
-                if robot_initial_pose.yaw is not None:
-                    yaw = robot_initial_pose.yaw
-
-                quaternion = transformations.quaternion_from_euler(roll, pitch, yaw)
-
-                rpose.orientation.x = quaternion[0]
-                rpose.orientation.y = quaternion[1]
-                rpose.orientation.z = quaternion[2]
-                rpose.orientation.w = quaternion[3]
-        else:
-            rpose = None
-
-        logger.info("RobotAbs: " + str(robot_file_abs))
+        logger.info("RobotAbs: " + str(robot.SDFFileRelPath))
 
         # check retina script file
         retina_config_path = None
-
         for conf in self.bibi.configuration:
             if conf.type == 'retina':
                 self._notify("Configuring Retina Camera Plugin")
                 retina_config_path = conf.src
 
         # spawn robot model
-        self._gazebo_helper \
-            .load_gazebo_model_file(str(rid), robot_file_abs, rpose, retina_config_path)
+        self.robotManager.load_robot_in_scene(robot.id, retina_config_path)
 
         # load external robot controller
         if self.bibi.extRobotController is not None:
@@ -669,8 +586,8 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 import get_model_basepath, find_file_in_paths
             robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
                                                            get_model_basepath())
-            if not os.path.isfile(robot_controller_filepath) and self.__tmp_robot_dir is not None:
-                robot_controller_filepath = os.path.join(self.__tmp_robot_dir,
+            if not os.path.isfile(robot_controller_filepath) and self._simDir is not None:
+                robot_controller_filepath = os.path.join(self._simDir,
                                                          self.bibi.extRobotController)
             if os.path.isfile(robot_controller_filepath):
                 self._notify("Loading external robot controllers")  # +1
@@ -680,8 +597,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                         "The external robot controller could not be loaded")
                     self.shutdown()
                     return
-
-        return rpose
 
     def _create_robot_adapters(self):  # pragma: no cover
         """
@@ -717,16 +632,11 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             if self.exc.dir is not None:
                 brainfilepath = os.path.join(self.exc.dir, brainfilepath)
         elif 'storage://' in brainfilepath:
-            from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-            client = StorageClient()
-            brainfilepath = os.path.join(client.get_simulation_directory(),
-                                         os.path.basename(brainfilepath))
+            brainfilepath = os.path.join(self._simDir, os.path.basename(brainfilepath))
             with open(brainfilepath, "w") as f:
-                f.write(client.get_file(
+                f.write(self._storageClient.get_file(
                     self.token,
-                    client.get_folder_uuid_by_name(self.token,
-                                                   self.ctx_id,
-                                                   'brains'),
+                    self._storageClient.get_folder_uuid_by_name(self.token, self.ctx_id, 'brains'),
                     os.path.basename(brainfilepath),
                     byname=True))
         else:
@@ -751,50 +661,41 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         the .py from the experiment folder cause the user may have modified it
         """
         # pylint: disable=too-many-locals
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        client = StorageClient()
-        brains_list = client.get_custom_models(self.token,
-                                               self.ctx_id,
-                                               'brains')
+        brains_list = self._storageClient.get_custom_models(self.token, self.ctx_id, 'brains')
         # we use the paths of the uploaded zips to make sure the selected
         # zip is there
-        paths_list = [brain['path']
-                      for brain in brains_list]
+        paths_list = [brain['path'] for brain in brains_list]
+
         # check if the zip is in the user storage
         zipped_model_path = [
             path for path in paths_list if self.bibi.brainModel.customModelPath in path]
         if len(zipped_model_path):
             model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
-            storage_brain_zip_data = client.get_custom_model(
-                self.token,
-                self.ctx_id, json_model_data)
-            brain_name = os.path.basename(
-                self.bibi.brainModel.file)
-            brn_zip_path = os.path.join(
-                client.get_simulation_directory(),
-                self.bibi.brainModel.customModelPath)
+            storage_brain_zip_data = self._storageClient.get_custom_model(self.token,
+                                                                          self.ctx_id,
+                                                                          json_model_data)
+            brain_name = os.path.basename(self.bibi.brainModel.file)
+            brn_zip_path = os.path.join(self._simDir, self.bibi.brainModel.customModelPath)
             with open(brn_zip_path, 'w') as brain_zip:
                 brain_zip.write(storage_brain_zip_data)
             with zipfile.ZipFile(brn_zip_path) as brain_zip_to_extract:
                 for brain_file in brain_zip_to_extract.namelist():
                     _, file_name = os.path.split(brain_file)
                     if file_name:
-                        with open(os.path.join(
-                                client.get_simulation_directory(),
-                                file_name), 'w') as file_to_write:
+                        with open(os.path.join(self._simDir, file_name), 'w') as file_to_write:
                             file_to_write.write(brain_zip_to_extract.read(brain_file))
+
             # copy back the .py from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
-            client.clone_file(brain_name, self.token,
-                              self.experiment_id)
+            self._storageClient.clone_file(brain_name, self.token, self.experiment_id)
         # if the zip is not there, prompt the user to check his uploaded
         # models
         else:
             raise NRPServicesGeneralException(
-                "Could not find selected zip %s in the list of uploaded models. Please make\
-                    sure that it has been uploaded correctly" % (
-                    os.path.dirname(self.bibi.brainModel.customModelPath)),
+                "Could not find selected zip {zip} in the list of uploaded models. ".format(
+                    zip=os.path.dirname(self.bibi.brainModel.customModelPath)
+                ) + "Please make sure that it has been uploaded correctly",
                 "Zipped model retrieval failed")
 
     def _create_brain_adapters(self):  # pragma: no cover
@@ -840,7 +741,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         if self.bibi.timestep is not None:
             timestep = float(self.bibi.timestep) / 1000.0
 
-        roscontrol.set_robots(self.robots)
+        roscontrol.set_robots(self.robotManager.get_robot_list())
 
         # initialize CLE
         self._notify("Initializing CLE")
@@ -935,9 +836,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             logger.exception(e)
 
         finally:
-            from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-            client = StorageClient()
-            client.remove_temp_directory()
+            self._storageClient.remove_temp_directory()
 
     def __is_collab_hack(self):
         """
