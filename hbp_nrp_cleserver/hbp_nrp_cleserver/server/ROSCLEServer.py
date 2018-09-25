@@ -767,19 +767,6 @@ class ROSCLEServer(SimulationServer):
             return False, error_msg
         return True, m[0]
 
-    # pylint: disable=unused-argument
-    @staticmethod
-    def __get_structured_transfer_functions(request):
-        """
-        Return the source code of the transfer functions
-
-        :param request: The mandatory rospy request parameter
-        """
-        tfs = tf_framework.get_transfer_functions(flawed=False)
-        return srv.GetStructuredTransferFunctionsResponse(
-            [tf for tf in map(StructuredTransferFunction.extract_structure, tfs) if tf is not None]
-        )
-
     def __set_structured_transfer_function(self, request):
         """
         Patch a structured transfer function
@@ -804,19 +791,8 @@ class ROSCLEServer(SimulationServer):
         :param request: The mandatory rospy request parameter
         :return: The converted TF.__conv
         """
-
-        if tf_framework.get_flawed_transfer_function(request.transfer_function_name):
-            error = self.__set_flawed_transfer_function(request)
-        else:
-            error = self.__set_transfer_function(request, False)
-
-        if len(error) == 0:
-            tfs = tf_framework.get_transfer_functions(flawed=False)
-            for tf in tfs:
-                if tf.name == request.transfer_function_name:
-                    return StructuredTransferFunction.extract_structure(tf), None
-
-        return None, error
+        new_source = textwrap.dedent(request.transfer_function_source)
+        return StructuredTransferFunction.extract_structure(new_source), None
 
     def __delete_transfer_function(self, request):
         """

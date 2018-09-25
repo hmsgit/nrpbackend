@@ -28,7 +28,8 @@ This module contains unit tests for structured transfer functions
 import unittest
 import json
 from mock import patch, MagicMock
-from cle_ros_msgs.msg import Device, ExperimentPopulationInfo, TransferFunction as TF
+import textwrap
+from cle_ros_msgs.msg import ExperimentPopulationInfo, TransferFunction as TF
 from hbp_nrp_cle.tf_framework import *
 from hbp_nrp_cle.mocks.brainsim import MockBrainCommunicationAdapter
 from hbp_nrp_cle.mocks.robotsim import MockRobotCommunicationAdapter
@@ -44,33 +45,37 @@ class TestStructuredTransferFunctions(unittest.TestCase):
         config.active_node.brain_adapter = MockBrainCommunicationAdapter()
 
     def create_default_TF(self):
+        return textwrap.dedent("""
+        from cle_ros_msgs.msg import Device
+        from cle_ros_msgs.msg import TransferFunction as TF
+
         @MapRobotPublisher("pub", Topic("/foo", Device))
         @MapSpikeSink("neuron", brain.sensors[4], leaky_integrator_alpha)
         @Neuron2Robot(Topic('/bar', TF))
         def test_tf(t, pub,
                         neuron):
             print '42'
-
-        return test_tf
+        """)
 
     def create_other_TF(self):
+        return textwrap.dedent("""
+        from cle_ros_msgs.msg import Device
+
         @MapRobotSubscriber("sub", Topic("/foo", Device))
         @MapSpikeSource("neuron", brain.actors[1:4:2], poisson)
         @Robot2Neuron()
         def test_tf_2(t, sub, neuron):
             print '42'
-
-        return test_tf_2
+        """)
 
     def create_variable_TF(self):
-
+        return textwrap.dedent("""
         @MapVariable("a", initial_value=42)
         @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
         @NeuronMonitor(brain.actors, spike_recorder)
         def some_stupid_test_tf(t, a, c):
             pass
-
-        return some_stupid_test_tf
+        """)
 
     def assert_default_TF(self, test):
         self.assertIsNotNone(test)
@@ -154,24 +159,6 @@ class TestStructuredTransferFunctions(unittest.TestCase):
 
         self.assert_default_TF(test)
         self.assert_other_TF(test2)
-
-    @patch('hbp_nrp_cleserver.bibi_config.StructuredTransferFunction.ExperimentPopulationInfo')
-    def test_extract_neurons(self, mock_exp_info):
-        mock_exp_info.TYPE_ENTIRE_POPULATION = "type"
-        mock_exp_info.TYPE_POPULATION_SLICE = "slice"
-        mock_exp_info.TYPE_POPULATION_LISTVIEW = "list"
-        StructuredTransferFunction._extract_neurons(brain.neuron_name)
-
-        mock_exp_info.assert_called_with(name='neuron_name', type=mock_exp_info.TYPE_ENTIRE_POPULATION,
-                                         ids=[], start=0, stop=0, step=0)
-        StructuredTransferFunction._extract_neurons(brain.neuron_name[5])
-        mock_exp_info.assert_called_with(name='neuron_name', type=mock_exp_info.TYPE_POPULATION_SLICE,
-                                         ids=[], start=5, stop=6, step=1)
-        StructuredTransferFunction._extract_neurons(brain.neuron_name[[5]])
-        mock_exp_info.assert_called_with(name='neuron_name', type=mock_exp_info.TYPE_POPULATION_LISTVIEW,
-                                         ids=[5], start=0, stop=0, step=0)
-        with self.assertRaises(Exception):
-            StructuredTransferFunction._extract_neurons(brain.neuron_name[{}])
 
     def test_generate_neurons(self):
         neurons = MagicMock()

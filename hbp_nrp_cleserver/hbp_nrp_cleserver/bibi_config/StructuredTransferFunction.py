@@ -26,33 +26,13 @@ This module contains helper functionality to convert a CLE Transfer Function int
 format used to pass transfer functions via ROS
 """
 
-from cle_ros_msgs.msg import TransferFunction, Device, Topic, Variable, ExperimentPopulationInfo
-from hbp_nrp_cle.tf_framework import Neuron2Robot, Robot2Neuron, NeuronMonitor, \
-    poisson, population_rate, leaky_integrator_alpha, leaky_integrator_exp, fixed_frequency,\
-    nc_source, dc_source, ac_source, spike_recorder, MapRobotSubscriber,\
-    MapCSVRecorder, MapSpikeSink, MapSpikeSource, MapVariable, config
-from hbp_nrp_cle.tf_framework._PropertyPath import IndexPathSegment
+from cle_ros_msgs.msg import ExperimentPopulationInfo
+from hbp_nrp_cleserver.bibi_config.TransferFunctionASTParser import TransferFunctionASTParser, \
+    StructureType
 import logging
-import textwrap
 import json
 
 __author__ = "Georg Hinkel"
-
-Neuron2Robot.structured_type = 2
-Robot2Neuron.structured_type = 1
-NeuronMonitor.structured_type = 3
-
-device_types = {
-    ac_source: "ACSource",
-    dc_source: "DCSource",
-    fixed_frequency: "FixedFrequency",
-    leaky_integrator_alpha: "LeakyIntegratorAlpha",
-    leaky_integrator_exp: "LeakyIntegratorExp",
-    nc_source: "NCSource",
-    poisson: "Poisson",
-    spike_recorder: "SpikeRecorder",
-    population_rate: "PopulationRate"
-}
 
 device_type_infos = {
     "ACSource": ("nrp.ac_source", False),
@@ -81,77 +61,6 @@ def indent(code):
     return indentation + ('\n' + indentation).join(code.split('\n'))
 
 
-def __get_spec(device):
-    """
-    Gets the specification of a given parameter device
-
-    :param device: The parameter device
-    :return: the specification for teh given parameter
-    """
-    if hasattr(device, 'spec'):
-        return device.spec
-    else:
-        return device
-
-
-def __get_specs(tf):
-    """
-    Gets all parameter specifications of the given transfer function
-
-    :param tf: The transfer function
-    :return: The parameter specifications
-    """
-    return map(__get_spec, tf.params[1:])
-
-
-def __extract_name_and_index(neurons, root, bca):
-    """
-    Extracts the name and the index from the given neuron specification
-
-    :param neurons: The neuron specification
-    :param root: The inserted root object
-    :param bca: The brain info
-    :return: A tuple of the name of the population and the index
-    """
-    name = repr(neurons)
-    index = None
-    if isinstance(neurons, IndexPathSegment):
-        parent = neurons.select(root, bca)
-        if bca.is_population(parent):
-            name = repr(neurons.parent)
-            index = neurons.index
-    return name[7:], index
-
-
-def _extract_neurons(neurons):
-    """
-    Extracts a population specification from the given property path
-
-    :param neurons: The given neurons
-    :return: A population specification
-    """
-    name, index = __extract_name_and_index(neurons, config.brain_root,
-                                           config.active_node.brain_adapter)
-    if index is None:
-        return ExperimentPopulationInfo(name=name,
-                                        type=ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION,
-                                        ids=[], start=0, stop=0, step=0)
-    if isinstance(index, slice):
-        return ExperimentPopulationInfo(name=name,
-                                        type=ExperimentPopulationInfo.TYPE_POPULATION_SLICE,
-                                        ids=[], start=index.start, stop=index.stop,
-                                        step=index.step or 1)
-    if isinstance(index, int):
-        return ExperimentPopulationInfo(name=name,
-                                        type=ExperimentPopulationInfo.TYPE_POPULATION_SLICE,
-                                        ids=[], start=index, stop=index + 1, step=1)
-    if isinstance(index, list):
-        return ExperimentPopulationInfo(name=name,
-                                        type=ExperimentPopulationInfo.TYPE_POPULATION_LISTVIEW,
-                                        ids=index or [], start=0, stop=0, step=0)
-    raise Exception("Could not parse neurons {0} with index {1}".format(repr(neurons), index))
-
-
 def _generate_neurons(neurons):
     """
     Generates the code for a structured neuron information
@@ -171,25 +80,6 @@ def _generate_neurons(neurons):
         return "nrp.brain.{0}[[{1}]]".format(neurons.name, ", ".join(neurons.ids))
 
 
-def __extract_devices(tf):
-    """
-    Converts the specification of the devices from the given transfer function
-
-    :param tf: The transfer function
-    :return: A list of device specifications
-    """
-    return [
-        Device(
-            name=d.name,
-            type=device_types[d.device_type],
-            neurons=_extract_neurons(d.neurons)
-        )
-        # Variable mappings may be reset in case their initial value depends on the brain
-        # Therefore, we cannot use d.is_brain_connection
-        for d in __get_specs(tf) if isinstance(d, (MapSpikeSink, MapSpikeSource))
-    ]
-
-
 def __generate_device(device):
     """
     Generates the code for a neuron device
@@ -206,89 +96,6 @@ def __generate_device(device):
             .format(device.name, _generate_neurons(device.neurons), info[0])
 
 
-def __extract_type_name(topic_type):
-    """
-    Extracts the type name of a given ROS message type
-
-    :param topic_type: The message type
-    """
-    name = topic_type.__name__
-    module = topic_type.__module__
-    if module.endswith(name) and '.' in module:
-        module = module[:module.rindex('.')]
-    if module.endswith(".msg"):
-        module = module[:-4]
-    return module + "/" + name
-
-
-def __extract_topics(tf):
-    """
-    Converts the topics of the given transfer function
-
-    :param tf: The transfer function
-    :return: A list of converted topic specifications
-    """
-    topics = [
-        Topic(
-            name=t.name,
-            topic=t.topic.name,
-            type=__extract_type_name(t.topic.topic_type),
-            publishing=not isinstance(t, MapRobotSubscriber)
-        )
-        for t in __get_specs(tf) if t.is_robot_connection
-        ]
-    if hasattr(tf, 'topic'):
-        return_topic = __get_spec(tf.topic)
-        if return_topic is not None:
-            topics.append(Topic(
-                name='__return__',
-                topic=return_topic.name,
-                type=__extract_type_name(return_topic.topic_type),
-                publishing=True
-            ))
-    return topics
-
-
-def __extract_variables(tf):
-    """
-    Converts the variables of the given transfer function
-
-    :param tf: The transfer function
-    :return: A list of converted variables
-    """
-    variables = []
-    for v in __get_specs(tf):
-        if isinstance(v, MapCSVRecorder):
-            variables.append(Variable(
-                name=v.name,
-                type="csv",
-                initial_value=json.dumps({'filename': v.filename, 'headers': v.headers})
-            ))
-        elif isinstance(v, MapVariable):
-            variables.append(Variable(
-                name=v.name,
-                type=type(v.initial_value).__name__,
-                initial_value=str(v.initial_value)
-            ))
-    return variables
-
-
-def __get_tf_code(tf):
-    """
-    Extracts the body from the given in-memory transfer function
-
-    :param tf: The transfer function
-    :return: The extracted body of the transfer function
-    """
-    import re
-    fnbody = re.search(r".*\ndef " + tf.name + r"[^\)]*[^\n]*(?P<body>(\n( [^\n]*|))*)", tf.source)
-    if fnbody:
-        fnbody = fnbody.group('body')
-    if not fnbody:
-        return tf.source
-    return textwrap.dedent(fnbody[1:]).rstrip('\n')
-
-
 def extract_structure(transfer_function):
     """
     Converts the given transfer function into a structured format
@@ -297,14 +104,7 @@ def extract_structure(transfer_function):
     :return: A structured format that can be sent via ROS
     """
     try:
-        return TransferFunction(
-            name=transfer_function.name,
-            code=__get_tf_code(transfer_function),
-            type=type(transfer_function).structured_type,
-            devices=__extract_devices(transfer_function),
-            topics=__extract_topics(transfer_function),
-            variables=__extract_variables(transfer_function)
-        )
+        return TransferFunctionASTParser().parse(transfer_function)
     # pylint: disable=broad-except
     except Exception as e:
         logger.exception(e)
@@ -336,7 +136,7 @@ def generate_code_from_structured_tf(transfer_function):
     return_topic = None
     monitor_device = None
     for dev in transfer_function.devices:
-        if transfer_function.type == NeuronMonitor.structured_type and dev.name == "device":
+        if transfer_function.type == StructureType.NeuronMonitor and dev.name == "device":
             monitor_device = dev
         else:
             devices += ", " + dev.name
@@ -344,7 +144,7 @@ def generate_code_from_structured_tf(transfer_function):
     for topic in transfer_function.topics:
         if topic.name == "__return__":
             return_topic = topic
-        elif transfer_function.type == NeuronMonitor.structured_type and topic.name == "publisher":
+        elif transfer_function.type == StructureType.NeuronMonitor and topic.name == "publisher":
             # This topic is inferred by the NeuronMonitor and therefore ignored
             continue
         else:
@@ -413,13 +213,13 @@ def __generate_transfer_function_annotation(transfer_function, monitor_device, r
     :param return_topic: The return topic (only applicable for Neuron2Robot)
     :param transfer_function:  The transfer function
     """
-    if transfer_function.type == Neuron2Robot.structured_type:
+    if transfer_function.type == StructureType.Neuron2Robot:
         if return_topic is None:
             return "@nrp.Neuron2Robot()\n"
         else:
             return '@nrp.Neuron2Robot(Topic("{0}", {1}))\n' \
                 .format(return_topic.topic, __generate_topic_type(return_topic))
-    elif transfer_function.type == Robot2Neuron.structured_type:
+    elif transfer_function.type == StructureType.Robot2Neuron:
         return "@nrp.Robot2Neuron()\n"
     else:
         monitor_info = device_type_infos[monitor_device.type]
