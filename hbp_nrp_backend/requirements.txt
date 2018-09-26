@@ -1,7 +1,3 @@
-# HBP requirements
-hbp-service-client==0.0.2.dev1  # EPFL_SPECIFIC
-bbp-client==0.3.19  # EPFL_SPECIFIC
-
 # other requirements
 lxml==3.4.0
 PyYAML==3.11
