@@ -16,10 +16,9 @@ pipelines:
           - cd $BITBUCKET_CLONE_DIR
 
           # This plan depends on GazeboRosPackages being built
-          - pushd $HBP/GazeboRosPackages && rm -rf build && catkin_make && popd
+          - pushd $HBP/GazeboRosPackages && rm -rf build && catkin_make && popd && cd $BITBUCKET_CLONE_DIR
 
           # Configure build has to be placed before make devinstall
-          - cd $BITBUCKET_CLONE_DIR && ln -s $HBP/admin-scripts/ContinuousIntegration
           - export VIRTUAL_ENV_PATH=$VIRTUAL_ENV
           - export NRP_INSTALL_MODE=dev
           - export PYTHONPATH=hbp_nrp_commons:hbp_nrp_backend:hbp_nrp_cleserver:hbp_nrp_watchdog:hbp-flask-restful-swagger-master:$VIRTUAL_ENV_PATH/lib/python2.7/site-packages:$PYTHONPATH
