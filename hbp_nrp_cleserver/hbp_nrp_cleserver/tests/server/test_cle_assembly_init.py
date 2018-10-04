@@ -35,6 +35,7 @@ from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommuni
 from threading import Thread, Event
 import hbp_nrp_cle.tf_framework as nrp
 
+
 class MockedGazeboHelper(object):
 
     def load_gazebo_world_file(self, world):
@@ -47,6 +48,32 @@ class MockedGazeboHelper(object):
     def __getattr__(self, x):
         return Mock()
 
+    def wait_for_backend_rendering(self):
+        pass
+
+class MockedRobotManager(object):
+
+    def __init__(self):
+        pass
+
+    def init_scene_handler(self):
+        return ""
+
+    def scene_handler(self):
+        return MockedGazeboHelper()
+
+    def get_robot_list(self):
+        return {}
+
+    def __getattr__(self, x):
+        return Mock()
+
+    @staticmethod
+    def convertXSDPosetoPyPose(pose):
+        return {}
+
+
+
 class MockedClosedLoopEngine(Mock):
 
     DEFAULT_TIMESTEP = 0.02
@@ -55,7 +82,8 @@ class MockedClosedLoopEngine(Mock):
 MockOs = Mock()
 MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
                   'ROS_MASTER_URI': "localhost:0815",
-                  'NRP_SIMULATION_DIR': '/somewhere/near/the/rainbow'}
+                  'NRP_SIMULATION_DIR': '/somewhere/near/the/rainbow',
+                  'NRP_MODELS_PATHS': '/somewhere/near/the/rainbow'}
 
 class SomeWeirdTFException(Exception):
     pass
@@ -65,13 +93,12 @@ class SomeWeirdTFException(Exception):
 @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboBridgeInstance", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cle.cle.DeterministicClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ClosedLoopEngine", new=MockedClosedLoopEngine())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_brain_adapters", new=Mock(return_value=(Mock(), Mock())))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_robot_adapters", new=Mock(return_value=(Mock(), Mock())))
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=MockOs)
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._get_robot_abs_path", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf", Mock())))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.environ", new=MockOs.environ)
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._extract_robot_zip", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf", Mock())))
 class TestCLELauncherInit(unittest.TestCase):
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboServerInstance")
@@ -90,7 +117,8 @@ class TestCLELauncherInit(unittest.TestCase):
         models_path_patch.start()
         self.addCleanup(models_path_patch.stop)
 
-        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", MockOs):
+        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", MockOs), \
+             patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
             self.launcher = CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly(42, exd, bibi, gzserver_host="local")
 
     def tearDown(self):
@@ -160,12 +188,15 @@ class TestCLELauncherInit(unittest.TestCase):
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.compile_restricted")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
-    def test_faulty_tf_does_not_aborts_initialization_Syntax_exception(self,mock_os, comp_restricted_mock, mock_server, mock_nrp):
+    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
+    def test_faulty_tf_does_not_aborts_initialization_Syntax_exception(self, ffip, comp_restricted_mock, mock_server, mock_nrp):
+
         with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
             mock_nrp.set_faulty_transfer_function = MagicMock()
             comp_restricted_mock.side_effect = SyntaxError()
-            mock_os.environ.get.return_value = ""
+            self.launcher._storageClient = storage_client
+            self.launcher._simDir = ""
+            ffip.return_value = '/path/to/the/robot'
             try:
                 self.launcher.initialize("world_file", None)
             except SyntaxError:

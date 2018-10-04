@@ -35,6 +35,4 @@ class Config(object):
     Configuration of the collab and the local storage for local installations
     """
 
-    LOCAL_STORAGE_URI = {
-        'storage_uri': 'http://localhost:9000/storage'
-    }
+    LOCAL_STORAGE_URI = {'storage_uri': 'http://localhost:9000/storage'}

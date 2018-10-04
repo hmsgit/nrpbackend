@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 def clean_simulations():  # pragma: no cover
     """
-    Wakes up every ten minutes and stops expired simulations
+    Wakes up every five minutes and stops expired simulations
 
     This function is not unit-tested as it contains an endless loop
     """

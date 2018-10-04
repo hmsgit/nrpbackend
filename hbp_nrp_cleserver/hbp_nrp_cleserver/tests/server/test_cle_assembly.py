@@ -42,13 +42,13 @@ def robot_value():
 
 class CustomModel(object):
     def __init__(self):
-        self.customModelPath = None
+        self.customModelPath = None  # only used for custom brains, remove when refactored
+        self.assetPath = None
         self.value = robot_value
         self.path = 'test'
         self.robotId = 'robot'
 
 
-@patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
 class TestCLEGazeboSimulationAssembly(unittest.TestCase):
     def setUp(self):
         dir = os.path.split(__file__)[0]
@@ -62,150 +62,79 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         self.models_path_patch = patch(
             "hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
         self.models_path_patch.start()
-        self.launcher = SynchronousNestSimulation(
-            42, exd, bibi, gzserver_host="local")
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient"):
+            self.launcher = SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
 
     def tearDown(self):
         self.models_path_patch.stop()
 
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    def test_robot_path_sdf(self, mocked_get_model_basepath, mock_find_file_path, mocked_storage):
-        mocked_get_model_basepath.return_value = PATH
-        mock_find_file_path.return_value = os.path.join(
-            PATH, 'this_is_a_robot.sdf')
-        robot = CustomModel()
-        robot_file, _ = self.launcher._get_robot_abs_path(robot)
-        self.assertEqual(
-            robot_file, os.path.join(
-                PATH, 'this_is_a_robot.sdf'))
-        self.assertEqual("", self.launcher._CLEGazeboSimulationAssembly__tmp_robot_dir)
-
-    @patch("tempfile.mkdtemp")
-    @patch("zipfile.ZipFile")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    def test_robot_path_zip(self, mocked_get_model_basepath, mock_find_file_path, mocked_zip,
-                            mocked_temp, mocked_storage):
-        mocked_get_model_basepath.return_value = PATH
-        mock_find_file_path.return_value = os.path.join(
-            PATH, 'this_is_a_robot.sdf')
-        mocked_temp.return_value = "/tmp/under/the/rainbow"
-        robot_file, _ = self.launcher._get_robot_abs_path(CustomModel())
-
-        self.assertEqual(
-            robot_file, os.path.join(PATH, 'this_is_a_robot.sdf'))
-
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    def test_robot_path_storage(self, mocked_get_model_basepath, mock_find_file_path, mocked_storage):
-        mocked_get_model_basepath.return_value = PATH
-        mock_find_file_path.return_value = os.path.join(
-            PATH, 'this_is_a_robot.sdf')
-        robot = CustomModel()
-        mocked_storage().get_folder_uuid_by_name.return_value = 'robots'
-        mocked_storage().get_simulation_directory.return_value = PATH
-        mocked_storage().get_file.return_value = '<sdf></sdf>'
-        robot_file, _ = self.launcher._get_robot_abs_path(robot)
-        self.assertEqual(
-            robot_file, os.path.join(
-                PATH, 'this_is_a_robot.sdf'))
-
-    @patch("tempfile.mkdtemp")
-    @patch("zipfile.ZipFile")
-    def test_robot_path_storage2(self,  mocked_zip, mocked_temp, mocked_storage):
-        robot = CustomModel()
-        mocked_storage().get_simulation_directory.return_value = os.path.join(
-            PATH, 'husky_model', 'husky_model.zip')
-
-        def val():
-            return 'storage://this_is_a_robot.zip'
-        robot.value = val
-        mocked_temp.return_value = "/tmp/under/the/rainbow"
-        mocked_storage().get_folder_uuid_by_name.return_value = 'robots'
-        mocked_storage().get_simulation_directory.return_value = PATH
-        mocked_storage().get_file.return_value = '<sdf></sdf>'
-        robot_file, _ = self.launcher._get_robot_abs_path(robot)
-        self.assertEqual(
-            robot_file,
-            os.path.join(PATH, 'robots', 'this_is_a_robot', 'model.sdf')
-        )
-
-        mocked_zip.assert_called_once_with(
-            os.path.join(PATH, "this_is_a_robot.zip"))
-        mocked_zip().__enter__().getinfo.assert_called_once_with("this_is_a_robot/model.sdf")
-        mocked_zip().__enter__().extractall.assert_called_once_with(
-            path=os.path.join(PATH, "robots"))
-
-    def test_custom_robot_fails(self, mocked_storage):
+    def test_custom_robot_fails(self):
+        self.launcher._storageClient.get_custom_models.return_value = [
+            {'path':"robot/robot_.zip"}  # DON'T PUT robot.zip HERE. FIX _extract_brain_zip impl
+        ]
+        self.launcher._storageClient.get_custom_model.return_value = r'awesome robot data'
+        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
         def val():
             return 'robot.sdf'
         robot = CustomModel()
-        robot.customModelPath = 'robot.zip'
+        robot.assetPath = 'robot.zip'
         robot.value = val
-        self.assertRaises(NRPServicesGeneralException, self.launcher._get_robot_abs_path, robot)
+        self.assertRaises(NRPServicesGeneralException, self.launcher._extract_robot_zip, robot)
 
     @patch("zipfile.ZipFile")
-    def test_custom_robot_succeeds(self, mocked_zip, mocked_storage):
+    def test_custom_robot_succeeds(self, mocked_zip):
         def val():
             return 'robot.sdf'
         robot = CustomModel()
-        robot.customModelPath = 'robot.zip'
+        robot.assetPath = 'robot.zip'
         robot.value = val
-        mocked_storage().get_custom_models.return_value = [
-            dict(path='robot.zip')]
-        mocked_storage().get_custom_model.return_value = 'zippedData'
-        mocked_storage().get_simulation_directory.return_value = os.path.join(
-            PATH, 'experiment_data')
-        self.launcher._get_robot_abs_path(robot)
-        mocked_zip.assert_called_once_with(
-            os.path.join(PATH, 'experiment_data', 'robot.zip'))
+        self.launcher._storageClient.get_custom_models.return_value = [dict(path='robot.zip')]
+        self.launcher._storageClient.get_custom_model.return_value = 'zippedData'
+        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
+        self.launcher._extract_robot_zip(robot)
+        mocked_zip.assert_called_once_with(os.path.join(PATH, 'experiment_data', 'robot.zip'))
         mocked_zip().__enter__().extractall.assert_called_once_with(
             path=os.path.join(PATH, 'experiment_data', 'assets'))
 
-    def test_custom_brain_fails(self, mocked_storage):
+    def test_custom_brain_fails(self):
+        self.launcher._storageClient.get_custom_models.return_value = [
+            {'path':"brains/brain_.zip"}    # DON'T PUT brain.zip HERE. FIX _extract_brain_zip impl
+        ]
+        self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
+        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
         with open(os.path.join(PATH, "experiment_data/milestone2_2.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
         self.launcher._SimulationAssembly__bibi = bibi
-
-        def val():
-            return 'brain.py'
-        brain = CustomModel()
-        brain.customModelPath = 'brain.zip'
-        brain.value = val
-        self.assertRaises(NRPServicesGeneralException, self.launcher._load_brain,
-                          brain)
+        rng_seed = 0
+        self.assertRaises(NRPServicesGeneralException, self.launcher._load_brain, rng_seed)
 
     @patch("zipfile.ZipFile")
-    def test_custom_brain_succeeds(self, mocked_zip, mocked_storage):
-        mocked_storage().get_custom_models.return_value = [
-            dict(path='brain.zip')]
-        mocked_storage().get_custom_model.return_value = 'zippedData'
-        mocked_storage().get_simulation_directory.return_value = os.path.join(
-            PATH, 'experiment_data')
+    def test_custom_brain_succeeds(self, mocked_zip):
+        self.launcher._storageClient.get_custom_models.return_value = [{'path':"brains/brain.zip"}]
+        self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
+        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
         with open(os.path.join(PATH, "experiment_data/milestone2_2.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
         self.launcher._SimulationAssembly__bibi = bibi
-        self.launcher._extract_brain_zip()
-        mocked_zip.assert_called_once_with(
-            os.path.join(PATH, 'experiment_data', 'brain.zip'))
 
-    def test_load_brain_storage(self, mocked_storage):
-        mocked_storage().get_folder_uuid_by_name.return_value = 'brains'
-        mocked_storage().get_simulation_directory.return_value = PATH
+        self.launcher._extract_brain_zip()
+        mocked_zip.assert_called_once_with(os.path.join(PATH, 'experiment_data', 'brain.zip'))
+
+    def test_load_brain_storage(self):
+        self.launcher._storageClient.get_folder_uuid_by_name.return_value = 'brains'
+        self.launcher._simDir = PATH
         with open(os.path.join(PATH, 'experiment_data/braitenberg.py')) as brain:
             brain_contents = brain.read()
-        mocked_storage().get_file.return_value = brain_contents
+        self.launcher._storageClient.get_file.return_value = brain_contents
         with open(os.path.join(PATH, "experiment_data/milestone2_1.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
         self.launcher._SimulationAssembly__bibi = bibi
-        braincontrol, braincomm, brainfilepath, neurons_config = self.launcher._load_brain(
-            1234)
+        braincontrol, braincomm, brainfilepath, neurons_config = self.launcher._load_brain(1234)
         self.assertEqual(brainfilepath, os.path.join(PATH, 'braitenberg.py'))
         self.assertEqual(neurons_config, {u'sensors': slice(
             0L, 5L, None), u'actors': slice(5L, 8L, None)})
 
-    def test_invalid_simulation(self, mocked_storage):
+    def test_invalid_simulation(self):
         dir = os.path.split(__file__)[0]
         with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
@@ -227,7 +156,7 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 
     @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
     @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
-    def test_load_robot_adapters(self, mocked_storage):
+    def test_load_robot_adapters(self):
         (comm, ctrl) = self.launcher._create_robot_adapters()
         self.assertIsNotNone(comm)
         self.assertIsNotNone(ctrl)
@@ -247,8 +176,8 @@ class TestCLEGazeboSimulationAssemblyRobot(TestCLEGazeboSimulationAssembly):
         self.models_path_patch = patch(
             "hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
         self.models_path_patch.start()
-        self.launcher = SynchronousRobotRosNest(
-            42, exd, bibi, gzserver_host="local")
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient"):
+            self.launcher = SynchronousRobotRosNest(42, exd, bibi, gzserver_host="local")
 
     @patch("hbp_nrp_cle.robotsim.RosRobotControlAdapter.RosRobotControlAdapter", new=MockRobotControlAdapter)
     @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)

@@ -451,7 +451,8 @@ def main():
         pydevd.settrace(args.pycharm[0],
                         port=int(args.pycharm[1]),
                         stdoutToServer=True,
-                        stderrToServer=True)
+                        stderrToServer=True,
+                        suspend=False)
 
     server = ROSCLESimulationFactory()
     server.initialize()

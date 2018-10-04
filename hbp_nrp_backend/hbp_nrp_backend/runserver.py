@@ -103,7 +103,8 @@ def __process_args():  # pragma: no cover
         pydevd.settrace(args.pycharm[0],
                         port=int(args.pycharm[1]),
                         stdoutToServer=True,
-                        stderrToServer=True)
+                        stderrToServer=True,
+                        suspend=False)
 
     return args
 

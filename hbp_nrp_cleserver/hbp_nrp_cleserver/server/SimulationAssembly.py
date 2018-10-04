@@ -71,6 +71,20 @@ class SimulationAssembly(object):
         """
         return self.__exc
 
+    @bibi.setter
+    def bibi(self, bibi):
+        """
+        Sets the BIBI configuration for this simulation assembly
+        """
+        self.__bibi = bibi
+
+    @exc.setter
+    def exc(self, exc):
+        """
+        Sets the experiment configuration for this simulation assembly
+        """
+        self.__exc = exc
+
     @property
     def token(self):
         """
