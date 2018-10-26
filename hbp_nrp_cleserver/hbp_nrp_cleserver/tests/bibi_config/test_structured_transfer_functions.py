@@ -71,7 +71,7 @@ class TestStructuredTransferFunctions(unittest.TestCase):
     def create_variable_TF(self):
         return textwrap.dedent("""
         @MapVariable("a", initial_value=42)
-        @MapCSVRecorder("c", "file.csv", ["Name", "Value"])
+        @MapCSVRecorder("c", filename="file.csv", headers=["Name", "Value"])
         @NeuronMonitor(brain.actors, spike_recorder)
         def some_stupid_test_tf(t, a, c):
             pass
@@ -206,14 +206,13 @@ class TestStructuredTransferFunctions(unittest.TestCase):
             'def test_tf_2(t, neuron, sub):\n'
             '    print \'42\'', code)
 
-
         test_tf_3 = self.create_variable_TF()
         test_3 = StructuredTransferFunction.extract_structure(test_tf_3)
         code = StructuredTransferFunction.generate_code_from_structured_tf(test_3)
 
         self.assertMultiLineEqual(
             '\n@nrp.MapVariable("a", initial_value=42)\n'
-            '@nrp.MapCSVRecorder("c", "file.csv", ["Name", "Value"])\n'
+            '@nrp.MapCSVRecorder("c", filename="file.csv", headers=["Name", "Value"])\n'
             '@nrp.NeuronMonitor(nrp.brain.actors, nrp.spike_recorder)\n'
             'def some_stupid_test_tf(t, a, c):\n'
             '    pass', code

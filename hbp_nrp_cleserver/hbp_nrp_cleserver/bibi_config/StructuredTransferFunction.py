@@ -88,7 +88,7 @@ def __generate_device(device):
     :return:
     """
     info = device_type_infos[device.type]
-    if info[1]: # device is spike sink
+    if info[1]:  # device is spike sink
         return '@nrp.MapSpikeSink("{0}", {1}, {2})\n'\
             .format(device.name, _generate_neurons(device.neurons), info[0])
     else:
@@ -117,10 +117,7 @@ def __get_initial_value_string(var):
 
     :param var: The variable
     """
-    if var.type == "str":
-        return '"' + str(var.initial_value) + '"'
-    else:
-        return str(var.initial_value)
+    return ('"{}"' if var.type == "str" else '{}').format(var.initial_value)
 
 
 def generate_code_from_structured_tf(transfer_function):
@@ -151,7 +148,7 @@ def generate_code_from_structured_tf(transfer_function):
             devices += ", " + topic.name
             code += __generate_topic(topic)
         topic_type = topic.type[:topic.type.rindex('/')] + ".msg"
-        if not topic_type in imports:
+        if topic_type not in imports:
             imports.append(topic_type)
     for var in transfer_function.variables:
         devices += ", " + var.name
@@ -174,7 +171,7 @@ def __generate_variable(var):
     """
     if var.type == "csv":
         extracted = json.loads(var.initial_value)
-        return '@nrp.MapCSVRecorder("{0}", "{1}", {2})\n'\
+        return '@nrp.MapCSVRecorder("{0}", filename="{1}", headers={2})\n'\
             .format(var.name, extracted['filename'], json.dumps(extracted['headers']))
     else:
         return '@nrp.MapVariable("{0}", initial_value={1})\n' \
@@ -197,12 +194,10 @@ def __generate_topic(topic):
 
     :param topic: The given topic
     """
-    if topic.publishing:
-        return '@nrp.MapRobotPublisher("{0}", Topic("{1}", {2}))\n' \
-            .format(topic.name, topic.topic, __generate_topic_type(topic))
-    else:
-        return '@nrp.MapRobotSubscriber("{0}", Topic("{1}", {2}))\n' \
-            .format(topic.name, topic.topic, __generate_topic_type(topic))
+    decorator_str = 'nrp.MapRobotPublisher' if topic.publishing else 'nrp.MapRobotSubscriber'
+
+    return '@{decorator}("{0}", Topic("{1}", {2}))\n'\
+        .format(topic.name, topic.topic, __generate_topic_type(topic), decorator=decorator_str)
 
 
 def __generate_transfer_function_annotation(transfer_function, monitor_device, return_topic):
