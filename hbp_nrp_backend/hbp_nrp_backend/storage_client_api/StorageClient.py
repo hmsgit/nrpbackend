@@ -295,7 +295,8 @@ class StorageClient(object):
                 # folder variable is added because copy_resources_folders_to_tmp needs
                 #  to list the folders too
                 for entry in res.json():
-                    if entry['type'] == 'file' or folder:
+                    if (entry['type'] == 'file' or folder) \
+                            and not self.check_file_extension(entry['name'], ['.swp']):
                         results.append(entry)
                 return results
         except requests.exceptions.ConnectionError, err:
@@ -434,6 +435,16 @@ class StorageClient(object):
                         byname=True, zipped=(ext.lower() == ".zip"), is_texture=is_texture
                     )
                 )
+
+    # pylint: disable=no-self-use
+    def check_file_extension(self, filename, extensions):
+        """
+        checks if an file is of a certain extension
+
+        :param filename: the file name
+        :param extensions: the extensions list to check
+        """
+        return os.path.splitext(filename)[1].lower() in extensions
 
     # pylint: disable=no-self-use
     def check_create_folder(self, folder_path):
@@ -613,7 +624,6 @@ class StorageClient(object):
         """
         experiment_paths = dict()
         list_entries_to_clone = self.list_files(token, experiment, folder=True)
-
         self.copy_resources_folders_to_tmp(token, experiment)
 
         # if something goes wrong while generating textures we just log the error

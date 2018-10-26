@@ -828,6 +828,19 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
             mocked_open.assert_called_with(
                 '/somewhere/near/the/rainbow/gzweb/http/client/assets/custom_textures/materials/scripts/custom.material', 'w')
 
+    def test_check_file_extension(self):
+        example1 = [{u'uiid': u'/test_folder/experiment_configuration.exc', u'name': u'experiment_configuration.exc'},
+                    {u'uiid': u'/test_folder/.experiment_configuration.exc.swp', u'name': u'.experiment_configuration.exc.swp'}]
+        client = StorageClient.StorageClient()
+        self.assertTrue(client.check_file_extension(
+            example1[1]['name'], ['.swp']))
+        self.assertFalse(client.check_file_extension(
+            example1[1]['name'], ['.txt']))
+        self.assertFalse(client.check_file_extension(
+            example1[0]['name'], ['.swp']))
+        self.assertTrue(client.check_file_extension(
+            example1[0]['name'], ['.exc']))
+
 
 if __name__ == '__main__':
     unittest.main()
