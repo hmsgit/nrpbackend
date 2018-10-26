@@ -31,6 +31,7 @@ import tempfile
 import requests
 import shutil
 import urllib
+import re
 from hbp_nrp_backend.config import Config
 from pyxb import ValidationError
 from xml.sax import SAXParseException
@@ -64,9 +65,32 @@ class StorageClient(object):
                 raise e
         self.__simulation_directory = simdir
 
+        # Paths related to the textures
+
+        # The path to the gazebo media path
+        self.__local_gazebo_path = os.path.join(
+            os.environ['HOME'], '.local', 'share', 'gazebo-7', 'media')
+
+        # The path to the gzweb media path
+        self.__gzweb_assets_media_path = os.path.join(
+            os.environ['HBP'], 'gzweb', 'http', 'client', 'assets', 'media')
+
+        # The path to the gzweb custom_textures path
+        self.__gzweb_custom_textures_path = os.path.join(
+            os.environ['HBP'], 'gzweb', 'http', 'client', 'assets', 'custom_textures')
+
+        # Array that holds all the textures related paths
+        self.__texture_directories = [
+            self.__local_gazebo_path,
+            self.__gzweb_assets_media_path,
+            self.__gzweb_custom_textures_path]
+
         # adding the resources folder into the created temp_directory
         self.__resources_path = os.path.join(
             self.__simulation_directory, "resources")
+
+        # folders in resources we want to filter
+        self.__filtered_resources = ['textures']
 
     def get_simulation_directory(self):
         """
@@ -129,13 +153,18 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def get_file(self, token, experiment, filename, byname=False, zipped=False):
+    def get_file(self, token, experiment, filename, byname=False, zipped=False, is_texture=False):
         """
-        Gets a file under an experiment based on the filename
+        Gets a file under an experiment based on the filename and on the filetype
+        Depending on the file type we either:
+            return the .content of the response if it is a zip
+            return the .raw of the response if it is an image
+            return the .text if it is a text file
         :param token: a valid token to be used for the request
         :param experiment: the name of the experiment
         :param filename: the name of the file to return
         :param zipped: flag denoting that "filename" is a zip file
+        :param is_texture: flag denoting that "filename" is a texture file
         :return: if successful, the content of the file
         """
         try:
@@ -143,17 +172,20 @@ class StorageClient(object):
             if not byname:
                 res = requests.get(self.__proxy_url +
                                    '/storage/{0}/{1}'.format(
-                                       experiment, filename), headers=headers)
+                                       experiment, filename), headers=headers, stream=is_texture)
             else:
                 res = requests.get(self.__proxy_url +
                                    '/storage/{0}/{1}?byname=true'.format(
-                                       experiment, filename), headers=headers)
+                                       experiment, filename), headers=headers, stream=is_texture)
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
                     + str(res.status_code))
             if zipped:
                 return res.content
+            if is_texture:
+                res.raw.decode_content = True
+                return res.raw
             else:
                 return res.text
         except requests.exceptions.ConnectionError, err:
@@ -196,7 +228,8 @@ class StorageClient(object):
                              application/octet-stream
         """
         try:
-            headers = {'content-type': content_type, 'Authorization': 'Bearer ' + token}
+            headers = {'content-type': content_type,
+                       'Authorization': 'Bearer ' + token}
             res = requests.post(self.__proxy_url + '/storage/{0}/{1}'.format(experiment, filename),
                                 headers=headers, data=content)
 
@@ -321,6 +354,30 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
+    def get_textures(self, experiment, token):
+        """
+        Returns the contents of the resources/textures experiment folder
+        :param experiment: the name of the experiment
+        :param token: a valid token to be used for the request
+        :return: if found, the list of textures
+        """
+        try:
+            headers = {
+                'Authorization': 'Bearer ' + token
+            }
+            textures_path = urllib.quote_plus('/resources/textures')
+            res = requests.get(self.__proxy_url +
+                               '/storage/{0}{1}'.format(experiment, textures_path), headers=headers)
+            if res.status_code < 200 or res.status_code >= 300:
+                raise Exception(
+                    'Failed to communicate with the storage server, status code '
+                    + str(res.status_code))
+            else:
+                return res.json()
+        except requests.exceptions.ConnectionError, err:
+            logger.exception(err)
+            raise err
+
     # HELPER FUNCTIONS
     def clone_file(self, filename, token, experiment):
         """
@@ -338,7 +395,8 @@ class StorageClient(object):
             if filename in folder_entry['name']:
                 found = True
         if found:
-            clone_destination = os.path.join(self.__simulation_directory, filename)
+            clone_destination = os.path.join(
+                self.__simulation_directory, filename)
             with open(clone_destination, "w") as f:
                 f.write(self.get_file(
                     token, experiment, filename, byname=True))
@@ -346,7 +404,7 @@ class StorageClient(object):
         else:
             return None
 
-    def copy_file_content(self, token, src_folder, dest_folder, filename):
+    def copy_file_content(self, token, src_folder, dest_folder, filename, is_texture=False):
         """
         copy the content of file located in the Storage into the proper tmp folder
 
@@ -354,17 +412,28 @@ class StorageClient(object):
         :param src_folder: folder location where it will be copy from
         :param dest_folder: folder location where it will be copy to
         :param filename: name of the file to be copied.
+        :param is_texture: flag to signal a texture.
         """
         _, ext = os.path.splitext(filename)
-
-        with open(os.path.join(src_folder, filename), "w") as f:
-            f.write(
-                self.get_file(
-                    token,
-                    dest_folder, filename,
-                    byname=True, zipped=(ext.lower() == ".zip")
+        # if the file is a texture we have to copy a file object, not a string
+        if is_texture:
+            with open(os.path.join(src_folder, filename), "wb") as f:
+                shutil.copyfileobj(
+                    self.get_file(
+                        token,
+                        dest_folder, filename,
+                        byname=True, zipped=False, is_texture=is_texture
+                    ), f
                 )
-            )
+        else:
+            with open(os.path.join(src_folder, filename), "w") as f:
+                f.write(
+                    self.get_file(
+                        token,
+                        dest_folder, filename,
+                        byname=True, zipped=(ext.lower() == ".zip"), is_texture=is_texture
+                    )
+                )
 
     # pylint: disable=no-self-use
     def check_create_folder(self, folder_path):
@@ -391,14 +460,14 @@ class StorageClient(object):
                        it has included the uuid of the experiment
         """
         child_folders = [folder]
-
         folder_path = ''
         while child_folders:
             actual_folder = child_folders.pop()
             folder_path = os.path.join(folder_path, actual_folder['name'])
             folder_uuid = urllib.quote_plus(actual_folder['uuid'])
             for folder_entry in self.list_files(token, folder_uuid, True):
-                if folder_entry['type'] == 'folder':
+                if folder_entry['type'] == 'folder' and folder_entry['name'] \
+                        not in self.__filtered_resources:
                     child_folders.append(folder_entry)
                 if folder_entry['type'] == 'file':
                     folder_tmp_path = str(os.path.join(
@@ -423,7 +492,7 @@ class StorageClient(object):
 
     def copy_resources_folders_to_tmp(self, token, experiment):
         """
-        copy the resources folder located in storage/experiment into tmp folder
+        Copy the resources folder located in storage/experiment into tmp folder
 
         :param token: The token of the request
         :param experiment: The experiment which contains the resource folder
@@ -433,11 +502,102 @@ class StorageClient(object):
                 if folder_entry['name'] == 'resources' and folder_entry['type'] == 'folder':
                     if os.path.exists(self.__resources_path):
                         self.delete_directory_content(self.__resources_path)
-                    self.copy_folder_content_to_tmp(token, folder_entry)
+                    self.copy_folder_content_to_tmp(
+                        token, folder_entry)
         except Exception as ex:
             logger.exception(
                 'An error happened trying to copy resources to tmp ')
             raise ex
+
+    def create_material_from_textures(self, textures):
+        """
+        Algorithm to create a new material from the textures. For every texture
+        we append a new default material which points to the texture.
+        """
+        material_script = ''
+        for texture in textures:
+            # The material script is a stripped down version of an OGRE material script
+            # see http://wiki.ogre3d.org/Materials for the documentation
+            material = 'material ' + texture['name'] + '\n' \
+                + ' { ' + '\n' \
+                + '   technique' + '\n' \
+                + '    {' + '\n' \
+                + '      pass' + '\n' \
+                + '      {' + '\n' \
+                + '          ambient 1 1 1 1.000000' + '\n' \
+                + '          diffuse 1 1 1 1.000000' + '\n' \
+                + '          specular 0.03 0.03 0.03 1.000000' + '\n' \
+                + '          texture_unit' + '\n' \
+                + '          {' + '\n' \
+                + '              texture ' + texture['name'] + '\n' \
+                + '          }' + '\n' \
+                + '      }' + '\n' \
+                + '    }' + '\n' \
+                + ' }' + '\n'
+            material_script += material
+
+        # Create a custom.material script and pass it to all the required directories
+        for directory in self.__texture_directories:
+            with open(os.path.join(directory, 'materials', 'scripts', 'custom.material'), 'w') as f:
+                f.write(material_script)
+
+    def filter_textures(self, textures):
+        """
+        Returns only the textures from /resources/textures
+        """
+        # Regexp checks if the texture is a png, gif, or jpeg
+        return [texture for texture in textures if re.search(r"\.(jpe?g|png|gif)$", texture["name"],
+                                                             re.IGNORECASE) is not None]
+
+    def create_textures_paths(self):
+        """
+        Generate the folder structure under assets. Looks like:
+        relative_path/materials/scripts/custom.material
+        relative_path/materials/textures/texture1...n
+        """
+        relative_path = ''
+        for directory in self.__texture_directories:
+            for path in ['materials']:
+                self.check_create_folder(os.path.join(
+                    directory, relative_path))
+                relative_path = os.path.join(relative_path, path)
+            self.check_create_folder(os.path.join(
+                directory, relative_path, 'scripts'))
+            self.check_create_folder(os.path.join(
+                directory, relative_path, 'textures'))
+            relative_path = ''
+
+    def generate_textures(self, experiment, token):
+        """
+        Clones all the contents of the textures folders to the temporary directory and
+        creates the structure required by gazebo and gzweb.
+
+        :param token: The token of the request
+        :param experiment: The experiment which contains the textures folder
+        """
+        # Get the contents of the resouces/textures folder from the proxy and filter them
+        # to get only the images
+        textures = self.filter_textures(self.get_textures(experiment, token))
+
+        # If we find images we proceed to create paths in the backend
+        if textures:
+
+            # Create the paths in ~/.local/share/gazebo-7/media
+            # $NRP/gzweb/http/client/assets/media | custom_textures
+            self.create_textures_paths()
+
+            # Generate a custom material file which points to all the textures
+            self.create_material_from_textures(textures)
+
+            # For the backend directories and for every texture copy over the textures
+            for directory in self.__texture_directories:
+                for texture in textures:
+                    self.copy_file_content(token, os.path.join(directory, 'materials',
+                                                               'textures'),
+                                           urllib.quote_plus(
+                                               experiment + '/resources/textures'),
+                                           texture['name'], is_texture=True)
+    # pylint: disable=broad-except
 
     def clone_all_experiment_files(self, token, experiment, new_folder=False):
         """
@@ -456,6 +616,14 @@ class StorageClient(object):
 
         self.copy_resources_folders_to_tmp(token, experiment)
 
+        # if something goes wrong while generating textures we just log the error
+        # and continue like nothing happened
+        try:
+            self.generate_textures(experiment, token)
+        except Exception as e:
+            logger.info(
+                "Could not generate textures, error occured : %s", (str(e)))
+
         if new_folder:
             destination_directory = tempfile.mkdtemp()
         else:
@@ -469,7 +637,8 @@ class StorageClient(object):
                     destination_directory, entry_to_clone['name'])
                 with open(file_clone_destination, "w") as f:
 
-                    zipped = os.path.splitext(entry_to_clone['name'])[1].lower() == '.zip'
+                    zipped = os.path.splitext(entry_to_clone['name'])[
+                        1].lower() == '.zip'
 
                     file_contents = self.get_file(
                         token, experiment, entry_to_clone['name'],
@@ -478,10 +647,10 @@ class StorageClient(object):
                     # we have to read the .exc
                     if 'experiment_configuration.exc' in str(file_clone_destination):
                         experiment_paths['experiment_conf'] = file_clone_destination
-                        env_filename = \
-                            exp_conf_api_gen.CreateFromDocument(file_contents).environmentModel.src
-                        experiment_paths['environment_conf'] = \
-                            os.path.join(destination_directory, env_filename)
+                        env_filename = exp_conf_api_gen.CreateFromDocument(
+                            file_contents).environmentModel.src
+                        experiment_paths['environment_conf'] = os.path.join(
+                            destination_directory, env_filename)
                     f.write(file_contents)
 
         return destination_directory, experiment_paths

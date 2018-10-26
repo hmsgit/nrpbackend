@@ -35,6 +35,7 @@ import logging
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
+from hbp_nrp_backend.simulation_control.__TexturesLoader import TexturesLoader
 from flask import request
 import os
 import rospy
@@ -65,6 +66,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         self.__simulation_root_folder = ""
         self.__models_path = os.environ.get('NRP_MODELS_DIRECTORY')
         self.__experiment_path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
+        self.__textures_loaded = False
 
     @property
     def simulation(self):
@@ -242,7 +244,6 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                     simulation.experiment_id)
                 self.__experiment_path = experiment_paths['experiment_conf']
                 self.__simulation_root_folder = clone_folder
-
                 environment_path = experiment_paths['environment_conf']
             else:
                 self.__experiment_path = os.path.join(
@@ -300,6 +301,10 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         logger.info("starting State Machines...")
         try:
+            if not self.__textures_loaded:
+                TexturesLoader().load_textures(UserAuthentication.get_header_token(
+                    request), self.simulation.experiment_id)
+                self.__textures_loaded = True
             self.simulation.state_machine_manager.start_all(False)
         # pylint: disable=broad-except
         except Exception, e:

@@ -109,7 +109,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                     self.simulation.kill_datetime, datetime.datetime)
 
                 self.assertEqual(self.lifecycle.simulation_root_folder,
-                                self.lifecycle.models_path)
+                                 self.lifecycle.models_path)
                 self.assertIsNotNone(self.lifecycle.experiment_path)
 
     def test_backend_initialize_state_machines(self):
@@ -124,9 +124,9 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 self.assertEqual(2, len(state_machines))
                 directory = PATH
                 self.assertEqual(os.path.join(directory, "SM1.py"),
-                                state_machines["SM1"])
+                                 state_machines["SM1"])
                 self.assertEqual(os.path.join(directory, "SM2.py"),
-                                state_machines["SM2"])
+                                 state_machines["SM2"])
 
     def test_backend_initialize_storage(self):
         self.simulation.experiment_id = "Foobar"
@@ -139,7 +139,6 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                     'experiment_conf': os.path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
                     'environment_conf': "Neverland.sdf"
                 }
-                print dir(storage_client)
                 storage_client.clone_all_experiment_files.return_value = directory, storage_paths
 
                 self.lifecycle.initialize(Mock())
@@ -163,27 +162,33 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
             self.rospy_mock.ROSException = rospy.ROSException
             self.factory_mock.side_effect = rospy.ROSException
             self.assertRaises(NRPServicesGeneralException,
-                            self.lifecycle.initialize, Mock())
+                              self.lifecycle.initialize, Mock())
 
     def test_backend_initialize_service_problem(self):
         with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
             self.rospy_mock.ServiceException = rospy.ServiceException
             self.factory_mock.side_effect = rospy.ServiceException
             self.assertRaises(NRPServicesGeneralException,
-                            self.lifecycle.initialize, Mock())
+                              self.lifecycle.initialize, Mock())
 
     def test_backend_start(self):
-        self.lifecycle.start(Mock())
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"), \
+                patch("hbp_nrp_backend.simulation_control.__TexturesLoader.TexturesLoader.load_textures"):
+            self.lifecycle.start(Mock())
 
-        # Assert state machines have been started
-        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
+            # Assert state machines have been started
+            self.assertTrue(
+                self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_start_state_machines_failed(self):
-        self.simulation.state_machine_manager.start_all.side_effect = IOError
-        self.lifecycle.start(Mock())
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"), \
+                patch("hbp_nrp_backend.simulation_control.__TexturesLoader.TexturesLoader.load_textures"):
+            self.simulation.state_machine_manager.start_all.side_effect = IOError
+            self.lifecycle.start(Mock())
 
-        # Assert no exception, but state machine manager was still called
-        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
+            # Assert no exception, but state machine manager was still called
+            self.assertTrue(
+                self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_stop(self):
         with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
@@ -205,7 +210,8 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 mock_makedirs.assert_called_once()
 
             # Assert State Machines have been terminated
-            self.assertTrue(self.simulation.state_machine_manager.shutdown.called)
+            self.assertTrue(
+                self.simulation.state_machine_manager.shutdown.called)
 
             self.assertIsNone(self.simulation.kill_datetime)
 
