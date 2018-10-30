@@ -41,7 +41,7 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_SIMULATION_RECORDER, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
-    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -198,6 +198,10 @@ class ROSCLEClient(object):
         self.__cle_get_robots = ROSCLEServiceWrapper(
             SERVICE_GET_ROBOTS(sim_id), srv.GetRobots, self)
         self.__cle_add_robot = ROSCLEServiceWrapper(SERVICE_ADD_ROBOT(sim_id), srv.AddRobot, self)
+        self.__cle_del_robot = ROSCLEServiceWrapper(
+            SERVICE_DEL_ROBOT(sim_id), srv.DeleteRobot, self)
+        self.__cle_set_robot_init_pose = ROSCLEServiceWrapper(
+            SERVICE_SET_EXC_ROBOT_POSE(sim_id), srv.ChangePose, self)
 
         self.__stop_reason = None
 
@@ -441,21 +445,76 @@ class ROSCLEClient(object):
         return response.robots
 
     @fallback_retval((False, "An error occurred while processing request."))
-    def add_simulation_robot(self, robot_id, robot_model_rel_path, is_custom=False):
+    def add_simulation_robot(self, robot_id, robot_model_rel_path,
+                             is_custom=False, initial_pose=None):
         """
-        Add the given transfer function
+        Add a new robot with the given information in the simulation
 
         :param robot_id: id of the robot to be added
         :param robot_model_rel_path: a relative path to the SDF or ZIP file
         :param is_custom: path to a custom robot (zip)
+        :param initial_pose: initial pose of the robot
+        :return: True if the call to ROS is successful, False otherwise
+        """
+
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+
+        pose = None
+        if initial_pose:
+            pose = msg.Pose(x=initial_pose.get('x', 0),
+                            y=initial_pose.get('y', 0),
+                            z=initial_pose.get('z', 0),
+                            roll=initial_pose.get('roll', 0),
+                            pitch=initial_pose.get('pitch', 0),
+                            yaw=initial_pose.get('yaw', 0)
+                            )
+
+        response = self.__cle_add_robot(
+            msg.RobotInfo(robot_id=robot_id,
+                          robot_model_rel_path=robot_model_rel_path,
+                          is_custom=is_custom,
+                          pose=pose))
+        return response.success, response.error_message
+
+    @fallback_retval((False, "An error occurred while processing request."))
+    def delete_simulation_robot(self, robot_id):
+        """
+        Deletes a robot from the simulation
+
+        :param robot_id: id of the robot to be added
         :return: True if the call to ROS is successful, False otherwise
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
 
-        response = self.__cle_add_robot(
-            msg.RobotInfo(robot_id=robot_id,
-                          robot_model_rel_path=robot_model_rel_path,
-                          is_custom=is_custom)
-        )
+        response = self.__cle_del_robot(robot_id)
+
+        return response.success, response.error_message
+
+    @fallback_retval((False, "An error occurred while processing request."))
+    def set_simulation_robot_initial_pose(self, robot_id, new_pose):
+        """
+        Update initial robot pose of a give robot
+
+        :param robot_id: id of the robot to be added
+        :param new_pose: new initial pose of the robot
+        :return: True if the call to ROS is successful, False otherwise
+        """
+        if not new_pose:
+            return False, "New pose cannot be None"
+
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+
+        pose = msg.Pose(x=new_pose.get('x', 0),
+                        y=new_pose.get('y', 0),
+                        z=new_pose.get('z', 0),
+                        roll=new_pose.get('roll', 0),
+                        pitch=new_pose.get('pitch', 0),
+                        yaw=new_pose.get('yaw', 0)
+                        )
+
+        response = self.__cle_set_robot_init_pose(robot_id, pose)
+
         return response.success, response.error_message

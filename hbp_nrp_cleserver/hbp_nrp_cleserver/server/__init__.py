@@ -72,6 +72,9 @@ SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED = lambda sim_id:\
 
 SERVICE_GET_ROBOTS = lambda sim_id: '/%s/%d/get_robots' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_ADD_ROBOT = lambda sim_id: '/%s/%d/add_robot' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_DEL_ROBOT = lambda sim_id: '/%s/%d/del_robot' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_SET_EXC_ROBOT_POSE = lambda sim_id: \
+    '/%s/%d/set_exc_robot_pose' % (ROS_CLE_NODE_NAME, sim_id)
 
 
 def ros_handler(func):

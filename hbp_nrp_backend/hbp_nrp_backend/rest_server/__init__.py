@@ -31,6 +31,17 @@ class NRPServicesExtendedApi(Api):
         return original_handler(e)
 
 
+class ParamNames(object):
+    """
+    Constants to be used as parameter names
+    """
+    ROBOT_ID = 'robotId'
+    ROBOT_REL_PATH = 'robotRelPath'
+    ROBOT_ABS_PATH = 'robotAbsPath'
+    ROBOT_POSE = 'robotPose'
+    IS_CUSTOM = 'isCustom'
+
+
 class ErrorMessages(object):
     """
     Definition of error strings

@@ -198,14 +198,14 @@ class StorageClient(object):
         experiment name and the filename. Needs the user token
         :param token: a valid token to be used for the request
         :param experiment: the name of the experiment
-        :param filename: the name of the file to delee
+        :param filename: the name of the file to delete
         :return: if successful, the name of the deleted file
         """
         headers = {'Authorization': 'Bearer ' + token}
         try:
-            res = requests.delete(self.__proxy_url +
-                                  '/storage/{0}/{1}'.format(
-                                      experiment, filename), headers=headers)
+            path = urllib.quote(os.path.join(experiment, filename), safe='')
+            res = requests.delete(self.__proxy_url + '/storage/{path}'.format(path=path),
+                                  headers=headers)
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '

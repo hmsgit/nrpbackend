@@ -60,7 +60,7 @@ from hbp_nrp_cleserver.server import \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
-    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE
 from hbp_nrp_cleserver.server import ros_handler
 from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
 import hbp_nrp_cle.tf_framework as tf_framework
@@ -134,6 +134,8 @@ class ROSCLEServer(SimulationServer):
         self.__service_clean_CSV_recorders_files = None
         self.__service_get_robots = None
         self.__service_add_robot = None
+        self.__service_del_robot = None
+        self.__service_set_exc_robot_pose = None
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
 
@@ -286,6 +288,16 @@ class ROSCLEServer(SimulationServer):
         self.__service_add_robot = rospy.Service(
             SERVICE_ADD_ROBOT(self.simulation_id), srv.AddRobot,
             self.__add_robot
+        )
+
+        self.__service_del_robot = rospy.Service(
+            SERVICE_DEL_ROBOT(self.simulation_id), srv.DeleteRobot,
+            self.__delete_robot
+        )
+
+        self.__service_set_exc_robot_pose = rospy.Service(
+            SERVICE_SET_EXC_ROBOT_POSE(self.simulation_id), srv.ChangePose,
+            self.__set_robot_initial_pose
         )
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
@@ -882,8 +894,12 @@ class ROSCLEServer(SimulationServer):
             self.__service_clean_CSV_recorders_files.shutdown()
             logger.info("Shutting down get_robots service")
             self.__service_get_robots.shutdown()
-            logger.info("Shutting down cadd_robot service")
+            logger.info("Shutting down add_robot service")
             self.__service_add_robot.shutdown()
+            logger.info("Shutting down delete_robot service")
+            self.__service_del_robot.shutdown()
+            logger.info("Shutting down set_robot_initial_pose service")
+            self.__service_set_exc_robot_pose.shutdown()
 
     def _reset_world(self, request):
         """
@@ -1040,11 +1056,12 @@ class ROSCLEServer(SimulationServer):
         rinfo = request.robot
         ret, status = self._robotHandler.add_robot(robot_id=rinfo.robot_id,
                                                    robot_model_rel_path=rinfo.robot_model_rel_path,
-                                                   is_custom=rinfo.is_custom)
+                                                   is_custom=rinfo.is_custom,
+                                                   pose=rinfo.pose)
         if ret:
             # add new tag into bibi and exc
             try:
-                self._excBibiHandler.add_robotpose(rinfo.robot_id)
+                self._excBibiHandler.add_robotpose(rinfo.robot_id, rinfo.pose)
                 self._excBibiHandler.add_bodymodel(rinfo.robot_id, status, rinfo.is_custom,
                                                           rinfo.robot_model_rel_path)
             except Exception as e:
@@ -1052,3 +1069,45 @@ class ROSCLEServer(SimulationServer):
                              "robot" + str(e))
 
         return srv.AddRobotResponse(success=ret, error_message=status)
+
+    def __delete_robot(self, request):
+        """
+        Deletes a robot from the simulation
+
+        :param request: rospy parameters sent from ROSCLEClient defined at
+                        DeleteRobot.srv in gazeborospackage
+        :return: Successfully added. (success, error_message) = (True, None)
+            or (False, error_message)
+        """
+        try:
+            ret, status = self._robotHandler.delete_robot(robot_id=request.robot_id)
+        except Exception as e:
+            logger.error("An error occured while updating exc and bibi for the newly added "
+                         "robot" + str(e))
+        if ret:
+            # removes tags from the bibi and exc
+            try:
+                self._excBibiHandler.delete_robotpose(request.robot_id)
+                self._excBibiHandler.delete_bodymodel(request.robot_id)
+            except Exception as e:
+                logger.error("An error occured while updating exc and bibi for the newly added "
+                             "robot" + str(e))
+
+        return srv.DeleteRobotResponse(success=ret, error_message=status)
+
+    def __set_robot_initial_pose(self, request):
+        """
+
+        :param request: rospy parameters sent from ROSCLEClient defined at
+            ChangePose.srv in gazeborospackage
+        :return: Successfully added. (success, error_message) = (True, None)
+            or (False, error_message)
+        """
+        try:
+            ret, status = self._excBibiHandler.update_robotpose(request.object_id,
+                                                                request.new_pose)
+        except Exception as e:
+            logger.error("An error occured while updating exc and bibi for the newly added "
+                         "robot" + str(e))
+
+        return srv.ChangePoseResponse(success=ret, error_message=status)

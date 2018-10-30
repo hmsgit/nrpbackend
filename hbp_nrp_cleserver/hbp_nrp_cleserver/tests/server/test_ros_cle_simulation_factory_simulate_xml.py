@@ -83,7 +83,7 @@ class MockedRobotManager(object):
     def scene_handler(self):
         return MockedGazeboHelper()
 
-    def get_robot_list(self):
+    def get_robot_dict(self):
         return {}
 
     def __getattr__(self, x):

@@ -423,7 +423,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self.robotManager.remove_all_robots()
         self.__read_robot_list()
 
-        for rid, robot in self.robotManager.get_robot_list().iteritems():
+        for rid, robot in self.robotManager.get_robot_dict().iteritems():
             self._load_robot(robot)
             robot_poses[rid] = robot.pose
 
@@ -462,7 +462,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             if (modelTag.robotId is None):
                 modelTag.robotId = 'robot'
             elif (not modelTag.robotId
-                  or modelTag.robotId in self.robotManager.get_robot_list()):
+                  or modelTag.robotId in self.robotManager.get_robot_dict()):
                 raise Exception("Multiple bodyModels has been defined with same or no names."
                                 "Please check bibi config file.")
 
@@ -568,7 +568,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # pylint: disable=too-many-locals
         # Create interfaces to Gazebo
         self._notify("Loading robot")
-        logger.info("RobotAbs: " + str(robot.SDFFileRelPath))
+        logger.info("RobotAbs: " + str(robot.SDFFileAbsPath))
 
         # check retina script file
         retina_config_path = None
@@ -741,7 +741,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         if self.bibi.timestep is not None:
             timestep = float(self.bibi.timestep) / 1000.0
 
-        roscontrol.set_robots(self.robotManager.get_robot_list())
+        roscontrol.set_robots(self.robotManager.get_robot_dict())
 
         # initialize CLE
         self._notify("Initializing CLE")

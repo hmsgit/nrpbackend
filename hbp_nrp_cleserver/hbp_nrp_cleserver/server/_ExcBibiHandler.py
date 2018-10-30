@@ -36,7 +36,8 @@ from hbp_nrp_commons.generated import bibi_api_gen as bibiXmlParser
 logger = logging.getLogger(__name__)
 
 
-class ExcBibiHandler(object):
+# This class is being intentionally excluded from code coverage
+class ExcBibiHandler(object):   # pragma: no cover
     """
     Helper class for ROSCLEServer to handle read write operations on exc and bibi in Storage
     """
@@ -61,16 +62,15 @@ class ExcBibiHandler(object):
         if match:
             tag = match.group(0)[:-3]
 
-        # TODO: convert python pose to xsd pose. Atm always gets None
         robotpose = '<{tag}robotPose robotId="{id}" x="{x}" y="{y}" z="{z}" ' \
-                    'roll="{r}" pitch="{p}" yaw="{q}" />' \
+                    'roll="{r}" pitch="{p}" yaw="{q}" />\n' \
             .format(id=robot_id,
                     x=pose.x if pose else '0.0',
                     y=pose.y if pose else '0.0',
                     z=pose.z if pose else '0.0',
-                    r=pose.r if pose else '0.0',
-                    p=pose.p if pose else '0.0',
-                    q=pose.q if pose else '0.0',
+                    r=pose.roll if pose else '0.0',
+                    p=pose.pitch if pose else '0.0',
+                    q=pose.yaw if pose else '0.0',
                     tag=tag)
 
         logger.info("Adding " + str(robotpose) + " to exc")
@@ -95,6 +95,63 @@ class ExcBibiHandler(object):
             self._prettify_xml(exc),
             "text/plain"
         )
+
+    def delete_robotpose(self, robot_id):
+        """
+        Edit <robotPose> tag in the exc where robotId=robot_id
+
+        :param robot_id: robotId attribute for the tag
+        :return: Tuple (True, SDF relative path) or (False, error message) to update config files
+        """
+        with open(self._cle_assembly.exc.path, 'r') as excFile:
+            exc = excFile.read()
+
+        # trial and errored. try https://regexr.com/
+        # special case for robot with id 'robot'
+        # TODO: remove special handling of id 'robot' once we make robotId a must
+        if robot_id == 'robot':
+            regex = r'>[\s]*<[\w\d]*:*robotPose[^>]*>'
+        else:
+            regex = r'>[\s]*<[\w\d]*:*robotPose[^>]*robotId *= *[\'"]' + robot_id + r'[\'"][^>]*\/>'
+
+        logger.info("Removing robotPose tag for {0} from exc".format(robot_id))
+        exc = re.sub(regex, '>', exc, 1)
+
+        # Update DOM object, don't know any better way. Probably not been used anyway
+        path = self._cle_assembly.exc.path
+        self._cle_assembly.exc = excXmlParser.CreateFromDocument(exc)
+        self._cle_assembly.exc.path = path
+        self._cle_assembly.exc.dir = os.path.dirname(path)
+
+        # Update sim dir copy of the exc
+        self.rewrite_exc(exc)
+
+        # update storage's copy
+        self._cle_assembly.storage_client.create_or_update(
+            self._cle_assembly.token,
+            self._cle_assembly.experiment_id,
+            os.path.basename(self._cle_assembly.exc.path),
+            self._prettify_xml(exc),
+            "text/plain"
+        )
+
+    def update_robotpose(self, robot_id, pose):
+        """
+        Edit <robotPose> tag in the exc where robotId=robot_id
+
+        :param robot_id: robotId attribute for the tag
+        :param pose: A cle_ros_msgs.msgs.Pose object (defines an object's Euler pos and orientation)
+        :return: Tuple (True, SDF relative path) or (False, error message) to update config files
+        """
+        if not robot_id in self._cle_assembly.robotManager.get_robot_dict():
+            return False, "No robot exists with id equals {id}".format(id=robot_id)
+        try:
+            self.delete_robotpose(robot_id)
+            self.add_robotpose(robot_id, pose)
+        # pylint: disable=broad-except
+        except Exception as e:
+            return False, "An error occurred while updating robotPose {err}".format(err=e)
+        return True, "Tag updated successfully"
 
     def add_bodymodel(self, robot_id, model_path, is_custom, zip_path=None):
         """
@@ -134,6 +191,47 @@ class ExcBibiHandler(object):
             bibi = re.sub(r'<\/(.*)bodyModel>', r'</\g<1>bodyModel>' + bodymodel, bibi, 1)
         else:
             bibi = re.sub(r'<\/(.*)bibi>', bodymodel + r'</\g<1>bibi>', bibi, 1)
+
+        # Update DOM object, don't know any better way
+        path = self._cle_assembly.bibi.path
+        self._cle_assembly.bibi = bibiXmlParser.CreateFromDocument(bibi)
+        self._cle_assembly.bibi.path = path
+        self._cle_assembly.bibi.dir = os.path.dirname(path)
+
+        # Update sim dir copy of the bibi
+        self.rewrite_bibi(bibi)
+
+        # update storage's copy
+        self._cle_assembly.storage_client.create_or_update(
+            self._cle_assembly.token,
+            self._cle_assembly.experiment_id,
+            self._cle_assembly.exc.bibiConf.src,
+            self._prettify_xml(bibi),
+            "text/plain"
+        )
+
+    def delete_bodymodel(self, robot_id):
+        """
+        Deletes a <bodyModel> tag from the bibi
+
+        :param robot_id: attribute robotId in the tag
+        :return:
+        """
+        with open(self._cle_assembly.bibi.path, 'r') as bibiFile:
+            bibi = bibiFile.read()
+
+        # trial and errored. try https://regexr.com/
+        # special case for robot with id 'robot'
+        # TODO: remove special handling of id 'robot' once we make robotId a must
+        if robot_id == 'robot':
+            regex = r'>[\s]*<[\w\d]*:*bodyModel.*>'
+        else:
+            regex = r'>[\s]*<[\w\d]*:*bodyModel[^>]*robotId *= *[\'"]' \
+                    + robot_id + r'[\'"][^<]*>' +\
+                    r'[\w\d/\.]*</[\w\d]*:*bodyModel>'
+
+        logger.info("Removing bodyModel tag for {0} from bibi".format(robot_id))
+        bibi = re.sub(regex, '>', bibi, 1)
 
         # Update DOM object, don't know any better way
         path = self._cle_assembly.bibi.path

@@ -30,11 +30,11 @@ __author__ = 'Hossain Mahmud'
 
 import os
 import logging
-
+import tf
 from pyxb import ValidationError
 
 from cle_ros_msgs import msg
-from hbp_nrp_cle.robotsim.RobotManager import Robot
+from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_commons.generated import robot_conf_api_gen as robotXmlParser
 
 logger = logging.getLogger(__name__)
@@ -55,15 +55,35 @@ class RobotCallHandler(object):
         :return: A list containing rospy msg object of the robot list
         """
         ret = []
-        for rid, robot in self._cle_assembly.robotManager.get_robot_list().iteritems():
-            ret.append(msg.RobotInfo(str(rid), str(robot.SDFFileRelPath), bool(robot.isCustom)))
+        for rid, robot in self._cle_assembly.robotManager.get_robot_dict().iteritems():
+            # convert quaternion pose to euler
+            quaternion = (
+                robot.pose.orientation.x,
+                robot.pose.orientation.y,
+                robot.pose.orientation.z,
+                robot.pose.orientation.w
+            )
+            euler = tf.transformations.euler_from_quaternion(quaternion)
+            pose = msg.Pose(x=robot.pose.position.x,
+                            y=robot.pose.position.y,
+                            z=robot.pose.position.z,
+                            roll=euler[0],
+                            pitch=euler[1],
+                            yaw=euler[2]
+                            )
+            # SDFFileAbsPath contains a absolute path
+            ret.append(msg.RobotInfo(robot_id=str(rid),
+                                     robot_model_rel_path=str(robot.SDFFileAbsPath),
+                                     is_custom=bool(robot.isCustom),
+                                     pose=pose)
+                       )
 
         return ret
 
     def add_robot(self, robot_id, robot_model_rel_path, is_custom=False, pose=None):
         """
         Adds a robot in the currently running simulation
-        REST request PUT /robots/<sim_id> ends up here
+        REST request POST /robots/<sim_id> ends up here
 
         :param robot_id: Id of the robot
         :param robot_model_rel_path: SDF or the zip path of the robot
@@ -82,7 +102,7 @@ class RobotCallHandler(object):
             if is_custom:
                 zipRelPath = robot_model_rel_path
                 import json
-                try:
+                try:    # pragma: no cover
                     # Hack the file name for the storage server. Replace spaces and slashes.
                     # How do i know this? devine knowledge!
                     requestFile = ('robots/' + zipRelPath).replace(' ', '%20').replace('/', '%2F')
@@ -143,9 +163,11 @@ class RobotCallHandler(object):
 
             if not pose:
                 # HACK: find first robot, and use its pose
-                if len(self._cle_assembly.robotManager.get_robot_list()):
-                    r = self._cle_assembly.robotManager.get_robot_list().values()[0]
+                if len(self._cle_assembly.robotManager.get_robot_dict()):
+                    r = self._cle_assembly.robotManager.get_robot_dict().values()[0]
                     pose = r.pose
+            else:   # convert Euler to quaternion representation
+                pose = RobotManager.convertXSDPosetoPyPose(pose)
 
             # copy sdf to <simulation dir>/<robot_id>/<whatever>.sdf
             # this would then be uploaded to the storage and referenced in bibi
@@ -195,7 +217,48 @@ class RobotCallHandler(object):
 
         return True, os.path.join(robot_id, sdf_filename)
 
-    def _customize_sdf(self, sdf_abs_path, robot_id):
+    def delete_robot(self, robot_id):
+        """
+        Delete a robot from the currently running simulation
+        REST request DELETE /robots/<sim_id> ends up here
+
+        :param robot_id: Id of the robot
+        :return: Tuple (True, SDF relative path) or (False, error message) to update config files
+        """
+        try:
+            modelFile = self._cle_assembly.robotManager.get_robot(robot_id).SDFFileAbsPath
+
+            # delete model file from the storage
+            self._cle_assembly.storage_client.delete_file(
+                self._cle_assembly.token,
+                self._cle_assembly.experiment_id,
+                os.path.join(robot_id, os.path.basename(modelFile))
+            )
+            # delete model from the simulation dir
+            os.remove(modelFile)
+
+        # pylint: disable=broad-except
+        except Exception as e:
+            # couldn't delete into the scene, fallback
+            return False, "An error occurred while deleting the robot: {err}. {oldexp}"\
+                .format(err=str(e),
+                        oldexp="You may have an older copy of the template experiments."
+                               "Please update your Experiments repository." if robot_id == 'robot'
+                        else "")
+
+        try:
+            self._cle_assembly.robotManager.delete_robot_from_scene(robot_id)
+            # finally delete from the manager
+            self._cle_assembly.robotManager.remove_robot(robot_id)
+
+        # pylint: disable=broad-except
+        except Exception as e:
+            # couldn't delete into the scene, fallback
+            return False, "An error occurred while deleting the robot. {err}".format(err=str(e))
+
+        return True, "Robot deleted"
+
+    def _customize_sdf(self, sdf_abs_path, robot_id):   # pragma: no cover
         """
 
         :param sdf_abs_path: location of the file to be altered
