@@ -104,7 +104,8 @@ class RobotCallHandler(object):
                 import json
                 try:    # pragma: no cover
                     # Hack the file name for the storage server. Replace spaces and slashes.
-                    # How do i know this? devine knowledge!
+                    # How do you know this? divine knowledge!
+                    # FIXME: get_custom_model should take a path, custom logic should be done there
                     requestFile = ('robots/' + zipRelPath).replace(' ', '%20').replace('/', '%2F')
                     # download zip from storage
                     data = client.get_custom_model(

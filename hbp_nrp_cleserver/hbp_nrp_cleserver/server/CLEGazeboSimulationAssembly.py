@@ -491,7 +491,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             if isCustom:
                 path = self._extract_robot_zip(modelTag)
             else:
-                path = find_file_in_paths(modelTag.value(), get_model_basepath())
+                path = find_file_in_paths(os.path.join(modelTag.robotId,
+                                                       os.path.basename(modelTag.value())),
+                                          get_model_basepath())
 
             if not path:
                 raise Exception("Could not find robot file: ".format(modelTag.value()))
