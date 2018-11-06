@@ -470,15 +470,17 @@ class StorageClient(object):
         :param folder: the folder in the storage folder to copy in tmp folder,
                        it has included the uuid of the experiment
         """
+        folder['fullpath'] = folder['name']
         child_folders = [folder]
         folder_path = ''
         while child_folders:
             actual_folder = child_folders.pop()
-            folder_path = os.path.join(folder_path, actual_folder['name'])
+            folder_path = actual_folder['fullpath']
             folder_uuid = urllib.quote_plus(actual_folder['uuid'])
             for folder_entry in self.list_files(token, folder_uuid, True):
                 if folder_entry['type'] == 'folder' and folder_entry['name'] \
                         not in self.__filtered_resources:
+                    folder_entry['fullpath'] = os.path.join(folder_path, folder_entry['name'])
                     child_folders.append(folder_entry)
                 if folder_entry['type'] == 'file':
                     folder_tmp_path = str(os.path.join(
