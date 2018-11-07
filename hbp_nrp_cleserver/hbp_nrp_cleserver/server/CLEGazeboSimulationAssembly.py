@@ -494,9 +494,16 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 path = find_file_in_paths(os.path.join(modelTag.robotId,
                                                        os.path.basename(modelTag.value())),
                                           get_model_basepath())
+                # Perhaps it's a previously coned experiment? Try with modelTag.value() BUT
+                # only look into the simulation_directory, as DELETE robot REST call, if called,
+                # would delete this file
+                # TODO: backward compatibility code. Remove when we decide not to support anymore
+                if not path:
+                    path = find_file_in_paths(modelTag.value(), [self._simDir])
 
+            # still couldn't find the SDF, abort!
             if not path:
-                raise Exception("Could not find robot file: ".format(modelTag.value()))
+                raise Exception("Could not find robot file: {0}".format(modelTag.value()))
             self.robotManager.add_robot(
                 Robot(modelTag.robotId, path, modelTag.robotId, pose, isCustom)
             )
