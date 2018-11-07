@@ -48,7 +48,7 @@ class SimulationRobots(Resource):
     This resource handles the robot models in a running simulation
     """
     @swagger.model
-    class RobotRequest(object):
+    class RobotsRequest(object):
         """
         Represents a request for the API implemented by SimulationRobot
         """
@@ -61,28 +61,7 @@ class SimulationRobots(Resource):
         }
 
     @swagger.model
-    class RobotPostRequest(RobotRequest):
-        """
-        Lists required fields for a POST new pose request
-        """
-        required = [ParamNames.ROBOT_ID, ParamNames.ROBOT_REL_PATH]
-
-    @swagger.model
-    class RobotPutRequest(RobotRequest):
-        """
-        Lists required fields for a PUT request
-        """
-        required = [ParamNames.ROBOT_ID, ParamNames.ROBOT_POSE]
-
-    @swagger.model
-    class RobotDelRequest(RobotRequest):
-        """
-        Lists required fields for a DELETE request
-        """
-        required = [ParamNames.ROBOT_ID]
-
-    @swagger.model
-    class RobotGetRequest(RobotRequest):
+    class RobotsGetRequest(RobotsRequest):
         """
         Lists required fields for a GET request
         """
@@ -101,7 +80,7 @@ class SimulationRobots(Resource):
             {
                 "name": "body",
                 "paramType": "body",
-                "dataType": RobotGetRequest.__name__,
+                "dataType": RobotsGetRequest.__name__,
                 "required": False
             }
         ],
@@ -139,6 +118,63 @@ class SimulationRobots(Resource):
         }
         return result, 200
 
+    @staticmethod
+    def __get_simulation_robots(sim):
+        """
+        Reset populations
+
+        :param sim:
+        """
+        return sim.cle.get_simulation_robots()
+
+    @staticmethod
+    def __jsonisePose(pose):
+        """
+        Convert a cle_ros_msgs.msg.Pose to returnable json
+        :param pose: a cle_ros_msgs.msg.Pose
+        :return:
+        """
+        return {
+            'x': pose.x,
+            'y': pose.y,
+            'z': pose.z,
+            'roll': pose.roll,
+            'pitch': pose.pitch,
+            'yaw': pose.yaw
+        } if pose else {}
+
+
+class SimulationRobot(Resource):
+    """
+    This resource handles the robot models in a running simulation
+    """
+    @swagger.model
+    class RobotRequest(object):
+        """
+        Represents a request for the API implemented by SimulationRobot
+        """
+        resource_fields = {
+            ParamNames.ROBOT_ID: fields.String,
+            ParamNames.ROBOT_REL_PATH: fields.String,
+            ParamNames.IS_CUSTOM: fields.Boolean,
+            ParamNames.ROBOT_POSE: fields.String
+
+        }
+
+    @swagger.model
+    class RobotPostRequest(RobotRequest):
+        """
+        Lists required fields for a POST new pose request
+        """
+        required = [ParamNames.ROBOT_ID, ParamNames.ROBOT_REL_PATH]
+
+    @swagger.model
+    class RobotPutRequest(RobotRequest):
+        """
+        Lists required fields for a PUT request
+        """
+        required = [ParamNames.ROBOT_ID, ParamNames.ROBOT_POSE]
+
     @swagger.operation(
         notes='Add a new robot to the simulation.',
         parameters=[
@@ -152,7 +188,7 @@ class SimulationRobots(Resource):
             {
                 "name": "body",
                 "paramType": "body",
-                "dataType": RobotPutRequest.__name__,
+                "dataType": RobotPostRequest.__name__,
                 "required": True
             }
         ],
@@ -164,11 +200,12 @@ class SimulationRobots(Resource):
             {"code": 200, "message": "Success. Robot added."},
         ]
     )
-    def post(self, sim_id):
+    def post(self, sim_id, robot_id):
         """
         Add a new robot to the simulation.
 
         :param sim_id: The simulation ID.
+        :param robot_id: The robot string ID.
 
         :status 500: {0}
         :status 404: {1}
@@ -184,20 +221,19 @@ class SimulationRobots(Resource):
 
         body = request.get_json(force=True)
 
-        missing_parameters = [item for item in SimulationRobots.RobotPostRequest.required
-                              if item not in body]
+        missing_parameters = [item for item in SimulationRobot.RobotPostRequest.required
+                                if item not in body]
         if missing_parameters:
             raise NRPServicesClientErrorException('Missing parameter(s): ' +
-                                                  ' '.join(missing_parameters))
+                                                    ' '.join(missing_parameters))
 
         try:
-            rid = body.get(ParamNames.ROBOT_ID)
             rpath = body.get(ParamNames.ROBOT_REL_PATH)
             rpose = body.get(ParamNames.ROBOT_POSE, None)
             isCustom = False
             if ParamNames.IS_CUSTOM in body and body.get(ParamNames.IS_CUSTOM) == "True":
                 isCustom = True
-            res, err = SimulationRobots.__add_new_robot(sim, rid, rpath, isCustom, rpose)
+            res, err = SimulationRobot.__add_new_robot(sim, robot_id, rpath, isCustom, rpose)
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
@@ -217,10 +253,11 @@ class SimulationRobots(Resource):
                 "dataType": int.__name__
             },
             {
-                "name": "body",
-                "paramType": "body",
-                "dataType": RobotDelRequest.__name__,
-                "required": True
+                "name": "robot_id",
+                "description": "The string ID of the robot to be deleted",
+                "required": True,
+                "paramType": "path",
+                "dataType": str.__name__
             }
         ],
         responseMessages=[
@@ -231,39 +268,29 @@ class SimulationRobots(Resource):
             {"code": 200, "message": "Success. Robot deleted."},
         ]
     )
-    def delete(self, sim_id):
+    def delete(self, sim_id, robot_id):
         """
         Delete a robot from the simulation.
 
         :param sim_id: The simulation ID.
+        :param robot_id: The robot ID.
 
         :status 500: {0}
         :status 404: {1}
         :status 401: {2}
         :status 400: Invalid request, the JSON parameters are incorrect
-        :status 200: The requested robot was created successfully
+        :status 200: The requested robot was deleted successfully
         """
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
 
         if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
             raise NRPServicesWrongUserException()
-
-        body = request.get_json(force=True)
-
-        missing_parameters = [item for item in SimulationRobots.RobotDelRequest.required
-                              if item not in body]
-        if missing_parameters:
-            raise NRPServicesClientErrorException('Missing parameter(s): ' +
-                                                  ' '.join(missing_parameters))
-
         try:
-            rid = body.get(ParamNames.ROBOT_ID)
-            res, err = SimulationRobots.__delete_robot(sim, rid)
+            res, err = SimulationRobot.__delete_robot(sim, robot_id)
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
-
         if not res:
             return {'res': err}, 404
         return {'res': 'success'}, 200
@@ -279,9 +306,16 @@ class SimulationRobots(Resource):
                 "dataType": int.__name__
             },
             {
+                "name": "robot_id",
+                "description": "The ID of the robot that would be updated",
+                "required": True,
+                "paramType": "path",
+                "dataType": str.__name__
+            },
+            {
                 "name": "body",
                 "paramType": "body",
-                "dataType": RobotPostRequest.__name__,
+                "dataType": RobotPutRequest.__name__,
                 "required": True
             }
         ],
@@ -290,14 +324,15 @@ class SimulationRobots(Resource):
             {"code": 404, "message": ErrorMessages.SIMULATION_NOT_FOUND_404},
             {"code": 401, "message": ErrorMessages.SIMULATION_PERMISSION_401},
             {"code": 400, "message": "Invalid request, the JSON parameters are incorrect."},
-            {"code": 200, "message": "Success. Successfully updated"},
+            {"code": 200, "message": "Success. Initial pose successfully updated"},
         ]
     )
-    def put(self, sim_id):
+    def put(self, sim_id, robot_id):
         """
         Update initial pose of a robot
 
         :param sim_id: The simulation ID.
+        :param robot_id: The robot string ID.
 
         :status 500: {0}
         :status 404: {1}
@@ -313,16 +348,15 @@ class SimulationRobots(Resource):
 
         body = request.get_json(force=True)
 
-        missing_parameters = [item for item in SimulationRobots.RobotPutRequest.required
+        missing_parameters = [item for item in SimulationRobot.RobotPutRequest.required
                               if item not in body]
         if missing_parameters:
             raise NRPServicesClientErrorException('Missing parameter(s): ' +
                                                   ' '.join(missing_parameters))
 
         try:
-            rid = body.get(ParamNames.ROBOT_ID)
             rpose = body.get(ParamNames.ROBOT_POSE)
-            res, err = SimulationRobots.__set_robot_initial_pose(sim, rid, rpose)
+            res, err = SimulationRobot.__set_robot_initial_pose(sim, robot_id, rpose)
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
@@ -330,15 +364,6 @@ class SimulationRobots(Resource):
         if not res:
             return {'res': err}, 404
         return {'res': 'success'}, 200
-
-    @staticmethod
-    def __get_simulation_robots(sim):
-        """
-        Get simulation robots
-
-        :param sim:
-        """
-        return sim.cle.get_simulation_robots()
 
     @staticmethod
     def __add_new_robot(sim, robot_id, robot_model_rel_path, is_custom, initial_pose):
@@ -360,19 +385,3 @@ class SimulationRobots(Resource):
         Update initial robot pose of a robot
         """
         return sim.cle.set_simulation_robot_initial_pose(robot_id, pose)
-
-    @staticmethod
-    def __jsonisePose(pose):
-        """
-        Convert a cle_ros_msgs.msg.Pose to returnable json
-        :param pose: a cle_ros_msgs.msg.Pose
-        :return:
-        """
-        return {
-            'x': pose.x,
-            'y': pose.y,
-            'z': pose.z,
-            'roll': pose.roll,
-            'pitch': pose.pitch,
-            'yaw': pose.yaw
-        } if pose else {}

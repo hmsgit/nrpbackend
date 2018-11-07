@@ -104,7 +104,7 @@ from hbp_nrp_backend.rest_server.__SimulationTimeout import SimulationTimeout
 from hbp_nrp_backend.rest_server.__SimulationTopics import SimulationTopics
 from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 from hbp_nrp_backend.rest_server.__SimulationResourcesCloner import SimulationResourcesCloner
-from hbp_nrp_backend.rest_server.__SimulationRobot import SimulationRobots
+from hbp_nrp_backend.rest_server.__SimulationRobot import SimulationRobots, SimulationRobot
 
 
 # Register /simulation
@@ -143,6 +143,7 @@ api.add_resource(SimulationConvertRawToStructuredTransferFunction,
                  '/simulation/<int:sim_id>/convert-raw-tf-to-structured')
 
 api.add_resource(SimulationRobots, '/simulation/<int:sim_id>/robots')
+api.add_resource(SimulationRobot, '/simulation/<int:sim_id>/robots/<string:robot_id>')
 
 # This should not be on the /simulation path ... as it does not apply to a
 # running simulation
