@@ -26,9 +26,10 @@ This module contains the REST implementation for the simulation control
 """
 __author__ = 'GeorgHinkel'
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
+from hbp_nrp_backend import NRPServicesClientErrorException, \
     NRPServicesWrongUserException, NRPServicesUnavailableROSService, \
-    NRPServicesGeneralException, ErrorMessages
+    NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import ErrorMessages
 
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 

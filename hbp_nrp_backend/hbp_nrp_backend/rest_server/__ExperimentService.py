@@ -31,7 +31,8 @@ __author__ = "Bernd Eckstein"
 
 import os
 
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException, ErrorMessages
+from hbp_nrp_backend import NRPServicesGeneralException
+from hbp_nrp_backend.rest_server import ErrorMessages
 
 
 def get_experiment_basepath():

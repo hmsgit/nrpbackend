@@ -49,7 +49,7 @@ class TestSimulationCSVRecorders(RestTest):
         simulations[0].cle.get_simulation_CSV_recorders_files = MagicMock(
             return_value=self.files)
         patch_StorageClient = patch(
-            'hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+            'hbp_nrp_backend.rest_server.__SimulationCSVRecorders.StorageClient')
         self.addCleanup(patch_StorageClient.stop)
         self.mock_StorageClient = patch_StorageClient.start()
         self.mock_storageClient_instance = self.mock_StorageClient.return_value

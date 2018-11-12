@@ -76,6 +76,9 @@ class TestRobotCallHandler(unittest.TestCase):
                 '{"uuid": "robots%2Fover%2Fthe%2Frainbow"}'
             )
 
+            findFile.return_value = "/some/model/abs/path/model.sdf"
+            self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"
+
             ret, status = self.handler.add_robot('id', 'over/the/rainbow')
 
     def test_delete_robot(self):

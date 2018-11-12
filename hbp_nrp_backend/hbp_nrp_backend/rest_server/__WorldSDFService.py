@@ -32,16 +32,15 @@ import logging
 import rospy
 from lxml import etree as ET
 
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesUnavailableROSService
+from hbp_nrp_backend import NRPServicesClientErrorException, NRPServicesUnavailableROSService
 from gazebo_msgs.srv import ExportWorldSDF
 from flask_restful import fields, Resource
 from flask_restful_swagger import swagger
 from flask import request
 from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 from hbp_nrp_commons.bibi_functions import docstring_parameter
-from hbp_nrp_backend.rest_server.__ExperimentService import ErrorMessages
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 
@@ -142,10 +141,6 @@ class WorldSDFService(Resource):
         # pylint: disable=too-many-locals
         simulation = _get_simulation_or_abort(sim_id)
 
-        # Done here in order to avoid circular dependencies introduced by the
-        # way we __init__ the rest_server module.
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
         try:
             rospy.wait_for_service('/gazebo/export_world_sdf', 3)
         except rospy.ROSException as exc:

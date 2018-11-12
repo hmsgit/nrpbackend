@@ -24,6 +24,13 @@
 """
 This module contains the implementation of the backend simulation lifecycle
 """
+import os
+import rospy
+import datetime
+import zipfile
+import json
+import logging
+from flask import request
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.cle_interface import TOPIC_LIFECYCLE
@@ -31,17 +38,11 @@ from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
 from hbp_nrp_backend.cle_interface.PlaybackClient import PlaybackClient
 from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient \
     import ROSCLESimulationFactoryClient
-import logging
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_backend.simulation_control.__TexturesLoader import TexturesLoader
-from flask import request
-import os
-import rospy
-import datetime
-import zipfile
-import json
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 __author__ = 'Georg Hinkel, Manos Angelidis'
 
@@ -67,6 +68,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         self.__models_path = os.environ.get('NRP_MODELS_DIRECTORY')
         self.__experiment_path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
         self.__textures_loaded = False
+        self.__storageClient = StorageClient()
 
     @property
     def simulation(self):
@@ -120,11 +122,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param experiment: The experiment object.
         """
         # pylint: disable=too-many-locals
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        client = StorageClient()
-        environments_list = client.get_custom_models(UserAuthentication.get_header_token(request),
-                                                     self.simulation.ctx_id,
-                                                     'environments')
+        environments_list = self.__storageClient.get_custom_models(
+            UserAuthentication.get_header_token(request),
+            self.simulation.ctx_id, 'environments')
         # we use the paths of the uploaded zips to make sure the selected
         # zip is there
         paths_list = [environment['path']
@@ -133,27 +133,29 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         zipped_model_path = [
             path for path in paths_list if experiment.environmentModel.customModelPath in path]
         if len(zipped_model_path):
-            environment_path = os.path.join(client.get_simulation_directory(),
+            environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
                                             os.path.basename(experiment.environmentModel.src))
             model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
-            storage_env_zip_data = client.get_custom_model(
+            storage_env_zip_data = self.__storageClient.get_custom_model(
                 UserAuthentication.get_header_token(request),
                 self.simulation.ctx_id, json_model_data)
             env_sdf_name = os.path.basename(
                 experiment.environmentModel.src)
             env_path = os.path.join(
-                client.get_simulation_directory(),
+                self.__storageClient.get_simulation_directory(),
                 experiment.environmentModel.customModelPath)
             with open(env_path, 'w') as environment_zip:
                 environment_zip.write(storage_env_zip_data)
             with zipfile.ZipFile(env_path) as env_zip_to_extract:
                 env_zip_to_extract.extractall(
-                    path=os.path.join(client.get_simulation_directory(), 'assets'))
+                    path=os.path.join(self.__storageClient.get_simulation_directory(), 'assets'))
             # copy back the .sdf from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
-            client.clone_file(env_sdf_name, UserAuthentication.get_header_token(request),
-                              self.simulation.experiment_id)
+            self.__storageClient.clone_file(
+                env_sdf_name,
+                UserAuthentication.get_header_token(request),
+                self.simulation.experiment_id)
         # if the zip is not there, prompt the user to check his uploaded
         # models
         else:
@@ -171,16 +173,14 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param experiment: The experiment object.
         """
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        client = StorageClient()
-        environment_path = os.path.join(client.get_simulation_directory(),
+        environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
                                         os.path.basename(experiment.environmentModel.src))
         with open(environment_path, "w") as f:
-            f.write(client.get_file(
+            f.write(self.__storageClient.get_file(
                 UserAuthentication.get_header_token(request),
-                client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
-                                               self.simulation.ctx_id,
-                                               'environments'),
+                self.__storageClient.get_folder_uuid_by_name(
+                    UserAuthentication.get_header_token(request),
+                    self.simulation.ctx_id, 'environments'),
                 os.path.basename(experiment.environmentModel.src),
                 byname=True))
         return environment_path
@@ -196,9 +196,6 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param environment_path: Path to the environment configuration.
         :param using_storage: Private or template simulation
         """
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        client = StorageClient()
-
         if using_storage:
             custom = experiment.environmentModel.customModelPath
             if custom:
@@ -210,16 +207,15 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                         experiment)
         else:
             if not environment_path and 'storage://' in experiment.environmentModel.src:
-                environment_path = os.path.join(client.get_simulation_directory(),
+                environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
                                                 os.path.basename(experiment.environmentModel.src))
                 with open(environment_path, "w") as f:
-                    f.write(client.get_file(
+                    f.write(self.__storageClient.get_file(
                         UserAuthentication.get_header_token(request),
-                        client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
-                                                       self.simulation.ctx_id,
-                                                       'environments'),
-                        os.path.basename(experiment.environmentModel.src),
-                        byname=True))
+                        self.__storageClient.get_folder_uuid_by_name(
+                            UserAuthentication.get_header_token(request),
+                            self.simulation.ctx_id, 'environments'),
+                        os.path.basename(experiment.environmentModel.src), byname=True))
             else:
                 environment_path = os.path.join(
                     self.models_path, str(experiment.environmentModel.src))
@@ -231,15 +227,12 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to be initialized
         """
-        # TODO: fix dependencies so these import are not necessary anymore
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         simulation = self.simulation
 
         try:
             using_storage = simulation.private
             if using_storage:
-                client = StorageClient()
-                clone_folder, experiment_paths = client.clone_all_experiment_files(
+                clone_folder, experiment_paths = self.__storageClient.clone_all_experiment_files(
                     UserAuthentication.get_header_token(request),
                     simulation.experiment_id)
                 self.__experiment_path = experiment_paths['experiment_conf']

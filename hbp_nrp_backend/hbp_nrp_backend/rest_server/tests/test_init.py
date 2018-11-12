@@ -27,8 +27,8 @@ Code for testing all classes in hbp_nrp_backend.rest_server.__init__
 
 import unittest
 from mock import Mock, patch
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException, NRPServicesStateException
-from hbp_nrp_backend.rest_server import NRPServicesDuplicateNameException
+from hbp_nrp_backend import NRPServicesGeneralException, NRPServicesStateException
+from hbp_nrp_backend import NRPServicesDuplicateNameException
 from flask import Flask
 
 

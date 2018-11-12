@@ -99,6 +99,8 @@ class SomeWeirdTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_robot_adapters", new=Mock(return_value=(Mock(), Mock())))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.environ", new=MockOs.environ)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._extract_robot_zip", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf", Mock())))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
 class TestCLELauncherInit(unittest.TestCase):
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboServerInstance")
@@ -122,87 +124,78 @@ class TestCLELauncherInit(unittest.TestCase):
             self.launcher = CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly(42, exd, bibi, gzserver_host="local")
 
     def tearDown(self):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient"):
-            self.launcher.shutdown()
+        self.launcher.shutdown()
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     def test_gazebo_start_exception_catches_xvfbxvn_error(self, mock_server):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
-            self.mock_gazebo().start.side_effect = XvfbXvnError
-            exception_caught = False
-            try:
-                self.launcher.initialize("world_file", None)
-            except Exception, e:
-                self.assertTrue(str(e).startswith("Recoverable error occurred"), msg=e)
-                exception_caught = True
-            self.assertTrue(exception_caught)
+        self.mock_gazebo().start.side_effect = XvfbXvnError
+        exception_caught = False
+        try:
+            self.launcher.initialize("world_file", None)
+        except Exception, e:
+            self.assertTrue(str(e).startswith("Recoverable error occurred"), msg=e)
+            exception_caught = True
+        self.assertTrue(exception_caught)
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
     def test_wrong_transfer_function_aborts_initialization(self,mock_os, mock_server, mock_nrp):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
-            mock_nrp.set_transfer_function.side_effect = SomeWeirdTFException
-            mock_os.environ.get.return_value = ""
-            with self.assertRaises(SomeWeirdTFException):
+        mock_nrp.set_transfer_function.side_effect = SomeWeirdTFException
+        mock_os.environ.get.return_value = ""
+        with self.assertRaises(SomeWeirdTFException):
 
-                self.launcher.initialize("world_file", None)
+            self.launcher.initialize("world_file", None)
 
-                # tf should not be set as faulty
-                mock_nrp.set_faulty_transfer_function.assert_not_called()
+            # tf should not be set as faulty
+            mock_nrp.set_faulty_transfer_function.assert_not_called()
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.compile_restricted")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
     def test_faulty_tf_does_not_aborts_initialization_syntax_error(self, mock_os,comp_restricted_mock, mock_server, mock_nrp):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
-            mock_nrp.set_faulty_transfer_function = MagicMock()
-            mock_os.environ.get.return_value = ""
-            comp_restricted_mock.side_effect = SyntaxError()
+        mock_nrp.set_faulty_transfer_function = MagicMock()
+        mock_os.environ.get.return_value = ""
+        comp_restricted_mock.side_effect = SyntaxError()
 
-            try:
-                self.launcher.initialize("world_file", None)
-            except SyntaxError:
-                self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
+        try:
+            self.launcher.initialize("world_file", None)
+        except SyntaxError:
+            self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
 
-            mock_nrp.set_faulty_transfer_function.assert_called_once()
+        mock_nrp.set_faulty_transfer_function.assert_called_once()
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
     def test_faulty_tf_does_not_aborts_initialization_TFLoading_exception(self, mock_os,mock_server, mock_nrp):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
-            mock_nrp.set_faulty_transfer_function = MagicMock()
-            mock_os.environ.get.return_value = ""
-            mock_nrp.TFLoadingException = nrp.TFLoadingException  # restore TFLoadingException class in the mock
-            mock_nrp.set_transfer_function = MagicMock(side_effect=nrp.TFLoadingException('tf_foo', 'foo error'))
+        mock_nrp.set_faulty_transfer_function = MagicMock()
+        mock_os.environ.get.return_value = ""
+        mock_nrp.TFLoadingException = nrp.TFLoadingException  # restore TFLoadingException class in the mock
+        mock_nrp.set_transfer_function = MagicMock(side_effect=nrp.TFLoadingException('tf_foo', 'foo error'))
 
-            try:
-                self.launcher.initialize("world_file", None)
-            except nrp.TFLoadingException:
-                self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a TFLoadingException.')
+        try:
+            self.launcher.initialize("world_file", None)
+        except nrp.TFLoadingException:
+            self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a TFLoadingException.')
 
-            mock_nrp.set_faulty_transfer_function.assert_called_once()
+        mock_nrp.set_faulty_transfer_function.assert_called_once()
 
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.compile_restricted")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
-    def test_faulty_tf_does_not_aborts_initialization_Syntax_exception(self, ffip, comp_restricted_mock, mock_server, mock_nrp):
+    def test_faulty_tf_does_not_aborts_initialization_Syntax_exception(self, comp_restricted_mock, mock_server, mock_nrp):
 
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
-            mock_nrp.set_faulty_transfer_function = MagicMock()
-            comp_restricted_mock.side_effect = SyntaxError()
-            self.launcher._storageClient = storage_client
-            self.launcher._simDir = ""
-            ffip.return_value = '/path/to/the/robot'
-            try:
-                self.launcher.initialize("world_file", None)
-            except SyntaxError:
-                self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
+        mock_nrp.set_faulty_transfer_function = MagicMock()
+        comp_restricted_mock.side_effect = SyntaxError()
 
-            mock_nrp.set_faulty_transfer_function.assert_called_once()
+        try:
+            self.launcher.initialize("world_file", None)
+        except SyntaxError:
+            self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
+
+        mock_nrp.set_faulty_transfer_function.assert_called_once()
 
     def __launch_callback(self, *_):
         self.launcher.gzserver.gazebo_died_callback()
@@ -210,14 +203,13 @@ class TestCLELauncherInit(unittest.TestCase):
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
     def test_gazebo_crash_aborts_initialization(self, mock_server, mock_nrp):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client:
-            self.mock_gazebo().start.side_effect = self.__launch_callback
-            exception_caught = False
-            try:
-                self.launcher.initialize("world_file", None)
-            except Exception, e:
-                self.assertTrue(str(e).startswith("The simulation must abort"), msg=e)
-                exception_caught = True
-            self.assertTrue(exception_caught)
-            mock_server().lifecycle.failed.assert_called_once_with()
-            mock_server().lifecycle.stopped.assert_called_once_with()
+        self.mock_gazebo().start.side_effect = self.__launch_callback
+        exception_caught = False
+        try:
+            self.launcher.initialize("world_file", None)
+        except Exception, e:
+            self.assertTrue(str(e).startswith("The simulation must abort"), msg=e)
+            exception_caught = True
+        self.assertTrue(exception_caught)
+        mock_server().lifecycle.failed.assert_called_once_with()
+        mock_server().lifecycle.stopped.assert_called_once_with()

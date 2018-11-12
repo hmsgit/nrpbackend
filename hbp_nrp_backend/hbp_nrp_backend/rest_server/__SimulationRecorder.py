@@ -32,10 +32,9 @@ from flask import request
 
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-                                        NRPServicesGeneralException, \
-                                        NRPServicesWrongUserException, \
-                                        ErrorMessages
+from hbp_nrp_backend import NRPServicesClientErrorException, \
+    NRPServicesGeneralException, NRPServicesWrongUserException
+from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
 from cle_ros_msgs.srv import SimulationRecorderRequest

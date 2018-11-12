@@ -30,8 +30,7 @@ __author__ = 'DanielPeppicelli, LucGuyot'
 import unittest
 import json
 from mock import patch, MagicMock, Mock
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-    NRPServicesTransferFunctionException
+from hbp_nrp_backend import NRPServicesClientErrorException, NRPServicesTransferFunctionException
 from hbp_nrp_backend.rest_server.__SimulationTransferFunctions import get_tf_name
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest

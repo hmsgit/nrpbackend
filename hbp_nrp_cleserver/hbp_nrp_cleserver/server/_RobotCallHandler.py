@@ -36,6 +36,7 @@ from pyxb import ValidationError
 from cle_ros_msgs import msg
 from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_commons.generated import robot_conf_api_gen as robotXmlParser
+from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, get_model_basepath
 
 logger = logging.getLogger(__name__)
 
@@ -95,17 +96,15 @@ class RobotCallHandler(object):
         :return: Tuple (True, SDF relative path) or (False, error message) to update config files
         """
         # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-        from hbp_nrp_backend.storage_client_api.StorageClient import \
-            find_file_in_paths, get_model_basepath
         client = self._cle_assembly.storage_client
         simDir = self._cle_assembly.simdir
 
         robot_sdf_abs_path = None
         try:
-            if is_custom:
+            if is_custom:   # pragma: no cover
                 zipRelPath = robot_model_rel_path
                 import json
-                try:    # pragma: no cover
+                try:
                     # Hack the file name for the storage server. Replace spaces and slashes.
                     # How do you know this? divine knowledge!
                     # FIXME: get_custom_model should take a path, custom logic should be done there

@@ -31,8 +31,7 @@ import unittest
 import json
 
 from mock import MagicMock
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException,\
-    NRPServicesTransferFunctionException
+from hbp_nrp_backend import NRPServicesClientErrorException, NRPServicesTransferFunctionException
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest
 from collections import defaultdict

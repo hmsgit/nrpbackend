@@ -41,9 +41,11 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException,\
-    ErrorMessages
+from hbp_nrp_backend import NRPServicesGeneralException, \
+    NRPServicesWrongUserException, NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import ErrorMessages
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf, \
@@ -187,10 +189,6 @@ class SimulationResetStorage(Resource):
         :param: the experiment id
         :param: the context_id for collab based simulations
         """
-
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
-
         client = StorageClient()
 
         _, experiment_file_paths = client.clone_all_experiment_files(
@@ -355,10 +353,6 @@ class SimulationResetStorage(Resource):
         :param context_id: the context ID for collab based simulations
         :return: A tuple with the path to the brain file and a list of populations
         """
-
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
-
         client = StorageClient()
 
         experiment_file = client.get_file(
@@ -436,12 +430,6 @@ class SimulationResetStorage(Resource):
         :param context_id: the context ID for collab based simulations
         :return: The content of the world sdf file
         """
-
-        # Done here in order to avoid circular dependencies introduced by the
-        # way we __init__ the rest_server module.
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
-
         client = StorageClient()
 
         # find the sdf filename from the .exc

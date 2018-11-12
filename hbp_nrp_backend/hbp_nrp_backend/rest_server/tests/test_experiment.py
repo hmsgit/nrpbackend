@@ -32,11 +32,9 @@ import os
 import sys
 import json
 from flask import Response
-from mock import patch, MagicMock
-from hbp_nrp_backend.rest_server.tests import RestTest
+from mock import patch
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException
-from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_backend import NRPServicesGeneralException
 
 
 PATH = os.path.split(__file__)[0]

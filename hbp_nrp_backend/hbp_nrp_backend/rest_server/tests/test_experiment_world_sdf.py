@@ -79,7 +79,7 @@ class MockedSimulation:
 class TestExperimentWorldSDF(RestTest):
 
     def setUp(self):
-        patch_StorageClient = patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+        patch_StorageClient = patch('hbp_nrp_backend.rest_server.__WorldSDFService.StorageClient')
         self.addCleanup(patch_StorageClient.stop)
         self.mock_StorageClient = patch_StorageClient.start()
         self.mock_storageClient_instance = self.mock_StorageClient.return_value

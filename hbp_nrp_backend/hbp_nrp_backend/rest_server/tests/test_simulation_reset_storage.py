@@ -36,7 +36,6 @@ from mock import patch, ANY
 import os
 import tempfile
 import shutil
-from hbp_nrp_backend.storage_client_api import StorageClient
 from hbp_nrp_backend.rest_server.__SimulationResetStorage import SimulationResetStorage
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from hbp_nrp_backend.rest_server.tests import RestTest
@@ -54,7 +53,7 @@ class TestSimulationResetStorage(RestTest):
 
     def setUp(self):
         patch_StorageClient =\
-            patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient')
+            patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.StorageClient')
         self.addCleanup(patch_StorageClient.stop)
         self.mock_StorageClient = patch_StorageClient.start()
         self.mock_storageClient_instance = self.mock_StorageClient.return_value

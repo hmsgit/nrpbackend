@@ -37,14 +37,16 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException,\
-    ErrorMessages
+from hbp_nrp_backend import NRPServicesGeneralException, \
+    NRPServicesWrongUserException, NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import ErrorMessages
+
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_backend.rest_server.__ExperimentService import get_experiment_basepath
+from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, get_model_basepath
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import get_all_neurons_as_dict
 
@@ -228,8 +230,6 @@ class SimulationReset(Resource):
             neurons_config[name] = v
         neurons_config = json.dumps(neurons_config)
 
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import find_file_in_paths, get_model_basepath
         brain_path = find_file_in_paths(
             bibi_conf.brainModel.file, get_model_basepath())
         if not brain_path:

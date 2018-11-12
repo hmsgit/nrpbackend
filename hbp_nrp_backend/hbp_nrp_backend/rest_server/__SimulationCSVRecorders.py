@@ -38,6 +38,7 @@ from hbp_nrp_backend import NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
@@ -184,13 +185,7 @@ class SimulationCSVRecorders(Resource):
 
         csv_files = simulation.cle.get_simulation_CSV_recorders_files()
 
-        # Done here in order to avoid circular dependencies introduced by the
-        # way we __init__ the rest_server module.
-        from hbp_nrp_backend.storage_client_api.StorageClient \
-            import StorageClient
-
         client = StorageClient()
-
         time_string = get_date_and_time_string()
         subfolder_name = string.join(['csv_records', time_string], '_')
 

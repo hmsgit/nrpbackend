@@ -31,8 +31,9 @@ from flask import request
 from flask_restful_swagger import swagger
 from flask_restful import Resource, fields
 
-from hbp_nrp_backend.rest_server import NRPServicesTransferFunctionException, \
-    NRPServicesWrongUserException, NRPServicesDuplicateNameException, ErrorMessages
+from hbp_nrp_backend import NRPServicesTransferFunctionException, \
+    NRPServicesWrongUserException, NRPServicesDuplicateNameException
+from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 

@@ -36,8 +36,9 @@ import unittest
 import mock
 import rospy
 import json
-from hbp_nrp_backend.rest_server import NRPServicesClientErrorException,\
-    NRPServicesGeneralException, NRPServicesUnavailableROSService, app
+from hbp_nrp_backend import NRPServicesClientErrorException,\
+    NRPServicesGeneralException, NRPServicesUnavailableROSService
+from hbp_nrp_backend.rest_server import app
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.__SimulationControl import MaterialControl, LightControl,\
     UserAuthentication

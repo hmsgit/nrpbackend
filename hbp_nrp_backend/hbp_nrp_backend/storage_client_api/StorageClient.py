@@ -35,7 +35,7 @@ import re
 from hbp_nrp_backend.config import Config
 from pyxb import ValidationError
 from xml.sax import SAXParseException
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException
+from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
 
 __author__ = "Manos Angelidis"

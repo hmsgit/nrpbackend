@@ -108,10 +108,6 @@ class MockOs2(object):
     environ = {'NRP_SIMULATION_DIR':'/tmp/nrp-simulation-dir'}
     path = os.path
 
-@patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths",
-       new=Mock(return_value=os.path.join(MODELS_PATH, 'braitenberg.py')))
-@patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath",
-       new=Mock(return_value=[os.path.join(MODELS_PATH, 'husky_model')]))
 @patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
 @patch("hbp_nrp_cle.common.os", new=MockOs2())
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
@@ -130,19 +126,21 @@ class MockOs2(object):
 @patch("hbp_nrp_cle.cle.DeterministicClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ClosedLoopEngine", new=MockedClosedLoopEngine())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
 class SimulationTestCase(unittest.TestCase):
 
     def test_simulation_local(self):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client, \
-            patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
+        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient") as storage_client, \
+                patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
+
             factory=ROSCLESimulationFactory()
             factory.create_new_simulation(MockedServiceRequest())
 
             factory.simulation_terminate_event.wait()
 
     def test_simulation_lugano(self):
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient") as storage_client, \
-            patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
+        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient") as storage_client, \
+                patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
 
             MockedServiceRequest.gzserver_host='lugano'
 

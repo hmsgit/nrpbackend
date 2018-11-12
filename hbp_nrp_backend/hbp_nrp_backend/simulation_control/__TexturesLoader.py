@@ -29,6 +29,7 @@ from gazebo_msgs.srv import SpawnEntity, SpawnEntityRequest, DeleteModel, Delete
 from geometry_msgs.msg import Point, Quaternion, Pose
 import rospy
 import tf
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +46,6 @@ class TexturesLoader(object):
         :param token: The token of the request
         :param experiment_id: The experiment id
         """
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         client = StorageClient()
         textures = client.get_textures(experiment_id, token)
         if textures:

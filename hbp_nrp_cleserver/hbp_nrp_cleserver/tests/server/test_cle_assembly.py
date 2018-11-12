@@ -62,7 +62,7 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         self.models_path_patch = patch(
             "hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
         self.models_path_patch.start()
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient"):
+        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient"):
             self.launcher = SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
 
     def tearDown(self):
@@ -176,7 +176,7 @@ class TestCLEGazeboSimulationAssemblyRobot(TestCLEGazeboSimulationAssembly):
         self.models_path_patch = patch(
             "hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
         self.models_path_patch.start()
-        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient"):
+        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient"):
             self.launcher = SynchronousRobotRosNest(42, exd, bibi, gzserver_host="local")
 
     @patch("hbp_nrp_cle.robotsim.RosRobotControlAdapter.RosRobotControlAdapter", new=MockRobotControlAdapter)

@@ -33,12 +33,10 @@ import json
 import os
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from cle_ros_msgs.srv import ResetSimulationRequest
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
-from hbp_nrp_backend.storage_client_api import StorageClient
 from mock import patch, Mock, mock_open
 
 PATH = os.path.split(__file__)[0]
@@ -91,8 +89,8 @@ class TestSimulationReset(RestTest):
         self.assertEqual(500, response.status_code)
 
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
+    @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_model_basepath")
+    @patch("hbp_nrp_backend.rest_server.__SimulationReset.find_file_in_paths")
     def test_reset_is_called_properly(self,mock_find_file_path, mock_get_model_path, mock_get_experiment_path):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
@@ -127,8 +125,8 @@ class TestSimulationReset(RestTest):
         self.assertEqual(200, response.status_code)
 
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_basepath")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath")
-    @patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths")
+    @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_model_basepath")
+    @patch("hbp_nrp_backend.rest_server.__SimulationReset.find_file_in_paths")
     @patch("hbp_nrp_backend.rest_server.__SimulationReset.get_experiment_data")
     def test_brain_reset_from_storage(self, mock_get_exp_data, mock_find_file_path, mock_get_model_path, mock_get_experiment_path):
         simulations.append(Simulation(

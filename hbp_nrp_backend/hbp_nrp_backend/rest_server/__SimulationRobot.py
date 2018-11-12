@@ -35,8 +35,10 @@ from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 
-from hbp_nrp_backend.rest_server import NRPServicesGeneralException, \
-    NRPServicesWrongUserException, NRPServicesClientErrorException, ErrorMessages, ParamNames
+from hbp_nrp_backend import NRPServicesGeneralException, \
+    NRPServicesWrongUserException, NRPServicesClientErrorException
+from hbp_nrp_backend.rest_server import ErrorMessages, ParamNames
+
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
@@ -166,14 +168,14 @@ class SimulationRobot(Resource):
         """
         Lists required fields for a POST new pose request
         """
-        required = [ParamNames.ROBOT_ID, ParamNames.ROBOT_REL_PATH]
+        required = [ParamNames.ROBOT_REL_PATH]
 
     @swagger.model
     class RobotPutRequest(RobotRequest):
         """
         Lists required fields for a PUT request
         """
-        required = [ParamNames.ROBOT_ID, ParamNames.ROBOT_POSE]
+        required = [ParamNames.ROBOT_POSE]
 
     @swagger.operation(
         notes='Add a new robot to the simulation.',

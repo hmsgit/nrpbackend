@@ -9,11 +9,6 @@ from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend import NRPServicesGeneralException, NRPServicesClientErrorException, \
-    NRPServicesStateException, NRPServicesTransferFunctionException, \
-    NRPServicesStateMachineException, NRPServicesWrongUserException, \
-    NRPServicesUnavailableROSService, NRPServicesDuplicateNameException
-
 
 class NRPServicesExtendedApi(Api):
     """

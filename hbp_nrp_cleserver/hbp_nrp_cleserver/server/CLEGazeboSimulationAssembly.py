@@ -48,6 +48,8 @@ from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGaze
 from hbp_nrp_cleserver.server.GazeboSimulationRecorder import GazeboSimulationRecorder
 from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_backend import NRPServicesGeneralException
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, \
+    get_model_basepath, find_file_in_paths
 
 # These imports start NEST.
 from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
@@ -291,8 +293,6 @@ class GazeboSimulationAssembly(SimulationAssembly):
 
             # Stop any external robot controllers
             if self.bibi.extRobotController:
-                from hbp_nrp_backend.storage_client_api.StorageClient \
-                    import get_model_basepath, find_file_in_paths
                 robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
                                                                get_model_basepath())
                 if robot_controller_filepath:
@@ -370,8 +370,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self.cle_server = None
         self.tempAssetsDir = 'assets'
 
-        # FIXME: fix dependency loop from the imports
-        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
         self._storageClient = StorageClient()
         self._simDir = self._storageClient.get_simulation_directory()
 
@@ -485,9 +483,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             if hasattr(modelTag, 'assetPath') and modelTag.assetPath is None:
                 modelTag.assetPath = "."
 
-            from hbp_nrp_backend.storage_client_api.StorageClient import \
-                find_file_in_paths, get_model_basepath
-
             if isCustom:
                 path = self._extract_robot_zip(modelTag)
             else:
@@ -592,8 +587,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # load external robot controller
         if self.bibi.extRobotController is not None:
-            from hbp_nrp_backend.storage_client_api.StorageClient \
-                import get_model_basepath, find_file_in_paths
             robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
                                                            get_model_basepath())
             if not os.path.isfile(robot_controller_filepath) and self._simDir is not None:
@@ -650,8 +643,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     os.path.basename(brainfilepath),
                     byname=True))
         else:
-            from hbp_nrp_backend.storage_client_api.StorageClient \
-                import get_model_basepath, find_file_in_paths
             brainfilepath = find_file_in_paths(brainfilepath, get_model_basepath())
 
             #if not brainfilepath:
