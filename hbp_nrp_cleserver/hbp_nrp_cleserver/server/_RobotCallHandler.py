@@ -57,20 +57,23 @@ class RobotCallHandler(object):
         ret = []
         for rid, robot in self._cle_assembly.robotManager.get_robot_dict().iteritems():
             # convert quaternion pose to euler
-            quaternion = (
-                robot.pose.orientation.x,
-                robot.pose.orientation.y,
-                robot.pose.orientation.z,
-                robot.pose.orientation.w
-            )
-            euler = tf.transformations.euler_from_quaternion(quaternion)
-            pose = msg.Pose(x=robot.pose.position.x,
-                            y=robot.pose.position.y,
-                            z=robot.pose.position.z,
-                            roll=euler[0],
-                            pitch=euler[1],
-                            yaw=euler[2]
-                            )
+            if not robot.pose:
+                pose = None
+            else:
+                quaternion = (
+                    robot.pose.orientation.x,
+                    robot.pose.orientation.y,
+                    robot.pose.orientation.z,
+                    robot.pose.orientation.w
+                )
+                euler = tf.transformations.euler_from_quaternion(quaternion)
+                pose = msg.Pose(x=robot.pose.position.x,
+                                y=robot.pose.position.y,
+                                z=robot.pose.position.z,
+                                roll=euler[0],
+                                pitch=euler[1],
+                                yaw=euler[2]
+                                )
             # SDFFileAbsPath contains a absolute path
             ret.append(msg.RobotInfo(robot_id=str(rid),
                                      robot_model_rel_path=str(robot.SDFFileAbsPath),

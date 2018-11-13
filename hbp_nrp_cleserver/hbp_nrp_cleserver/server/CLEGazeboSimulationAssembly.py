@@ -549,6 +549,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 "Please make sure that it has been uploaded correctly.",
                 "Zipped model retrieval failed")
 
+        # TODO: move this statement from here
         return os.path.join(self._simDir, robot_file.value())
 
     # pylint: disable-msg=too-many-branches
