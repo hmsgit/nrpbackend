@@ -64,9 +64,18 @@ class MockServiceResponse:
     </sdf>
     """
 
+class FakeRobot(object):
+    def __init__(self,id):
+        self.robot_id = id 
+
+class MockedCLE(MagicMock):
+    def get_simulation_robots(self):
+        return [FakeRobot('fakeID1'),FakeRobot('fakeID1')]
+
 class MockedSimulation:
     experiment_id = False
-
+    cle = MockedCLE()
+    
 class TestExperimentWorldSDF(RestTest):
 
     def setUp(self):
@@ -79,8 +88,8 @@ class TestExperimentWorldSDF(RestTest):
 
     @patch('hbp_nrp_backend.rest_server.__WorldSDFService._get_simulation_or_abort')
     @patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
-    def test_experiment_world_sdf_put(self, mocked_rospy, path_get_sim):
-
+    @patch('hbp_nrp_backend.rest_server.__SimulationRobot')
+    def test_experiment_world_sdf_put(self,mocked_get_sim_robots, mocked_rospy, path_get_sim):
         sim = MockedSimulation()
         sim.experiment_id = '123456'
         path_get_sim.return_value = sim
@@ -100,7 +109,6 @@ class TestExperimentWorldSDF(RestTest):
         self.mock_storageClient_instance.parse_and_check_file_is_valid.return_value =  exp
         response = self.client.post('/simulation/0/sdf_world')
         self.assertEqual(response.status_code, 200)
-
 
     @patch('hbp_nrp_backend.rest_server.__WorldSDFService._get_simulation_or_abort')
     @patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')

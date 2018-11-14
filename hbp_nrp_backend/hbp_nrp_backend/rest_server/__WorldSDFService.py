@@ -31,11 +31,9 @@ __author__ = 'UgoAlbanese'
 import logging
 import rospy
 from lxml import etree as ET
-import os
-import xml
 
 from hbp_nrp_backend.rest_server import NRPServicesClientErrorException, \
-     NRPServicesUnavailableROSService
+    NRPServicesUnavailableROSService
 from gazebo_msgs.srv import ExportWorldSDF
 from flask_restful import fields, Resource
 from flask_restful_swagger import swagger
@@ -80,7 +78,6 @@ class WorldSDFService(Resource):
             "code": 200,
             "message": "SDF successfully returned"
         }])
-    # pylint: disable=unused-argument
     def get(self, sim_id):
         """
         Returns the SDF file describing the world in which the simulation is carried out
@@ -91,22 +88,27 @@ class WorldSDFService(Resource):
         :status 400: A ROS error occurred
         :status 200: SDF file successfully returned
         """
-
+        simulation = _get_simulation_or_abort(sim_id)
         try:
             rospy.wait_for_service('/gazebo/export_world_sdf', 3)
         except rospy.ROSException as exc:
             raise NRPServicesUnavailableROSService(str(exc))
 
-        dump_sdf_world = rospy.ServiceProxy('/gazebo/export_world_sdf', ExportWorldSDF)
+        dump_sdf_world = rospy.ServiceProxy(
+            '/gazebo/export_world_sdf', ExportWorldSDF)
 
         try:
             sdf_string = dump_sdf_world().sdf_dump
             tree = ET.fromstring(sdf_string)
-            for m in tree.findall(".//model[@name='robot']"):
-                m.getparent().remove(m)
+            # remove all references to the robots in the sdf
+            robots = simulation.cle.get_simulation_robots()
+            for robot in robots:
+                for m in tree.findall(".//model[@name='" + robot.robot_id + "']"):
+                    m.getparent().remove(m)
             sdf_string = ET.tostring(tree, encoding='utf8', method='xml')
         except rospy.ServiceException as exc:
-            raise NRPServicesClientErrorException("Service did not process request:" + str(exc))
+            raise NRPServicesClientErrorException(
+                "Service did not process request:" + str(exc))
 
         return {"sdf": sdf_string}, 200
 
@@ -138,7 +140,6 @@ class WorldSDFService(Resource):
         :status 200: Success. File written.
         """
         # pylint: disable=too-many-locals
-        context_id = UserAuthentication.get_header_token(request)
         simulation = _get_simulation_or_abort(sim_id)
 
         # Done here in order to avoid circular dependencies introduced by the
@@ -150,29 +151,28 @@ class WorldSDFService(Resource):
         except rospy.ROSException as exc:
             raise NRPServicesUnavailableROSService(str(exc))
 
-        dump_sdf_world = rospy.ServiceProxy('/gazebo/export_world_sdf', ExportWorldSDF)
-        robot_pose = []
+        dump_sdf_world = rospy.ServiceProxy(
+            '/gazebo/export_world_sdf', ExportWorldSDF)
 
         try:
             sdf_string = dump_sdf_world().sdf_dump
             tree = ET.fromstring(sdf_string)
-            try:
-                robot_pose = tree.findall(".//state/model[@name='robot']/pose")[0].text.split()
-            # pylint: disable=bare-except
-            except:
-                logger.error("Can't retrieve robot position.")
             # Erase all robots from the SDF
-            for m in tree.findall(".//model[@name='robot']"):
-                m.getparent().remove(m)
+            robots = simulation.cle.get_simulation_robots()
+            for robot in robots:
+                for m in tree.findall(".//model[@name='" + robot.robot_id + "']"):
+                    m.getparent().remove(m)
             sdf_string = ET.tostring(tree, encoding='utf8', method='xml')
         except rospy.ServiceException as exc:
-            raise NRPServicesClientErrorException("Service did not process request:" + str(exc))
+            raise NRPServicesClientErrorException(
+                "Service did not process request:" + str(exc))
 
         client = StorageClient()
 
         # find the sdf world filename from the .exc
         exp_xml_file_path = client.clone_file('experiment_configuration.exc',
-                                              UserAuthentication.get_header_token(request),
+                                              UserAuthentication.get_header_token(
+                                                  request),
                                               simulation.experiment_id)
 
         experiment_file = client.parse_and_check_file_is_valid(exp_xml_file_path,
@@ -181,34 +181,9 @@ class WorldSDFService(Resource):
 
         world_file_name = experiment_file.environmentModel.src
 
-        if 'storage://' in world_file_name:
-            world_file_name = os.path.basename(world_file_name)
-            client.create_or_update(
-                UserAuthentication.get_header_token(request),
-                client.get_folder_uuid_by_name(
-                    UserAuthentication.get_header_token(request), context_id, 'environments'),
-                    world_file_name,
-                sdf_string, "text/plain")
-        else:
-            client.create_or_update(
-                UserAuthentication.get_header_token(request), simulation.experiment_id,
-                world_file_name, sdf_string, "text/plain")
-
-        # Save the robot position in the ExDConf file
-        if len(robot_pose) is 6:  # We need 6 elements (from Gazebo)
-            experiment_file.environmentModel.robotPose.x = robot_pose[0]
-            experiment_file.environmentModel.robotPose.y = robot_pose[1]
-            experiment_file.environmentModel.robotPose.z = robot_pose[2]
-            experiment_file.environmentModel.robotPose.roll = robot_pose[3]
-            experiment_file.environmentModel.robotPose.pitch = robot_pose[4]
-            experiment_file.environmentModel.robotPose.yaw = robot_pose[5]
-
-            client.create_or_update(
-                UserAuthentication.get_header_token(request), simulation.experiment_id,
-                'experiment_configuration.exc', xml.dom.minidom.parseString(
-                    experiment_file.toxml("utf-8")).toprettyxml(), "text/plain")
-
-        else:
-            logger.error("Malformed robot position tag in SDF: " + robot_pose)
+        client.create_or_update(
+            UserAuthentication.get_header_token(
+                request), simulation.experiment_id,
+            world_file_name, sdf_string, "text/plain")
 
         return 200
