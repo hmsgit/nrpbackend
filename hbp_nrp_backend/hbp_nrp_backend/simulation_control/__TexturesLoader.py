@@ -25,11 +25,13 @@
 This module handles textures loading
 """
 import logging
-from gazebo_msgs.srv import SpawnEntity, SpawnEntityRequest, DeleteModel, DeleteModelRequest
-from geometry_msgs.msg import Point, Quaternion, Pose
+
 import rospy
 import tf
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+from gazebo_msgs.srv import SpawnEntity, SpawnEntityRequest, DeleteModel, DeleteModelRequest
+from geometry_msgs.msg import Point, Quaternion, Pose
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,6 +39,7 @@ class TexturesLoader(object):
     """"
     Textures loader
     """
+
     # pylint: disable=no-self-use
 
     def load_textures(self, token, experiment_id):
@@ -47,6 +50,7 @@ class TexturesLoader(object):
         :param experiment_id: The experiment id
         """
         client = StorageClient()
+        # FIXME: this raises exception for non-existent textures or folder
         textures = client.get_textures(experiment_id, token)
         if textures:
             texture_name = textures[0]['name']
@@ -72,24 +76,16 @@ class TexturesLoader(object):
                     + '  </link>'                                                                \
                     + ' </model>'                                                                \
                     + '</sdf>'
-            qRot = tf.transformations.quaternion_from_euler(
-                0, 0, 0)
+            qRot = tf.transformations.quaternion_from_euler(0, 0, 0)
 
-            pose = Pose(Point(0, 0,
-                              0), Quaternion(*qRot))
+            pose = Pose(Point(0, 0, 0), Quaternion(*qRot))
             try:
                 # We wait maximum 5 seconds before we give up
                 rospy.wait_for_service('/gazebo/spawn_sdf_entity', 5)
-                service_proxy = rospy.ServiceProxy(
-                    '/gazebo/spawn_sdf_entity', SpawnEntity)
-                service_proxy.call(SpawnEntityRequest(texture_name,
-                                                      model,
-                                                      "",
-                                                      pose,
-                                                      'world'))
+                service_proxy = rospy.ServiceProxy('/gazebo/spawn_sdf_entity', SpawnEntity)
+                service_proxy.call(SpawnEntityRequest(texture_name, model, "", pose, 'world'))
                 rospy.wait_for_service('/gazebo/delete_model', 5)
-                service_proxy = rospy.ServiceProxy(
-                    '/gazebo/delete_model', DeleteModel)
+                service_proxy = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
                 service_proxy.call(DeleteModelRequest(texture_name))
 
             except rospy.ROSException:
