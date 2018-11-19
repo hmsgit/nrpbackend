@@ -299,19 +299,27 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that led to starting the simulation
         """
-        logger.info("starting State Machines...")
+        logger.info("Starting State Machines...")
         try:
-            if not self.__textures_loaded:
-                TexturesLoader().load_textures(UserAuthentication.get_header_token(
-                    request), self.simulation.experiment_id)
-                self.__textures_loaded = True
             self.simulation.state_machine_manager.start_all(False)
         # pylint: disable=broad-except
         except Exception, e:
-            logger.error("Starting State Machines Failed")
+            logger.error("Starting state machines failed")
             logger.exception(e)
             # The frontend will be notified of any state machine issues directly
             # over the cle_error topic
+
+        # TODO: Move texture loading out of simulation control!
+        logger.info("Loading textures...")
+        try:
+            if not self.__textures_loaded:
+                TexturesLoader().load_textures(UserAuthentication.get_header_token(request),
+                                               self.simulation.experiment_id)
+                self.__textures_loaded = True
+        # pylint: disable=broad-except
+        except Exception, e:
+            logger.error("Texture loading failed")
+            logger.exception(e)
 
     def stop(self, state_change):
         """
