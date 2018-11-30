@@ -562,6 +562,21 @@ class ROSCLEServer(SimulationServer):
 
         return numpy.array(tf_arr), numpy.array(arr_active_mask)
 
+    @staticmethod
+    def __get_transfer_function_activation(tf_name):
+        """
+        Return the activation status of the transfer function
+        :param tf_name: string holding the name of a transfer function
+        :return boolean value which is True if the transfer function is activated, False otherwise
+        :raise: A ValueError exception is raised if the transfer function tf_name is not found
+        """
+        tfs = tf_framework.get_transfer_functions()
+        for tf in tfs:
+            if tf.name == tf_name:
+                return tf.active
+
+        raise ValueError("__get_transfer_function_activation: TF {} not found".format(tf_name))
+
     def _publish_error_from_exception(self, exception, tf_name):
         """
         Publish an error message on the error topic, populating the message using the
@@ -775,9 +790,13 @@ class ROSCLEServer(SimulationServer):
         # Try to load the TF
         try:
             # When editing a TF (i.e. not new), delete it before loading the new one
+            activation = True
             if not new and original_name is not None:
+                activation = self.__get_transfer_function_activation(original_name)
                 tf_framework.delete_transfer_function(original_name)
-            tf_framework.set_transfer_function(new_source, new_code, new_name)
+            tf_framework.set_transfer_function(
+                new_source, new_code, new_name, activation=activation
+            )
         except TFLoadingException as e:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_ERROR,
