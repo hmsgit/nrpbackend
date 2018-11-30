@@ -29,8 +29,6 @@ Using the storage
 __author__ = "Alessandro Ambrosano, Ugo Albanese, Georg Hinkel, Manos Angelidis"
 
 import os
-import tempfile
-import shutil
 import logging
 import json
 
@@ -40,7 +38,6 @@ from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
-
 from hbp_nrp_backend import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server import ErrorMessages
@@ -54,7 +51,6 @@ from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf,
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen
-from distutils.dir_util import copy_tree  # pylint: disable=F0401,E0611
 
 logger = logging.getLogger(__name__)
 
@@ -67,14 +63,18 @@ class SimulationResetStorage(Resource):
     respective CLE instance.
     """
 
+    storage_client = StorageClient()
+
     @swagger.model
     class ResetRequest(object):
         """
         Represents a request for the API implemented by SimulationResetStorage
         """
 
-        resource_fields = {'resetType': fields.Integer,
-                           'contextId': fields.String()}
+        resource_fields = {
+            'resetType': fields.Integer,
+            'contextId': fields.String()
+        }
         required = ['resetType']
 
     @swagger.operation(
@@ -143,45 +143,44 @@ class SimulationResetStorage(Resource):
         if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
             raise NRPServicesWrongUserException()
 
-        body = request.get_json(force=True)
-        context_id = body.get('contextId', None)
+        req_body = request.get_json(force=True)
+        context_id = req_body.get('contextId', None)
 
-        for par in SimulationResetStorage.ResetRequest.required:
-            if par not in body:
-                raise NRPServicesClientErrorException(
-                    'Missing parameter %s' % (par, ))
+        for missing_par in (par for par in self.ResetRequest.required if par not in req_body):
+            raise NRPServicesClientErrorException('Missing parameter {}'.format(missing_par))
 
-        for par in body:
-            if par not in SimulationResetStorage.ResetRequest.resource_fields:
-                raise NRPServicesClientErrorException(
-                    'Invalid parameter %s' % (par, ))
+        for invalid_p in (par for par in req_body if par not in self.ResetRequest.resource_fields):
+            raise NRPServicesClientErrorException('Invalid parameter {}'.format(invalid_p))
 
-        reset_type = body.get('resetType')
+        reset_type = req_body.get('resetType')
 
-        world_sdf, brain_file, populations = SimulationResetStorage\
-            ._compute_payload(reset_type, experiment_id, context_id)
+        rsr = srv.ResetSimulationRequest
 
         try:
-            rsr = srv.ResetSimulationRequest
-            if reset_type == rsr.RESET_FULL:
-                SimulationResetStorage.resetFromStorageAll(
-                    sim, experiment_id, context_id)
-                sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
+            if reset_type == rsr.RESET_ROBOT_POSE:
+                sim.cle.reset(reset_type)
+            elif reset_type == rsr.RESET_WORLD:
+                sim.cle.reset(reset_type,
+                              world_sdf=self._get_sdf_world_from_storage(experiment_id, context_id))
+            elif reset_type == rsr.RESET_FULL:
+                brain_path, populations, _ = \
+                    self._get_brain_info_from_storage(experiment_id, context_id)
+                self.reset_from_storage_all(sim, experiment_id, context_id)
+
+                sim.cle.reset(reset_type,
+                              world_sdf=self._get_sdf_world_from_storage(experiment_id, context_id),
+                              brain_path=brain_path,
                               populations=populations)
-            elif reset_type == rsr.RESET_BRAIN:
-                SimulationResetStorage.resetBrain(
-                    sim, experiment_id, context_id)
             else:
-                sim.cle.reset(reset_type, world_sdf=world_sdf, brain_path=brain_file,
-                              populations=populations)
+                return {}, 400  # Other reset modes are unsupported
 
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
         return {}, 200
 
-    @staticmethod
-    def resetFromStorageAll(simulation, experiment_id, context_id):
+    @classmethod
+    def reset_from_storage_all(cls, simulation, experiment_id, context_id):
         """
         Reset states machines and transfer functions
 
@@ -189,34 +188,22 @@ class SimulationResetStorage(Resource):
         :param: the experiment id
         :param: the context_id for collab based simulations
         """
-        client = StorageClient()
 
-        _, experiment_file_paths = client.clone_all_experiment_files(
+        simulation_dir = cls.storage_client.get_simulation_directory()
+        cls.storage_client.clear_temp_sim_directory()
+
+        _ = cls.storage_client.clone_all_experiment_files(
             UserAuthentication.get_header_token(request),
-            experiment_id, new_folder=True)
-        cloned_base_path = os.path.dirname(
-            experiment_file_paths['experiment_conf'])
+            experiment_id)
 
-        current_experiment_path = simulation.lifecycle.experiment_path
-        current_base_path = os.path.dirname(current_experiment_path)
+        exp_conf, bibi_conf = get_experiment_data(simulation.lifecycle.experiment_path)
 
-        copy_tree(cloned_base_path, current_base_path)
-        if tempfile.gettempdir() in cloned_base_path:
-            shutil.rmtree(cloned_base_path)
+        cls.reset_brain(simulation, experiment_id, context_id)
+        cls.reset_transfer_functions(simulation, bibi_conf, simulation_dir)
+        cls.reset_state_machines(simulation, exp_conf, simulation_dir)
 
-        exp_conf, bibi_conf = get_experiment_data(current_experiment_path)
-
-        SimulationResetStorage.resetBrain(
-            simulation, experiment_id, context_id)
-
-        SimulationResetStorage.resetTransferFunctions(simulation,
-                                                      bibi_conf,
-                                                      current_base_path)
-        SimulationResetStorage.resetStateMachines(
-            simulation, exp_conf, current_base_path)
-
-    @staticmethod
-    def resetBrain(simulation, experiment_id, context_id):
+    @classmethod
+    def reset_brain(cls, simulation, experiment_id, context_id):
         """
         Reset brain
 
@@ -224,38 +211,32 @@ class SimulationResetStorage(Resource):
         :param experiment_id: the related experiment id
         :param context_id: the context ID for collab based simulations
         """
-        brain_path, _, neurons_config = \
-            SimulationResetStorage._get_brain_info_from_storage(
-                experiment_id, context_id)
+        brain_path, _, neurons_config = cls._get_brain_info_from_storage(experiment_id, context_id)
 
         # Convert the populations to a JSON dictionary
-        for (name, s) in neurons_config.iteritems():
-            v = dict()
-            v['from'] = s.start
-            v['to'] = s.stop
-            if s.step <= 0:
-                v['step'] = 1
-            else:
-                v['step'] = s.step
+        for name, s in neurons_config.iteritems():
+            neurons_config[name] = {
+                'from': s.start,
+                'to': s.stop,
+                'step': s.step if s.step > 0 else 1
+            }
 
-            neurons_config[name] = v
+        with open(brain_path, 'r') as brain_file:
+            result = simulation.cle.set_simulation_brain(
+                brain_type='py',
+                data=brain_file.read(),
+                data_type="text",
+                brain_populations=json.dumps(neurons_config))
 
-        neurons_config = json.dumps(neurons_config)
-
-        with open(brain_path, 'r') as myfile:
-            data = myfile.read()
-            DO_CHANGE_POPULATION = 1
-            result = simulation.cle.set_simulation_brain('py', data, "text", neurons_config,
-                                                         DO_CHANGE_POPULATION)
             if result.error_message is not "":
                 # Error in given brain
-                raise ROSCLEClientException('{}, line:{}, column:{}, population_change:{}'
-                                            .format(result.error_message, result.error_line,
-                                                    result.error_column,
-                                                    result.handle_population_change))
+                raise ROSCLEClientException(
+                    '{error_message}, line:{error_line},'
+                    ' column:{error_column}, population_change:{handle_population_change}'
+                    .format(**result.__dict__))
 
     @staticmethod
-    def resetStateMachines(sim, experiment, sm_base_path):
+    def reset_state_machines(sim, experiment, sm_base_path):
         """
         Reset states machines
 
@@ -283,7 +264,7 @@ class SimulationResetStorage(Resource):
         sim.state_machine_manager.initialize_all()
 
     @staticmethod
-    def resetTransferFunctions(simulation, bibi_conf, base_path):
+    def reset_transfer_functions(simulation, bibi_conf, base_path):
         """
         Reset transfer functions
 
@@ -292,59 +273,25 @@ class SimulationResetStorage(Resource):
         :param base_path: base path of the experiment
         """
         old_tfs, _ = simulation.cle.get_simulation_transfer_functions()
-        for tf in old_tfs:
-            #ignore broken TFs
-            tfName = get_tf_name(tf)
-            if tfName:
-                simulation.cle.delete_simulation_transfer_function(tfName)
+
+        for old_tf_name in (get_tf_name(old_tf) for old_tf in old_tfs):
+            if old_tf_name is not None:  # ignore broken TFs
+                simulation.cle.delete_simulation_transfer_function(old_tf_name)
 
         import_referenced_python_tfs(bibi_conf, base_path)
 
         for tf in bibi_conf.transferFunction:
-            tf_code = generate_tf(tf)
-            tf_code = correct_indentation(tf_code, 0)
-            tf_code = tf_code.strip() + "\n"
-            logger.info(" RESET TF: " + tf.name + "\n" + tf_code + '\n')
+            tf_code = '{}\n'.format(correct_indentation(generate_tf(tf), 0).strip())
 
+            logger.debug(" RESET TF: {tf_name}\n{tf_code}\n"
+                         .format(tf_name=tf.name, tf_code=tf_code))
             # adding original TFs from the bibi
             # do not check the error message.
             # CLE will handle also invalid TFs
-            simulation.cle.add_simulation_transfer_function(
-                str(tf_code)
-            )
+            simulation.cle.add_simulation_transfer_function(str(tf_code))
 
-    @staticmethod
-    def _compute_payload(reset_type, experiment_id, context_id):
-        """
-        Compute the payload corresponding to a certain reset type
-
-        :param reset_type:
-        :param experiment_id: the experiment needed by RESET_WORLD
-        :param context_id: the context ID for collab based simulations
-        :return: the payload for the reset request: a tuple of (world_sdf, brain_path, populations)
-        """
-
-        rsr = srv.ResetSimulationRequest
-
-        if reset_type == rsr.RESET_WORLD:
-            return \
-                SimulationResetStorage._get_sdf_world_from_storage(
-                    experiment_id, context_id), None, None
-        elif reset_type == rsr.RESET_BRAIN:
-            brain, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
-                experiment_id, context_id)
-            return None, brain, populations
-        elif reset_type == rsr.RESET_FULL:
-            world_sdf = SimulationResetStorage._get_sdf_world_from_storage(
-                experiment_id, context_id)
-            brain, populations, _ = SimulationResetStorage._get_brain_info_from_storage(
-                experiment_id, context_id)
-            return world_sdf, brain, populations
-        else:
-            return None, None, None
-
-    @staticmethod
-    def _get_brain_info_from_storage(experiment_id, context_id):
+    @classmethod
+    def _get_brain_info_from_storage(cls, experiment_id, context_id):
         """
         Gathers from the storage the brain script and the populations by getting the BIBI
         configuration file.
@@ -353,54 +300,32 @@ class SimulationResetStorage(Resource):
         :param context_id: the context ID for collab based simulations
         :return: A tuple with the path to the brain file and a list of populations
         """
-        client = StorageClient()
+        del context_id  # Unused
 
-        experiment_file = client.get_file(
-            UserAuthentication.get_header_token(request),
-            experiment_id,
-            'experiment_configuration.exc',
-            byname=True)
+        request_token = UserAuthentication.get_header_token(request)
 
-        bibi_filename = exp_conf_api_gen.CreateFromDocument(
-            experiment_file).bibiConf.src
+        experiment_file = cls.storage_client.get_file(
+            request_token, experiment_id, 'experiment_configuration.exc', by_name=True)
+
+        bibi_filename = exp_conf_api_gen.CreateFromDocument(experiment_file).bibiConf.src
 
         # find the brain filename from the bibi
-        bibi_file = client.get_file(
-            UserAuthentication.get_header_token(request),
-            experiment_id,
-            bibi_filename,
-            byname=True
-        )
+        bibi_file = cls.storage_client.get_file(
+            request_token, experiment_id, bibi_filename, by_name=True)
+
         bibi_file_obj = bibi_api_gen.CreateFromDocument(bibi_file)
-        brain_filename = os.path.split(bibi_file_obj.brainModel.file)[-1]
-        brain_file_path = os.path.join(
-            client.get_simulation_directory(), brain_filename)
+        brain_filename = os.path.basename(bibi_file_obj.brainModel.file)
 
-        if 'storage://' in bibi_file_obj.brainModel.file:
-            with open(brain_file_path, "w") as f:
-                f.write(client.get_file(
-                    UserAuthentication.get_header_token(request),
-                    client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
-                                                   context_id,
-                                                   'brains'),
-                    brain_filename,
-                    byname=True))
+        brain_filepath = cls.storage_client.clone_file(brain_filename, request_token, experiment_id)
 
-        else:
-            brain_file_path = client.clone_file(
-                brain_filename,
-                UserAuthentication.get_header_token(request),
-                experiment_id
-            )
-
-        neurons_config = get_all_neurons_as_dict(
-            bibi_file_obj.brainModel.populations)
+        neurons_config = get_all_neurons_as_dict(bibi_file_obj.brainModel.populations)
 
         neurons_config_clean = [
             SimulationResetStorage._get_experiment_population(name, v)
             for (name, v) in neurons_config.iteritems()
         ]
-        return brain_file_path, neurons_config_clean, neurons_config
+
+        return brain_filepath, neurons_config_clean, neurons_config
 
     @staticmethod
     def _get_experiment_population(name, value):
@@ -412,16 +337,17 @@ class SimulationResetStorage(Resource):
         :return:
         """
         if value is None:
-            return msg.ExperimentPopulationInfo(name=name, type=0, ids=[], start=0, stop=0, step=0)
-        elif isinstance(value, slice):
-            return msg.ExperimentPopulationInfo(name=name, type=1, ids=[], start=value.start,
-                                                stop=value.stop, step=value.step)
-        elif isinstance(value, list):
-            return msg.ExperimentPopulationInfo(name=name, type=2, ids=value, start=0,
-                                                stop=0, step=0)
+            return msg.ExperimentPopulationInfo(
+                name=name, type=0, ids=[], start=0, stop=0, step=0)
+        if isinstance(value, slice):
+            return msg.ExperimentPopulationInfo(
+                name=name, type=1, ids=[], start=value.start, stop=value.stop, step=value.step)
+        if isinstance(value, list):
+            return msg.ExperimentPopulationInfo(
+                name=name, type=2, ids=value, start=0, stop=0, step=0)
 
-    @staticmethod
-    def _get_sdf_world_from_storage(experiment_id, context_id):
+    @classmethod
+    def _get_sdf_world_from_storage(cls, experiment_id, context_id):
         """
         Download from the storage an sdf world file as a string.
         The file belongs to the experiment identified by experiment_id
@@ -430,29 +356,15 @@ class SimulationResetStorage(Resource):
         :param context_id: the context ID for collab based simulations
         :return: The content of the world sdf file
         """
-        client = StorageClient()
+        del context_id  # Unused
+
+        request_token = UserAuthentication.get_header_token(request)
 
         # find the sdf filename from the .exc
-        experiment_file = client.get_file(
-            UserAuthentication.get_header_token(request),
-            experiment_id,
-            'experiment_configuration.exc',
-            byname=True)
+        experiment_file = cls.storage_client.get_file(
+            request_token, experiment_id, 'experiment_configuration.exc', by_name=True)
 
-        world_file_name = exp_conf_api_gen.CreateFromDocument(
-            experiment_file).environmentModel.src
+        world_file_name = exp_conf_api_gen.CreateFromDocument(experiment_file).environmentModel.src
 
-        if 'storage://' in world_file_name:
-            return client.get_file(
-                UserAuthentication.get_header_token(request),
-                client.get_folder_uuid_by_name(UserAuthentication.get_header_token(request),
-                                               context_id,
-                                               'environments'),
-                os.path.basename(world_file_name),
-                byname=True)
-        else:
-            return client.get_file(
-                UserAuthentication.get_header_token(request),
-                experiment_id,
-                world_file_name,
-                byname=True)
+        return cls.storage_client.get_file(
+            request_token, experiment_id, world_file_name, by_name=True)

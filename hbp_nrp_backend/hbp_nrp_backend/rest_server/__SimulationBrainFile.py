@@ -78,7 +78,7 @@ class SimulationBrainFile(Resource):
     """
 
     @swagger.model
-    @swagger.nested(additional_populations=PopulationDictionary.__name__)
+    @swagger.nested(brain_populations=PopulationDictionary.__name__)
     class GetBrain(object):
         """
         Get Experiment Brain
@@ -89,12 +89,12 @@ class SimulationBrainFile(Resource):
             'brain_type': fields.String(),
             'data_type': fields.String(),
             'data': fields.String(),
-            'additional_populations': fields.Nested(PopulationDictionary.resource_fields)
+            'brain_populations': fields.Nested(PopulationDictionary.resource_fields)
         }
-        required = ['brain_type', 'data_type', 'data', 'additional_populations']
+        required = ['brain_type', 'data_type', 'data', 'brain_populations']
 
     @swagger.model
-    @swagger.nested(additional_populations=PopulationDictionary.__name__)
+    @swagger.nested(brain_populations=PopulationDictionary.__name__)
     class SetBrain(object):
         """
         Set Experiment Brain
@@ -104,10 +104,10 @@ class SimulationBrainFile(Resource):
             'brain_type': fields.String(),
             'data_type': fields.String(),
             'data': fields.String(),
-            'additional_populations': fields.Nested(PopulationDictionary.resource_fields),
+            'brain_populations': fields.Nested(PopulationDictionary.resource_fields),
             'change_population': fields.Integer
         }
-        required = ['brain_type', 'data_type', 'data', 'additional_populations',
+        required = ['brain_type', 'data_type', 'data', 'brain_populations',
                     'change_population']
 
     @swagger.model
@@ -163,7 +163,7 @@ class SimulationBrainFile(Resource):
         :> json string brain_type: Type of the brain file ('h5' or 'py')
         :> json string data_type: type of the data field ('text' or 'base64')
         :> json string data: Contents of the brain file. Encoding given in field data_type
-        :> json dict additional_populations: A dictionary indexed by population names and containing
+        :> json dict brain_populations: A dictionary indexed by population names and containing
                                              neuron indices.
 
         :status 500: {0}
@@ -179,7 +179,7 @@ class SimulationBrainFile(Resource):
             'data': result.brain_data,
             'brain_type': result.brain_type,
             'data_type': result.data_type,
-            'additional_populations': json.loads(result.brain_populations),
+            'brain_populations': json.loads(result.brain_populations),
         }, 200
 
     @swagger.operation(
@@ -239,7 +239,7 @@ class SimulationBrainFile(Resource):
         :< json string brain_type: Type of the brain file ('h5' or 'py')
         :< json string data_type: type of the data field ('text' or 'base64')
         :< json string data: Contents of the brain file. Encoding given in field data_type
-        :< json dict additional_populations: A dictionary indexed by population names and containing
+        :< json dict brain_populations: A dictionary indexed by population names and containing
                                              neuron indices
         :< json int change_population: A flag to select an action on population name change
 
@@ -261,11 +261,13 @@ class SimulationBrainFile(Resource):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
-        result = simulation.cle.set_simulation_brain(body['brain_type'],
-                                                     body['data'],
-                                                     body['data_type'],
-                                                     json.dumps(body['additional_populations']),
-                                                     body['change_population'])
+
+        result = simulation.cle.set_simulation_brain(brain_type=body['brain_type'],
+                                                     data=body['data'],
+                                                     data_type=body['data_type'],
+                                                     brain_populations=json.dumps(
+                                                         body['brain_populations']),
+                                                     change_population=body['change_population'])
 
         if result.error_message is not "":
             # Error in given brain

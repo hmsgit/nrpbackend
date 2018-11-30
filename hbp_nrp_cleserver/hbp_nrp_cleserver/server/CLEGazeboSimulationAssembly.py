@@ -641,7 +641,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     self.token,
                     self._storageClient.get_folder_uuid_by_name(self.token, self.ctx_id, 'brains'),
                     os.path.basename(brainfilepath),
-                    byname=True))
+                    by_name=True))
         else:
             brainfilepath = find_file_in_paths(brainfilepath, get_model_basepath())
 
@@ -829,15 +829,13 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             if notifications:
                 self.ros_notificator.update_task("Shutting down Closed Loop Engine",
                                                  update_progress=True, block_ui=False)
-
             self.cle_server.shutdown()
         # pylint: disable=broad-except
         except Exception, e:
             logger.error("The cle server could not be shut down")
             logger.exception(e)
-
         finally:
-            self._storageClient.remove_temp_directory()
+            self._storageClient.remove_temp_sim_directory()
 
     def __is_collab_hack(self):
         """

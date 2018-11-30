@@ -36,7 +36,7 @@ from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest
 from collections import defaultdict
 from cle_ros_msgs import srv
-
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient
 
 class DefaultDotDict(defaultdict):
     """
@@ -99,18 +99,20 @@ send_data = {
     'data': "Data",
     'brain_type': "py",
     'data_type': "text",
-    'additional_populations': brain_populations_json,
+    'brain_populations': brain_populations_json,
     'change_population': srv.SetBrainRequest.DO_RENAME_POPULATION
 }
 get_return_data = {
     'data': "Data",
     'brain_type': "py",
     'data_type': "text",
-    'additional_populations': json.loads(brain_populations_json)
+    'brain_populations': json.loads(brain_populations_json)
 }
 set_ret_ok = DefaultDotDict(error_message="")
 set_ret_error = DefaultDotDict(error_message="Crash boom bang", error_line=10, error_column=5)
-set_ret_popl_change_handle = DefaultDotDict(error_message="change population name", error_line=0, error_column=0, handle_population_change = 1)
+set_ret_popl_change_handle = DefaultDotDict(error_message="change population name", error_line=0,
+                                            error_column=0, handle_population_change=1)
+
 
 class TestSimulationBrain(RestTest):
 
@@ -138,7 +140,11 @@ class TestSimulationBrain(RestTest):
     def test_simulation_brain_put(self):
         response = self.client.put('/simulation/0/brain', data=json.dumps(send_data))
         self.assertEqual(self.sim.cle.set_simulation_brain.call_count, 1)
-        self.sim.cle.set_simulation_brain.assert_called_with("py", "Data", "text", json.dumps(brain_populations_json), 1)
+        self.sim.cle.set_simulation_brain.assert_called_with(brain_type='py',
+                                                             data='Data',
+                                                             data_type='text',
+                                                             brain_populations=json.dumps(brain_populations_json),
+                                                             change_population=ROSCLEClient.ReplaceBehaviorEnum.REPLACE)
         self.assertEqual(response.status_code, 200)
 
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_error)
@@ -173,11 +179,11 @@ class TestSimulationBrain(RestTest):
             'data': "Data",
             'brain_type': "py",
             'data_type': "text",
-            'additional_populations': brain_populations_json,
+            'brain_populations': brain_populations_json,
             'change_population': 0
         }
         response = self.client.put('/simulation/0/brain', data=json.dumps(request))
-        request['additional_populations'] = new_brain_populations_json
+        request['brain_populations'] = new_brain_populations_json
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_popl_change_handle)
         response = self.client.put('/simulation/0/brain', data=json.dumps(request))
         self.assertEqual(response.status_code, 400)

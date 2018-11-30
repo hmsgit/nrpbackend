@@ -80,7 +80,6 @@ from hbp_nrp_backend.rest_server.__Health import Last24HoursErrorCheck, TotalErr
 from hbp_nrp_backend.rest_server.__SimulationBrainFile import SimulationBrainFile
 from hbp_nrp_backend.rest_server.__SimulationControl import SimulationControl, LightControl, \
     MaterialControl
-from hbp_nrp_backend.rest_server.__SimulationReset import SimulationReset
 from hbp_nrp_backend.rest_server.__SimulationResetStorage import SimulationResetStorage
 from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from hbp_nrp_backend.rest_server.__SimulationState import SimulationState
@@ -110,7 +109,6 @@ api.add_resource(SimulationBrainFile, '/simulation/<int:sim_id>/brain')
 api.add_resource(SimulationResources, '/simulation/<int:sim_id>/resources')
 api.add_resource(SimulationControl, '/simulation/<int:sim_id>')
 api.add_resource(SimulationPopulations, '/simulation/<int:sim_id>/populations')
-api.add_resource(SimulationReset, '/simulation/<int:sim_id>/reset')
 api.add_resource(SimulationResetStorage,
                  '/simulation/<int:sim_id>/<string:experiment_id>/reset')
 api.add_resource(SimulationService, '/simulation')

@@ -27,7 +27,6 @@ Wrapper around the storage API
 
 import os
 import logging
-import tempfile
 import requests
 import shutil
 import urllib
@@ -37,6 +36,7 @@ from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
+import textwrap
 
 __author__ = "Manos Angelidis"
 logger = logging.getLogger(__name__)
@@ -54,16 +54,13 @@ class StorageClient(object):
         Creates the storage client
         """
         self.__proxy_url = Config.LOCAL_STORAGE_URI['storage_uri']
-        simdir = os.environ['NRP_SIMULATION_DIR']
-        if simdir is None:
+        sim_dir = os.environ['NRP_SIMULATION_DIR']
+        if sim_dir is None:
             raise Exception("Server Error. NRP_SIMULATION_DIR not defined.")
 
-        if not os.path.exists(simdir):
-            try:
-                os.mkdir(simdir)
-            except OSError as e:
-                raise e
-        self.__simulation_directory = simdir
+        self.__simulation_directory = sim_dir
+
+        self.create_temp_sim_directory()
 
         # Paths related to the textures
 
@@ -107,8 +104,7 @@ class StorageClient(object):
         :return: the token
         """
         try:
-            res = requests.post(self.__proxy_url +
-                                '/authentication/authenticate',
+            res = requests.post(self.__proxy_url.join('/authentication/authenticate'),
                                 json={"user": user, "password": password})
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
@@ -130,18 +126,20 @@ class StorageClient(object):
         :param name: if we want to get a specific folder i.e. the robots
         :return: an array of all the available to the user experiments
         """
-        headers = {'Authorization': 'Bearer ' +
-                   token, 'context-id': context_id}
+        query_args = {}
+        if name:
+            query_args['filter'] = urllib.quote_plus(name)
+        if get_all:
+            query_args['all'] = str(get_all).lower()
 
         try:
-            url = self.__proxy_url + '/storage/experiments'
-            if get_all and name:
-                url += '?all=true&filter=' + name
-            elif name:
-                url += '?filter=' + name
-            elif get_all:
-                url += '?all=true'
-            res = requests.get(url, headers=headers)
+            res = requests.get(
+                '{proxy_url}/storage/experiments?{params}'.format(
+                    proxy_url=self.__proxy_url,
+                    get_all=str(get_all).lower(),
+                    params=urllib.urlencode(query_args)),
+                headers={'Authorization': 'Bearer ' + token, 'context-id': context_id}
+            )
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
@@ -153,7 +151,7 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def get_file(self, token, experiment, filename, byname=False, zipped=False, is_texture=False):
+    def get_file(self, token, experiment, filename, by_name=False, zipped=False, is_texture=False):
         """
         Gets a file under an experiment based on the filename and on the filetype
         Depending on the file type we either:
@@ -168,26 +166,29 @@ class StorageClient(object):
         :return: if successful, the content of the file
         """
         try:
-            headers = {'Authorization': 'Bearer ' + token}
-            if not byname:
-                res = requests.get(self.__proxy_url +
-                                   '/storage/{0}/{1}'.format(
-                                       experiment, filename), headers=headers, stream=is_texture)
-            else:
-                res = requests.get(self.__proxy_url +
-                                   '/storage/{0}/{1}?byname=true'.format(
-                                       experiment, filename), headers=headers, stream=is_texture)
+            request_url = '{proxy_url}/storage/{experiment}/{filename}?byname={by_name}'.format(
+                proxy_url=self.__proxy_url,
+                experiment=experiment,
+                filename=filename,
+                by_name=str(by_name).lower()
+            )
+
+            res = requests.get(request_url,
+                               headers={'Authorization': 'Bearer ' + token},
+                               stream=is_texture)
+
+            # TODO what about missing files? i.e. 204
             if res.status_code < 200 or res.status_code >= 300:
-                raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                raise Exception('Failed to communicate with the storage server, status code {}'
+                                .format(res.status_code))
             if zipped:
                 return res.content
+
             if is_texture:
                 res.raw.decode_content = True
                 return res.raw
-            else:
-                return res.text
+
+            return res.text
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err
@@ -201,11 +202,14 @@ class StorageClient(object):
         :param filename: the name of the file to delete
         :return: if successful, the name of the deleted file
         """
-        headers = {'Authorization': 'Bearer ' + token}
         try:
-            path = urllib.quote(os.path.join(experiment, filename), safe='')
-            res = requests.delete(self.__proxy_url + '/storage/{path}'.format(path=path),
-                                  headers=headers)
+            request_url = '{proxy_url}/storage/{path}'.format(
+                proxy_url=self.__proxy_url,
+                path=urllib.quote(os.path.join(experiment, filename), safe='')
+            )
+
+            res = requests.delete(request_url, headers={'Authorization': 'Bearer ' + token})
+
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
@@ -228,10 +232,15 @@ class StorageClient(object):
                              application/octet-stream
         """
         try:
-            headers = {'content-type': content_type,
-                       'Authorization': 'Bearer ' + token}
-            res = requests.post(self.__proxy_url + '/storage/{0}/{1}'.format(experiment, filename),
-                                headers=headers, data=content)
+            request_url = '{proxy_url}/storage/{experiment}/{filename}'.format(
+                proxy_url=self.__proxy_url,
+                experiment=experiment,
+                filename=filename)
+
+            res = requests.post(request_url,
+                                headers={'content-type': content_type,
+                                         'Authorization': 'Bearer ' + token},
+                                data=content)
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception('Failed to communicate with the storage server, status code ' +
@@ -250,15 +259,19 @@ class StorageClient(object):
         :param name: the name of the folder to create
         """
         try:
-            headers = {'Authorization': 'Bearer ' + token}
-            res = requests.post(self.__proxy_url +
-                                '/storage/{0}/{1}{2}'.format(
-                                    experiment, name, '?type=folder'),
-                                headers=headers)
+            request_url = '{proxy_url}/storage/{experiment}/{name}?type=folder'.format(
+                proxy_url=self.__proxy_url,
+                experiment=experiment,
+                name=name
+            )
+
+            res = requests.post(request_url, headers={'Authorization': 'Bearer ' + token})
+
             if res.status_code == 400:
-                logger.info('The folder with the name {0} already exists in the storage, \
-                reusing'.format(name))
+                logger.info('The folder with the name {0} already exists in the storage,reusing'
+                            .format(name))
                 return 200
+
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
@@ -280,25 +293,25 @@ class StorageClient(object):
         :return: if successful, the files under the experiment
         """
         try:
-            headers = {
-                'Authorization': 'Bearer ' + token,
-            }
-            res = requests.get(self.__proxy_url +
-                               '/storage/{0}'.format(
-                                   experiment), headers=headers)
+
+            request_url = '{proxy_url}/storage/{experiment}'.format(
+                proxy_url=self.__proxy_url,
+                experiment=experiment
+            )
+
+            res = requests.get(request_url, headers={'Authorization': 'Bearer ' + token})
+
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
                     + str(res.status_code))
             else:
-                results = []
                 # folder variable is added because copy_resources_folders_to_tmp needs
-                #  to list the folders too
-                for entry in res.json():
-                    if (entry['type'] == 'file' or folder) \
-                            and not self.check_file_extension(entry['name'], ['.swp']):
-                        results.append(entry)
-                return results
+                # to list the folders too
+                return [entry for entry in res.json()
+                        if (entry['type'] == 'file' or folder)
+                        and not self.check_file_extension(entry['name'], ['.swp'])]
+
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err
@@ -312,13 +325,16 @@ class StorageClient(object):
         :return: if found, the uuid of the named folder
         """
         try:
-            headers = {
-                'Authorization': 'Bearer ' + token,
-                'context-id': context_id
-            }
-            res = requests.get(self.__proxy_url +
-                               '/storage/custommodels/{0}'.format(
-                                   folder_name), headers=headers)
+
+            request_url = '{proxy_url}/storage/custommodels/{folder_name}'.format(
+                proxy_url=self.__proxy_url,
+                folder_name=folder_name
+            )
+
+            res = requests.get(request_url,
+                               headers={'Authorization': 'Bearer ' + token,
+                                        'context-id': context_id}
+                               )
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
@@ -334,21 +350,24 @@ class StorageClient(object):
         Returns a custom model provided its path
         :param token: a valid token to be used for the request
         :param context_id: the context_id of the collab
-        :param folder_name: the name of the folder
+        :param model_path: the path to the model
         :return: if found, the uuid of the named folder
         """
         try:
-            headers = {
-                'Authorization': 'Bearer ' + token,
-                'context-id': context_id
-            }
-            res = requests.get(self.__proxy_url +
-                               '/storage/custommodel/{0}'.format(
-                                   model_path), headers=headers)
+
+            request_url = '{proxy_url}/storage/custommodels/{model_path}'.format(
+                proxy_url=self.__proxy_url,
+                model_path=model_path)
+
+            res = requests.get(request_url,
+                               headers={'Authorization': 'Bearer ' + token,
+                                        'context-id': context_id})
+
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                    'Failed to communicate with the storage server, status code {}'
+                    .format(res.status_code))
+
             else:
                 return res.content
         except requests.exceptions.ConnectionError, err:
@@ -363,12 +382,14 @@ class StorageClient(object):
         :return: if found, the list of textures
         """
         try:
-            headers = {
-                'Authorization': 'Bearer ' + token
-            }
-            textures_path = urllib.quote_plus('/resources/textures')
-            res = requests.get(self.__proxy_url +
-                               '/storage/{0}{1}'.format(experiment, textures_path), headers=headers)
+            request_url = '{proxy_url}/storage/{experiment}{textures_path}'.format(
+                proxy_url=self.__proxy_url,
+                experiment=experiment,
+                textures_path=urllib.quote_plus('/resources/textures')
+            )
+
+            res = requests.get(request_url, headers={'Authorization': 'Bearer ' + token})
+
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
@@ -387,23 +408,19 @@ class StorageClient(object):
 
         :param filename: The filename of the file to clone
         :param token: The token of the request
-        :param filename: The experiment which contains the file
+        :param experiment: The experiment which contains the file
         :return: The local path of the cloned file,
         """
-        found = False
-
         for folder_entry in self.list_files(token, experiment):
             if filename in folder_entry['name']:
-                found = True
-        if found:
-            clone_destination = os.path.join(
-                self.__simulation_directory, filename)
-            with open(clone_destination, "w") as f:
-                f.write(self.get_file(
-                    token, experiment, filename, byname=True))
-            return clone_destination
+                clone_destination = os.path.join(self.__simulation_directory, filename)
+                with open(clone_destination, "w") as f:
+                    f.write(self.get_file(token, experiment, filename, by_name=True))
+                break
         else:
-            return None
+            return None  # filename not found
+
+        return clone_destination
 
     def copy_file_content(self, token, src_folder, dest_folder, filename, is_texture=False):
         """
@@ -418,13 +435,13 @@ class StorageClient(object):
         _, ext = os.path.splitext(filename)
         # if the file is a texture we have to copy a file object, not a string
         if is_texture:
-            with open(os.path.join(src_folder, filename), "wb") as f:
+            with open(os.path.join(src_folder, filename), "wb") as texture_file:
                 shutil.copyfileobj(
                     self.get_file(
                         token,
                         dest_folder, filename,
-                        byname=True, zipped=False, is_texture=is_texture
-                    ), f
+                        by_name=True, zipped=False, is_texture=is_texture),
+                    texture_file
                 )
         else:
             with open(os.path.join(src_folder, filename), "w") as f:
@@ -432,7 +449,7 @@ class StorageClient(object):
                     self.get_file(
                         token,
                         dest_folder, filename,
-                        byname=True, zipped=(ext.lower() == ".zip"), is_texture=is_texture
+                        by_name=True, zipped=(ext.lower() == ".zip"), is_texture=is_texture
                     )
                 )
 
@@ -490,7 +507,8 @@ class StorageClient(object):
                         token, folder_tmp_path, folder_uuid, folder_entry['name'])
 
     # pylint: disable=no-self-use
-    def delete_directory_content(self, folder_path):
+    @staticmethod
+    def delete_directory_content(folder_path):
         """
         delete the content of the folder.
 
@@ -517,50 +535,56 @@ class StorageClient(object):
                         self.delete_directory_content(self.__resources_path)
                     self.copy_folder_content_to_tmp(
                         token, folder_entry)
-        except Exception as ex:
+        except Exception:
             logger.exception(
                 'An error happened trying to copy resources to tmp ')
-            raise ex
+            raise
 
     def create_material_from_textures(self, textures):
         """
         Algorithm to create a new material from the textures. For every texture
         we append a new default material which points to the texture.
         """
-        material_script = ''
-        for texture in textures:
-            # The material script is a stripped down version of an OGRE material script
-            # see http://wiki.ogre3d.org/Materials for the documentation
-            material = 'material ' + texture['name'] + '\n' \
-                + ' { ' + '\n' \
-                + '   technique' + '\n' \
-                + '    {' + '\n' \
-                + '      pass' + '\n' \
-                + '      {' + '\n' \
-                + '          ambient 1 1 1 1.000000' + '\n' \
-                + '          diffuse 1 1 1 1.000000' + '\n' \
-                + '          specular 0.03 0.03 0.03 1.000000' + '\n' \
-                + '          texture_unit' + '\n' \
-                + '          {' + '\n' \
-                + '              texture ' + texture['name'] + '\n' \
-                + '          }' + '\n' \
-                + '      }' + '\n' \
-                + '    }' + '\n' \
-                + ' }' + '\n'
-            material_script += material
+        # The material script is a stripped down version of an OGRE material script
+        # see http://wiki.ogre3d.org/Materials for the documentation
+        material_template = textwrap.dedent(
+            '''
+            material {texture_name}
+            {{
+                technique
+                {{
+                    pass
+                    {{
+                        ambient 1 1 1 1.000000
+                        diffuse 1 1 1 1.000000
+                        specular 0.03 0.03 0.03 1.000000
+                        texture_unit
+                        {{
+                        texture {texture_name}
+                        }}
+                    }}
+                }}
+            }}
+            ''')
+
+        material_scripts = [
+            material_template.format(texture_name=texture['name'])
+            for texture in textures
+        ]
 
         # Create a custom.material script and pass it to all the required directories
         for directory in self.__texture_directories:
             with open(os.path.join(directory, 'materials', 'scripts', 'custom.material'), 'w') as f:
-                f.write(material_script)
+                f.write(''.join(material_scripts))
 
-    def filter_textures(self, textures):
+    @staticmethod
+    def filter_textures(textures):
         """
         Returns only the textures from /resources/textures
         """
         # Regexp checks if the texture is a png, gif, or jpeg
-        return [texture for texture in textures if re.search(r"\.(jpe?g|png|gif)$", texture["name"],
-                                                             re.IGNORECASE) is not None]
+        return [t for t in textures if re.search(r"\.(jpe?g|png|gif)$", t["name"],
+                                                 re.IGNORECASE) is not None]
 
     def create_textures_paths(self):
         """
@@ -571,13 +595,10 @@ class StorageClient(object):
         relative_path = ''
         for directory in self.__texture_directories:
             for path in ['materials']:
-                self.check_create_folder(os.path.join(
-                    directory, relative_path))
+                self.check_create_folder(os.path.join(directory, relative_path))
                 relative_path = os.path.join(relative_path, path)
-            self.check_create_folder(os.path.join(
-                directory, relative_path, 'scripts'))
-            self.check_create_folder(os.path.join(
-                directory, relative_path, 'textures'))
+            self.check_create_folder(os.path.join(directory, relative_path, 'scripts'))
+            self.check_create_folder(os.path.join(directory, relative_path, 'textures'))
             relative_path = ''
 
     def generate_textures(self, experiment, token):
@@ -588,7 +609,7 @@ class StorageClient(object):
         :param token: The token of the request
         :param experiment: The experiment which contains the textures folder
         """
-        # Get the contents of the resouces/textures folder from the proxy and filter them
+        # Get the contents of the resources/textures folder from the proxy and filter them
         # to get only the images
         textures = self.filter_textures(self.get_textures(experiment, token))
 
@@ -605,24 +626,23 @@ class StorageClient(object):
             # For the backend directories and for every texture copy over the textures
             for directory in self.__texture_directories:
                 for texture in textures:
-                    self.copy_file_content(token, os.path.join(directory, 'materials',
-                                                               'textures'),
-                                           urllib.quote_plus(
-                                               experiment + '/resources/textures'),
-                                           texture['name'], is_texture=True)
-    # pylint: disable=broad-except
+                    self.copy_file_content(token,
+                                           os.path.join(directory, 'materials', 'textures'),
+                                           urllib.quote_plus(experiment + '/resources/textures'),
+                                           texture['name'],
+                                           is_texture=True)
 
-    def clone_all_experiment_files(self, token, experiment, new_folder=False):
+    # pylint: disable=broad-except
+    def clone_all_experiment_files(self, token, experiment, destination_dir=None):
         """
         Clones all the experiment files to a simulation folder.
         The caller has then the responsibility of managing this folder.
 
         :param token: The token of the request
         :param experiment: The experiment to clone
-        :param new_folder: specifies whether we want to clone the files again
-        or use the existing simulation 'simdir' folder. Used in reset
+        :param destination_dir: the directory in which to clone the files,
+        defaults to the path returned by get_simulation_directory()
         :return: A dictionary containing the paths to the experiment files
-        as well as the path to the simulation folder
         """
         experiment_paths = dict()
         list_entries_to_clone = self.list_files(token, experiment, folder=True)
@@ -633,28 +653,21 @@ class StorageClient(object):
         try:
             self.generate_textures(experiment, token)
         except Exception as e:
-            logger.info(
-                "Could not generate textures, error occured : %s", (str(e)))
+            logger.info("Could not generate textures, error occurred : %s", (str(e)))
 
-        if new_folder:
-            destination_directory = tempfile.mkdtemp()
-        else:
-            destination_directory = self.get_simulation_directory()
+        dest_dir = destination_dir if destination_dir else self.get_simulation_directory()
 
         for entry_to_clone in list_entries_to_clone:
             if entry_to_clone['type'] == 'folder':
                 self.copy_folder_content_to_tmp(token, entry_to_clone)
-            else:  # file
-                file_clone_destination = os.path.join(
-                    destination_directory, entry_to_clone['name'])
-                with open(file_clone_destination, "w") as f:
+            else:  # == 'file'
+                file_clone_destination = os.path.join(dest_dir, entry_to_clone['name'])
+                with open(file_clone_destination, "w") as file_clone:
 
-                    zipped = os.path.splitext(entry_to_clone['name'])[
-                        1].lower() == '.zip'
+                    zipped = os.path.splitext(entry_to_clone['name'])[1].lower() == '.zip'
 
-                    file_contents = self.get_file(
-                        token, experiment, entry_to_clone['name'],
-                        byname=True, zipped=zipped)
+                    file_contents = self.get_file(token, experiment, entry_to_clone['name'],
+                                                  by_name=True, zipped=zipped)
                     # in order to return the environment and experiment path
                     # we have to read the .exc
                     if 'experiment_configuration.exc' in str(file_clone_destination):
@@ -662,10 +675,11 @@ class StorageClient(object):
                         env_filename = exp_conf_api_gen.CreateFromDocument(
                             file_contents).environmentModel.src
                         experiment_paths['environment_conf'] = os.path.join(
-                            destination_directory, env_filename)
-                    f.write(file_contents)
+                            dest_dir, env_filename)
 
-        return destination_directory, experiment_paths
+                    file_clone.write(file_contents)
+
+        return experiment_paths
 
     @staticmethod
     def parse_and_check_file_is_valid(filepath, create_obj_function, instance_type):
@@ -683,16 +697,14 @@ class StorageClient(object):
                 file_obj = create_obj_function(file_content.read())
                 if not isinstance(file_obj, instance_type):
                     raise NRPServicesGeneralException(
-                        "%s configuration file content is not valid." % (
-                            filepath),
-                        "File not valid"
-                    )
+                        "{filepath} configuration file content is not valid."
+                            .format(filepath=filepath),
+                        "File not valid")
             except (ValidationError, SAXParseException) as ve:
                 raise NRPServicesGeneralException(
-                    "Could not parse file %s due to validation error: %s" % (
-                        filepath, str(ve)),
-                    "File not valid"
-                )
+                    "Could not parse file {filepath} due to validation error: {validation_error}"
+                        .format(filepath=filepath, validation_error=str(ve)),
+                    "File not valid")
         return file_obj
 
     def get_folder_uuid_by_name(self, token, context_id, folder_name):
@@ -703,14 +715,13 @@ class StorageClient(object):
         :param folder_name: the name of the folder
         :return: if found, the uuid of the named folder
         """
-        folders = self.list_experiments(
-            token, context_id, get_all=True, name=folder_name)
-        for folder in folders:
-            if folder["name"] == folder_name:
-                return folder["uuid"]
+        folders = self.list_experiments(token, context_id, get_all=True, name=folder_name)
+
+        for folder in (f for f in folders if f["name"] == folder_name):
+            return folder["uuid"]
 
     # pylint: disable=no-self-use
-    def remove_temp_directory(self):
+    def remove_temp_sim_directory(self):
         """
         Removes the simulation directory where all the simulation based files are stored
         """
@@ -719,6 +730,24 @@ class StorageClient(object):
             self.__simulation_directory
         )
         shutil.rmtree(self.__simulation_directory)
+
+    def create_temp_sim_directory(self):
+        """
+        Creates the simulation directory where all the simulation based files are stored
+        """
+        try:
+            os.mkdir(self.__simulation_directory)
+        except OSError:
+            # directory already exists, pass
+            pass
+
+    def clear_temp_sim_directory(self):
+        """
+        Clears the simulation directory where all the simulation based files are stored
+        :raise OSError when the simulation directory can't be created
+        """
+        self.remove_temp_sim_directory()
+        self.create_temp_sim_directory()
 
 
 def get_model_basepath():
@@ -729,9 +758,7 @@ def get_model_basepath():
     if paths is None:
         raise Exception("Server Error. NRP_MODELS_PATHS not defined.")
 
-    models_dirs = [x for x in paths.split(':') if os.path.isdir(x)]
-
-    return models_dirs
+    return [x for x in paths.split(':') if os.path.isdir(x)]  # models directories
 
 
 def find_file_in_paths(filename, paths):
@@ -739,9 +766,9 @@ def find_file_in_paths(filename, paths):
     :return: returns the absolute path of the first file found path lists.
              if not found returns and empty string.
     """
-    logger.info("Finding file {0} in paths {1}".format(filename, paths))
+    logger.info("Finding file {filename} in paths {paths}".format(filename=filename, paths=paths))
 
-    for path in paths:
-        if os.path.isfile(os.path.join(path, filename)):
-            return os.path.join(path, filename)
+    for path in (p for p in paths if os.path.isfile(os.path.join(p, filename))):
+        return os.path.join(path, filename)
+
     return None

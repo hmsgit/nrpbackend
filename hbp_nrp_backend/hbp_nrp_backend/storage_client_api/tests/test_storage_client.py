@@ -29,7 +29,7 @@ import unittest
 import shutil
 import os
 import requests
-from mock import patch, MagicMock, mock_open, call, Mock
+from mock import patch, mock_open, Mock
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.storage_client_api import StorageClient
 
@@ -282,7 +282,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
 
         mocked_get.side_effect = get_fake_experiment_file
         res = client.get_file(
-            "fakeToken", "fakeExperiment", "experiment_configuration.exc", byname=True)
+            "fakeToken", "fakeExperiment", "experiment_configuration.exc", by_name=True)
 
         self.assertEqual(res.name, "Baseball tutorial experiment - Exercise")
 
@@ -300,7 +300,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
 
         mocked_get.side_effect = get_fake_texture_file
         res = client.get_file(
-            "fakeToken", "fakeExperiment", "fake.png", byname=True, is_texture=True)
+            "fakeToken", "fakeExperiment", "fake.png", by_name=True, is_texture=True)
         self.assertIsInstance(res, Object)
 
     @patch('requests.get')
@@ -316,7 +316,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
 
         mocked_get.side_effect = get_fake_zip_file
         res = client.get_file(
-            "fakeToken", "fakeExperiment", "fake.zip", byname=True, zipped=True)
+            "fakeToken", "fakeExperiment", "fake.zip", by_name=True, zipped=True)
         self.assertIsInstance(res, Object)
 
     @patch('requests.get')
@@ -696,80 +696,76 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_files')
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.get_file')
     def test_clone_all_experiment_files(self, mocked_get, mocked_list, mock_exp_conf_api_gen):
-        with patch('tempfile.mkdtemp', return_value='/tmp/nrpTemp'):
-            mocked_get.side_effect = None
+        mocked_get.side_effect = None
 
-            experiment_name = "fakeExperiment"
+        experiment_name = "fakeExperiment"
 
-            env_editor_name = "env_editor.autosaved"
-            exp_conf_name = 'experiment_configuration.exc'
-            simple_robot_name = 'simple_move_robot.py'
+        env_editor_name = "env_editor.autosaved"
+        exp_conf_name = 'experiment_configuration.exc'
+        simple_robot_name = 'simple_move_robot.py'
 
-            tfs_dir_name = 'transfer_functions'
-            tfs_dir_uuid = "6a63d03e-6dad-4793-80d7-8e32a83aaa66"
+        tfs_dir_name = 'transfer_functions'
+        tfs_dir_uuid = "6a63d03e-6dad-4793-80d7-8e32a83aaa66"
 
-            mock_experiment_dirlist = [
-                {
-                    "uuid": "07b35b8f-67cd-4e94-8bec-5ede8049590d",
-                    "name": env_editor_name,
-                    "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
-                    "contentType": "text/plain",
-                    "type": "file",
-                    "modifiedOn": "2017-08-31T13:56:34.306090Z"
-                },
-                {
-                    "uuid": "6a63d03e-6dad-4793-80d7-8e32a83eee78",
-                    "name": exp_conf_name,
-                    "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
-                    "contentType": "text/plain",
-                    "type": "file",
-                    "modifiedOn": "2017-08-30T11:23:47.842214Z"
-                },
-                {
-                    "uuid": tfs_dir_uuid,
-                    "name": tfs_dir_name,
-                    "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
-                    "contentType": "application/hbp-neurorobotics.tfs+python",
-                    "type": "folder",
-                    "modifiedOn": "2017-08-30T12:32:47.842214Z"
-                }
-            ]
-
-            # transfer_functions/simple_move_robot.py
-            mock_tfs_dirlist = [{
-                "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
-                "name": simple_robot_name,
-                "parent": "6a63d03e-6dad-4793-80d7-8e32a83aaa66",
-                "contentType": "application/hbp-neurorobotics.tfs+python",
+        mock_experiment_dir_list = [
+            {
+                "uuid": "07b35b8f-67cd-4e94-8bec-5ede8049590d",
+                "name": env_editor_name,
+                "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+                "contentType": "text/plain",
                 "type": "file",
+                "modifiedOn": "2017-08-31T13:56:34.306090Z"
+            },
+            {
+                "uuid": "6a63d03e-6dad-4793-80d7-8e32a83eee78",
+                "name": exp_conf_name,
+                "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+                "contentType": "text/plain",
+                "type": "file",
+                "modifiedOn": "2017-08-30T11:23:47.842214Z"
+            },
+            {
+                "uuid": tfs_dir_uuid,
+                "name": tfs_dir_name,
+                "parent": "3ce08569-bdb7-49ee-a751-5640f4b879d4",
+                "contentType": "application/hbp-neurorobotics.tfs+python",
+                "type": "folder",
                 "modifiedOn": "2017-08-30T12:32:47.842214Z"
             }
-            ]
+        ]
 
-            def mocked_list_fun(_token, experiment, folder):
-                if experiment == experiment_name:
-                    return mock_experiment_dirlist
-                elif experiment == tfs_dir_uuid:
-                    return mock_tfs_dirlist
-                return []
+        # transfer_functions/simple_move_robot.py
+        mock_tfs_dir_list = [{
+            "uuid": "6a63d03e-6dad-4793-80d7-8e32a83ddd14",
+            "name": simple_robot_name,
+            "parent": "6a63d03e-6dad-4793-80d7-8e32a83aaa66",
+            "contentType": "application/hbp-neurorobotics.tfs+python",
+            "type": "file",
+            "modifiedOn": "2017-08-30T12:32:47.842214Z"
+        }
+        ]
 
-            mocked_list.side_effect = mocked_list_fun
+        def mocked_list_fun(_token, experiment, folder):
+            if experiment == experiment_name:
+                return mock_experiment_dir_list
+            elif experiment == tfs_dir_uuid:
+                return mock_tfs_dir_list
+            return []
 
-            client = StorageClient.StorageClient()
+        mocked_list.side_effect = mocked_list_fun
 
-            with patch("__builtin__.open", mock_open(read_data="data")) as mocked_open:
-                res = client.clone_all_experiment_files("fakeToken",
-                                                        experiment_name)
+        client = StorageClient.StorageClient()
 
-                sim_dir = MockOs.environ['NRP_SIMULATION_DIR']
+        with patch("__builtin__.open", mock_open(read_data="data")) as mocked_open:
+            client.clone_all_experiment_files("fakeToken", experiment_name)
+            sim_dir = MockOs.environ['NRP_SIMULATION_DIR']
 
-                self.assertIn(sim_dir, res[0])
-                mocked_open.assert_any_call(
-                    os.path.join(sim_dir, env_editor_name), 'w')
-                mocked_open.assert_any_call(
-                    os.path.join(sim_dir, exp_conf_name), 'w')
-                mocked_open.assert_any_call(os.path.join(
-                    sim_dir, tfs_dir_name, simple_robot_name), 'w')
+            mocked_open.assert_any_call(
+                os.path.join(sim_dir, env_editor_name), 'w')
+            mocked_open.assert_any_call(
+                os.path.join(sim_dir, exp_conf_name), 'w')
+            mocked_open.assert_any_call(os.path.join(
+                sim_dir, tfs_dir_name, simple_robot_name), 'w')
 
     def test_get_model_basepath_ok(self):
         with patch("hbp_nrp_backend.storage_client_api.StorageClient.os") as local_mock_os:
@@ -791,7 +787,7 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
     def test_remove_temp_dir_ok(self):
         with patch("hbp_nrp_backend.storage_client_api.StorageClient.shutil.rmtree") as mock_shutil:
             client = StorageClient.StorageClient()
-            client.remove_temp_directory()
+            client.remove_temp_sim_directory()
             mock_shutil.assert_called_with('/somewhere/near/the/rainbow')
 
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.list_experiments')

@@ -944,16 +944,14 @@ class ROSCLEServer(SimulationServer):
         if request.brain_path is not None and request.brain_path is not "":
             brain_temp_path = request.brain_path
             neurons_conf = request.populations
-            network_conf_orig = {
-                p.name: self._get_population_value(p) for p in neurons_conf
-                }
+            network_conf_orig = {p.name: self._get_population_value(p) for p in neurons_conf}
             self.__cle.reset_brain(brain_temp_path, network_conf_orig)
         else:
             self.__cle.reset_brain()
 
     def _reset_robot_pose(self):
         """
-        Helper function for reset() call, it handles the reset robot pose message.
+        Helper function for reset() call, it handles the RESET_ROBOT_POSE message.
         """
         self.__cle.reset_robot_pose()
         with self._notificator.task_notifier("Resetting the robot pose", ""):

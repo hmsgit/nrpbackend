@@ -129,7 +129,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                 'experiment_conf': os.path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
                 'environment_conf': "Neverland.sdf"
             }
-            self.storage_mock.return_value.clone_all_experiment_files.return_value = directory, storage_paths
+            self.storage_mock.return_value.clone_all_experiment_files.return_value = storage_paths
 
             self.lifecycle.initialize(Mock())
 

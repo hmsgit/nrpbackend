@@ -182,7 +182,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                     UserAuthentication.get_header_token(request),
                     self.simulation.ctx_id, 'environments'),
                 os.path.basename(experiment.environmentModel.src),
-                byname=True))
+                by_name=True))
         return environment_path
 
     def _parse_env_path(self, environment_path, experiment, using_storage):
@@ -215,7 +215,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                         self.__storageClient.get_folder_uuid_by_name(
                             UserAuthentication.get_header_token(request),
                             self.simulation.ctx_id, 'environments'),
-                        os.path.basename(experiment.environmentModel.src), byname=True))
+                        os.path.basename(experiment.environmentModel.src), by_name=True))
             else:
                 environment_path = os.path.join(
                     self.models_path, str(experiment.environmentModel.src))
@@ -232,11 +232,11 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         try:
             using_storage = simulation.private
             if using_storage:
-                clone_folder, experiment_paths = self.__storageClient.clone_all_experiment_files(
+                experiment_paths = self.__storageClient.clone_all_experiment_files(
                     UserAuthentication.get_header_token(request),
                     simulation.experiment_id)
                 self.__experiment_path = experiment_paths['experiment_conf']
-                self.__simulation_root_folder = clone_folder
+                self.__simulation_root_folder = self.__storageClient.get_simulation_directory()
                 environment_path = experiment_paths['environment_conf']
             else:
                 self.__experiment_path = os.path.join(

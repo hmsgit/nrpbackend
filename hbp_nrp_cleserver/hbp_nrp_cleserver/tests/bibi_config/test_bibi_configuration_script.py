@@ -28,14 +28,13 @@ Test for single functions of the bibi configuration script
 __author__ = 'GeorgHinkel'
 
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import *
-import hbp_nrp_commons.generated.bibi_api_gen as api
 import unittest
-import pyxb
 
 
 class TestHelpers(unittest.TestCase):
     def test_get_tf_name(self):
         self.assertEqual(get_tf_name("def hello_world():"), "hello_world")
+
 
 if __name__ == '__main__':
     unittest.main()

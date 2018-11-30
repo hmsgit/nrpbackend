@@ -34,42 +34,33 @@ def get_all_neurons_as_dict(populations):
     :param populations: All populations
     :return: A dict with population name and slice()/list/None
     """
-    pop = dict()
+    pop = {}
     for neurons in populations:
         if isinstance(neurons, bibi_api_gen.Range):
-            if hasattr(neurons, 'step'):
-                pop[neurons.population] = slice(neurons.from_, neurons.to, neurons.step)
-            else:
-                pop[neurons.population] = slice(neurons.from_, neurons.to)
+            pop[neurons.population] = slice(neurons.from_,
+                                            neurons.to,
+                                            getattr(neurons, 'step', None))
         elif isinstance(neurons, bibi_api_gen.List):
-            n_list = []
-            for element in neurons.element:
-                n_list.append(element)
-            pop[neurons.population] = n_list
+            pop[neurons.population] = neurons.element[:]
         elif isinstance(neurons, bibi_api_gen.Population):
             pop[neurons.population] = None
         else:
             raise Exception("Neuron Print: Don't know how to process neuron selector " +
                             str(neurons))
-
     return pop
 
 
 def find_changed_strings(list_a, list_b):
     """
     Returns a list that contains changed population names,
-    i.e. stings from list_a are searched for in list_b. Not found strings are returned.
+    i.e. strings from list_a are searched for in list_b. Not found strings are returned.
 
     :param list_a: looked up strings to be found in list_b
     :param list_b: looked up strings are compared against strings in list_a
 
     :return: a list of strings
     """
-    changed = []
-    for element_a in list_a:
-        if element_a not in list_b:
-            changed.append(element_a)
-    return changed
+    return [elem_a for elem_a in list_a if elem_a not in list_b]
 
 
 def docstring_parameter(*sub):

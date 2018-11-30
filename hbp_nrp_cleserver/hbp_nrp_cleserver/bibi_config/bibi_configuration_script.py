@@ -40,6 +40,8 @@ import warnings
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+tf_name_regex = re.compile(ur'^.*def\s+(\w+)\s*\(.*', re.MULTILINE)
+
 
 def deprecated(func): # pragma: no cover
     """This is a decorator which can be used to mark functions
@@ -120,8 +122,7 @@ def get_tf_name(tf_code):
     @return: function name
     """
 
-    p = re.compile(ur'^.*def\s+(\w+)\s*\(.*', re.MULTILINE)
-    ret = re.findall(p, tf_code)
+    ret = re.findall(tf_name_regex, tf_code)
     return ret[0] if ret else None
 
 

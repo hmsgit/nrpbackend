@@ -25,9 +25,6 @@
 Takes care of making the appropriate ROS call(s) to control a simulation.
 On the other side of ROS, the calls are handled by ROSCLEServer.py
 """
-import sys
-python3 = True if sys.hexversion > 0x03000000 else False
-
 import logging
 import rospy
 # This package comes from the catkin package ROSCLEServicesDefinitions
@@ -42,6 +39,11 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_SIMULATION_RECORDER, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
     SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE
+
+import hbp_nrp_commons
+
+import sys
+python3 = True if sys.hexversion > 0x03000000 else False
 
 __author__ = "Lorenzo Vannucci, Daniel Peppicelli, Georg Hinkel"
 logger = logging.getLogger(__name__)
@@ -101,11 +103,9 @@ class ROSCLEServiceWrapper(object):
             self.__handler = rospy.ServiceProxy(service_name, service_class)
             self.__handler.wait_for_service(timeout=self.ROS_SERVICE_TIMEOUT)
         except rospy.ROSException:
-            # According to the documentation, only a timeout will raise a generic
-            # 'ROSException'.
+            # According to the documentation, only a timeout will raise a generic 'ROSException'.
             # http://docs.ros.org/api/rospy/html/rospy-module.html#wait_for_service
-            message = "Timeout while connecting to the CLE (waiting on %s)." % \
-                      (service_name, )
+            message = "Timeout while connecting to the CLE (waiting on {0}).".format(service_name)
             logger.error(message)
             raise ROSCLEClientException(message)
 
@@ -218,10 +218,11 @@ class ROSCLEClient(object):
         """
         Reset the simulation.
 
-        :param populations: To populations for the reset
-        :param brain_path: The brain path for the reset
-        :param world_sdf: The world sdf
         :param reset_type: Denotes the kind of reset the user wants to perform, details about
+        :param world_sdf: The world sdf
+        :param brain_path: The brain path for the reset
+        :param populations: To populations for the reset
+
         reset types and details are given in the ResetSimulation service request message.
         """
         if self.__stop_reason is not None:
@@ -263,8 +264,12 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_get_brain()
 
-    def set_simulation_brain(self, brain_type, data, data_type, brain_populations,
-                             change_population):
+    ReplaceBehaviorEnum = hbp_nrp_commons.enum('ASK_USER', 'REPLACE', 'NO_REPLACE')
+
+    def set_simulation_brain(self,
+                             brain_type='py', data=None, data_type='text',
+                             brain_populations=None,
+                             change_population=ReplaceBehaviorEnum.REPLACE):
         """
         Set the brain of the running simulation (will pause the simulation)
 
@@ -276,9 +281,10 @@ class ROSCLEClient(object):
                                   lists of integers or python slices. Python slices are defined by a
                                   dictionary containing the 'from', 'to' and 'step' values.
         :param change_population: a flag to select an action on population name change, currently
-                                  possible values are: 0 ask user for permission to replace;
-                                  1 (permission granted) replace old name with a new one;
-                                  2 proceed with no replace action
+                                  possible values are:
+                                  - ReplaceBehaviorEnum.ASK_USER ask user for permission to replace;
+                                  - ReplaceBehaviorEnum.REPLACE replace old name with a new one;
+                                  - ReplaceBehaviorEnum.NO_REPLACE proceed with no replace action
 
         :return: response of the cle
         """
@@ -512,8 +518,7 @@ class ROSCLEClient(object):
                         z=new_pose.get('z', 0),
                         roll=new_pose.get('roll', 0),
                         pitch=new_pose.get('pitch', 0),
-                        yaw=new_pose.get('yaw', 0)
-                        )
+                        yaw=new_pose.get('yaw', 0))
 
         response = self.__cle_set_robot_init_pose(robot_id, pose)
 
