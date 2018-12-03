@@ -8,6 +8,7 @@ image: hbpneurorobotics/nrp:dev
 pipelines:
   default:
     - step:
+        max-time: 30
         name: Build
         script:
           # Branch dependencies (ex-gerrit topic)
