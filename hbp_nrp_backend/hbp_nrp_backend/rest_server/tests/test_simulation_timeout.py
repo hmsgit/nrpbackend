@@ -38,7 +38,7 @@ class TestSimulationTimeout(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment_0', None, 'default-owner', 'local', 'created'))
+        simulations.append(Simulation(0, 'experiment_0', 'default-owner', 'local', 'created'))
         self.sim = simulations[0]
         self.sim.cle = MagicMock()
         self.sim.cle.extend_simulation_timeout = MagicMock(return_value=True)

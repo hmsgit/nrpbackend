@@ -46,7 +46,6 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
 
         self.simulation.sim_id = 42
         self.simulation.experiment_conf = "ExDXMLExample.xml"
-        self.simulation.environment_conf = None
         self.simulation.experiment_id = None
         self.simulation.state_machines = []
         self.simulation.playback_path = None

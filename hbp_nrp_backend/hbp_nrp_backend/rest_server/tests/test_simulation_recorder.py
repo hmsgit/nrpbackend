@@ -37,8 +37,8 @@ class TestSimulationRecorder(RestTest):
     def setUp(self):
 
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
-        simulations.append(Simulation(1, 'experiment2', None, 'other-owner', 'created'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
+        simulations.append(Simulation(1, 'experiment2', 'other-owner', 'created'))
 
         for s in simulations:
             s.cle = MagicMock()

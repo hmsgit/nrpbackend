@@ -59,9 +59,9 @@ class TestSimulationResetStorage(RestTest):
         SimulationResetStorage.storage_client = self.mock_storage_client
         del simulations[:]
         simulations.append(Simulation(
-            0, 'experiments/experiment_data/test_1.exc', None, 'default-owner', 'created'))
+            0, 'experiments/experiment_data/test_1.exc', 'default-owner', 'created'))
         simulations.append(Simulation(
-            1, 'experiments/experiment_data/test_1.exc', None, 'im-not-the-owner', 'created'))
+            1, 'experiments/experiment_data/test_1.exc', 'im-not-the-owner', 'created'))
 
         self.experiment_id = "0000-0000"
         # Correct request

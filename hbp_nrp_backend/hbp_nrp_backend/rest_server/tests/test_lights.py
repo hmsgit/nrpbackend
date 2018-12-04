@@ -42,7 +42,7 @@ from hbp_nrp_backend.simulation_control import simulations, Simulation
 class TestSimulationService(RestTest):
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
 
     def test_put_light(self):
         response = self.client.put('/simulation/0/interaction/light', data='{"name":"foo"}')

@@ -101,6 +101,6 @@ class UserAuthentication(object):
         if user == request_user:
             return True
         else:
-            logger.warn("Request from user '" + request_user + "' but simulation owned by '"
-                        + user + "'")
+            logger.warn("Request from user '{request_user}' but simulation owned by '{user}'"
+                        .format(request_user=request_user, user=user))
             return False

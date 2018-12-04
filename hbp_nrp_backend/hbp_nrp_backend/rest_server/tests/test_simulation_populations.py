@@ -55,7 +55,7 @@ class TestSimulationService(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'created'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.get_populations = mock.MagicMock(return_value=neurons)
 

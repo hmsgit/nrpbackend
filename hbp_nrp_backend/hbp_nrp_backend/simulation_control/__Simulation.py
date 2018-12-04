@@ -48,15 +48,19 @@ class Simulation(object):
     The data class for simulations
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, sim_id, experiment_conf, environment_conf, owner, sim_gzserver_host,
-                 reservation=None, sim_brain_processes=1, experiment_id=None,
-                 state='created', private=False, playback_path=None, ctx_id=None):
+    def __init__(self, sim_id, experiment_conf, owner, sim_gzserver_host,
+                 reservation=None,
+                 sim_brain_processes=1,
+                 experiment_id=None,
+                 state='created',
+                 private=False,
+                 playback_path=None,
+                 ctx_id=None):
         """
         Creates a new simulation
 
         :param sim_id: The simulation id
         :param experiment_conf: The experiment configuration (Path to ExD configuration)
-        :param environment_conf: The environment configuration (Path to environment configuration)
         :param owner: The name of the user owning the simulation
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to 'local'
                                   for localhost and 'lugano' for a dedicated machine on the Lugano
@@ -75,7 +79,6 @@ class Simulation(object):
         """
         self.__sim_id = sim_id
         self.__experiment_conf = experiment_conf
-        self.__environment_conf = environment_conf
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__experiment_id = experiment_id
@@ -154,13 +157,6 @@ class Simulation(object):
         :rtype: string
         """
         return self.__experiment_conf
-
-    @property
-    def environment_conf(self):
-        """
-        Gets the environment configuration, i.e. the path to the environment configuration
-        """
-        return self.__environment_conf
 
     @property
     def sim_id(self):

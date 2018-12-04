@@ -41,7 +41,7 @@ class TestErrorHandlers(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment1', None, 'default-owner', 'local', 'view', state='paused'))
+        simulations.append(Simulation(0, 'experiment1', 'default-owner', 'local', 'view', state='paused'))
 
     def test_general_500_error(self):
         simulations[0]._Simulation__lifecycle = mock.MagicMock()

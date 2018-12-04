@@ -29,9 +29,8 @@ __author__ = 'Stefan Deser'
 
 import unittest
 from os import path
-from mock import patch, MagicMock, Mock
+from mock import patch, Mock
 from hbp_nrp_backend.simulation_control import Simulation
-from hbp_nrp_backend.simulation_control import __Simulation as sim_module
 from hbp_nrp_excontrol import StateMachineManager as sm_manager_module
 
 class TestSimulation(unittest.TestCase):
@@ -53,7 +52,7 @@ class TestSimulation(unittest.TestCase):
         experiment_conf = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
-        self.__simulation = Simulation(sim_id, experiment_conf, None, owner, sim_gzserver_host)
+        self.__simulation = Simulation(sim_id, experiment_conf, owner, sim_gzserver_host)
         sm_path = path.join(path.split(__file__)[0], "sm_mock.py")
 
         self.assertIsNotNone(self.__simulation.kill_datetime)
@@ -82,13 +81,13 @@ class TestSimulation(unittest.TestCase):
         experiment_conf = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
-        self.__simulation = Simulation(sim_id, experiment_conf, None, owner, sim_gzserver_host, 'view')
+        self.__simulation = Simulation(sim_id, experiment_conf, owner, sim_gzserver_host, 'view')
         self.__simulation = Simulation(
             sim_id, experiment_conf, None, owner,
             sim_gzserver_host, 'view', 'created'
         )
         self.__simulation = Simulation(
-            sim_id, experiment_conf, None, owner,
+            sim_id, experiment_conf, owner,
             sim_gzserver_host, 'view', 'paused'
         )
 

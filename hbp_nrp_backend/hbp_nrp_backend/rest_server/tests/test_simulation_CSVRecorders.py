@@ -27,8 +27,6 @@ Unit tests for the simulation SDF services
 __author__ = 'LucGuyot'
 
 import os
-import json
-import csv
 from mock import patch, MagicMock, mock_open
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest
@@ -38,7 +36,7 @@ class TestSimulationCSVRecorders(RestTest):
     def setUp(self):
         del simulations[:]
         simulations.append(Simulation(
-            0, 'experiment1', None, 'default-owner', 'created'))
+            0, 'experiment1', 'default-owner', 'created'))
         simulations[0].cle = MagicMock()
         self.test_directory = os.path.split(__file__)[0]
         csv_path = os.path.join(self.test_directory,
@@ -74,7 +72,6 @@ class TestSimulationCSVRecorders(RestTest):
             response = self.client.get(
                 '/simulation/' + str(sim_id) + '/csv-recorders')
             self.assertEqual(response.status_code, 200)
-
 
     def test_simulation_CSV_recorders_put_sim_not_found(self):
         response = self.client.put('/simulation/1/123456/csv-recorders')

@@ -43,8 +43,8 @@ class TestSimulationTransferFunctions(RestTest):
 
     def setUp(self):
         del simulations[:]
-        simulations.append(Simulation(0, 'experiment_0', None, 'default-owner', 'local', 'created'))
-        simulations.append(Simulation(1, 'experiment_1', None, 'untrusted-owner', 'local', 'created'))
+        simulations.append(Simulation(0, 'experiment_0', 'default-owner', 'local', 'created'))
+        simulations.append(Simulation(1, 'experiment_1', 'untrusted-owner', 'local', 'created'))
         self.sim = simulations[0]
         self.sim.cle = MagicMock()
 

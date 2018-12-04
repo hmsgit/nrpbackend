@@ -108,34 +108,23 @@ class SimulationService(Resource):
         :< json string experimentConfiguration: Path and name of the experiment configuration file
         :< json string experimentID: The experiment ID of the experiment
         :< json string environmentConfiguration: Path of the custom SDF environment (optional)
-        :< json string gzserverHost: The host where gzserver will be run: local for using the same
-                                     machine of the backend
+        :> json string gzserverHost: The host where gzserver will be run: local for using the same
+                                     machine of the backend, lugano to use a dedicated instance on
+                                     the Lugano viz cluster
         :< json string reservation: the name of the cluster reservation subsequently used to
                                     allocate a job
         :< json string state: The initial state of the simulation
         :< json boolean private: Defines whether the simulation is based on a private experiment
-        :< json string playbackPath: The simulation recording to playback (Path to recording root)
+        :< json string playbackPath: Path to simulation recording to play (optional)
         :< json string ctx-id: The context id of the collab if we are running a collab based
                                simulation
 
         :> json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
-        :> json string state: The current state of the simulation (always 'created')
         :> json integer simulationID: The id of the simulation (needed for further REST calls)
-        :> json string experimentConfiguration: Path and name of the experiment configuration file
         :> json string environmentConfiguration: Path and name of the environment configuration file
         :> json string creationDate: Date of creation of this simulation
-        :> json string gzserverHost: The host where gzserver will be run: local for using the same
-                                     machine of the backend, lugano to use a dedicated instance on
-                                     the Lugano viz cluster
-        :> json string reservation: the name of the cluster reservation subsequently used to
-                                    allocate a job
-        :> json string experimentID: The experiment ID if the experiment is using the storage
-        :> json integer brainProcesses: Number of brain processes for simulation, overrides the
-                                        number specified in the experiment configuration file
         :> json string creationUniqueID: The simulation unique creation ID that is used by the
                                          Frontend to identify this simulation
-        :>json string playbackPath: Path to simulation recording to play (optional)
-        :>json boolean private: Simulation is based on a private experiment
 
         :status 400: Experiment configuration is not valid
         :status 401: gzserverHost is not valid
@@ -170,7 +159,6 @@ class SimulationService(Resource):
 
         sim = Simulation(sim_id,
                          body['experimentConfiguration'],
-                         body.get('environmentConfiguration', None),
                          sim_owner,
                          sim_gzserver_host,
                          sim_reservation,

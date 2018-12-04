@@ -77,7 +77,7 @@ class TestScript(RestTest):
         self.lc = LightControl()
 
         del simulations[:]
-        simulations.append(Simulation(0, 'test', None, 'default-owner', 'created'))
+        simulations.append(Simulation(0, 'test', 'default-owner', 'created'))
 
     # The following methods test the class hbp_nrp_backend.rest_server.__SimulationControl
     # .MaterialControl
