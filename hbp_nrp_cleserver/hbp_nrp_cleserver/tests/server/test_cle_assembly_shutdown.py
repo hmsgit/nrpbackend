@@ -52,9 +52,8 @@ class TestCLELauncherShutdown(unittest.TestCase):
         exd.dir = "/somewhere/over/the/rainbow"
         bibi.path = "/somewhere/over/the/rainbow/bibi"
 
-        models_path_patch = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", "/somewhere/near/the/rainbow")
-        models_path_patch.start()
-        self.addCleanup(models_path_patch.stop)
+        self.mocked_cleserver = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer").start()
+        self.mocked_cleserver._robotHandler.download_custom_robot.return_value = "somewhere/over/the/rainbow"
 
         with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", MockOs):
             self.launcher = CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly(42, exd, bibi, gzserver_host="local")
@@ -67,6 +66,7 @@ class TestCLELauncherShutdown(unittest.TestCase):
 
     def test_shutdown_stops_everything(self):
         self.launcher.shutdown()
+        self.mocked_cleserver.stop()
         self.__assert_everything_properly_shut_down()
 
     def __assert_everything_properly_shut_down(self):

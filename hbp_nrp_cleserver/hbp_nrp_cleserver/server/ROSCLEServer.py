@@ -54,15 +54,14 @@ from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
 from cle_ros_msgs import srv
 from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
-from hbp_nrp_cleserver.server import \
-    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
+from . import SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
     SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE
-from hbp_nrp_cleserver.server import ros_handler
-from hbp_nrp_cleserver.bibi_config import StructuredTransferFunction
+from . import ros_handler
+import hbp_nrp_cleserver.bibi_config.StructuredTransferFunction as StructuredTransferFunction
 import hbp_nrp_cle.tf_framework as tf_framework
 from hbp_nrp_cle.tf_framework import TFLoadingException, BrainParameterException
 import base64

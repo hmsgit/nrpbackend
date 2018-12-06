@@ -26,17 +26,19 @@
 This module provides support methods to perform operation using cle_nrp_cle.RobotManager
 """
 
-__author__ = 'Hossain Mahmud'
-
 import os
 import logging
 import tf
+import json
 from pyxb import ValidationError
 
 from cle_ros_msgs import msg
 from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_commons.generated import robot_conf_api_gen as robotXmlParser
+from hbp_nrp_commons.ZipUtil import ZipUtil
 from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, get_model_basepath
+
+__author__ = 'Hossain Mahmud'
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,8 @@ class RobotCallHandler(object):
     """
     def __init__(self, assembly):
         self._cle_assembly = assembly
+        self._client = self._cle_assembly.storage_client
+        self._simdir = self._cle_assembly.simdir
 
     def get_robots(self):
         """
@@ -96,65 +100,45 @@ class RobotCallHandler(object):
         :return: Tuple (True, SDF relative path) or (False, error message) to update config files
         """
         # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-        client = self._cle_assembly.storage_client
-        simDir = self._cle_assembly.simdir
-
         robot_sdf_abs_path = None
         try:
             if is_custom:   # pragma: no cover
-                zipRelPath = robot_model_rel_path
-                import json
+                zipStoragePath = robot_model_rel_path
                 try:
-                    # Hack the file name for the storage server. Replace spaces and slashes.
-                    # How do you know this? divine knowledge!
-                    # FIXME: get_custom_model should take a path, custom logic should be done there
-                    requestFile = ('robots/' + zipRelPath).replace(' ', '%20').replace('/', '%2F')
                     # download zip from storage
-                    data = client.get_custom_model(
-                        self._cle_assembly.token,
-                        self._cle_assembly.ctx_id,
-                        json.dumps({'uuid': requestFile})
+                    zipAbsPath = self.download_custom_robot(
+                        robot_rel_path=zipStoragePath,
+                        save_to=os.path.join(self._simdir, os.path.dirname(zipStoragePath)),
+                        save_as=os.path.basename(zipStoragePath)
                     )
-                    # write in the current simulation directory
-                    if not os.path.exists(os.path.join(simDir, os.path.dirname(zipRelPath))):
-                        os.makedirs(os.path.join(simDir, os.path.dirname(zipRelPath)))
-                    with open(os.path.join(simDir, zipRelPath), 'w') as destAbsPath:
-                        destAbsPath.write(data)
 
-                    # extract
-                    if not os.path.exists(os.path.join(simDir, self._cle_assembly.tempAssetsDir)):
-                        os.makedirs(os.path.join(simDir, self._cle_assembly.tempAssetsDir))
-                    import zipfile
-                    with zipfile.ZipFile(os.path.join(simDir, zipRelPath)) as rzip:
-                        rzip.extractall(os.path.join(simDir, self._cle_assembly.tempAssetsDir))
+                    if zipAbsPath is None:
+                        raise Exception("Could not find {0} in the template library"
+                                        .format(robot_model_rel_path))
+                    # extract assets
+                    ZipUtil.extractall(
+                        zip_abs_path=zipAbsPath,
+                        extract_to=os.path.join(self._simdir, self._cle_assembly.tempAssetsDir),
+                        overwrite=True)
 
                     # get the root directory within the zip
-                    rootfolder = rzip.namelist()[0]
+                    rootfolder = ZipUtil.get_rootname(zipAbsPath)
+                    sdf_abs_path = self.get_sdf_abs_path(
+                        os.path.join(self._simdir, self._cle_assembly.tempAssetsDir,
+                                     rootfolder, 'model.config'))
 
-                    # Get robot sdf name from model.config
-                    with open(os.path.join(simDir, self._cle_assembly.tempAssetsDir,
-                                           rootfolder, 'model.config')) as conf:
-                        try:
-                            confDOM = robotXmlParser.CreateFromDocument(conf.read())
-                        except ValidationError as ve:
-                            raise Exception("Could not parse experiment configuration {0:s} due "
-                                            "to validation error: {1:s}".format(conf, str(ve)))
-
-                    if confDOM.sdf is None:
+                    if sdf_abs_path is None:
                         return False, "'model.config' has no 'sdf' tag"
 
-                    sdf_filename = confDOM.sdf.value()
-                    sdf_abs_path = os.path.join(simDir, 'assets', rootfolder, sdf_filename)
+                    sdf_filename = os.path.basename(sdf_abs_path)
 
                     if not os.path.isfile(sdf_abs_path):
                         return False, "No SDF named {name} found at {loc} specified " \
                                       "in model.config in the uploaded zip" \
-                            .format(name=confDOM.sdf.value(), loc=rootfolder)
-
+                            .format(name=sdf_filename, loc=rootfolder)
                 # pylint: disable=broad-except
                 except Exception as e:
                     return False, str(e)
-                # TODO: ask proxy to copy sdf into experiment folder!
 
             else:   # if template robot
                 # find the SDF in the template directories
@@ -164,59 +148,76 @@ class RobotCallHandler(object):
                                     .format(robot_model_rel_path))
                 sdf_filename = os.path.basename(sdf_abs_path)
 
-            if not pose:
-                # HACK: find first robot, and use its pose
-                if len(self._cle_assembly.robotManager.get_robot_dict()):
-                    r = self._cle_assembly.robotManager.get_robot_dict().values()[0]
-                    pose = r.pose
-            else:   # convert Euler to quaternion representation
-                pose = RobotManager.convertXSDPosetoPyPose(pose)
+            pose = RobotManager.convertXSDPosetoPyPose(pose)
 
             # copy sdf to <simulation dir>/<robot_id>/<whatever>.sdf
             # this would then be uploaded to the storage and referenced in bibi
-            if not os.path.exists(os.path.join(simDir, robot_id)):
-                os.mkdir(os.path.join(simDir, robot_id))
+            if not os.path.exists(os.path.join(self._simdir, robot_id)):
+                os.mkdir(os.path.join(self._simdir, robot_id))
             else:
                 logger.info("Copying robot in existing directory")
 
             from shutil import copy2
-            copy2(sdf_abs_path, os.path.join(simDir, robot_id))
+            copy2(sdf_abs_path, os.path.join(self._simdir, robot_id))
+
+            # Copy available roslaunch files from the directory of the sdf_abs_path
+            # Take the first one (by name) if multiple available
+            rosLaunchFile = next((f for f in os.listdir(os.path.dirname(sdf_abs_path))
+                                  if f.endswith('.launch')), None)
+            rosLaunchAbsPath = (None if rosLaunchFile is None
+                                else os.path.join(os.path.dirname(sdf_abs_path), rosLaunchFile))
+
+            # copy to simulation directory
+            if rosLaunchAbsPath is not None and os.path.isfile(rosLaunchAbsPath):
+                copy2(rosLaunchAbsPath, os.path.join(self._simdir, robot_id))
+                rosLaunchAbsPath = os.path.join(self._simdir, robot_id,
+                                                os.path.basename(rosLaunchAbsPath))
 
             # set the SDF path to be added to the RobotManager
             # notice this path isn't the extracted zip or template, but the <simDir>/<robot_id>
-            robot_sdf_abs_path = os.path.join(simDir, robot_id, sdf_filename)
+            robot_sdf_abs_path = os.path.join(self._simdir, robot_id, sdf_filename)
 
             # TODO: modify topic names here
             robot_sdf_abs_path = self._customize_sdf(robot_sdf_abs_path, robot_id)
 
             # add to the robot manager
-            robot = Robot(robot_id, robot_sdf_abs_path, robot_id, pose, is_custom)
-            self._cle_assembly.robotManager.add_robot(robot)
+            robot = Robot(robot_id,
+                          robot_sdf_abs_path, robot_id, pose, is_custom, rosLaunchAbsPath)
             self._cle_assembly.cle_server.cle.initial_robot_poses[robot_id] = pose
 
             # now try to add it to the scene
             try:
-                self._cle_assembly.robotManager.load_robot_in_scene(robot_id)
+                self._cle_assembly.robotManager.add_robot(robot)
             except Exception as e:
-                # couldn't add into the scene, fallback
-                # ideally you want delete the created folders
-                self._cle_assembly.robotManager.remove_robot(robot_id)
+                # couldn't add, fallback! ideally you want delete the created folders
+                # self._cle_assembly.robotManager.remove_robot(robot_id)
                 del self._cle_assembly.cle_server.cle.initial_robot_poses[robot_id]
                 raise
         # pylint: disable=broad-except
         except Exception as e:
             return False, str(e)
 
-        # Yey! copy the SDF into the experiment folder
+        # Yey! Upload the SDF into the storage experiment folder
         with open(robot_sdf_abs_path, 'r') as sdf:
             data = sdf.read()
-        self._cle_assembly.storage_client.create_or_update(
+        self._client.create_or_update(
             self._cle_assembly.token,
             self._cle_assembly.experiment_id,
             os.path.join(robot_id, sdf_filename),
             data,
             "application/octet-stream"
         )
+        # Upload roslanch file
+        if rosLaunchAbsPath is not None:
+            with open(rosLaunchAbsPath, 'r') as roslaunch:
+                data = roslaunch.read()
+            self._client.create_or_update(
+                self._cle_assembly.token,
+                self._cle_assembly.experiment_id,
+                os.path.join(robot_id, os.path.basename(rosLaunchAbsPath)),
+                data,
+                "application/octet-stream"
+            )
 
         return True, os.path.join(robot_id, sdf_filename)
 
@@ -232,7 +233,7 @@ class RobotCallHandler(object):
             modelFile = self._cle_assembly.robotManager.get_robot(robot_id).SDFFileAbsPath
 
             # delete model file from the storage
-            self._cle_assembly.storage_client.delete_file(
+            self._client.delete_file(
                 self._cle_assembly.token,
                 self._cle_assembly.experiment_id,
                 os.path.join(robot_id, os.path.basename(modelFile))
@@ -260,6 +261,72 @@ class RobotCallHandler(object):
             return False, "An error occurred while deleting the robot. {err}".format(err=str(e))
 
         return True, "Robot deleted"
+
+    def download_custom_robot(self, robot_rel_path, save_to, save_as=None):
+        """
+        Downloads custom zipped robot model from the storage
+        :param robot_rel_path: relative path* to the zip in the storage.
+        * from the internal robot folder
+        :param save_to: download location
+        :param save_as: filename to save as
+        :return: None if failed. Otherwise path to the downloaded file i.e. save_to+save_as
+        """
+        if save_as is None:
+            save_as = os.path.basename(robot_rel_path)
+        if not save_as:
+            logger.error("Aborting download of {sdf} from storage due to invalid 'Save As' name"
+                         .format(sdf=robot_rel_path))
+            return None
+
+        # Hack the file name for the storage server. Replace spaces and slashes.
+        # How do you know this? divine knowledge!
+        # FIXME: get_custom_model should take a path, custom logic should be done there
+        requestFile = ('robots/' + robot_rel_path).replace(' ', '%20').replace('/', '%2F')
+        # download zip from storage
+        try:
+            data = self._client.get_custom_model(
+                self._cle_assembly.token,
+                self._cle_assembly.ctx_id,
+                json.dumps({'uuid': requestFile})
+            )
+        # pylint: disable=broad-except
+        except Exception as ex:
+            logger.error("StorageClient failed to download {sdf} with following error. {err}"
+                         .format(sdf=robot_rel_path, err=str(ex)))
+            return None
+
+        # write the zip
+        try:
+            if not os.path.exists(save_to):
+                os.makedirs(save_to)
+            with open(os.path.join(save_to, save_as), 'w') as destAbsPath:
+                destAbsPath.write(data)
+        except IOError as ex:
+            logger.error("Could not write downloaded SDF {sdf} in directory {dir} due to {err}"
+                         .format(sdf=robot_rel_path, dir=save_to, err=str(ex)))
+            return None
+
+        return os.path.join(save_to, save_as)
+
+    def get_sdf_abs_path(self, model_config_abs_path):
+        """
+        Get robot sdf name from model.config
+        :param model_config_abs_path:
+        :return:
+        """
+        # pylint: disable=no-self-use
+        # Get robot sdf name from model.config
+        with open(model_config_abs_path) as conf:
+            try:
+                confDOM = robotXmlParser.CreateFromDocument(conf.read())
+            except ValidationError as ve:
+                raise Exception("Could not parse experiment configuration {0:s} due "
+                                "to validation error: {1:s}".format(conf, str(ve)))
+
+        if confDOM.sdf is None:
+            return None
+
+        return os.path.join(os.path.dirname(model_config_abs_path), confDOM.sdf.value())
 
     def _customize_sdf(self, sdf_abs_path, robot_id):   # pragma: no cover
         """

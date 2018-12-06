@@ -26,10 +26,11 @@ This module tests the backend implementation of the simulation lifecycle
 """
 
 import unittest
-from mock import Mock, patch
+from mock import Mock, patch, MagicMock
 from hbp_nrp_cleserver.server._RobotCallHandler import RobotCallHandler
 
 __author__ = 'Hossain Mahmud'
+
 
 class TestRobotCallHandler(unittest.TestCase):
 
@@ -41,7 +42,11 @@ class TestRobotCallHandler(unittest.TestCase):
         self.mocked_os = patch("hbp_nrp_cleserver.server._RobotCallHandler.os").start()
         self.mocked_tf = patch("hbp_nrp_cleserver.server._RobotCallHandler.tf").start()
 
+        self.mocked_zipUtil = patch("hbp_nrp_cleserver.server._RobotCallHandler.ZipUtil").start()
+        self.mocked_zipUtil.get_rootname.return_value = "huksy_model"
+
         self.mocked_assembly = Mock()
+
         self.handler = RobotCallHandler(self.mocked_assembly)
 
     def tearDown(self):
@@ -51,6 +56,7 @@ class TestRobotCallHandler(unittest.TestCase):
         self.mocked_parser.stop()
         self.mocked_os.stop()
         self.mocked_tf.stop()
+        self.mocked_zipUtil.stop()
 
     def test_get_robots(self):
         someDict = {'a': Mock(), 'x': Mock()}
@@ -65,16 +71,19 @@ class TestRobotCallHandler(unittest.TestCase):
         self.mocked_assembly.token = 'my_awesome_token'
         self.mocked_assembly.ctx_id = 0xFFFF
 
-        with patch("zipfile.ZipFile") as zipfile, \
-            patch("hbp_nrp_backend.storage_client_api.StorageClient.find_file_in_paths") as findFile, \
-            patch("hbp_nrp_backend.storage_client_api.StorageClient.get_model_basepath") as getpath:
+        with patch("hbp_nrp_cleserver.server._RobotCallHandler.find_file_in_paths") as findFile, \
+            patch("hbp_nrp_cleserver.server._RobotCallHandler.get_model_basepath") as getpath:
 
-            ret, status = self.handler.add_robot('id', 'over/the/rainbow', True)
-            self.mocked_assembly.storage_client.get_custom_model.assert_called_once_with(
-                self.mocked_assembly.token,
-                self.mocked_assembly.ctx_id,
-                '{"uuid": "robots%2Fover%2Fthe%2Frainbow"}'
-            )
+            self.mocked_os.path.join.return_value = "/simdir/zip/abs/path/"
+            self.mocked_os.path.basename.return_value = "model.sdf"
+            self.handler.download_custom_robot = MagicMock()
+
+            ret, status = self.handler.add_robot('id', "over/the/rainbow", True)
+            self.handler.download_custom_robot.assert_called_once_with(
+                robot_rel_path="over/the/rainbow",
+                save_to="/simdir/zip/abs/path/",
+                save_as="model.sdf")
+            self.handler.download_custom_robot.return_value = "some/other/path"
 
             findFile.return_value = "/some/model/abs/path/model.sdf"
             self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"

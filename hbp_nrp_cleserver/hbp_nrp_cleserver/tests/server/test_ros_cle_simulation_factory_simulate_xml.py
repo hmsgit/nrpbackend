@@ -33,10 +33,9 @@ import os
 from datetime import datetime, timedelta
 import pytz
 from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFactory
-from mock import Mock, patch
+from mock import Mock, patch, MagicMock
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance
-from hbp_nrp_backend.storage_client_api import StorageClient
 MODELS_PATH = os.path.split(__file__)[0]
 EXPERIMENTS_PATH = os.path.join(MODELS_PATH, 'experiment_data')
 tz = pytz.timezone("Europe/Zurich")
@@ -72,28 +71,6 @@ class MockedGazeboHelper(object):
         pass
 
 
-class MockedRobotManager(object):
-
-    def __init__(self):
-        pass
-
-    def init_scene_handler(self):
-        return ""
-
-    def scene_handler(self):
-        return MockedGazeboHelper()
-
-    def get_robot_dict(self):
-        return {}
-
-    def __getattr__(self, x):
-        return Mock()
-
-    @staticmethod
-    def convertXSDPosetoPyPose(pose):
-        return {}
-
-
 class MockedClosedLoopEngine(Mock):
 
     DEFAULT_TIMESTEP = 0.02
@@ -112,43 +89,48 @@ class MockOs2(object):
 @patch("hbp_nrp_cle.common.os", new=MockOs2())
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer", new=Mock())
 @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp.config.active_node", new=Mock())
-@patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
-       new=Mock(return_value=EXPERIMENTS_PATH)
-       )
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", EXPERIMENTS_PATH)
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LuganoVizClusterGazebo",
-       new=lambda x, y: LocalGazeboServerInstance())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.LocalGazeboBridgeInstance", new=Mock())
+@patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath", new=Mock(return_value=EXPERIMENTS_PATH))
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.LuganoVizClusterGazebo", new=lambda x, y: LocalGazeboServerInstance())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cle.cle.DeterministicClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ClosedLoopEngine", new=MockedClosedLoopEngine())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.listdir", new=Mock(return_value=[]))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient", new=MagicMock())
 class SimulationTestCase(unittest.TestCase):
 
+    def setUp(self):
+        self.patch_robotManager = patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.RobotManager")
+        self.mocked_robotManager = self.patch_robotManager.start()
+        self.addCleanup(self.patch_robotManager.stop)
+
+        self.patch_ROSCLEServer = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
+        self.mocked_cleserver = self.patch_ROSCLEServer.start()
+        self.addCleanup(self.patch_ROSCLEServer.stop)
+
+        self.mocked_robotManager.return_value.scene_handler.return_value.init_scene_handler.return_value = ""
+        self.mocked_robotManager.return_value.scene_handler.return_value.parse_gazebo_world_file.return_value = {}, {}
+
+        self.mocked_cleserver._robotHandler.download_custom_robot.return_value = "somewhere/over/the/rainbow"
+
+        # Create the factory to be tested
+        self.factory = ROSCLESimulationFactory()
+
+    def tearDown(self):
+        pass
+
     def test_simulation_local(self):
-        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient") as storage_client, \
-                patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
-
-            factory=ROSCLESimulationFactory()
-            factory.create_new_simulation(MockedServiceRequest())
-
-            factory.simulation_terminate_event.wait()
+        self.factory.create_new_simulation(MockedServiceRequest())
+        self.factory.simulation_terminate_event.wait()
 
     def test_simulation_lugano(self):
-        with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient") as storage_client, \
-                patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.RobotManager", new=MockedRobotManager):
-
-            MockedServiceRequest.gzserver_host='lugano'
-
-            factory=ROSCLESimulationFactory()
-            factory.create_new_simulation(MockedServiceRequest())
-
-            factory.simulation_terminate_event.wait()
-
+        MockedServiceRequest.gzserver_host = 'lugano'
+        self.factory.create_new_simulation(MockedServiceRequest())
+        self.factory.simulation_terminate_event.wait()
 
 if __name__ == '__main__':
     unittest.main()

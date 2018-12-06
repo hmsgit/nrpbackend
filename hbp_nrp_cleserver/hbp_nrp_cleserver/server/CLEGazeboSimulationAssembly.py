@@ -26,7 +26,6 @@ This module contains the abstract base class of a simulation assembly using the 
 """
 
 import logging
-import netifaces
 import os
 import random
 import subprocess
@@ -37,321 +36,20 @@ import json
 logger = logging.getLogger(__name__)
 
 from RestrictedPython import compile_restricted
-from hbp_nrp_cle.cle import config
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
     get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
-from hbp_nrp_cleserver.server.SimulationAssembly import SimulationAssembly
-from hbp_nrp_cleserver.server.ROSLaunch import ROSLaunch
-from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboBridgeInstance, \
-    LocalGazeboServerInstance
-from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
-from hbp_nrp_cleserver.server.GazeboSimulationRecorder import GazeboSimulationRecorder
 from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, \
     get_model_basepath, find_file_in_paths
+from hbp_nrp_cleserver.server.GazeboSimulationAssembly import GazeboSimulationAssembly
+from hbp_nrp_commons.ZipUtil import ZipUtil
 
 # These imports start NEST.
 from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
 from hbp_nrp_cle.cle.ClosedLoopEngine import DeterministicClosedLoopEngine, ClosedLoopEngine
 import hbp_nrp_cle.tf_framework as nrp
 import hbp_nrp_cle.brainsim.config as brainconfig
-
-
-models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-
-
-class GazeboSimulationAssembly(SimulationAssembly):
-    """
-    The abstract base class for a simulation assembly that uses Gazebo for world simulation
-    """
-
-    def __init__(self, sim_id, exc, bibi, **par):
-        """
-        Creates a new simulation assembly to simulate an experiment using the CLE and Gazebo
-        :param sim_id: The simulation id
-        :param exc: The experiment configuration
-        :param bibi: The BIBI configuration
-        :param gzserver_host: The gazebo host
-        :param reservation: The reservation number
-        :param timeout: The timeout for the simulation
-        :param experiment_id: The experiment_id of the simulation
-        """
-        super(GazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, par)
-
-        if models_path is None:
-            raise Exception("Server Error. NRP_MODELS_DIRECTORY not defined.")
-
-        self.robotManager = RobotManager()
-
-        # determine the Gazebo simulator target, due to dependencies this must
-        # happen here
-        gzserver_host = par.get('gzserver_host', 'local')
-        timeout = par.get('timeout', None)
-        reservation = par.get('reservation', None)
-        experiment_id = par.get('experiment_id', None)
-
-        if gzserver_host == 'local':
-            self.gzserver = LocalGazeboServerInstance()
-        elif gzserver_host == 'lugano':
-            self.gzserver = LuganoVizClusterGazebo(
-                timeout.tzinfo if timeout is not None else None, reservation
-            )
-        else:
-            raise Exception(
-                "The gzserver location '{0}' is not supported.", gzserver_host)
-
-        self._timeout = timeout
-        self.__gzserver_host = gzserver_host
-        self.experiment_id = experiment_id
-        self.gzweb = None
-        self.ros_launcher = None
-        self.gazebo_recorder = None
-
-    def _start_gazebo(self, rng_seed, playback_path, extra_models, world_file):
-        """
-        Configures and starts the Gazebo simulator and backend services
-
-        :param rng_seed: RNG seed to spawn Gazebo with
-        :param playback_path: A path to playback information
-        :param extra_models: An additional models path or None
-        :param world_file: The world file that should be loaded by Gazebo
-        """
-
-        # Gazebo configuration and launch
-        self._notify("Starting Gazebo robotic simulator")
-        ifaddress = netifaces.ifaddresses(
-            config.config.get('network', 'main-interface'))
-        local_ip = ifaddress[netifaces.AF_INET][0]['addr']
-        ros_master_uri = os.environ.get(
-            "ROS_MASTER_URI").replace('localhost', local_ip)
-
-        self.gzserver.gazebo_died_callback = self._handle_gazebo_shutdown
-
-        # Physics engine selection from ExDConfig; pass as -e <physics_engine>
-        # to gzserver
-        physics_engine = self.exc.physicsEngine
-        logger.info("Looking for physicsEngine tag value in ExDConfig")
-        if physics_engine is not None:
-            logger.info("Physics engine specified in ExDConfig: " +
-                        str(repr(physics_engine)))
-            # No need to check that the physics engine is valid, pyxb already
-            # does that
-        else:
-            logger.info(
-                "No physics engine specified explicitly. Using default setting 'ode'")
-            physics_engine = "ode"
-
-        # experiment specific gzserver command line arguments
-        gzserver_args = '--seed {rng_seed} -e {engine} {world_file}'\
-            .format(rng_seed=rng_seed,
-                    engine=physics_engine,
-                    world_file=world_file)
-
-        # If playback is specified, load the first log/world file in the recording at Gazebo launch
-        # TODO: when storage server is available this should be updated
-        if playback_path:
-            gzserver_args += ' --play {path}/gzserver/1.log'.format(
-                path=playback_path)
-
-        # optional roslaunch support prior to Gazebo launch
-        if self.exc.rosLaunch is not None:
-
-            # NRRPLT-5134, only local installs are currently supported
-            if self.__gzserver_host != 'local':
-                raise Exception(
-                    'roslaunch is currently only supported on local installs.')
-
-            self._notify(
-                "Launching experiment ROS nodes and configuring parameters")
-            self.ros_launcher = ROSLaunch(self.exc.rosLaunch.src)
-
-        try:
-            logger.info("gzserver arguments: " + gzserver_args)
-            self.gzserver.start(ros_master_uri, extra_models, gzserver_args)
-        except XvfbXvnError as exception:
-            logger.error(exception)
-            error = "Recoverable error occurred. Please try again. Reason: {0}".format(
-                    exception)
-            raise Exception(error)
-
-        self._notify("Connecting to Gazebo robotic simulator")
-        self.robotManager.init_scene_handler()
-
-        self._notify("Connecting to Gazebo simulation recorder")
-        self.gazebo_recorder = GazeboSimulationRecorder(self.sim_id)
-
-        self._notify("Starting Gazebo web client")
-        os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
-
-        self.__set_env_for_gzbridge()
-
-        # We do not know here in which state the previous user did let us
-        # gzweb.
-        self.gzweb = LocalGazeboBridgeInstance()
-        self.gzweb.restart()
-
-    # pylint: disable=missing-docstring
-    # pylint: disable=broad-except
-    def __set_env_for_gzbridge(self):
-        def get_gzbridge_setting(name, default):
-            """
-                Obtain parameter from pyxb bindings of experiment schema.
-                If something goes wrong return default value. The default
-                also defines the type that the parameter should have.
-            :param name: Name of the parameter
-            :param default_: default value
-            :return: a string
-            """
-            try:
-                s = self.exc.gzbridgesettings
-                val = getattr(s, name)
-                val = type(default)(val)
-            # pylint: disable=broad-except
-            except Exception:
-                val = default
-            return repr(val)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] \
-            = get_gzbridge_setting('pose_update_delta_translation', 1.e-5)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting(
-            'pose_update_delta_rotation', 1.e-4)
-        os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting(
-            'pose_update_early_threshold', 0.02)
-
-    def _handle_gazebo_shutdown(self):  # pragma: no cover
-        """
-        Handles the case that gazebo died unexpectedly
-        """
-        logger.exception("Gazebo died unexpectedly")
-        # Avoid further notice
-        self.gzserver.gazebo_died_callback = None
-        # in case the simulation is still being started, we abort the
-        # initialization
-        self._abort_initialization = "Gazebo died unexpectedly"
-
-    def shutdown(self):
-        """
-        Shutdown CLE
-        """
-        # Once we do reach this point, the simulation is stopped
-        # and we can clean after ourselves.
-        # pylint: disable=broad-except, too-many-branches,too-many-statements
-
-        # Clean up gazebo after ourselves
-        number_of_subtasks = 4
-        if self.exc.rosLaunch is not None:
-            number_of_subtasks += 1
-        if self.bibi.extRobotController is not None:
-            number_of_subtasks += 1
-
-        try:
-
-            # Check if notifications to clients are currently working
-            try:
-                self.ros_notificator.start_task("Stopping simulation",
-                                                "Shutting down simulation recorder",
-                                                number_of_subtasks=number_of_subtasks,
-                                                block_ui=False)
-                notifications = True
-            except Exception, e:
-                logger.error("Could not send notifications")
-                logger.exception(e)
-                notifications = False
-
-            # Call the recorder plugin to shutdown before shutting down Gazebo
-            if self.gazebo_recorder is not None:
-                try:
-                    self.gazebo_recorder.shutdown()
-                except Exception, e:
-                    logger.warning(
-                        "Gazebo recorder could not be shutdown successfully")
-                    logger.exception(e)
-
-            self._shutdown(notifications)
-
-            # Shutdown gzweb before shutting down Gazebo
-            if self.gzweb is not None:
-                try:
-                    if notifications:
-                        self.ros_notificator.update_task("Shutting down Gazebo web client",
-                                                         update_progress=True, block_ui=False)
-                    self.gzweb.stop()
-                except Exception, e:
-                    logger.warning("gzweb could not be stopped successfully")
-                    logger.exception(e)
-
-            if self.gzserver is not None:
-                try:
-                    if notifications:
-                        self.ros_notificator.update_task("Shutting down Gazebo robotic simulator",
-                                                         update_progress=True, block_ui=False)
-                    self.gzserver.stop()
-                except Exception, e:
-                    logger.warning(
-                        "gzserver could not be stopped successfully")
-                    logger.exception(e)
-
-            # Stop any external robot controllers
-            if self.bibi.extRobotController:
-                robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
-                                                               get_model_basepath())
-                if robot_controller_filepath:
-                    if notifications:
-                        self.ros_notificator.update_task("Stopping external robot controllers",
-                                                         update_progress=True, block_ui=False)
-                    subprocess.check_call([robot_controller_filepath, 'stop'])
-
-            # Stop any ROS nodes launched via roslaunch
-            if self.exc.rosLaunch is not None and self.ros_launcher is not None:
-                if notifications:
-                    self.ros_notificator.update_task("Shutting down launched ROS nodes",
-                                                     update_progress=True, block_ui=False)
-                self.ros_launcher.shutdown()
-
-            # try to notify for task completion, notificator should be valid until
-            # the finally block below
-            if notifications:
-                self.ros_notificator.finish_task()
-
-        finally:
-
-            # always shut down the notificator ROS topics when done, no status for this
-            # as there is no mechanism to deliver further updates
-            try:
-                if self.ros_notificator:
-                    self.ros_notificator.shutdown()
-            except Exception, e:
-                logger.error("The ROS notificator could not be shut down")
-                logger.exception(e)
-
-        # Cleanup ROS core nodes, services, and topics (the command should be almost
-        # instant and exit, but wrap it in a timeout since it's semi-officially
-        # supported)
-        logger.info("Cleaning up ROS nodes and services")
-
-        try:
-            res = subprocess.check_output(["rosnode", "list"])
-
-            if res.find("/gazebo") > -1 and res.find("/Watchdog") > -1:
-                os.system('rosnode kill /gazebo /Watchdog')
-
-            elif res.find("/gazebo") > -1:
-                os.system('rosnode kill /gazebo >/dev/null 2>&1')
-
-            elif res.find("/Watchdog") > -1:
-                os.system('rosnode kill /Watchdog >/dev/null 2>&1')
-        except Exception, e:
-            logger.exception(e)
-
-        os.system("echo 'y' | timeout -s SIGKILL 10s rosnode cleanup >/dev/null 2>&1")
-
-    def _shutdown(self, notifications):  # pragma: no cover
-        """
-        Shutdown the CLE and any hooks before shutting down Gazebo
-
-        :param notifications: A flag indicating whether notifications should be attempted to send
-        """
-        raise NotImplementedError("This method must be overridden in inherited classes")
 
 
 class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
@@ -396,15 +94,16 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # pylint: disable=too-many-locals
 
         # create the CLE server and lifecycle first to report any failures properly
+        # initialize the cle server and services
         logger.info("Creating CLE Server")
         self.cle_server = ROSCLEServer(self.sim_id, self._timeout, self.gzserver,
                                        self.ros_notificator)
+        self.cle_server.setup_handlers(self)
 
         # RNG seed for components, use config value if specified or generate a new one
         rng_seed = self.exc.rngSeed
         if rng_seed is None:
-            logger.warn(
-                'No RNG seed specified, generating a random value.')
+            logger.warn('No RNG seed specified, generating a random value.')
             rng_seed = random.randint(1, sys.maxint)
         logger.info('RNG seed = %i', rng_seed)
 
@@ -419,10 +118,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # find robot
         robot_poses = {}
         self.robotManager.remove_all_robots()
-        self.__read_robot_list()
 
+        self._load_robot()
         for rid, robot in self.robotManager.get_robot_dict().iteritems():
-            self._load_robot(robot)
             robot_poses[rid] = robot.pose
 
         # load robot adapters
@@ -436,7 +134,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self.cle_server.cle = self.__load_cle(robotcontrol, robotcomm, braincontrol, braincomm,
                                               brainfile, brainconf, robot_poses, models, lights)
         self.cle_server.prepare_simulation(except_hook)
-        self.cle_server.setup_handlers(self)
 
         # load transfer functions
         self.__load_tfs()
@@ -446,10 +143,10 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self.robotManager.scene_handler().wait_for_backend_rendering()
 
     # TODO: remove this function when exc and bibi abstraction (SimConf) is implemented
-    def __read_robot_list(self):
+    # TODO: remove code duplication with _RobotCallHandler once TODO mentioned inside is resolved
+    def _add_bibi_robots(self):
         """
         Reads robot list from bibi and poses from exc and populates robot manager
-
         :return: -
         """
         # pylint: disable=too-many-branches
@@ -459,9 +156,8 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         for modelTag in self.bibi.bodyModel:
             if (modelTag.robotId is None):
                 modelTag.robotId = 'robot'
-            elif (not modelTag.robotId
-                  or modelTag.robotId in self.robotManager.get_robot_dict()):
-                raise Exception("Multiple bodyModels has been defined with same or no names."
+            elif (not modelTag.robotId or modelTag.robotId in self.robotManager.get_robot_dict()):
+                raise Exception("Multiple bodyModels has been defined with same or no names. "
                                 "Please check bibi config file.")
 
             pose = None
@@ -471,24 +167,31 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 if not (rpose.robotId) or rpose.robotId == modelTag.robotId:
                     pose = RobotManager.convertXSDPosetoPyPose(rpose)
 
-            if hasattr(modelTag, 'customModelPath') and modelTag.customModelPath is not None:
-                # this tag is never there, remove this if block?
-                modelTag.assetPath = modelTag.customModelPath
-                isCustom = modelTag.customAsset = True
-            elif hasattr(modelTag, 'customAsset') and modelTag.customAsset is not None:
+            if hasattr(modelTag, 'customAsset') and modelTag.customAsset is not None:
                 isCustom = modelTag.customAsset
             else:
                 modelTag.customAsset = False
 
-            if hasattr(modelTag, 'assetPath') and modelTag.assetPath is None:
-                modelTag.assetPath = "."
-
             if isCustom:
-                path = self._extract_robot_zip(modelTag)
+                if not hasattr(modelTag, "assetPath"):
+                    raise Exception("No zipped model path is provided in bibi.bodyModel.assetPath")
+                # pylint: disable=protected-access
+                downloadedZipPath = self.cle_server._robotHandler.download_custom_robot(
+                    modelTag.assetPath,
+                    self._simDir,
+                    modelTag.assetPath)
+                if downloadedZipPath is not None:
+                    ZipUtil.extractall(
+                        zip_abs_path=downloadedZipPath,
+                        extract_to=os.path.join(self._simDir, self.tempAssetsDir),
+                        overwrite=True)
+
+                    path = os.path.join(self._simDir, modelTag.value())
+
             else:
-                path = find_file_in_paths(os.path.join(modelTag.robotId,
-                                                       os.path.basename(modelTag.value())),
-                                          get_model_basepath())
+                path = find_file_in_paths(os.path.join(
+                    modelTag.robotId, os.path.basename(modelTag.value())), get_model_basepath())
+
                 # Perhaps it's a previously coned experiment? Try with modelTag.value() BUT
                 # only look into the simulation_directory, as DELETE robot REST call, if called,
                 # would delete this file
@@ -499,91 +202,41 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             # still couldn't find the SDF, abort!
             if not path:
                 raise Exception("Could not find robot file: {0}".format(modelTag.value()))
+
+            # Find robot specific roslaunch file in the directory where the SDF resides
+            # Take the first one (by name) if multiple available
+            rosLaunchRelPath = next((f for f in os.listdir(os.path.dirname(path))
+                                     if f.endswith('.launch')), None)
+            rosLaunchAbsPath = (None if rosLaunchRelPath is None
+                                else os.path.join(os.path.dirname(path), rosLaunchRelPath))
+
             self.robotManager.add_robot(
-                Robot(modelTag.robotId, path, modelTag.robotId, pose, isCustom)
+                Robot(modelTag.robotId, path, modelTag.robotId, pose, isCustom, rosLaunchAbsPath)
             )
-
-    def _extract_robot_zip(self, robot_file):
-        """
-        Get the zip from the storage and extract it in the current simulation directory
-
-        :param robot_file: DOM object of <bodyModel> in bibi.
-            Contains SDF path for template robots as value.
-            Or zip path for custom robot as 'assetPath' and SDF location with the zip as value.
-        :return Absolute path to the robot SDF
-        """
-        # pylint: disable=too-many-locals
-        robots_list = self._storageClient.get_custom_models(self.token, self.ctx_id, 'robots')
-
-        # we use the paths of the uploaded zips to make sure the selected zip is there
-        paths_list = [robot['path'] for robot in robots_list]
-
-        # FIXME: change this implementation. it would fail if there're awesome_husky.zip and \
-        # a husky.zip, and assetPath is set to husky.zip
-        # check if the zip is in the user storage
-        zipped_model_path = [path for path in paths_list if robot_file.assetPath in path]
-        if zipped_model_path:
-            model_data = {'uuid': zipped_model_path[0]}
-            json_model_data = json.dumps(model_data)
-            storage_robot_zip_data = self._storageClient.get_custom_model(
-                self.token,
-                self.ctx_id, json_model_data)
-
-            rob_zip_path = os.path.join(self._simDir, robot_file.assetPath)
-            with open(rob_zip_path, 'w') as robot_zip:
-                robot_zip.write(storage_robot_zip_data)
-
-            with zipfile.ZipFile(rob_zip_path) as robot_zip_to_extract:
-                robot_zip_to_extract.extractall(path=os.path.join(self._simDir, self.tempAssetsDir))
-
-        # if the zip is not there, prompt the user to check his uploaded models
-        else:
-            raise NRPServicesGeneralException(
-                "Could not find zip file {0} in the list of uploaded models. "
-                .format(robot_file.value()) +
-                "Please make sure that it has been uploaded correctly.",
-                "Zipped model retrieval failed")
-
-        # TODO: move this statement from here
-        return os.path.join(self._simDir, robot_file.value())
 
     # pylint: disable-msg=too-many-branches
     def _load_environment(self, world_file):
         """
         Loads the environment and robot in Gazebo
-
         :param world_file Backwards compatibility for world file specified through webpage
         """
-        # pylint: disable=too-many-locals
-
         # load the world file if provided first
         self._notify("Loading experiment environment")
-        w_models, w_lights = self.robotManager.scene_handler() \
-            .parse_gazebo_world_file(world_file)
-
-        return w_models, w_lights
+        return self.robotManager.scene_handler().parse_gazebo_world_file(world_file)
 
     # pylint: disable-msg=too-many-branches
-    def _load_robot(self, robot):
+    def _load_robot(self):
         """
-        Loads the environment and robot in Gazebo
-
-        :param robot Robot object to load
+        Loads robots defined in the bibi and initializes any external controller
         """
-        # pylint: disable=too-many-locals
-        # Create interfaces to Gazebo
-        self._notify("Loading robot")
-        logger.info("RobotAbs: " + str(robot.SDFFileAbsPath))
-
-        # check retina script file
-        retina_config_path = None
+        # Set retina config for the robotManager
         for conf in self.bibi.configuration:
             if conf.type == 'retina':
                 self._notify("Configuring Retina Camera Plugin")
-                retina_config_path = conf.src
+                self.robotManager.retina_config = conf.src
 
-        # spawn robot model
-        self.robotManager.load_robot_in_scene(robot.id, retina_config_path)
+        self._notify("Loading robots")
+        self._add_bibi_robots()
 
         # load external robot controller
         if self.bibi.extRobotController is not None:
@@ -596,8 +249,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 self._notify("Loading external robot controllers")  # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
                 if res > 0:
-                    logger.error(
-                        "The external robot controller could not be loaded")
+                    logger.error("The external robot controller could not be loaded")
                     self.shutdown()
                     return
 
@@ -827,8 +479,10 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         try:
             if notifications:
-                self.ros_notificator.update_task("Shutting down Closed Loop Engine",
-                                                 update_progress=True, block_ui=False)
+                self.ros_notificator.update_task(
+                    "Shutting down Closed Loop Engine", update_progress=True, block_ui=False)
+
+            self.robotManager.shutdown()
             self.cle_server.shutdown()
         # pylint: disable=broad-except
         except Exception, e:

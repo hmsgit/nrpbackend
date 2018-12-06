@@ -27,7 +27,7 @@ This module contains the unit tests for the cle launcher
 
 import unittest
 import os
-from mock import patch, Mock
+from mock import patch
 from hbp_nrp_cleserver.server.ServerConfigurations import SynchronousNestSimulation, SynchronousRobotRosNest
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
@@ -59,42 +59,11 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         exd.path = "/somewhere/over/the/rainbow/exc"
         exd.dir = "/somewhere/over/the/rainbow"
         bibi.path = "/somewhere/over/the/rainbow/bibi"
-        self.models_path_patch = patch(
-            "hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
-        self.models_path_patch.start()
         with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient"):
             self.launcher = SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
 
     def tearDown(self):
-        self.models_path_patch.stop()
-
-    def test_custom_robot_fails(self):
-        self.launcher._storageClient.get_custom_models.return_value = [
-            {'path':"robot/robot_.zip"}  # DON'T PUT robot.zip HERE. FIX _extract_brain_zip impl
-        ]
-        self.launcher._storageClient.get_custom_model.return_value = r'awesome robot data'
-        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
-        def val():
-            return 'robot.sdf'
-        robot = CustomModel()
-        robot.assetPath = 'robot.zip'
-        robot.value = val
-        self.assertRaises(NRPServicesGeneralException, self.launcher._extract_robot_zip, robot)
-
-    @patch("zipfile.ZipFile")
-    def test_custom_robot_succeeds(self, mocked_zip):
-        def val():
-            return 'robot.sdf'
-        robot = CustomModel()
-        robot.assetPath = 'robot.zip'
-        robot.value = val
-        self.launcher._storageClient.get_custom_models.return_value = [dict(path='robot.zip')]
-        self.launcher._storageClient.get_custom_model.return_value = 'zippedData'
-        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
-        self.launcher._extract_robot_zip(robot)
-        mocked_zip.assert_called_once_with(os.path.join(PATH, 'experiment_data', 'robot.zip'))
-        mocked_zip().__enter__().extractall.assert_called_once_with(
-            path=os.path.join(PATH, 'experiment_data', 'assets'))
+        pass
 
     def test_custom_brain_fails(self):
         self.launcher._storageClient.get_custom_models.return_value = [
@@ -144,15 +113,13 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         exd.dir = "/somewhere/over/the/rainbow"
         exd.physicsEngine = None
         bibi.path = "/somewhere/over/the/rainbow/bibi"
-        models_path_patch = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path",
-                                  new=None)
-        models_path_patch.start()
-        with self.assertRaises(Exception):
-            SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
-        models_path_patch.stop()
 
-        with self.assertRaises(Exception):
-            SynchronousNestSimulation(42, exd, bibi, gzserver_host="bullshit")
+        try:
+            SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
+        except Exception:
+            self.fail("FAILED test_cle_assembly.test_invalid_simulation(). Should have initialized")
+
+        self.assertRaises(Exception, SynchronousNestSimulation, 42, exd, bibi, gzserver_host="bullshit")
 
     @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
     @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
@@ -173,9 +140,7 @@ class TestCLEGazeboSimulationAssemblyRobot(TestCLEGazeboSimulationAssembly):
         exd.path = "/somewhere/over/the/rainbow/exc"
         exd.dir = "/somewhere/over/the/rainbow"
         bibi.path = "/somewhere/over/the/rainbow/bibi"
-        self.models_path_patch = patch(
-            "hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.models_path", new="/somewhere/near/the/rainbow")
-        self.models_path_patch.start()
+
         with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient"):
             self.launcher = SynchronousRobotRosNest(42, exd, bibi, gzserver_host="local")
 

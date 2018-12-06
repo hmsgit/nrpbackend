@@ -49,26 +49,6 @@ class SimulationRobots(Resource):
     """
     This resource handles the robot models in a running simulation
     """
-    @swagger.model
-    class RobotsRequest(object):
-        """
-        Represents a request for the API implemented by SimulationRobot
-        """
-        resource_fields = {
-            ParamNames.ROBOT_ID: fields.String,
-            ParamNames.ROBOT_REL_PATH: fields.String,
-            ParamNames.IS_CUSTOM: fields.Boolean,
-            ParamNames.ROBOT_POSE: fields.String
-
-        }
-
-    @swagger.model
-    class RobotsGetRequest(RobotsRequest):
-        """
-        Lists required fields for a GET request
-        """
-        required = []
-
     @swagger.operation(
         notes='Gets the list of robots in the running simulation.',
         parameters=[
@@ -78,12 +58,6 @@ class SimulationRobots(Resource):
                 "required": True,
                 "paramType": "path",
                 "dataType": int.__name__
-            },
-            {
-                "name": "body",
-                "paramType": "body",
-                "dataType": RobotsGetRequest.__name__,
-                "required": False
             }
         ],
         responseMessages=[
@@ -156,11 +130,9 @@ class SimulationRobot(Resource):
         Represents a request for the API implemented by SimulationRobot
         """
         resource_fields = {
-            ParamNames.ROBOT_ID: fields.String,
             ParamNames.ROBOT_REL_PATH: fields.String,
             ParamNames.IS_CUSTOM: fields.Boolean,
             ParamNames.ROBOT_POSE: fields.String
-
         }
 
     @swagger.model
@@ -178,7 +150,7 @@ class SimulationRobot(Resource):
         required = [ParamNames.ROBOT_POSE]
 
     @swagger.operation(
-        notes='Add a new robot to the simulation.',
+        notes='Adds a new robot to the simulation.',
         parameters=[
             {
                 "name": "sim_id",
@@ -186,6 +158,13 @@ class SimulationRobot(Resource):
                 "required": True,
                 "paramType": "path",
                 "dataType": int.__name__
+            },
+            {
+                "name": "robot_id",
+                "description": "The string ID of the robot to be deleted",
+                "required": True,
+                "paramType": "path",
+                "dataType": str.__name__
             },
             {
                 "name": "body",
@@ -227,16 +206,16 @@ class SimulationRobot(Resource):
                                 if item not in body]
         if missing_parameters:
             raise NRPServicesClientErrorException('Missing parameter(s): ' +
-                                                    ' '.join(missing_parameters))
+                                                  ' '.join(missing_parameters))
 
         try:
-            rpath = body.get(ParamNames.ROBOT_REL_PATH)
-            rpose = body.get(ParamNames.ROBOT_POSE, None)
-            isCustom = False
-            if ParamNames.IS_CUSTOM in body and body.get(ParamNames.IS_CUSTOM) == "True":
-                isCustom = True
-            res, err = SimulationRobot.__add_new_robot(sim, robot_id, rpath, isCustom, rpose)
-
+            res, err = SimulationRobot.__add_new_robot(
+                sim=sim,
+                robot_id=robot_id,
+                robot_model_rel_path=body.get(ParamNames.ROBOT_REL_PATH),
+                is_custom=(body.get(ParamNames.IS_CUSTOM, None) == 'True'),
+                initial_pose=body.get(ParamNames.ROBOT_POSE, None)
+            )
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
@@ -245,7 +224,7 @@ class SimulationRobot(Resource):
         return {'res': 'success'}, 200
 
     @swagger.operation(
-        notes='Delete robot from the simulation.',
+        notes='Deletes robot from the simulation.',
         parameters=[
             {
                 "name": "sim_id",
@@ -298,7 +277,7 @@ class SimulationRobot(Resource):
         return {'res': 'success'}, 200
 
     @swagger.operation(
-        notes='Update initial pose of a robot in the simulation.',
+        notes='Updates initial pose of a robot in the simulation.',
         parameters=[
             {
                 "name": "sim_id",

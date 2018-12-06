@@ -152,8 +152,7 @@ class SimulationAssembly(object):
         Checks whether the simulation should abort immediately
         """
         if self._abort_initialization is not None:
-            raise Exception("The simulation must abort due to: " +
-                            self._abort_initialization)
+            raise Exception("The simulation must abort due to: " + self._abort_initialization)
         Notificator.notify(message, True)
 
     def run(self):  # pragma: no cover

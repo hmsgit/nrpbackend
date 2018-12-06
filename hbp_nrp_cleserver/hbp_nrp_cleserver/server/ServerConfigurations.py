@@ -164,13 +164,10 @@ class SynchronousRobotRosNest(CLEGazeboSimulationAssembly):
         unused(world_file)
         return None, None
 
-    def _load_robot(self, robot):
+    def _load_robot(self):
         """
         Loads the robot in Gazebo
-
-        :param robot_file_abs Robot model to be loaded
         """
-        unused(robot)
         return None
 
     def _create_robot_adapters(self):
