@@ -120,7 +120,8 @@ class CSVLogger(object):
                 lock_full_path = os.path.join(
                     self._storage_client.get_simulation_directory(), subfolder_name, lock_filename)
                 dirname = os.path.dirname(lock_full_path)
-                lock = find_file_in_paths(lock_filename, [dirname])
+                lock = find_file_in_paths(lock_filename, [dirname]) or find_file_in_paths(
+                    csv_file.name, [dirname])
                 if not lock:
                     content = ''.join(csv_file.headers) + \
                         ''.join(csv_file.values)
