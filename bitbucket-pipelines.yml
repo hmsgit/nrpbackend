@@ -6,8 +6,9 @@
 image: hbpneurorobotics/nrp:dev
 
 pipelines:
-  default:
-    - step:
+  branches:
+    development:
+      - step:
         max-time: 30
         name: Build
         script:
