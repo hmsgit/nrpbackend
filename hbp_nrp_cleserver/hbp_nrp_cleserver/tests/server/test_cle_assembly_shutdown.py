@@ -73,6 +73,7 @@ class TestCLELauncherShutdown(unittest.TestCase):
         self.launcher.gzweb.stop.assert_called_once_with()
         self.launcher.gzserver.stop.assert_called_once_with()
         self.launcher.cle_server.shutdown.assert_called_once_with()
+        self.launcher.cle_server._csv_logger.shutdown.assert_called_once_with()
         self.launcher.gazebo_recorder.shutdown.assert_called_once_with()
         self.launcher.ros_notificator.shutdown.assert_called_once_with()
 

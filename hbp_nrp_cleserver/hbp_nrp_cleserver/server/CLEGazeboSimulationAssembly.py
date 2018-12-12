@@ -141,6 +141,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # Wait for the backend rendering environment to load (for any sensors/cameras)
         self._notify("Waiting for Gazebo simulated sensors to be ready")
         self.robotManager.scene_handler().wait_for_backend_rendering()
+        # Spawns a new thread for the csv logger
+        # pylint: disable=protected-access
+        self.cle_server._csv_logger.initialize()
 
     # TODO: remove this function when exc and bibi abstraction (SimConf) is implemented
     # TODO: remove code duplication with _RobotCallHandler once TODO mentioned inside is resolved
@@ -490,6 +493,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             logger.exception(e)
         finally:
             self._storageClient.remove_temp_sim_directory()
+        # kill the csv logger thread
+        # pylint: disable=protected-access
+        self.cle_server._csv_logger.shutdown()
 
     def __is_collab_hack(self):
         """

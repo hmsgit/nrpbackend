@@ -220,7 +220,7 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
-    def create_or_update(self, token, experiment, filename, content, content_type):
+    def create_or_update(self, token, experiment, filename, content, content_type, append=False):
         """
         Creates or updates a file under an experiment
 
@@ -230,12 +230,15 @@ class StorageClient(object):
         :param content: the content of the file
         :param content_type: the content type of the file i.e. text/plain or
                              application/octet-stream
+        :param append: append to file or create new file
         """
         try:
-            request_url = '{proxy_url}/storage/{experiment}/{filename}'.format(
+            append_query = "?append=true" if append else ""
+            request_url = '{proxy_url}/storage/{experiment}/{filename}{appendquery}'.format(
                 proxy_url=self.__proxy_url,
                 experiment=experiment,
-                filename=filename)
+                filename=filename,
+                appendquery=append_query)
 
             res = requests.post(request_url,
                                 headers={'content-type': content_type,
@@ -333,8 +336,7 @@ class StorageClient(object):
 
             res = requests.get(request_url,
                                headers={'Authorization': 'Bearer ' + token,
-                                        'context-id': context_id}
-                               )
+                                        'context-id': context_id})
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
                     'Failed to communicate with the storage server, status code '
@@ -466,7 +468,7 @@ class StorageClient(object):
     # pylint: disable=no-self-use
     def check_create_folder(self, folder_path):
         """
-        checks if the folder exist and if it does not exist, then it is created it
+        checks if the folder exists and if it does not exist, then it is created it
 
         :param folder_path: folder location to be checked
         """
@@ -497,7 +499,8 @@ class StorageClient(object):
             for folder_entry in self.list_files(token, folder_uuid, True):
                 if folder_entry['type'] == 'folder' and folder_entry['name'] \
                         not in self.__filtered_resources:
-                    folder_entry['fullpath'] = os.path.join(folder_path, folder_entry['name'])
+                    folder_entry['fullpath'] = os.path.join(
+                        folder_path, folder_entry['name'])
                     child_folders.append(folder_entry)
                 if folder_entry['type'] == 'file':
                     folder_tmp_path = str(os.path.join(
@@ -698,13 +701,11 @@ class StorageClient(object):
                 if not isinstance(file_obj, instance_type):
                     raise NRPServicesGeneralException(
                         "{filepath} configuration file content is not valid."
-                            .format(filepath=filepath),
-                        "File not valid")
+                            .format(filepath=filepath), "File not valid")
             except (ValidationError, SAXParseException) as ve:
                 raise NRPServicesGeneralException(
                     "Could not parse file {filepath} due to validation error: {validation_error}"
-                        .format(filepath=filepath, validation_error=str(ve)),
-                    "File not valid")
+                        .format(filepath=filepath, validation_error=str(ve)), "File not valid")
         return file_obj
 
     def get_folder_uuid_by_name(self, token, context_id, folder_name):
@@ -720,7 +721,6 @@ class StorageClient(object):
         for folder in (f for f in folders if f["name"] == folder_name):
             return folder["uuid"]
 
-    # pylint: disable=no-self-use
     def remove_temp_sim_directory(self):
         """
         Removes the simulation directory where all the simulation based files are stored
@@ -766,7 +766,6 @@ def find_file_in_paths(filename, paths):
     :return: returns the absolute path of the first file found path lists.
              if not found returns and empty string.
     """
-    logger.info("Finding file {filename} in paths {paths}".format(filename=filename, paths=paths))
 
     for path in (p for p in paths if os.path.isfile(os.path.join(p, filename))):
         return os.path.join(path, filename)

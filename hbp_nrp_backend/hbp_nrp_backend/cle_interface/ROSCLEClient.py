@@ -473,8 +473,7 @@ class ROSCLEClient(object):
                             z=initial_pose.get('z', 0),
                             roll=initial_pose.get('roll', 0),
                             pitch=initial_pose.get('pitch', 0),
-                            yaw=initial_pose.get('yaw', 0)
-                            )
+                            yaw=initial_pose.get('yaw', 0))
 
         response = self.__cle_add_robot(
             msg.RobotInfo(robot_id=robot_id,

@@ -69,6 +69,7 @@ from tempfile import NamedTemporaryFile
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator, NotificatorHandler
 from hbp_nrp_cleserver.server.SimulationServerLifecycle import SimulationServerLifecycle
 from hbp_nrp_commons.bibi_functions import find_changed_strings
+from hbp_nrp_cleserver.server.CSVLogger import CSVLogger
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ class ROSCLEServer(SimulationServer):
         self.__cle = None
         self._robotHandler = None
         self._excBibiHandler = None
-
+        self._csv_logger = None
         self.__service_get_transfer_functions = None
         self.__service_add_transfer_function = None
         self.__service_edit_transfer_function = None
@@ -202,6 +203,7 @@ class ROSCLEServer(SimulationServer):
         """
         self._robotHandler = RobotCallHandler(assembly)
         self._excBibiHandler = ExcBibiHandler(assembly)
+        self._csv_logger = CSVLogger(assembly)
 
     def _create_lifecycle(self, except_hook):
         """
@@ -317,9 +319,11 @@ class ROSCLEServer(SimulationServer):
     # pylint: disable=unused-argument, no-self-use
     def __get_CSV_recorders_files(self, request):
         """
-        Return the recorder file paths along with the name wanted by the user
+        Return the recorder file names, headers, and values
         """
-        return srv.GetCSVRecordersFilesResponse([CSVRecordedFile(recorded_file[0], recorded_file[1])
+        return srv.GetCSVRecordersFilesResponse([CSVRecordedFile(recorded_file[0],
+                                                                 recorded_file[1],
+                                                                 recorded_file[2])
                                                  for recorded_file in
                                                  tf_framework.dump_csv_recorder_to_files()])
 
@@ -984,6 +988,8 @@ class ROSCLEServer(SimulationServer):
                 self._notificator.update_task("Restoring the brain", False, True)
                 self.__cle.reset_brain()
 
+        if self._csv_logger:
+            self._csv_logger.reset()
         # Member added by transitions library
         # pylint: disable=no-member
         self.lifecycle.initialized()
@@ -996,8 +1002,7 @@ class ROSCLEServer(SimulationServer):
         Notificator.register_notification_function(
             lambda subtask, update_progress: self._notificator.update_task(subtask,
                                                                            update_progress,
-                                                                           True)
-        )
+                                                                           True))
 
     def stop_fetching_gazebo_logs(self):
         """

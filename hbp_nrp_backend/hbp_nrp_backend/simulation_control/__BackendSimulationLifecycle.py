@@ -228,7 +228,8 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param state_change: The state change that caused the simulation to be initialized
         """
         simulation = self.simulation
-
+        # make sure we start with a clean tmp directory
+        self.__storageClient.create_temp_sim_directory()
         try:
             using_storage = simulation.private
             if using_storage:

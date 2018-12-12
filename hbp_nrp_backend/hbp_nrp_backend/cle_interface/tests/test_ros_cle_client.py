@@ -284,13 +284,17 @@ class TestROSCLEClient(unittest.TestCase):
         client.stop_communication("Test stop")
         self.assertRaises(ROSCLEClientException, client.reset, ResetSimulationRequest.RESET_FULL)
 
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.msg.CSVRecordedFile')
     @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
-    def test_get_csv_files(self, service_proxy_mock):
+    def test_get_csv_files(self,service_proxy_mock,mock_cle_recorded_file):
+        
+        mock_cle_recorded_file.return_value = ("bar1", ["bar1 header\n"], ['data1', 'data2\n'])
         client = ROSCLEClient.ROSCLEClient(0)
 
         files = Mock()
         files.files = [
-            CSVRecordedFile("foo", "foo.csv"), CSVRecordedFile("bar", "bar.csv")
+            CSVRecordedFile(),
+            CSVRecordedFile()
         ]
 
         client._ROSCLEClient__cle_get_CSV_recorders_files = Mock(return_value=files)

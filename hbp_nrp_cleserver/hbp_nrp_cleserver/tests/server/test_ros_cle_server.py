@@ -49,6 +49,11 @@ __author__ = 'HBP NRP software team'
 class TimeoutError(Exception):
     pass
 
+class CSVRecordedMock(object):
+    def __init__(self, name, headers, values):
+        self.name = name
+        self.headers = headers
+        self.values = values
 
 def timeout(seconds=5, error_message="Timeout"):
     def decorator(func):
@@ -334,18 +339,22 @@ class TestROSCLEServer(unittest.TestCase):
             self.assertEqual(response[2], -1)
             self.assertEqual(response[3], 0)
 
+    @patch('hbp_nrp_cleserver.server.ROSCLEServer.CSVRecordedFile')
     @patch('hbp_nrp_cleserver.server.ROSCLEServer.tf_framework')
-    def test_CSV_recorders_functions(self, mocked_tf_framework):
+    def test_CSV_recorders_functions(self, mocked_tf_framework,mocked_CSV_file):
+        mocked_CSV_file.return_value = CSVRecordedMock("bar1", ["bar1 header\n"], ['data1', 'data2\n'])
         ros_callbacks = self.__get_handlers_for_testing_main()
         get_CSV_recorders_files_implementation = ros_callbacks['get_CSV_recorders_files']
         clean_CSV_recorders_files_implementation = ros_callbacks['clean_CSV_recorders_files']
         mocked_tf_framework.dump_csv_recorder_to_files = Mock()
-        mocked_tf_framework.dump_csv_recorder_to_files.return_value = [('a', 'b'), ('c', 'd')]
+        mocked_tf_framework.dump_csv_recorder_to_files.return_value = [('a', 'b','c'), ('d', 'e','f')]
         result_value = get_CSV_recorders_files_implementation(None).files
-        self.assertEqual(result_value[0].name, 'a')
-        self.assertEqual(result_value[0].temporary_path, 'b')
-        self.assertEqual(result_value[1].name, 'c')
-        self.assertEqual(result_value[1].temporary_path, 'd')
+        self.assertEqual(result_value[0].name, 'bar1')
+        self.assertEqual(result_value[0].headers, ["bar1 header\n"])
+        self.assertEqual(result_value[0].values, ['data1', 'data2\n'])
+        self.assertEqual(result_value[1].name, 'bar1')
+        self.assertEqual(result_value[1].headers, ["bar1 header\n"])
+        self.assertEqual(result_value[1].values,  ['data1', 'data2\n'])
         mocked_tf_framework.clean_csv_recorders_files = Mock()
         clean_CSV_recorders_files_implementation(None)
         self.assertEqual(1, mocked_tf_framework.clean_csv_recorders_files.call_count)

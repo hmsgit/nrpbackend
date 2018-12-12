@@ -837,6 +837,5 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
         self.assertTrue(client.check_file_extension(
             example1[0]['name'], ['.exc']))
 
-
 if __name__ == '__main__':
     unittest.main()
