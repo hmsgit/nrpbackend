@@ -81,6 +81,29 @@ def brain_nest_adapters():
     return braincomm, braincontrol
 
 
+def brain_nengo_adapters():
+    """
+    Creates the adapter components for the neural simulator, configuration with Nengo
+
+    :return: A tuple of the communication and control adapter for the neural simulator
+    """
+    # pylint: disable=unused-variable
+    try:
+        import nengo
+    except ImportError:
+        raise Exception("Nengo does not seem to be installed on this machine. "
+                        "Please install Nengo in order to use it in the NRP "
+                        "or use a different server.")
+
+    from hbp_nrp_cle.brainsim.nengo.NengoSimulationState import NengoSimulationState
+    from hbp_nrp_cle.brainsim.nengo.NengoControlAdapter import NengoControlAdapter
+    from hbp_nrp_cle.brainsim.nengo.NengoCommunicationAdapter import NengoCommunicationAdapter
+    sim_state = NengoSimulationState()
+    brain_control = NengoControlAdapter(sim_state)
+    brain_comm = NengoCommunicationAdapter(sim_state)
+    return brain_comm, brain_control
+
+
 def brain_spinnaker_adapters():  # pragma: no cover
     """
     Creates the adapter components for the neural simulator, configuration with SpiNNaker
@@ -185,3 +208,26 @@ class SynchronousRobotRosNest(CLEGazeboSimulationAssembly):
         :return: A tuple of the communication and control adapter for the neural simulator
         """
         return brain_nest_adapters()
+
+
+class SynchronousNengoSimulation(CLEGazeboSimulationAssembly):
+    """
+    This class represents a synchronous simulation assembly using Nengo as the neural simulator
+    synchronous to Gazebo
+    """
+
+    def _create_robot_adapters(self):
+        """
+        Creates the adapter components for the robot side
+
+        :return: A tuple of the communication and control adapter for the robot side
+        """
+        return robot_gazebo_ros_adapters()
+
+    def _create_brain_adapters(self):
+        """
+        Creates the adapter components for the neural simulator
+
+        :return: A tuple of the communication and control adapter for the neural simulator
+        """
+        return brain_nengo_adapters()

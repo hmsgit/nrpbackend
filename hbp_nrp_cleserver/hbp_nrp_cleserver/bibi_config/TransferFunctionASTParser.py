@@ -55,7 +55,8 @@ device_types = {
     'nc_source': 'NCSource',
     'poisson': 'Poisson',
     'spike_recorder': 'SpikeRecorder',
-    'population_rate': 'PopulationRate'
+    'population_rate': 'PopulationRate',
+    'raw_signal': 'RawSignal'
 }
 
 

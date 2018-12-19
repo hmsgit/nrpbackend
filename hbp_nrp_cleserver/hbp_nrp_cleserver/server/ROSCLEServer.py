@@ -521,8 +521,12 @@ class ROSCLEServer(SimulationServer):
         if data_type != "text" and data_type != "base64":
             return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
 
-        new_populations = [str(item) for item in json.loads(brain_populations).keys()]
-        old_populations = [str(item) for item in tf_framework.get_brain_populations().keys()]
+        new_pop_tmp = json.loads(brain_populations)
+        new_populations = [str(item) for item in new_pop_tmp.keys()] \
+            if new_pop_tmp is not None else []
+        old_pop_tmp = tf_framework.get_brain_populations()
+        old_populations = [str(item) for item in old_pop_tmp.keys()] \
+            if old_pop_tmp is not None else []
 
         old_changed = find_changed_strings(old_populations, new_populations)
         new_added = find_changed_strings(new_populations, old_populations)
