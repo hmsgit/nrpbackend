@@ -1,3 +1,4 @@
 pyxb==1.2.4
 Jinja2==2.7.1
 defusedxml==0.5.0
+nengo==2.8.0

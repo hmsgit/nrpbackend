@@ -356,8 +356,7 @@ class StorageClient(object):
         :return: if found, the uuid of the named folder
         """
         try:
-
-            request_url = '{proxy_url}/storage/custommodels/{model_path}'.format(
+            request_url = '{proxy_url}/storage/custommodel/{model_path}'.format(
                 proxy_url=self.__proxy_url,
                 model_path=model_path)
 
