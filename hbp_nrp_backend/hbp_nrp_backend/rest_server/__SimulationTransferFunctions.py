@@ -170,7 +170,7 @@ class SimulationTransferFunctions(Resource):
             },
             {
                 "name": "data",
-                "description": "The transfer function source code to patch",
+                "description": "The new Transfer Function source code",
                 "required": True,
                 "paramType": "body",
                 "dataType": str.__name__
@@ -195,7 +195,7 @@ class SimulationTransferFunctions(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. The transfer function was successfully patched"
+                "message": "Success. The transfer function was successfully added"
             }
         ]
     )
@@ -215,7 +215,7 @@ class SimulationTransferFunctions(Resource):
         :status 403: {1}
         :status 401: {2}
         :status 400: {3}
-        :status 200: Success. The transfer function was successfully patched
+        :status 200: Success. The transfer function was successfully added
         """
         simulation = _get_simulation_or_abort(sim_id)
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
@@ -224,20 +224,14 @@ class SimulationTransferFunctions(Resource):
         transfer_function_source = request.data
 
         error_message = simulation.cle.add_simulation_transfer_function(transfer_function_source)
-        if error_message and "duplicate" in error_message:
-            raise NRPServicesDuplicateNameException(
-                "Transfer function patch failed: "
-                + error_message + "\n"
-                + "Updated source:\n"
-                + str(transfer_function_source)
-            )
-        elif error_message:
-            raise NRPServicesTransferFunctionException(
-                "Adding a new Transfer Function failed: "
-                + error_message + "\n"
-                + "Updated source:\n"
-                + str(transfer_function_source)
-            )
+        if error_message:
+            ex_msg = ("Adding a new Transfer Function failed: {error_msg}\n"
+                      "Updated source:\n"
+                      "{tf_src}").format(error_msg=error_message,
+                                         tf_src=str(transfer_function_source))
+            raise NRPServicesDuplicateNameException(ex_msg) if "duplicate" in error_message \
+                else NRPServicesTransferFunctionException(ex_msg)
+
         return 200
 
 
@@ -325,20 +319,14 @@ class SimulationTransferFunction(Resource):
         error_message = simulation.cle.edit_simulation_transfer_function(
             transfer_function_name, transfer_function_source)
 
-        if error_message and "duplicate" in error_message:
-            raise NRPServicesDuplicateNameException(
-                "Transfer function patch failed: "
-                + error_message + "\n"
-                + "Updated source:\n"
-                + str(transfer_function_source)
-            )
-        elif error_message:
-            raise NRPServicesTransferFunctionException(
-                "Transfer function patch failed: "
-                + error_message + "\n"
-                + "Updated source:\n"
-                + str(transfer_function_source)
-            )
+        if error_message:
+            ex_msg = ("Transfer Function patch failed: {error_msg}\n"
+                      "Updated source:\n"
+                      "{tf_src}").format(error_msg=error_message,
+                                         tf_src=str(transfer_function_source))
+            raise NRPServicesDuplicateNameException(ex_msg) if "duplicate" in error_message \
+                else NRPServicesTransferFunctionException(ex_msg)
+
         return 200
 
     @swagger.operation(
@@ -371,8 +359,8 @@ class SimulationTransferFunction(Resource):
             },
             {
                 "code": 200,
-                "message": "Success. The delete operation was successfully called. This "
-                           "does not imply that the transfer function was correctly "
+                "message": "Success. The delete operation was successfully called."
+                           "This does not imply that the transfer function was correctly "
                            "deleted though."
             }
         ]
@@ -398,7 +386,7 @@ class SimulationTransferFunction(Resource):
 
         if response is False:
             raise NRPServicesTransferFunctionException(
-                "Transfer function delete failed: " + str(transfer_function_name))
+                "Transfer function delete failed: {}".format(str(transfer_function_name)))
         return 200
 
 
@@ -485,8 +473,7 @@ class SimulationTransferFunctionActivation(Resource):
 
         if error_message:
             raise NRPServicesTransferFunctionException(
-                "Transfer function (de-)activation failed: "
-                + error_message + "\n"
+                "Transfer function (de-)activation failed: {}\n".format(error_message)
             )
 
         return 200

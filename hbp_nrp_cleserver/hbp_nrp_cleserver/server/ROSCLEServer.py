@@ -577,8 +577,7 @@ class ROSCLEServer(SimulationServer):
         :return boolean value which is True if the transfer function is activated, False otherwise
         :raise: A ValueError exception is raised if the transfer function tf_name is not found
         """
-        tfs = tf_framework.get_transfer_functions()
-        for tf in tfs:
+        for tf in tf_framework.get_transfer_functions():
             if tf.name == tf_name:
                 return tf.active
 
@@ -623,16 +622,12 @@ class ROSCLEServer(SimulationServer):
         :param tf_name: transfer function name to be checked.
         :return: Raises a ValueError if name already exists. Returns nothing otherwise.
         """
+        tfs, _ = self.__get_transfer_function_sources_and_activation(None, send_errors=False)
 
-        tf_names = []
-        for tf in self.__get_transfer_function_sources_and_activation(None, send_errors=False)[0]:
-            curr_tf_name = self.get_tf_name(tf)[1]
-            # if is flawed don't consider it duplicate, we're adding a proper TF
-            if not tf_framework.get_flawed_transfer_function(curr_tf_name):
-                tf_names.append(curr_tf_name)
-
-        if tf_name in tf_names:
-            raise ValueError("Duplicate definition name")
+        for tf_name_ in [self.get_tf_name(tf)[1] for tf in tfs]:
+            # compare the names but only if it's not a flawed TF
+            if tf_name_ == tf_name and not tf_framework.get_flawed_transfer_function(tf_name_):
+                raise ValueError("Duplicate definition name")
 
     def __add_transfer_function(self, request):
         """
@@ -705,7 +700,7 @@ class ROSCLEServer(SimulationServer):
         class FileRestrictionMutator(RestrictionMutator):
             """
             Custom RestrictionMutator
-            ie: accepts accessing to private atribute '__file__'
+            ie: accepts accessing to private attribute '__file__'
             """
             ALLOWED_ATTRS = set(['__file__'])
 
@@ -744,7 +739,7 @@ class ROSCLEServer(SimulationServer):
                                "NoOrMultipleNames",
                                error_message,
                                severity=CLEError.SEVERITY_ERROR,
-                               function_name=request.transfer_function_name)
+                               function_name=getattr(request, 'transfer_function_name', "no_name"))
 
             return error_message
 
@@ -1090,7 +1085,7 @@ class ROSCLEServer(SimulationServer):
                 self._excBibiHandler.add_bodymodel(rinfo.robot_id, status, rinfo.is_custom,
                                                           rinfo.robot_model_rel_path)
             except Exception as e:
-                logger.error("An error occured while updating exc and bibi for the newly added "
+                logger.error("An error occurred while updating exc and bibi for the newly added "
                              "robot" + str(e))
 
         return srv.AddRobotResponse(success=ret, error_message=status)
@@ -1107,7 +1102,7 @@ class ROSCLEServer(SimulationServer):
         try:
             ret, status = self._robotHandler.delete_robot(robot_id=request.robot_id)
         except Exception as e:
-            logger.error("An error occured while updating exc and bibi for the newly added "
+            logger.error("An error occurred while updating exc and bibi for the newly added "
                          "robot" + str(e))
         if ret:
             # removes tags from the bibi and exc
@@ -1115,7 +1110,7 @@ class ROSCLEServer(SimulationServer):
                 self._excBibiHandler.delete_robotpose(request.robot_id)
                 self._excBibiHandler.delete_bodymodel(request.robot_id)
             except Exception as e:
-                logger.error("An error occured while updating exc and bibi for the newly added "
+                logger.error("An error occurred while updating exc and bibi for the newly added "
                              "robot" + str(e))
 
         return srv.DeleteRobotResponse(success=ret, error_message=status)
@@ -1132,7 +1127,7 @@ class ROSCLEServer(SimulationServer):
             ret, status = self._excBibiHandler.update_robotpose(request.object_id,
                                                                 request.new_pose)
         except Exception as e:
-            logger.error("An error occured while updating exc and bibi for the newly added "
+            logger.error("An error occurred while updating exc and bibi for the newly added "
                          "robot" + str(e))
 
         return srv.ChangePoseResponse(success=ret, error_message=status)

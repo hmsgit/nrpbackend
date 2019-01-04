@@ -362,7 +362,6 @@ class ROSCLEClient(object):
     def convert_transfer_function_raw_to_structured(self, transfer_function):
         """
         Convert raw tf to structured tf
-        :param transfer_function_name: the name of the tf to be converted
         :param transfer_function: the transfer function in raw format
         :return: a strucuted TF
         """

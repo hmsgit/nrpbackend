@@ -22,7 +22,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ---LICENSE-END
 """
-Unit tests for the service that patches transfer function sources
+Unit tests for the service that patches Transfer Function sources
 """
 
 __author__ = 'DanielPeppicelli, LucGuyot'
@@ -97,7 +97,7 @@ class TestSimulationTransferFunctions(RestTest):
                                     data=json.dumps(
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
-        self.assertIn('Transfer function patch failed',response.data )
+        self.assertIn('Adding a new Transfer Function failed', response.data)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_functions_post_fail(self, mocked_get_simulation_or_abort):
@@ -150,7 +150,7 @@ class TestSimulationTransferFunctions(RestTest):
                                     data=json.dumps(
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
-        self.assertIn('Transfer function patch failed', response.data)
+        self.assertIn('Transfer Function patch failed', response.data)
 
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_function_put_fail(self, mocked_get_simulation_or_abort):
@@ -161,7 +161,7 @@ class TestSimulationTransferFunctions(RestTest):
                                     data=json.dumps(
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
-        self.assertIn('Transfer function patch failed', response.data)
+        self.assertIn('Transfer Function patch failed', response.data)
 
 
 class TestSimulationTransferFunctionActivate(RestTest):
