@@ -987,8 +987,6 @@ class ROSCLEServer(SimulationServer):
                 self._notificator.update_task("Restoring the brain", False, True)
                 self.__cle.reset_brain()
 
-        if self._csv_logger:
-            self._csv_logger.reset()
         # Member added by transitions library
         # pylint: disable=no-member
         self.lifecycle.initialized()
@@ -1034,6 +1032,9 @@ class ROSCLEServer(SimulationServer):
                     self._reset_brain(request)
                 elif reset_type == rsr.RESET_FULL:
                     self._reset_full(request)
+                # reset csv loggers
+                if self._csv_logger:
+                    self._csv_logger.reset()
             except Exception as e:
                 return False, str(e)
             finally:
