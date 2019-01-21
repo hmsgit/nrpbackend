@@ -247,7 +247,8 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
 
         # create playback CLE server
         logger.info("Preparing Playback Server")
-        self.playback.prepare_simulation(self.__playback_path, except_hook)
+        self.playback.playback_path = self.__playback_path
+        self.playback.prepare_simulation(except_hook)
 
     def _shutdown(self, notifications):
         """
