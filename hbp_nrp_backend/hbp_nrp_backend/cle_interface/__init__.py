@@ -35,6 +35,8 @@ SERVICE_DEL_ROBOT = lambda sim_id: '/%s/%d/del_robot' % (ROS_CLE_NODE_NAME, sim_
 SERVICE_SET_EXC_ROBOT_POSE = lambda sim_id: \
     '/%s/%d/set_exc_robot_pose' % (ROS_CLE_NODE_NAME, sim_id)
 
+SERVICE_PREPARE_CUSTOM_MODEL = lambda sim_id: '/%s/%d/prepare_model' % (ROS_CLE_NODE_NAME, sim_id)
+
 SERVICE_GET_CSV_RECORDERS_FILES = lambda sim_id:\
     '/%s/%d/get_CSV_recorders_files' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_CLEAN_CSV_RECORDERS_FILES = lambda sim_id:\

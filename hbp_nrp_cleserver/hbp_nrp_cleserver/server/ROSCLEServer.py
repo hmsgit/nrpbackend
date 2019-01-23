@@ -59,7 +59,8 @@ from . import SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
     SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
-    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE, \
+    SERVICE_PREPARE_CUSTOM_MODEL
 from . import ros_handler
 import hbp_nrp_cleserver.bibi_config.StructuredTransferFunction as StructuredTransferFunction
 import hbp_nrp_cle.tf_framework as tf_framework
@@ -136,6 +137,8 @@ class ROSCLEServer(SimulationServer):
         self.__service_add_robot = None
         self.__service_del_robot = None
         self.__service_set_exc_robot_pose = None
+
+        self.__service_prepare_custom_model = None
 
         self._tuple2slice = (lambda x: slice(*x) if isinstance(x, tuple) else x)
 
@@ -299,6 +302,11 @@ class ROSCLEServer(SimulationServer):
         self.__service_set_exc_robot_pose = rospy.Service(
             SERVICE_SET_EXC_ROBOT_POSE(self.simulation_id), srv.ChangePose,
             self.__set_robot_initial_pose
+        )
+
+        self.__service_prepare_custom_model = rospy.Service(
+            SERVICE_PREPARE_CUSTOM_MODEL(self.simulation_id), srv.Resource,
+            self.__prepare_custom_model
         )
 
         tf_framework.TransferFunction.excepthook = self.__tf_except_hook
@@ -921,6 +929,8 @@ class ROSCLEServer(SimulationServer):
             self.__service_del_robot.shutdown()
             logger.info("Shutting down set_robot_initial_pose service")
             self.__service_set_exc_robot_pose.shutdown()
+            logger.info("Shutting down prepare_custom_model service")
+            self.__service_prepare_custom_model.shutdown()
 
     def _reset_world(self, request):
         """
@@ -1075,6 +1085,7 @@ class ROSCLEServer(SimulationServer):
             or (False, error_message)
         """
         rinfo = request.robot
+        ret, status = self._robotHandler.prepare_custom_robot(rinfo.robot_model_rel_path)
         ret, status = self._robotHandler.add_robot(robot_id=rinfo.robot_id,
                                                    robot_model_rel_path=rinfo.robot_model_rel_path,
                                                    is_custom=rinfo.is_custom,
@@ -1132,3 +1143,22 @@ class ROSCLEServer(SimulationServer):
                          "robot" + str(e))
 
         return srv.ChangePoseResponse(success=ret, error_message=status)
+
+    def __prepare_custom_model(self, request):
+        """
+
+        :param request: rospy parameters sent from ROSCLEClient defined at
+            ChangePose.srv in gazeborospackage
+        :return: Successfully added. (success, error_message) = (True, None)
+            or (False, error_message)
+        """
+        if request.resource_type == "robots":
+            try:
+                ret, status = self._robotHandler.prepare_custom_robot(request.resource_path)
+            # pylint: disable=broad-except
+            except Exception as e:
+                logger.error("An error occured while preparing custom model" + str(e))
+        else:
+            raise NotImplementedError("Not implemented")
+
+        return srv.ResourceResponse(success=ret, error_message=status)

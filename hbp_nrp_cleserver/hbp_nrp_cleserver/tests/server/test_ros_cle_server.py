@@ -118,7 +118,7 @@ class TestROSCLEServer(unittest.TestCase):
 
     def test_prepare_initialization(self):
         self.__mocked_cle.is_initialized = False
-        self.assertEqual(15, self.__mocked_rospy.Service.call_count)
+        self.assertEqual(16, self.__mocked_rospy.Service.call_count)
         self.assertEqual(2, self.__mock_base_rospy.Service.call_count)
 
     def test_reset_simulation(self):

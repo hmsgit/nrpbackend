@@ -35,10 +35,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _filter_zip_namelist(zip_namelist):
+    """
+    Helper function to filter contents of zip. The reason for the filtering
+    is that the extractall function breaks if there is a directory inside
+    the zip with the same name as the zip, which for some absurd reason
+    is treated as a file on exraction and not as a folder.
+    :param: zip_namelist: all the folders and files inside a zip
+    :return: the list of names without the root directory
+    """
+    return [name for name in zip_namelist if os.path.dirname(name) is not ""]
+
+
 class ZipUtil(object):
     """
     This class provides helper functions to handle zip
     """
+
     @staticmethod
     def extractall(zip_abs_path, extract_to, overwrite=False):  # pragma: no cover
         """
@@ -58,7 +71,7 @@ class ZipUtil(object):
                 if not os.path.exists(extract_to):
                     os.makedirs(extract_to)
                 with zipfile.ZipFile(zip_abs_path) as rzip:
-                    rzip.extractall(extract_to)
+                    rzip.extractall(extract_to, _filter_zip_namelist(rzip.namelist()))
             except IOError as ex:
                 logger.info("Extraction failed due to {err}".format(err=str(ex)))
 
@@ -78,7 +91,7 @@ class ZipUtil(object):
                         os.path.relpath(os.path.join(root, f), os.path.join(path, '..')))
 
     @staticmethod
-    def get_rootname(zip_abs_path):     # pragma: no cover
+    def get_rootname(zip_abs_path):  # pragma: no cover
         """
         Gets the root folder name inside a zip
         :return: root folder name inside a zip

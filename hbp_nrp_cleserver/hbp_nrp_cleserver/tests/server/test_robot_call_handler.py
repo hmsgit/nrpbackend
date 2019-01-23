@@ -79,6 +79,26 @@ class TestRobotCallHandler(unittest.TestCase):
             self.handler.download_custom_robot = MagicMock()
 
             ret, status = self.handler.add_robot('id', "over/the/rainbow", True)
+
+            findFile.return_value = "/some/model/abs/path/model.sdf"
+            self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"
+
+            ret, status = self.handler.add_robot('id', 'over/the/rainbow')
+
+    def test_prepare_custom_robot(self):
+        self.mocked_assembly.storage_client = Mock()
+        self.mocked_assembly.simDir = '/somewhere/over/the/rainbow'
+        self.mocked_assembly.token = 'my_awesome_token'
+        self.mocked_assembly.ctx_id = 0xFFFF
+
+        with patch("hbp_nrp_cleserver.server._RobotCallHandler.find_file_in_paths") as findFile, \
+            patch("hbp_nrp_cleserver.server._RobotCallHandler.get_model_basepath") as getpath:
+
+            self.mocked_os.path.join.return_value = "/simdir/zip/abs/path/"
+            self.mocked_os.path.basename.return_value = "model.sdf"
+            self.handler.download_custom_robot = MagicMock()
+
+            ret, status = self.handler.prepare_custom_robot("over/the/rainbow")
             self.handler.download_custom_robot.assert_called_once_with(
                 robot_rel_path="over/the/rainbow",
                 save_to="/simdir/zip/abs/path/",

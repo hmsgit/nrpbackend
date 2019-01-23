@@ -38,7 +38,8 @@ from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_SIMULATION_RECORDER, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
-    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE, \
+    SERVICE_PREPARE_CUSTOM_MODEL
 
 import hbp_nrp_commons
 
@@ -202,6 +203,9 @@ class ROSCLEClient(object):
             SERVICE_DEL_ROBOT(sim_id), srv.DeleteRobot, self)
         self.__cle_set_robot_init_pose = ROSCLEServiceWrapper(
             SERVICE_SET_EXC_ROBOT_POSE(sim_id), srv.ChangePose, self)
+
+        self.__cle_prepare_custom_model = ROSCLEServiceWrapper(
+            SERVICE_PREPARE_CUSTOM_MODEL(sim_id), srv.Resource, self)
 
         self.__stop_reason = None
 
@@ -519,5 +523,18 @@ class ROSCLEClient(object):
                         yaw=new_pose.get('yaw', 0))
 
         response = self.__cle_set_robot_init_pose(robot_id, pose)
+
+        return response.success, response.error_message
+
+    @fallback_retval((False, "An error occurred while processing request."))
+    def download_file_in_simdir(self, resource_type, file_rel_path):
+        """
+        Download a file into the simulation directory
+
+        :param resource_type: type of the file. robots, environments, or brain
+        :param file_rel_path: relative path to the file
+        :return: True if the call to ROS is successful, False otherwise
+        """
+        response = self.__cle_prepare_custom_model(resource_type, file_rel_path, "download")
 
         return response.success, response.error_message

@@ -99,6 +99,7 @@ from hbp_nrp_backend.rest_server.__SimulationRecorder import SimulationRecorder
 from hbp_nrp_backend.rest_server.__SimulationResourcesCloner import SimulationResourcesCloner
 from hbp_nrp_backend.rest_server.__SimulationRobot import SimulationRobots, SimulationRobot
 
+from hbp_nrp_backend.rest_server.__SimulationFiles import SimulationFiles
 
 # Register /simulation
 api.add_resource(LightControl, '/simulation/<int:sim_id>/interaction/light')
@@ -135,6 +136,9 @@ api.add_resource(SimulationConvertRawToStructuredTransferFunction,
 
 api.add_resource(SimulationRobots, '/simulation/<int:sim_id>/robots')
 api.add_resource(SimulationRobot, '/simulation/<int:sim_id>/robots/<string:robot_id>')
+
+api.add_resource(SimulationFiles,
+                 '/simulation/<int:sim_id>/files/<string:resource_type>/<string:resource_path>')
 
 # This should not be on the /simulation path ... as it does not apply to a
 # running simulation
