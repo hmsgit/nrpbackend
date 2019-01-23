@@ -63,6 +63,21 @@ class ZipUtil(object):
                 logger.info("Extraction failed due to {err}".format(err=str(ex)))
 
     @staticmethod
+    def create_from_path(path, dest_zip_file):
+        """
+        Create a zip from a path
+        :param path: path to be compressed
+        :param dest_zip_file: file name and path to the zip archive
+        :return: The created zip file
+        """
+        with zipfile.ZipFile(dest_zip_file, 'w', zipfile.ZIP_DEFLATED) as zip_f:
+            for root, _, files in os.walk(path):
+                for f in files:
+                    zip_f.write(
+                        os.path.join(root, f),
+                        os.path.relpath(os.path.join(root, f), os.path.join(path, '..')))
+
+    @staticmethod
     def get_rootname(zip_abs_path):     # pragma: no cover
         """
         Gets the root folder name inside a zip

@@ -81,10 +81,12 @@ class TestSimulationRecorder(RestTest):
         simulations[0].cle.command_simulation_recorder.return_value.message = "success"
         simulations[0].cle.command_simulation_recorder.side_effect = None
 
-        for command in ['start', 'stop', 'cancel', 'reset']:
-            response = self.client.post('/simulation/0/recorder/%s' % command)
-            self.assertEqual(200, response.status_code)
-            self.assertEqual('"success"', response.data.strip())
+        with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.create_or_update"):
+            with patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient.create_folder"):
+                for command in ['start', 'stop', 'cancel', 'reset', 'save']:
+                    response = self.client.post('/simulation/0/recorder/%s' % command)
+                    self.assertEqual(200, response.status_code)
+                    self.assertEqual('"success"', response.data.strip())
 
         # call returns an error message
         simulations[0].cle.command_simulation_recorder.return_value.value = False
