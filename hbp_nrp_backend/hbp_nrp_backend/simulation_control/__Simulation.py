@@ -48,10 +48,13 @@ class Simulation(object):
     The data class for simulations
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, sim_id, experiment_conf, owner, sim_gzserver_host,
+    def __init__(self,
+                 sim_id,
+                 experiment_id,
+                 owner,
+                 sim_gzserver_host,
                  reservation=None,
                  sim_brain_processes=1,
-                 experiment_id=None,
                  state='created',
                  private=False,
                  playback_path=None,
@@ -60,8 +63,8 @@ class Simulation(object):
         Creates a new simulation
 
         :param sim_id: The simulation id
-        :param experiment_conf: The experiment configuration (Path to ExD configuration)
         :param owner: The name of the user owning the simulation
+        :param experiment_id: The experiment ID of the experiment to be run
         :param sim_gzserver_host: Denotes where the simulation will run once started. Set to 'local'
                                   for localhost and 'lugano' for a dedicated machine on the Lugano
                                   viz cluster.
@@ -69,7 +72,6 @@ class Simulation(object):
                             allocate a job
         :param sim_brain_processes: (optional) Number of brain processes to use (overrides ExD
                                     configuration)
-        :param experiment_id: (optional) The experiment ID of the experiment
         :param state: (optional) The initial state (created by default)
         :param playback_path: (optional) The simulation recording to playback (Path to recording
                               root)
@@ -78,7 +80,6 @@ class Simulation(object):
                        simulation
         """
         self.__sim_id = sim_id
-        self.__experiment_conf = experiment_conf
         self.__owner = owner
         self.__gzserver_host = sim_gzserver_host
         self.__experiment_id = experiment_id
@@ -147,16 +148,6 @@ class Simulation(object):
         :param new_value: The time when the simulation should be killed
         """
         self.__kill_datetime = new_value
-
-    @property
-    def experiment_conf(self):
-        """
-        Gets the experiment configuration, i.e. the path to the ExD configuration
-
-        :return: Experiment configuration
-        :rtype: string
-        """
-        return self.__experiment_conf
 
     @property
     def sim_id(self):
@@ -391,7 +382,6 @@ class Simulation(object):
     resource_fields = {
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),
-        'experimentConfiguration': fields.String(attribute='experiment_conf'),
         'environmentConfiguration': fields.String(attribute='environment_conf'),
         'owner': fields.String(attribute='owner'),
         'creationDate': fields.String(attribute=lambda x: x.creation_date),
@@ -403,8 +393,10 @@ class Simulation(object):
         'playbackPath': fields.String(attribute='playback_path')
     }
 
-    required = ['state', 'simulationID', 'experimentConfiguration', 'environmentConfiguration',
-                'owner', 'creationDate', 'gzserverHost', 'reservation', 'experimentID',
+    required = ['state', 'simulationID',
+                'environmentConfiguration', 'owner',
+                'creationDate', 'gzserverHost',
+                'reservation', 'experimentID',
                 'brainProcesses', 'creationUniqueID']
 
 

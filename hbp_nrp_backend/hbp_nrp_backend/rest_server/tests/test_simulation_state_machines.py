@@ -74,7 +74,7 @@ class TestSimulationStateMachines(RestTest):
             Mock(side_effect=lambda name: self.mock_sm_instance if name == self.sm_instance_name else None)
 
         load_data = {
-            "experimentConfiguration": "experiments/experiment_data/test_1.exc",
+            "experimentID": "some_experiment_id",
             "gzserverHost": "local"
         }
         self.client.post('/simulation', data=json.dumps(load_data))

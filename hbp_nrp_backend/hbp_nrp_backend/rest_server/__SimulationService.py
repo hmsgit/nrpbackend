@@ -58,7 +58,6 @@ class SimulationService(Resource):
 
         resource_fields = {
             'brainProcesses': fields.Integer,
-            'experimentConfiguration': fields.String(),
             'experimentID': fields.String(),
             'environmentConfiguration': fields.String(),
             'gzserverHost': fields.String(),
@@ -68,7 +67,7 @@ class SimulationService(Resource):
             'playbackPath': fields.String(),
             'ctx-id': fields.String()
         }
-        required = ['experimentConfiguration']
+        required = ['experimentID']
 
     @swagger.operation(
         notes='This is the entry point for the NRP REST server since'
@@ -105,9 +104,7 @@ class SimulationService(Resource):
         """
         Creates a new simulation which is neither 'initialized' nor 'started'.
         :< json int brainProcesses: Number of brain processes to use (overrides ExD Configuration)
-        :< json string experimentConfiguration: Path and name of the experiment configuration file
         :< json string experimentID: The experiment ID of the experiment
-        :< json string environmentConfiguration: Path of the custom SDF environment (optional)
         :> json string gzserverHost: The host where gzserver will be run: local for using the same
                                      machine of the backend, lugano to use a dedicated instance on
                                      the Lugano viz cluster
@@ -121,7 +118,6 @@ class SimulationService(Resource):
 
         :> json string owner: The simulation owner (Unified Portal user name or 'hbp-default')
         :> json integer simulationID: The id of the simulation (needed for further REST calls)
-        :> json string environmentConfiguration: Path and name of the environment configuration file
         :> json string creationDate: Date of creation of this simulation
         :> json string creationUniqueID: The simulation unique creation ID that is used by the
                                          Frontend to identify this simulation
@@ -133,8 +129,8 @@ class SimulationService(Resource):
         """
         body = request.get_json(force=True)
         sim_id = len(simulations)
-        if 'experimentConfiguration' not in body:
-            raise NRPServicesClientErrorException('Experiment configuration not given.')
+        if 'experimentID' not in body:
+            raise NRPServicesClientErrorException('Experiment ID not given.')
 
         if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
             raise NRPServicesClientErrorException('Invalid gazebo server host.', error_code=401)
@@ -144,7 +140,7 @@ class SimulationService(Resource):
                 'Another simulation is already running on the server.', error_code=409)
 
         if 'brainProcesses' in body and \
-           (not isinstance(body.get('brainProcesses'), int) or body.get('brainProcesses') < 1):
+                (not isinstance(body.get('brainProcesses'), int) or body.get('brainProcesses') < 1):
             raise NRPServicesClientErrorException('Invalid number of brain processes.')
 
         sim_gzserver_host = body.get('gzserverHost', 'local')
@@ -158,19 +154,17 @@ class SimulationService(Resource):
         ctx_id = body.get('ctxId', None)
 
         sim = Simulation(sim_id,
-                         body['experimentConfiguration'],
+                         sim_experiment_id,
                          sim_owner,
                          sim_gzserver_host,
                          sim_reservation,
                          sim_brain_processes,
-                         sim_experiment_id,
                          sim_state,
                          playback_path=playback_path,
                          private=private,
                          ctx_id=ctx_id)
 
-        sim.creationUniqueID = body.get(
-            'creationUniqueID', str(time.time() + random.random()))
+        sim.creationUniqueID = body.get('creationUniqueID', str(time.time() + random.random()))
 
         sim.state = "initialized"
         simulations.append(sim)
@@ -207,7 +201,6 @@ class SimulationService(Resource):
         :> json string gzserverHost: Denotes where the gzserver will run once the simulation is
                                      started, local for localhost, lugano for a remote execution on
                                      the Lugano viz cluster.
-        :> json string experimentConfiguration: Path and name of the experiment configuration file
         :> json string state: The current state of the simulation
         :> json int simulationID: The id of the simulation (needed for further REST calls)
 

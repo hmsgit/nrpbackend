@@ -39,7 +39,7 @@ class TestSimulationStateService(RestTest):
 
     def setUp(self):
         load_data = {
-            "experimentConfiguration": "experiments/experiment_data/test_1.exc",
+            "experimentID": "some_experiment_id",
             "gzserverHost": "local"
         }
         self.client.post('/simulation', data=json.dumps(load_data))

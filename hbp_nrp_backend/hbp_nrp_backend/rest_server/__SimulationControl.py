@@ -97,7 +97,6 @@ class SimulationControl(Resource):
 
         :> json string state: The current state of the simulation
         :> json integer simulationID: The id of the simulation (needed for further REST calls)
-        :> json string experimentConfiguration: Path and name of the experiment configuration file
         :> json string environmentConfiguration: Path and name of the environment configuration file
         :> json string owner: The simulation owner (Unified Portal user id or 'hbp-default')
         :> json string creationDate: Date of creation of this simulation
@@ -106,7 +105,7 @@ class SimulationControl(Resource):
                                      the Lugano viz cluster
         :> json string reservation: the name of the cluster reservation subsequently used to
                                     allocate a job
-        :> json string experimentID: The expeirment ID if the experiment is using the storage
+        :> json string experimentID: The experiment ID if the experiment is using the storage
         :> json integer brainProcesses: Number of brain processes to use (overrides ExD conf.)
         :> json string creationUniqueID: unique creation ID (used by Frontend to identify this sim.)
 

@@ -101,8 +101,8 @@ class SimulationResources(Resource):
             },
             {
                 "code": 404,
-                "message": ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404 +
-                           ". Or, " + ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404
+                "message": "{}. Or, {}".format(ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
+                                               ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404)
             },
             {
                 "code": 200,

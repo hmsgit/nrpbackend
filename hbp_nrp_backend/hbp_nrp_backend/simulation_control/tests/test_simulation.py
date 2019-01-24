@@ -33,6 +33,7 @@ from mock import patch, Mock
 from hbp_nrp_backend.simulation_control import Simulation
 from hbp_nrp_excontrol import StateMachineManager as sm_manager_module
 
+
 class TestSimulation(unittest.TestCase):
 
     def create_sm_mock(self, sm_id, sim_id, sm_path=None):
@@ -49,10 +50,10 @@ class TestSimulation(unittest.TestCase):
         sm_manager_module.StateMachineManager.create_state_machine = self.create_sm_mock
 
         sim_id = 2
-        experiment_conf = 'some_exp_id'
+        experiment_id = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
-        self.__simulation = Simulation(sim_id, experiment_conf, owner, sim_gzserver_host)
+        self.__simulation = Simulation(sim_id, experiment_id, owner, sim_gzserver_host)
         sm_path = path.join(path.split(__file__)[0], "sm_mock.py")
 
         self.assertIsNotNone(self.__simulation.kill_datetime)
@@ -78,20 +79,18 @@ class TestSimulation(unittest.TestCase):
 
     def test_simulation_constructor(self):
         sim_id = 2
-        experiment_conf = 'some_exp_id'
+        experiment_id = 'some_exp_id'
         owner = 'some_owner'
         sim_gzserver_host = 'some_gzserver_host'
-        self.__simulation = Simulation(sim_id, experiment_conf, owner, sim_gzserver_host, 'view')
-        self.__simulation = Simulation(
-            sim_id, experiment_conf, None, owner,
-            sim_gzserver_host, 'view', 'created'
-        )
-        self.__simulation = Simulation(
-            sim_id, experiment_conf, owner,
-            sim_gzserver_host, 'view', 'paused'
-        )
+        self.__simulation = Simulation(sim_id, experiment_id, owner, sim_gzserver_host, 'view')
+        self.__simulation = Simulation(sim_id, experiment_id, None, owner,
+                                       sim_gzserver_host, 'view', 'created')
+
+        self.__simulation = Simulation(sim_id, experiment_id, owner,
+                                       sim_gzserver_host, 'view', 'paused')
 
     def test_simulation_get_state_machine_code(self):
+
         self.assertIsNotNone(self.__simulation.state_machine_manager)
         code = self.__simulation.get_state_machine_code('SM2')
         self.assertFalse(code)

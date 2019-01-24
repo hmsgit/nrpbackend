@@ -55,7 +55,7 @@ This is a step-by-step description for running the backend for the case that **t
 
       .. code-block:: bash
 
-            curl -X POST 127.0.0.1:5000/simulation -d '{"experimentConfiguration":"ExDConf/ExDXMLExample.xml"}'
+            curl -X POST 127.0.0.1:5000/simulation -d '{"experimentID":"cloned_experiment_id"}'
 
 
 Building the documentation
