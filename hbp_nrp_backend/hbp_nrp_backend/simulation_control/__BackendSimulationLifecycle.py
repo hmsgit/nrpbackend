@@ -41,7 +41,6 @@ from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient \
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
-from hbp_nrp_backend.simulation_control.__TexturesLoader import TexturesLoader
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 __author__ = 'Georg Hinkel, Manos Angelidis'
@@ -295,24 +294,11 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         logger.info("Starting State Machines...")
         try:
             self.simulation.state_machine_manager.start_all(False)
-        # pylint: disable=broad-except
-        except Exception, e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error("Starting state machines failed")
             logger.exception(e)
             # The frontend will be notified of any state machine issues directly
             # over the cle_error topic
-
-        # TODO: Move texture loading out of simulation control!
-        logger.info("Loading textures...")
-        try:
-            if not self.__textures_loaded:
-                TexturesLoader().load_textures(UserAuthentication.get_header_token(request),
-                                               self.simulation.experiment_id)
-                self.__textures_loaded = True
-        # pylint: disable=broad-except
-        except Exception, e:
-            logger.error("Texture loading failed")
-            logger.exception(e)
 
     def stop(self, state_change):
         """

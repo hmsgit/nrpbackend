@@ -51,10 +51,10 @@ class CustomModel(object):
 
 class TestCLEGazeboSimulationAssembly(unittest.TestCase):
     def setUp(self):
-        dir = os.path.split(__file__)[0]
-        with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
+        _dir = os.path.split(__file__)[0]
+        with open(os.path.join(_dir, "experiment_data/milestone2.bibi")) as bibi_file:
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
+        with open(os.path.join(_dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
             exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
         exd.path = "/somewhere/over/the/rainbow/exc"
         exd.dir = "/somewhere/over/the/rainbow"
@@ -67,7 +67,7 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 
     def test_custom_brain_fails(self):
         self.launcher._storageClient.get_custom_models.return_value = [
-            {'path':"brains/brain_.zip"}    # DON'T PUT brain.zip HERE. FIX _extract_brain_zip impl
+            {'path': "brains/brain_.zip"}    # DON'T PUT brain.zip HERE. FIX _extract_brain_zip impl
         ]
         self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
         self.launcher._simDir = os.path.join(PATH, 'experiment_data')

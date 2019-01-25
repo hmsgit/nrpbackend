@@ -108,9 +108,12 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         logger.info('RNG seed = %i', rng_seed)
 
         # start Gazebo simulator and bridge
-        extraModelDirs = os.path.join(self._simDir, self.tempAssetsDir) + ':' + self._simDir
-        playbackPath = None
-        self._start_gazebo(rng_seed, playbackPath, extraModelDirs, environment)
+        extra_model_dirs = os.path.join(self._simDir, self.tempAssetsDir) + ':' + self._simDir
+        playback_path = None
+        self._start_gazebo(rng_seed, playback_path, extra_model_dirs, environment)
+
+        # load user textures in Gazebo
+        self._load_textures()
 
         # load environment and robot models
         models, lights = self._load_environment(environment)
@@ -217,7 +220,6 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 Robot(modelTag.robotId, path, modelTag.robotId, pose, isCustom, rosLaunchAbsPath)
             )
 
-    # pylint: disable-msg=too-many-branches
     def _load_environment(self, world_file):
         """
         Loads the environment and robot in Gazebo
@@ -226,6 +228,24 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # load the world file if provided first
         self._notify("Loading experiment environment")
         return self.robotManager.scene_handler().parse_gazebo_world_file(world_file)
+
+    def _load_textures(self):
+        """
+        Loads custom textures in Gazebo
+        """
+        self._notify("Loading textures")
+
+        try:
+            textures = self.storage_client.get_textures(self.experiment_id, self.token)
+        except:  # pylint: disable=bare-except
+            logger.info("Non-existent textures or folder!")
+            return  # ignore missing textures or texture folder
+
+        try:
+            if textures:
+                self.robotManager.scene_handler().load_textures(textures)
+        except:  # pylint: disable=bare-except
+            logger.info("Timeout while trying to load textures.")
 
     # pylint: disable-msg=too-many-branches
     def _load_robot(self):
@@ -404,10 +424,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         cle = DeterministicClosedLoopEngine(roscontrol, roscomm,
                                             braincontrol, braincomm,
-                                            tfmanager, timestep
-                                            )
+                                            tfmanager, timestep)
 
-        if (brain_file_path):
+        if brain_file_path:
             cle.initialize(brain_file_path, **neurons_config)
         else:
             cle.initialize()

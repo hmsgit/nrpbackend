@@ -159,16 +159,14 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
                           self.lifecycle.initialize, Mock())
 
     def test_backend_start(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"), \
-                patch("hbp_nrp_backend.simulation_control.__TexturesLoader.TexturesLoader.load_textures"):
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
             self.lifecycle.start(Mock())
 
             # Assert state machines have been started
             self.assertTrue(self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_start_state_machines_failed(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"), \
-                patch("hbp_nrp_backend.simulation_control.__TexturesLoader.TexturesLoader.load_textures"):
+        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
             self.simulation.state_machine_manager.start_all.side_effect = IOError
             self.lifecycle.start(Mock())
 
