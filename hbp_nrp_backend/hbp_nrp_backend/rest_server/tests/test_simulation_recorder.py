@@ -52,7 +52,7 @@ class TestSimulationRecorder(RestTest):
 
         response = self.client.get('/simulation/0/recorder/is-recording')
         self.assertEqual(200, response.status_code)
-        self.assertEqual('"True"', response.data.strip())
+        self.assertEqual('{"state": "True"}', response.data.strip())
 
     def test_get_failure(self):
 

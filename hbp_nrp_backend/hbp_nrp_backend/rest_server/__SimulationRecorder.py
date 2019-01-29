@@ -116,7 +116,7 @@ class SimulationRecorder(Resource):
         # command the recorder, return boolean state as a string
         try:
             state = str(sim.cle.command_simulation_recorder(SimulationRecorderRequest.STATE).value)
-            return state, 200
+            return {'state': state}, 200
 
         # internal CLE ROS error if service call fails, notify frontend
         except ROSCLEClientException as e:
