@@ -66,6 +66,7 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
         # happen here
         gzserver_host = par.get('gzserver_host', 'local')
         timeout = par.get('timeout', None)
+        timeout_type = par.get('timeout_type', None)
         reservation = par.get('reservation', None)
         experiment_id = par.get('experiment_id', None)
 
@@ -78,6 +79,7 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
             raise Exception("The gzserver location '{0}' is not supported.", gzserver_host)
 
         self._timeout = timeout
+        self._timeout_type = timeout_type
         self.__gzserver_host = gzserver_host
         self.experiment_id = experiment_id
         self.gzweb = None

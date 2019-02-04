@@ -96,8 +96,8 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # create the CLE server and lifecycle first to report any failures properly
         # initialize the cle server and services
         logger.info("Creating CLE Server")
-        self.cle_server = ROSCLEServer(self.sim_id, self._timeout, self.gzserver,
-                                       self.ros_notificator)
+        self.cle_server = ROSCLEServer(self.sim_id, self._timeout, self._timeout_type,
+                                       self.gzserver, self.ros_notificator)
         self.cle_server.setup_handlers(self)
 
         # RNG seed for components, use config value if specified or generate a new one

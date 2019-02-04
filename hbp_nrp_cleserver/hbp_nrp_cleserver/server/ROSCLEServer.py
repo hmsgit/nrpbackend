@@ -108,16 +108,17 @@ class ROSCLEServer(SimulationServer):
     A ROS server wrapper around the Closed Loop Engine.
     """
 
-    def __init__(self, sim_id, timeout, gzserver, notificator):
+    def __init__(self, sim_id, timeout, timeout_type, gzserver, notificator):
         """
         Create the wrapper server
 
         :param sim_id: The simulation id
-        :param timeout: The datetime when the simulation runs into a timeout
+        :param timeout: The simulation timeout
+        :param timeout_type: The type of simulation timeout
         :param gzserver: Gazebo simulator launch/control instance
         :param notificator: ROS state/error notificator interface
         """
-        super(ROSCLEServer, self).__init__(sim_id, timeout, gzserver, notificator)
+        super(ROSCLEServer, self).__init__(sim_id, timeout, timeout_type, gzserver, notificator)
         self.__cle = None
         self._robotHandler = None
         self._excBibiHandler = None
@@ -182,6 +183,10 @@ class ROSCLEServer(SimulationServer):
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Runtime", str(tf_error),
                                severity=CLEError.SEVERITY_ERROR, function_name=tf.name,
                                line_number=extract_line_number(tb))
+
+    @property
+    def simulation_time(self):
+        return int(self.__cle.simulation_time)
 
     @property
     def cle(self):
@@ -881,7 +886,6 @@ class ROSCLEServer(SimulationServer):
 
     def _create_state_message(self):
         return {
-                'simulationTime': int(self.__cle.simulation_time),
                 'realTime': int(self.__cle.real_time),
                 'transferFunctionsElapsedTime': self.__cle.tf_elapsed_time(),
                 'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),

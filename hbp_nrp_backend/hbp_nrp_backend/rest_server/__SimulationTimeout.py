@@ -35,6 +35,7 @@ from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
+from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
 import datetime
@@ -75,6 +76,10 @@ class SimulationTimeout(Resource):
                 "message": ErrorMessages.SIMULATION_PERMISSION_401
             },
             {
+                "code": 412,
+                "message": " Failed due to simulation timeout type being 'simulation'"
+            },
+            {
                 "code": 200,
                 "message": "Success. The simulation timeout has been extended"
             }
@@ -90,6 +95,7 @@ class SimulationTimeout(Resource):
 
         :status 404: {0}
         :status 402: Failed to extend the timeout
+        :status 412: Failed due to simulation timeout type being 'simulation'
         :status 401: {1}
         :status 200: Success. The simulation timeout has been extended
         """
@@ -97,6 +103,9 @@ class SimulationTimeout(Resource):
 
         if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
             raise NRPServicesWrongUserException()
+
+        if simulation.timeout_type == TimeoutType.SIMULATION:
+            return {}, 412
 
         new_timeout = simulation.kill_datetime + \
             datetime.timedelta(minutes=SIMULATION_TIMEOUT_EXTEND)

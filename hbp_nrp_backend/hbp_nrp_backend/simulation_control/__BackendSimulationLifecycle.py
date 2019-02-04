@@ -42,6 +42,7 @@ from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
 
 __author__ = 'Georg Hinkel, Manos Angelidis'
 
@@ -250,15 +251,27 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 environment_path,
                 using_storage)
 
-            simulation.kill_datetime = datetime.datetime.now(timezone) \
-                + datetime.timedelta(seconds=experiment.timeout)
+            simulation.timeout_type = TimeoutType.SIMULATION \
+                    if experiment.timeout.time == TimeoutType.SIMULATION  \
+                    else TimeoutType.REAL
+
+            timeout = experiment.timeout.value()
+
+            if simulation.timeout_type == TimeoutType.REAL:
+                timeout = datetime.datetime.now(timezone) \
+                    + datetime.timedelta(seconds=timeout)
+                simulation.kill_datetime = timeout
+            else:
+                simulation.kill_datetime = None
+
             logger.info("simulation timeout initialized")
 
             simulation_factory_client = ROSCLESimulationFactoryClient()
             simulation_factory_client.create_new_simulation(
                 environment_path, self.__experiment_path,
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
-                simulation.sim_id, str(simulation.kill_datetime), simulation.playback_path,
+                simulation.sim_id, str(timeout), simulation.timeout_type,
+                simulation.playback_path,
                 UserAuthentication.get_header_token(request),
                 self.simulation.ctx_id,
                 self.simulation.experiment_id

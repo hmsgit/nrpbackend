@@ -51,18 +51,39 @@ gazebo_logger.setLevel(logging.INFO)
 notificator_handler = NotificatorHandler()
 
 
+class TimeoutType(object):
+    """
+    The type of the simulation timeout.
+    Simulation time can be REAL or SIMULATION,
+    relying respectively on the elapsed time or the simulation time
+    """
+    REAL = "real"
+    SIMULATION = "simulation"
+
+
+class TimeoutType(object):
+    """
+    The type of the simulation timeout.
+    Simulation time can be REAL or SIMULATION,
+    relying respectively on the elapsed time or the simulation time
+    """
+    REAL = "real"
+    SIMULATION = "simulation"
+
+
 class SimulationServer(object):
     """
     Playback ROS server overriding the ROSCLEServer implementation for playback
     """
     STATUS_UPDATE_INTERVAL = 1.0
 
-    def __init__(self, sim_id, timeout, gzserver, notificator):
+    def __init__(self, sim_id, timeout, timeout_type, gzserver, notificator):
         """
         Create the playback server
 
         :param sim_id: The simulation id
         :param timeout: The datetime when the simulation runs into a timeout
+        :param timeout_type: The type of timeout
         :param gzserver: Gazebo simulator launch/control instance
         :param notificator: ROS state/error notificator interface
         """
@@ -73,6 +94,9 @@ class SimulationServer(object):
         self.__timer = Timer.Timer(SimulationServer.STATUS_UPDATE_INTERVAL,
                                    self.publish_state_update)
         self.__timeout = timeout
+        self.__timeout_type = TimeoutType.SIMULATION \
+                            if timeout_type == TimeoutType.SIMULATION \
+                            else TimeoutType.REAL
         self.__gzserver = gzserver
         self._notificator = notificator
 
@@ -88,6 +112,13 @@ class SimulationServer(object):
         Gets the simulation id that is serviced
         """
         return self.__simulation_id
+
+    @property
+    def simulation_time(self):
+        """
+        Gets the simulation time
+        """
+        raise NotImplementedError("This method must be overridden in derived classes")
 
     @property
     def lifecycle(self):
@@ -133,6 +164,9 @@ class SimulationServer(object):
         :param request: The new timeout
         :return: whether it could extend the timeout
         """
+        if self.__timeout_type == TimeoutType.SIMULATION:
+            return False
+
         new_timeout = datetime_parser.parse(request.timeout)
 
         if self.__gzserver is not None and not self.__gzserver.try_extend(new_timeout):
@@ -158,6 +192,8 @@ class SimulationServer(object):
                 logger.warn("Trying to publish state even though no simulation is active")
                 return
             message = self._create_state_message()
+            message['simulationTime'] = self.simulation_time
+            message['timeout_type'] = self.__timeout_type
             message['state'] = self.__lifecycle.state
             message['timeout'] = self.__get_remaining()
             logger.debug(json.dumps(message))
@@ -171,11 +207,17 @@ class SimulationServer(object):
         Get the remaining time of the simulation
         """
         if self.__timeout is not None:
-            # pylint: disable=E1103
-            # false positive
-            remaining = (self.__timeout - datetime.datetime.now(self.__timeout.tzinfo)) \
-                .total_seconds()
-            # pylint: enable=E1103
+            if self.__timeout_type == TimeoutType.SIMULATION:
+                remaining = self.__timeout - self.simulation_time
+            else:
+                # pylint: disable-all
+                # false positive
+                tzinfo = self.__timeout.tzinfo
+                # pylint: enable-all
+                remaining = (self.__timeout - datetime.datetime.now(tzinfo)) \
+                    .total_seconds()
+                # pylint: enable=E1103
+
             if remaining < 0:
                 self.__lifecycle.stopped()
             return max(0, int(remaining))

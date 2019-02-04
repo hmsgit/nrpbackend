@@ -53,17 +53,18 @@ class PlaybackServer(SimulationServer):
     Playback ROS server overriding the ROSCLEServer implementation for playback
     """
 
-    def __init__(self, sim_id, timeout, gzserver, notificator, playback_path):
+    def __init__(self, sim_id, timeout, timeout_type, gzserver, notificator, playback_path):
         """
         Create the playback server
 
         :param sim_id: The simulation id
-        :param timeout: The datetime when the simulation runs into a timeout
+        :param timeout: The simulation timeout
+        :param timeout_type: The type of simulation timeout
         :param gzserver: Gazebo simulator launch/control instance
         :param notificator: ROS state/error notificator interface
         :param playback_path: Absolute path to the playback files (where gzserver/1.log file is)
         """
-        super(PlaybackServer, self).__init__(sim_id, timeout, gzserver, notificator)
+        super(PlaybackServer, self).__init__(sim_id, timeout, timeout_type, gzserver, notificator)
 
         # simulation time from playback for frontend display
         self.__sim_clock = 0
@@ -78,6 +79,10 @@ class PlaybackServer(SimulationServer):
         self.__service_pause = None
         self.__service_stop = None
         self.__service_reset = None
+
+    @property
+    def simulation_time(self):
+        return int(self.__sim_clock)
 
     @property
     def playback_path(self):
@@ -133,7 +138,6 @@ class PlaybackServer(SimulationServer):
         :return: A dictionary with status information
         """
         return {
-            'simulationTime': int(self.__sim_clock),
             'realTime': int(self.__sim_clock),
             'transferFunctionsElapsedTime': {},
             'brainsimElapsedTime': 0,

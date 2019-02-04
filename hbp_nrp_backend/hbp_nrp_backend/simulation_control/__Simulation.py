@@ -92,6 +92,7 @@ class Simulation(object):
             datetime.timedelta(minutes=30)
         self.__creationUniqueID = None
         self.__playback_path = playback_path
+        self.__timeout_type = None
 
         # enable the full dynamic backend lifecycle for non-playback launches
         if playback_path is None:
@@ -132,6 +133,22 @@ class Simulation(object):
         """
 
         return 1 if not self.cle.valid or self.state in ['failed', 'halted'] else 0
+
+    @property
+    def timeout_type(self):
+        """
+        Gets the type of timeout
+        """
+        return self.__timeout_type
+
+    @timeout_type.setter
+    def timeout_type(self, new_value):
+        """
+        Sets the type of timeout
+
+        :param new_value: The new timeout type
+        """
+        self.__timeout_type = new_value
 
     @property
     def kill_datetime(self):

@@ -55,12 +55,13 @@ class ROSCLESimulationFactoryClient(object):
 
     # pylint: disable=too-many-arguments
     def create_new_simulation(self, environment_file, experiment_conf, gzserver_host,
-                              reservation, brain_processes, sim_id, timeout, playback_path, token,
-                              ctx_id, experiment_id):
+                              reservation, brain_processes, sim_id, timeout, timeout_type,
+                              playback_path, token, ctx_id, experiment_id):
         """
         Start the simulation.
         """
         self.__create_new_simulation_service(environment_file, experiment_conf,
                                              gzserver_host, reservation,
                                              brain_processes, sim_id, timeout,
-                                             playback_path, token, ctx_id, experiment_id)
+                                             timeout_type, playback_path, token,
+                                             ctx_id, experiment_id)

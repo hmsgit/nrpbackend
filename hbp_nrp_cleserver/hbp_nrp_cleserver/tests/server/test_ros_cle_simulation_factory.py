@@ -61,6 +61,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
         brain_processes = 1
         sim_id = 0
         timeout = str(datetime.now(tz) + timedelta(minutes=5))
+        timeout_type = 'real'
         reservation = 'user_workshop'
         playback_path = None
         token = None

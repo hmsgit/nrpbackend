@@ -28,6 +28,7 @@ Tests for cleanup.py
 import unittest
 from mock import patch, MagicMock
 import hbp_nrp_backend.rest_server.cleanup as cleanup
+from hbp_nrp_backend.config import Config
 from datetime import datetime, timedelta
 import pytz
 
@@ -40,17 +41,26 @@ class TestCleanup(unittest.TestCase):
         sim = MagicMock()
         sim.kill_datetime = datetime.now(timezone) - timedelta(days=2)
         sim.sim_id = 5
+        sim.creation_datetime = datetime.now(timezone)
         sim.state = 'running'
 
         sim2 = MagicMock()
         sim2.kill_datetime = datetime.now(timezone) + timedelta(days=2)
         sim2.sim_id = 5
+        sim2.creation_datetime = datetime.now(timezone)
         sim2.state = 'running'
 
-        simulations.__iter__.return_value = [sim, sim2]
+        sim3 = MagicMock()
+        sim3.kill_datetime = datetime.now(timezone) + timedelta(days=2)
+        sim3.sim_id = 5
+        sim3.creation_datetime = datetime.now(timezone) -  timedelta(seconds=Config.MAX_SIMULATION_TIMEOUT)
+        sim3.state = 'running'
+
+        simulations.__iter__.return_value = [sim, sim2, sim3]
         cleanup.remove_old_simulations()
         assert sim.state == 'stopped'
         assert sim2.state == 'running'
+        assert sim3.state == 'stopped'
 
 
 if __name__ == '__main__':

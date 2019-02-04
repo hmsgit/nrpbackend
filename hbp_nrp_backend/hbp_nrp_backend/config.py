@@ -24,15 +24,14 @@
 """
 Configuration file sample for the application.
 It is overwritten by puppet on dev and staging servers
-(see config.py.erb template managed py puppet).
-This file handles in particular databases related to Collab contexts ans storage management.
-(managed by puppet via nrp-services-env.sh from server-script)
+This file handles in particular the storage url and the simulation max timeout
 """
 
 
 class Config(object):
     """
-    Configuration of the collab and the local storage for local installations
+    Configuration of the local storage and simulation max timeout
     """
 
     LOCAL_STORAGE_URI = {'storage_uri': 'http://localhost:9000/storage'}
+    MAX_SIMULATION_TIMEOUT = 24 * 60 * 60 # seconds

@@ -47,6 +47,7 @@ from pyxb import ValidationError, NamespaceError
 from hbp_nrp_cleserver.server import ServerConfigurations
 import gc
 from hbp_nrp_cleserver.server.__signal_patch import patch_signal
+from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
 
 __author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
 
@@ -150,7 +151,8 @@ class ROSCLESimulationFactory(object):
             reservation = service_request.reservation
             sim_id = service_request.sim_id
             exc_config_file = service_request.exd_config_file
-            timeout = self.__get_timeout(service_request)
+            timeout_type = service_request.timeout_type
+            timeout = self.__get_timeout(service_request.timeout, timeout_type)
             playback_path = service_request.playback_path
             token = service_request.token
             ctx_id = service_request.ctx_id
@@ -217,6 +219,7 @@ class ROSCLESimulationFactory(object):
                                     gzserver_host=gzserver_host,
                                     reservation=reservation,
                                     timeout=timeout,
+                                    timeout_type=timeout_type,
                                     playback_path=playback_path,
                                     context_id=ctx_id,
                                     token=token,
@@ -252,18 +255,20 @@ class ROSCLESimulationFactory(object):
         return []
 
     @staticmethod
-    def __get_timeout(service_request):
+    def __get_timeout(timeout, timeout_type):
         """
-        Gets the timeout for the simulation based on the given request
+        Gets the timeout for the simulation based on timeout_type
+        (one of the flags defined in TimeoutType)
 
-        :param service_request: The service request
+        :param timeout: A string denoting the timeout in seconds.
+        :param timeout_type: The timeout type, one of the flags defined inTimeoutType.
         :return: The time when the simulation will end or None, if no timeout was specified
         """
-        if service_request.timeout == "":
-            timeout = None
-        else:
-            timeout = datetime_parser.parse(service_request.timeout)
-        return timeout
+        if timeout == "":
+            return None
+        elif timeout_type == TimeoutType.SIMULATION:
+            return int(float(timeout))
+        return datetime_parser.parse(timeout)
 
     def __simulation(self, launcher):
         """

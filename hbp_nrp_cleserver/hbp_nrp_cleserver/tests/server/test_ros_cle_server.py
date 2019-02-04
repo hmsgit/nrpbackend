@@ -102,7 +102,7 @@ class TestROSCLEServer(unittest.TestCase):
         self.__mocked_notificator = Mock()
         self.__mocked_notificator.task_notifier = mock_open()
 
-        self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0, None, None, self.__mocked_notificator)
+        self.__ros_cle_server = ROSCLEServer.ROSCLEServer(0, None, None, None, self.__mocked_notificator)
         self.assertEqual(mocked_timer.Timer.call_count, 1)
         self.__ros_cle_server._ROSCLEServer__done_flag = Mock()
         self.__ros_cle_server.cle = self.__mocked_cle
@@ -540,6 +540,14 @@ class TestROSCLEServer(unittest.TestCase):
         request.transfer_function_name = "tf_0"
         response = delete_transfer_function_handler(request)
         self.assertEqual(True, response)
+
+
+    def test_simulation_time(self):
+        self.__ros_cle_server.cle.simulation_time = 123
+
+        simulation_time = self.__ros_cle_server.simulation_time
+        self.assertEqual(simulation_time, self.__ros_cle_server.cle.simulation_time)
+
 
     def test_change_tf_for_population(self):
         mock_tf = MagicMock()

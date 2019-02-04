@@ -57,7 +57,7 @@ class TestPlaybackServer(unittest.TestCase):
         self.__mocked_notificator = Mock()
         self.__mocked_notificator.task_notifier = mock_open()
 
-        self.__playback_server = PlaybackServer(0, None, None, self.__mocked_notificator, 'foo')
+        self.__playback_server = PlaybackServer(0, None, None, None, self.__mocked_notificator, 'foo')
         self.assertEqual(mock_timer.Timer.call_count, 1)
         self.__playback_server.prepare_simulation(None)
         self.assertEqual(mock_lifecycle.call_count, 1)
@@ -111,6 +111,11 @@ class TestPlaybackServer(unittest.TestCase):
         self.__playback_server.reset_simulation(None)
         self.assertEqual(self.__playback_server._PlaybackServer__sim_clock, 0)
         self.__playback_server._PlaybackServer__service_reset.assert_called_once_with('foo')
+
+    def test_simulation_time(self):
+        self.__playback_server._PlaybackServer__sim_clock = 123
+        simulation_time = self.__playback_server.simulation_time
+        self.assertEqual(simulation_time, self.__playback_server._PlaybackServer__sim_clock)
 
     def test_reset_not_configured(self):
 
