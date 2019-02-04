@@ -57,9 +57,8 @@ class TestPlaybackServer(unittest.TestCase):
         self.__mocked_notificator = Mock()
         self.__mocked_notificator.task_notifier = mock_open()
 
-        self.__playback_server = PlaybackServer(0, None, None, self.__mocked_notificator)
+        self.__playback_server = PlaybackServer(0, None, None, self.__mocked_notificator, 'foo')
         self.assertEqual(mock_timer.Timer.call_count, 1)
-        self.__playback_server.playback_path = 'foo'
         self.__playback_server.prepare_simulation(None)
         self.assertEqual(mock_lifecycle.call_count, 1)
         self.assertEqual(2, self.__mocked_base_rospy.Service.call_count)
@@ -119,10 +118,9 @@ class TestPlaybackServer(unittest.TestCase):
         self.__playback_server._PlaybackServer__playback_path = None
         res, _ = self.__playback_server.reset_simulation(None)
         self.assertEqual(False, res)
-        self.__playback_server._PlaybackServer__playback_path = 'foo'
 
     def test_shutdown(self):
-    
+
         ps = self.__playback_server
         ps.shutdown()
 

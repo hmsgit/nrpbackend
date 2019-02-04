@@ -50,6 +50,8 @@ class PlaybackClient(ROSCLEClient):
         :param sim_id: The simulation id
         """
 
+        self.valid = True
+
         self._ROSCLEClient__cle_reset = ROSCLEServiceWrapper(
             SERVICE_SIM_RESET_ID(sim_id), srv.ResetSimulation, self)
 
@@ -78,3 +80,9 @@ class PlaybackClient(ROSCLEClient):
         self._ROSCLEClient__simulation_recorder = lambda c: None
 
         self._ROSCLEClient__stop_reason = None
+
+        __error_msg = "Request not supported in Playback Mode"
+        self._ROSCLEClient__cle_get_robots = lambda: srv.GetRobotsResponse([])
+        self._ROSCLEClient__cle_add_robot = lambda: (False, __error_msg)
+        self._ROSCLEClient__cle_del_robot = lambda: (False, __error_msg)
+        self._ROSCLEClient__cle_set_robot = lambda: (False, __error_msg)

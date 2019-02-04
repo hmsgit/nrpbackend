@@ -53,7 +53,7 @@ class PlaybackServer(SimulationServer):
     Playback ROS server overriding the ROSCLEServer implementation for playback
     """
 
-    def __init__(self, sim_id, timeout, gzserver, notificator):
+    def __init__(self, sim_id, timeout, gzserver, notificator, playback_path):
         """
         Create the playback server
 
@@ -61,6 +61,7 @@ class PlaybackServer(SimulationServer):
         :param timeout: The datetime when the simulation runs into a timeout
         :param gzserver: Gazebo simulator launch/control instance
         :param notificator: ROS state/error notificator interface
+        :param playback_path: Absolute path to the playback files (where gzserver/1.log file is)
         """
         super(PlaybackServer, self).__init__(sim_id, timeout, gzserver, notificator)
 
@@ -69,7 +70,7 @@ class PlaybackServer(SimulationServer):
         self.__sim_clock_subscriber = None
 
         # path to current active playback, accessible by Gazebo
-        self.__playback_path = None
+        self.__playback_path = playback_path
 
         # services to interact with playback plugin
         self.__service_configure = None
@@ -84,13 +85,6 @@ class PlaybackServer(SimulationServer):
         Gets the playback path
         """
         return self.__playback_path
-
-    @playback_path.setter
-    def playback_path(self, value):
-        """
-        Sets the playback path
-        """
-        self.__playback_path = value
 
     def prepare_simulation(self, except_hook=None):
         """
@@ -236,18 +230,16 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
         # properly
         logger.info("Creating Playback Server")
         self.playback = PlaybackServer(self.sim_id, self._timeout, self.gzserver,
-                                         self.ros_notificator)
+                                         self.ros_notificator, self.__playback_path)
 
         # disable roslaunch for playback
         self.exc.rosLaunch = None
 
-        # start Gazebo simulator and bridge (RNG seed is irrelevant for
-        # playback)
+        # start Gazebo simulator and bridge (RNG seed is irrelevant for playback)
         self._start_gazebo(123456, self.__playback_path, None, environment)
 
         # create playback CLE server
         logger.info("Preparing Playback Server")
-        self.playback.playback_path = self.__playback_path
         self.playback.prepare_simulation(except_hook)
 
     def _shutdown(self, notifications):

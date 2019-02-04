@@ -119,7 +119,8 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
         # If playback is specified, load the first log/world file in the recording at Gazebo launch
         # TODO: when storage server is available this should be updated
         if playback_path:
-            gzserver_args += ' --play {path}/gzserver/1.log'.format(path=playback_path)
+            gzserver_args += ' --play {path}'.format(
+                path=os.path.join(playback_path, 'gzserver/1.log'))
 
         # optional roslaunch support prior to Gazebo launch
         if self.exc.rosLaunch is not None:
