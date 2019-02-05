@@ -229,7 +229,7 @@ class RobotCallHandler(object):
             self._client.delete_file(
                 self._cle_assembly.token,
                 self._cle_assembly.experiment_id,
-                os.path.join(robot_id, os.path.basename(modelFile))
+                robot_id
             )
             # delete model from the simulation dir
             os.remove(modelFile)
