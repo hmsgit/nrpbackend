@@ -28,8 +28,10 @@ Unit tests for user authentication
 __author__ = 'Oliver Denninger'
 
 import unittest
+from mock import patch, MagicMock
 from flask import Flask
 import flask
+
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 
@@ -59,6 +61,20 @@ class TestUserAuthentication(unittest.TestCase):
         with self.__app.test_request_context('/test'):
             token = UserAuthentication.get_header_token(flask.request)
         self.assertEqual(token, 'no_token')
+
+
+    def test_get_user(self):
+        with self.__app.test_request_context('/test', headers={'X-User-Name': 'Test'}):
+            self.assertEqual(UserAuthentication.get_user(flask.request), 'Test')
+        with self.__app.test_request_context('/test', headers={}):
+            self.assertEqual(UserAuthentication.get_user(flask.request), 'default-owner')
+        with self.__app.test_request_context('/test', headers={'Authorization':'bearer my_incorrect_token'}):
+            self.assertEqual(UserAuthentication.get_user(flask.request), 'default-owner')
+        UserAuthentication.client = MagicMock()
+        UserAuthentication.client.get_user = MagicMock(return_value={'id': 'myid'})
+        with self.__app.test_request_context('/test', headers={'Authorization':'bearer my_token'}):
+            self.assertEqual(UserAuthentication.get_user(flask.request), 'myid')
+
 
     def test_matches_x_user_name_header(self):
         with self.__app.test_request_context('/test', headers={'X-User-Name': 'Test'}):

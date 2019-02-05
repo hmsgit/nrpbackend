@@ -30,6 +30,8 @@ __author__ = 'Oliver Denninger'
 
 from flask_restful import reqparse
 import logging
+from backports.functools_lru_cache import lru_cache
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 logger = logging.getLogger("__main__")
 
@@ -43,6 +45,9 @@ class UserAuthentication(object):
 
     HTTP_HEADER_USER_NAME = "X-User-Name"
     HEADER_TOKEN = "Authorization"
+    DEFAULT_OWNER = "default-owner"
+    NO_TOKEN = "no_token"
+    client = StorageClient()
 
     @staticmethod
     def get_header(request, header_name, default_value):
@@ -71,7 +76,7 @@ class UserAuthentication(object):
         """
         return UserAuthentication.get_header(request,
                                                UserAuthentication.HTTP_HEADER_USER_NAME,
-                                               "default-owner")
+                                               UserAuthentication.DEFAULT_OWNER)
 
     @staticmethod
     def get_header_token(request):
@@ -82,11 +87,45 @@ class UserAuthentication(object):
         """
         token_field = UserAuthentication.get_header(request,
                                                       UserAuthentication.HEADER_TOKEN,
-                                                      "no_token")
-        if (token_field != "no_token"):
+                                                      UserAuthentication.NO_TOKEN)
+        if (token_field != UserAuthentication.NO_TOKEN):
             return token_field.split()[1]
         else:
             return token_field
+
+    @staticmethod
+    @lru_cache()
+    def get_token_owner(token):
+        """
+        Gets the owner of an authentication token
+        :param token: The authentication token
+        :return: The user's id
+        """
+        try:
+            user = UserAuthentication.client.get_user(token)
+            return user['id'] if user else None
+        # pylint: disable=broad-except
+        except Exception:
+            return None
+
+    @staticmethod
+    def get_user(request):
+        """
+        Gets the owner of a request, from the header data
+        It uses the x-user-name if specified, else by the authentication token
+        :param token: The authenticatiomn token
+        :return: The user's id
+        """
+        username = UserAuthentication.get_x_user_name_header(request)
+        if username != UserAuthentication.DEFAULT_OWNER:
+            return username
+
+        token = UserAuthentication.get_header_token(request)
+        if token == UserAuthentication.NO_TOKEN:
+            return username
+
+        token_owner = UserAuthentication.get_token_owner(token)
+        return token_owner if token_owner else username
 
     @staticmethod
     def matches_x_user_name_header(request, user):
@@ -97,7 +136,7 @@ class UserAuthentication(object):
         :param user: The user name to check
         :return: True if value of the 'X-User-Name' header and user name match, False otherwise
         """
-        request_user = UserAuthentication.get_x_user_name_header(request)
+        request_user = UserAuthentication.get_user(request)
         if user == request_user:
             return True
         else:

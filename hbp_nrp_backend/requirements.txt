@@ -12,3 +12,4 @@ urllib3[secure]==1.21.1
 ptvsd==3.0.0
 requests
 cryptography==1.9
+backports.functools_lru_cache==1.5

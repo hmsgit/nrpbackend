@@ -95,23 +95,22 @@ class StorageClient(object):
         """
         return self.__simulation_directory
 
-    # Wrappers around the storage API
-    def authenticate(self, user, password):
+    def get_user(self, token):
         """
-        Authenticates the user based on the user name and password
-        :param user: the username of the user
-        :param password: the password of the user
-        :return: the token
+        Retrieves the user id for the specified authentication token
+        :param token: the authentication token
+        :return: the user id
         """
+
         try:
-            res = requests.post(self.__proxy_url.join('/authentication/authenticate'),
-                                json={"user": user, "password": password})
-            if res.status_code < 200 or res.status_code >= 300:
-                raise Exception(
-                    'Failed to communicate with the storage server, status code ' +
-                    str(res.status_code))
-            else:
+            res = requests.get(self.__proxy_url + '/identity/me',
+                               headers={'Authorization': 'Bearer ' + token})
+            if 200 <= res.status_code < 300:
                 return res.json()
+            else:
+                raise Exception(
+                    'Could not verify auth token, status code ' +
+                    str(res.status_code))
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err

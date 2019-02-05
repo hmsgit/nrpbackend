@@ -51,11 +51,10 @@ class MockResponse:
 
 # Functions that return fake responses based on the mock response class
 
-# AUTHENTICATE HTTP RESPONSES
+# GET USER HTTP RESPONSES
 
-
-def mocked_authenticate_post_ok(*args, **kwargs):
-    return MockResponse({"token": "FakeToken"}, 200)
+def mocked_get_user_ok(*args, **kwargs):
+    return MockResponse({"id": "fake_id"}, 200)
 
 
 def mocked_request_not_ok(*args, **kwargs):
@@ -220,28 +219,28 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
             self.assertEqual(fake_temp_directory,
                              MockOs.environ['NRP_SIMULATION_DIR'])
 
-    # AUTHENTICATE
-    @patch('requests.post', side_effect=mocked_authenticate_post_ok)
-    def test_authenticate_successfully(self, mocked_post):
+    # GET USER
+    @patch('requests.get', side_effect=mocked_get_user_ok)
+    def test_get_user_successfully(self, mocked_get):
         client = StorageClient.StorageClient()
-        res = client.authenticate("fakeUser", "fakePassword")
-        self.assertEqual(res, {'token': 'FakeToken'})
+        res = client.get_user("faketoken")
+        self.assertEqual(res, {"id": "fake_id"})
 
-    @patch('requests.post', side_effect=mocked_request_not_ok)
-    def test_authenticate_not_ok(self, mocked_post):
+    @patch('requests.get', side_effect=mocked_request_not_ok)
+    def test_get_user_not_ok(self, mocked_get):
         client = StorageClient.StorageClient()
         with self.assertRaises(Exception) as context:
-            client.authenticate("non_existing_user", "non_existing_password")
+            client.get_user("wrong token")
 
         self.assertTrue(
-            'Failed to communicate with the storage server, status code 404' in context.exception)
+            'Could not verify auth token, status code 404' in context.exception)
 
-    @patch('requests.post')
-    def test_authenticate_connection_error(self, mocked_post):
+    @patch('requests.get')
+    def test_get_user_connection_error(self, mocked_get):
         client = StorageClient.StorageClient()
-        mocked_post.side_effect = requests.exceptions.ConnectionError()
+        mocked_get.side_effect = requests.exceptions.ConnectionError()
         with self.assertRaises(requests.exceptions.ConnectionError) as context:
-            client.authenticate("non_existing_user", "non_existing_password")
+            client.get_user("wrong token")
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
     # LIST EXPERIMENTS
