@@ -37,7 +37,7 @@ from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
+from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClient, ROSCLEClientException
 from hbp_nrp_backend import NRPServicesGeneralException, \
     NRPServicesWrongUserException, NRPServicesClientErrorException
 from hbp_nrp_backend.rest_server import ErrorMessages
@@ -212,7 +212,6 @@ class SimulationResetStorage(Resource):
         :param context_id: the context ID for collab based simulations
         """
         brain_path, _, neurons_config = cls._get_brain_info_from_storage(experiment_id, context_id)
-
         # Convert the populations to a JSON dictionary
         for name, s in neurons_config.iteritems():
             neurons_config[name] = {
@@ -222,18 +221,32 @@ class SimulationResetStorage(Resource):
             }
 
         with open(brain_path, 'r') as brain_file:
-            result = simulation.cle.set_simulation_brain(
+            result_set_brain = simulation.cle.set_simulation_brain(
                 brain_type='py',
-                data=brain_file.read(),
-                data_type="text",
-                brain_populations=json.dumps(neurons_config))
+                data_type='text',
+                data=brain_file.read())
 
-            if result.error_message is not "":
+            if result_set_brain is not None and\
+                    result_set_brain.error_message is not "":
                 # Error in given brain
                 raise ROSCLEClientException(
                     '{error_message}, line:{error_line},'
-                    ' column:{error_column}, population_change:{handle_population_change}'
-                    .format(**result.__dict__))
+                    ' column:{error_column}'
+                    .format(**result_set_brain.__dict__))
+
+            result_set_populations = simulation.cle.set_simulation_populations(
+                brain_type='py',
+                data_type='text',
+                brain_populations=json.dumps(neurons_config),
+                change_population=ROSCLEClient.ReplaceBehaviorEnum.NO_REPLACE)
+
+            if result_set_populations is not None and\
+                    result_set_populations.error_message is not "":
+                # Error in given brain
+                raise ROSCLEClientException(
+                    '{error_message}, line:{error_line},'
+                    ' column:{error_column}'
+                    .format(**result_set_populations.__dict__))
 
     @staticmethod
     def reset_state_machines(sim, experiment, sm_base_path):

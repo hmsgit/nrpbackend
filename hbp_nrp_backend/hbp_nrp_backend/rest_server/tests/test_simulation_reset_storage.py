@@ -28,7 +28,6 @@ Unit tests for the __SimulationResetStorage module.
 __author__ = 'Alessandro Ambrosano, Ugo Albanese, Georg Hinkel'
 
 import unittest
-import time
 import mock
 from mock import mock_open
 import json
@@ -406,11 +405,8 @@ class TestSimulationResetStorage(RestTest):
     def test_reset_brain(self, mock_get_brain_info):
         simulations[0].cle = mock.MagicMock()
 
-        class Foo(object):
-            pass
-        result = Foo()
-        result.error_message = ""
-        simulations[0].cle.set_simulation_brain.return_value = result
+        simulations[0].cle.set_simulation_brain.return_value = mock.Mock(error_message='')
+        simulations[0].cle.set_simulation_populations.return_value = mock.Mock(error_message='')
         mock_get_brain_info.return_value = os.path.join(PATH,
                                                         'models/braitenberg.py'), None, {u'record': slice(0L, 2L, 1L), u'neurons': slice(0L, 2L, 1L)}
 
@@ -420,22 +416,20 @@ class TestSimulationResetStorage(RestTest):
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_brain_info_from_storage")
     def test_reset_brain_throw(self, mock_get_brain_info):
         simulations[0].cle = mock.MagicMock()
+        simulations[0].cle.set_simulation_brain.return_value = mock.Mock(error_message="error",
+                                                                         error_line=10,
+                                                                         error_column=50,
+                                                                         handle_population_change=None)
 
-        class Foo(object):
-            pass
-        result = Foo()
-        result.error_message = "error"
-        result.error_line = 10
-        result.error_column = 50
-        result.handle_population_change = None
-        simulations[0].cle.set_simulation_brain.return_value = result
-        mock_get_brain_info.return_value = os.path.join(PATH, 'models/braitenberg.py'), None, {u'record': slice(0L, 2L, 1L), u'neurons': slice(0L, 2L, 1L)}
+        mock_get_brain_info.return_value = (os.path.join(PATH, 'models/braitenberg.py'),
+                                            None,
+                                            {u'record': slice(0L, 2L, 1L), u'neurons': slice(0L, 2L, 1L)})
 
         with self.assertRaises(ROSCLEClientException) as context:
             SimulationResetStorage.reset_brain(simulations[0], 'expId', 'contextId')
 
         self.assertEqual(
-            'error, line:10, column:50, population_change:None', context.exception.message)
+            'error, line:10, column:50', context.exception.message)
 
     def test_reset_transfer_functions(self):
         simulations[0].cle = mock.MagicMock()

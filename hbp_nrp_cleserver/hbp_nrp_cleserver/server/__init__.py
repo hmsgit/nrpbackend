@@ -61,6 +61,8 @@ SERVICE_DELETE_TRANSFER_FUNCTION = lambda sim_id: \
 SERVICE_GET_BRAIN = lambda sim_id: '/%s/%d/get_brain' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_SET_BRAIN = lambda sim_id: '/%s/%d/set_brain' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_GET_POPULATIONS = lambda sim_id: '/%s/%d/get_populations' % (ROS_CLE_NODE_NAME, sim_id)
+SERVICE_SET_POPULATIONS = lambda sim_id: '/%s/%d/set_populations' % (ROS_CLE_NODE_NAME, sim_id)
+
 SERVICE_GET_CSV_RECORDERS_FILES = lambda sim_id:\
     '/%s/%d/get_CSV_recorders_files' % (ROS_CLE_NODE_NAME, sim_id)
 SERVICE_CLEAN_CSV_RECORDERS_FILES = lambda sim_id:\

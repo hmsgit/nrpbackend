@@ -35,10 +35,7 @@ import rospy
 import numpy
 import time
 import sys
-
 from std_srvs.srv import Empty
-from cle_ros_msgs.srv import SetBrainRequest
-
 import textwrap
 import re
 
@@ -56,10 +53,10 @@ from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 from . import SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
-    SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_ACTIVATE_TRANSFER_FUNCTION, \
-    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
-    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE, \
+    SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_SET_POPULATIONS,\
+    SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_CLEAN_CSV_RECORDERS_FILES,\
+    SERVICE_ACTIVATE_TRANSFER_FUNCTION, SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE,\
     SERVICE_PREPARE_CUSTOM_MODEL
 from . import ros_handler
 import hbp_nrp_cleserver.bibi_config.StructuredTransferFunction as StructuredTransferFunction
@@ -131,6 +128,7 @@ class ROSCLEServer(SimulationServer):
         self.__service_delete_transfer_function = None
         self.__service_get_brain = None
         self.__service_set_brain = None
+        self.__service_set_populations = None
         self.__service_get_populations = None
         self.__service_get_CSV_recorders_files = None
         self.__service_clean_CSV_recorders_files = None
@@ -202,7 +200,7 @@ class ROSCLEServer(SimulationServer):
         """
         self.__cle = value
 
-    def setup_handlers(self, assembly):
+    def setup_handlers(self, assembly): # pragma: no cover
         """
         Sets up different call handlers for the current assembly.
 
@@ -277,6 +275,11 @@ class ROSCLEServer(SimulationServer):
         self.__service_get_populations = rospy.Service(
             SERVICE_GET_POPULATIONS(self.simulation_id), srv.GetPopulations,
             self.__get_populations
+        )
+
+        self.__service_set_populations = rospy.Service(
+            SERVICE_SET_POPULATIONS(self.simulation_id), srv.SetPopulations,
+            self.__try_set_populations
         )
 
         self.__service_get_CSV_recorders_files = rospy.Service(
@@ -376,7 +379,8 @@ class ROSCLEServer(SimulationServer):
             data_type = "text"
             brain_code = tf_framework.get_brain_source()
 
-        return [braintype, brain_code, data_type, json.dumps(tf_framework.get_brain_populations())]
+        return [braintype, brain_code, data_type,
+                json.dumps(tf_framework.get_brain_populations())]
 
     @staticmethod
     def change_transfer_function_for_population(change_population_mode, old_population_name,
@@ -384,7 +388,8 @@ class ROSCLEServer(SimulationServer):
         """
         Modifies a single population name. Returns a value if needs user input.
 
-        :param change_population_mode: The change population mode (as defined in SetBrainRequest)
+        :param change_population_mode: The change population mode
+                                      (as defined in SetPopulationsRequest)
         :param old_population_name: The old name of the population
         :param new_population_name: The new name of the population
         :param transfer_functions: The transfer functions to which the population change should be
@@ -392,7 +397,7 @@ class ROSCLEServer(SimulationServer):
         """
         for tf in transfer_functions:
 
-            tfHasChanged = False
+            tf_has_changed = False
 
             for i in range(1, len(tf.params)):
                 if hasattr(tf.params[i], 'spec'):
@@ -410,16 +415,16 @@ class ROSCLEServer(SimulationServer):
                                 node = mapping.parent
                             if node is not None:
                                 if change_population_mode == \
-                                        srv.SetBrainRequest.ASK_RENAME_POPULATION:
+                                        srv.SetPopulationsRequest.ASK_RENAME_POPULATION:
                                     # here we send a reply to the frontend to ask
                                     # the user a permission to change TFs
                                     return ["we ask the user if we change TFs", 0, 0, 1]
                                 elif change_population_mode == \
-                                        srv.SetBrainRequest.DO_RENAME_POPULATION:
+                                        srv.SetPopulationsRequest.DO_RENAME_POPULATION:
                                     # permission granted, so we change TFs
                                     node.name = new_population_name
-                                    tfHasChanged = True
-            if tfHasChanged:
+                                    tf_has_changed = True
+            if tf_has_changed:
                 source = tf.source
                 pattern = re.compile(r'(?:(?<=\W)|^)(' + old_population_name + r')(?:(?=\W)|$)')
                 modified_source = pattern.sub(new_population_name, source)
@@ -431,7 +436,7 @@ class ROSCLEServer(SimulationServer):
         """
         Modifies population names. Returns a value if needs user input.
 
-        :param change_population: The change population mode (as defined in SetBrainRequest)
+        :param change_population: The change population mode (as defined in SetPopulationsRequest)
         :param old_changed: A list of old population names
         :param new_added: A list of new population names
         :param transfer_functions: The transfer functions to which the changes should be applied
@@ -445,7 +450,7 @@ class ROSCLEServer(SimulationServer):
             if r is not None:
                 return r
 
-    def __try_set_brain(self, request):
+    def __try_set_populations(self, request):
         """
         Tries set the neuronal network according to the given request. If it fails, it restores
         the previous neuronal network.
@@ -455,108 +460,154 @@ class ROSCLEServer(SimulationServer):
         running = self.__cle.running
         if running:
             self.__cle.stop()
-        previous_valid_brain = self.__get_brain(None)
-        return_value = self.__set_brain(request.brain_populations, request.brain_type,
-                                        request.brain_data, request.data_type,
-                                        request.change_population)
 
-        if return_value[0] != "":
+        return_value = self.__set_populations(request.brain_populations,
+                                              request.data_type,
+                                              request.change_population)
+
+        if not return_value:
             # failed to set new brain, we re set previous valid brain
-            self.__set_brain(previous_valid_brain[3], previous_valid_brain[0],
-                             previous_valid_brain[1], previous_valid_brain[2],
-                             SetBrainRequest.ASK_RENAME_POPULATION)
+            _, _, prev_data_type, prev_brain_pops_json = \
+                self.__get_brain(None)
+            self.__set_populations(prev_brain_pops_json, prev_data_type, request.change_population)
         else:
-            self._notificator.publish_state(json.dumps({"action": "setbrain"}))
+            self._notificator.publish_state(json.dumps({"action": "updatePopulations"}))
 
         if running:
             self.__cle.start()
 
         return return_value
 
-    def __set_brain(self, brain_populations, brain_type, brain_data, data_type, change_population):
+    def __set_populations(self, brain_populations, data_type, change_population):
+        # pragma: no cover
         """
-        Sets the neuronal network according to the given parameters
+        Sets the populations into the brain
 
-        :param brain_populations: A dictionary indexed by population names and containing neuron
-                                  indices. Neuron indices could be defined by individual integers,
-                                  lists of integers or python slices. Python slices are defined by a
-                                  dictionary containing the 'from', 'to' and 'step' values.
-        :param brain_type: Type of the brain file ('h5' or 'py')
-        :param brain_data: Contents of the brain file. Encoding given in field data_type
+        :param brain_populations: A JSON formatted dictionary indexed by population names and
+                                  containing neuron indices. Neuron indices could be defined by
+                                  individual integers, lists of integers.
         :param data_type: Type of the brain_data field ('text' or 'base64')
         :param change_population: a flag to select an action on population name change, currently
-                                  possible values are: 0 ask user for permission to replace;
+                                  possible values are:
+                                  0 ask user for permission to replace;
                                   1 (permission granted) replace old name with a new one;
                                   2 proceed with no replace action
         """
+        return_value = ''
         try:
-            return_value = ["", 0, 0, 0]
+            self.__cle.load_populations(**json.loads(brain_populations))
+            if change_population:
+                self.__rename_populations(data_type, brain_populations, change_population)
+        except AttributeError as e:
+            logger.exception(e)
+            return_value = e.message
+        except Exception, e:
+            logger.exception(e)
+            return_value = e.message
 
-            err = self.__check_set_brain(data_type, brain_populations, change_population)
-            if err is not None:
-                return err
+        return return_value
 
+    def __rename_populations(self, data_type, brain_populations, change_population):
+        # pragma: no cover
+        """
+        Checks whether the given brain change request load_brain_and_populations( is valid
+        :param data_type: The data type
+        :param brain_populations: The brain populations
+        :param change_population: A flag indicating whether populations should be changed
+        :return: Success in case everything is alright, otherwise an error message tuple
+        """
+        if data_type != "text" and data_type != "base64":
+            return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
+
+        new_populations = [str(item)
+                           for item in json.loads(brain_populations).keys()]
+        old_populations = [
+            str(item) for item in tf_framework.get_brain_populations().keys()]
+        old_changed = find_changed_strings(old_populations, new_populations)
+        new_added = find_changed_strings(new_populations, old_populations)
+        if len(new_added) == len(old_changed) >= 1:
+            transfer_functions = tf_framework.get_transfer_functions(
+                flawed=False)
+            check_var_name_re = re.compile(r'^([a-zA-Z_]+\w*)$')
+            for item in new_added:
+                if not check_var_name_re.match(item):
+                    return "Provided name \"" + item + "\" is not a valid population name"
+
+            return self.change_transfer_functions(change_population,
+                                                  old_changed,
+                                                  new_added,
+                                                  transfer_functions)
+        elif old_changed and len(new_added) > len(old_changed):
+            return "Renamed populations must be applied separately. \
+                     Please apply the renaming before proceeding with other changes."
+
+        return 'Success'
+
+    def __try_set_brain(self, request):
+        """
+        Tries set the neuronal network according to the given request. If it fails, it restores
+        the previous neuronal network.
+
+        :param request: The mandatory rospy request parameter
+        """
+
+        running = self.__cle.running
+        if running:
+            self.__cle.stop()
+
+        return_value = self.__set_brain(request.brain_type,
+                                        request.data_type,
+                                        request.brain_data)
+
+        prev_braintype, prev_brain_code, prev_data_type, _ = self.__get_brain(None)
+
+        if return_value[0] != "":
+            # failed to set new brain, we re set previous valid brain
+            self.__set_brain(prev_braintype, prev_data_type, prev_brain_code)
+        else:
+            self._notificator.publish_state(json.dumps({"action": "setbrain"}))
+
+        if running:
+            self.__cle.start()
+        return return_value
+
+    def __set_brain(self, brain_type, data_type, brain_data):  # pragma: no cover
+        """
+        Sets the neuronal network according to the given parameters
+
+        :param brain_type: Type of the brain file ('h5' or 'py')
+        :param brain_data: Contents of the brain file. Encoding given in field data_type
+        :param data_type: Type of the brain_data field ('text' or 'base64')
+        """
+        try:
+            return_value = ["", 0, 0]
             with NamedTemporaryFile(prefix='brain', suffix='.' + brain_type, delete=False) as tmp:
                 with tmp.file as brain_file:
                     if data_type == "text":
                         brain_file.write(brain_data)
                     else:
                         brain_file.write(base64.decodestring(brain_data))
-                self.__cle.load_network_from_file(tmp.name, **json.loads(brain_populations))
+                self.__cle.load_brain(tmp.name)
+
         except ValueError, e:
             logger.exception(e)
-            return_value = ["Population format is invalid: " + str(e), 0, 0, 0]
+            return_value = ["Population format is invalid: " + str(e), 0, 0]
         except SyntaxError, e:
             logger.exception(e)
-            return_value = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset, 0]
+            return_value = ["The new brain could not be parsed: " + str(e), e.lineno, e.offset]
         except AttributeError as e:
             logger.exception(e)
             line_no = extract_line_number(sys.exc_info()[2], tmp.name)
-            return_value = ["The new brain has an error: " + e.message, line_no, 0, 0]
+            return_value = ["The new brain has an error: " + e.message, line_no, 0]
         except BrainParameterException as e:
             logger.exception(e)
-            return_value = [e.message, -1, -1, 0]
+            return_value = [e.message, -1, -1]
         except Exception, e:
             logger.exception(e)
             line_no = extract_line_number(sys.exc_info()[2], tmp.name)
-            return_value = ["Error changing neuronal network: " + str(e), line_no, 0, 0]
+            return_value = ["Error changing neuronal network: " + str(e), line_no, 0]
 
         return return_value
-
-    def __check_set_brain(self, data_type, brain_populations, change_population):
-        """
-        Checks whether the given brain change request is valid
-        :param data_type: The data type
-        :param brain_populations: The brain populations
-        :param change_population: A flag indicating whether populations should be changed
-        :return: None in case everything is alright, otherwise an error tuple
-        """
-        if data_type != "text" and data_type != "base64":
-            return ["Data type {0} is invalid".format(data_type), 0, 0, 0]
-
-        new_pop_tmp = json.loads(brain_populations)
-        new_populations = [str(item) for item in new_pop_tmp.keys()] \
-            if new_pop_tmp is not None else []
-        old_pop_tmp = tf_framework.get_brain_populations()
-        old_populations = [str(item) for item in old_pop_tmp.keys()] \
-            if old_pop_tmp is not None else []
-
-        old_changed = find_changed_strings(old_populations, new_populations)
-        new_added = find_changed_strings(new_populations, old_populations)
-
-        if len(new_added) == len(old_changed) >= 1:
-            transfer_functions = tf_framework.get_transfer_functions(flawed=False)
-            check_var_name_re = re.compile(r'^([a-zA-Z_]+\w*)$')
-            for item in new_added:
-                if not check_var_name_re.match(item):
-                    return ["Provided name \"" + item + "\" is not a valid population name",
-                            0, 0, 0]
-            return self.change_transfer_functions(change_population, old_changed, new_added,
-                                                  transfer_functions)
-        elif old_changed and len(new_added) > len(old_changed):
-            return ["Renamed populations must be applied separately. Please apply the renaming " +
-                    "before proceeding with other changes.", -2, -2, 0]
-        return None
 
     # pylint: disable=unused-argument
     def __get_transfer_function_sources_and_activation(self, request, send_errors=True):
@@ -583,7 +634,7 @@ class ROSCLEServer(SimulationServer):
         return numpy.array(tf_arr), numpy.array(arr_active_mask)
 
     @staticmethod
-    def __get_transfer_function_activation(tf_name):
+    def __get_transfer_function_activation(tf_name):  # pragma: no cover
         """
         Return the activation status of the transfer function
         :param tf_name: string holding the name of a transfer function
@@ -594,7 +645,8 @@ class ROSCLEServer(SimulationServer):
             if tf.name == tf_name:
                 return tf.active
 
-        raise ValueError("__get_transfer_function_activation: TF {} not found".format(tf_name))
+        raise ValueError(
+            "__get_transfer_function_activation: TF {} not found".format(tf_name))
 
     def _publish_error_from_exception(self, exception, tf_name):
         """
@@ -734,12 +786,12 @@ class ROSCLEServer(SimulationServer):
 
         :param request: The mandatory rospy request parameter
         :param new: A boolean indicating whether a transfer function is being added or modified.
-        :return: empty string for a successful compilation in restricted mode
-                 (executed synchronously), an error message otherwise.
+        :return: empty string for a successful compilation
+                 in restricted mode (executed synchronously), an error message otherwise.
         """
         new_source = textwrap.dedent(request.transfer_function_source)
-        logger.info("About to compile transfer function with the following python code: \n"
-                    + repr(new_source))
+        logger.info("About to compile transfer function with the following python code: \n" +
+                    repr(new_source))
 
         # Make sure the TF has exactly one function definition
         get_tf_name_outcome, get_tf_name_outcome_value = self.get_tf_name(new_source)
@@ -920,6 +972,8 @@ class ROSCLEServer(SimulationServer):
             logger.info("Shutting down set_brain service")
             self.__service_set_brain.shutdown()
             logger.info("Shutting down get_populations service")
+            self.__service_set_populations.shutdown()
+            logger.info("Shutting down get_populations service")
             self.__service_get_populations.shutdown()
             logger.info("Shutting down get_CSV_recorders_files service")
             self.__service_get_CSV_recorders_files.shutdown()
@@ -942,7 +996,6 @@ class ROSCLEServer(SimulationServer):
 
         :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
         """
-
         with self._notificator.task_notifier("Resetting Environment", "Emptying 3D world"):
             if request.world_sdf is not None and request.world_sdf is not "":
                 sdf_world_string = request.world_sdf
@@ -956,7 +1009,6 @@ class ROSCLEServer(SimulationServer):
 
         :param request: the ROS service request message (cle_ros_msgs.srv.ResetSimulation).
         """
-
         if request.brain_path is not None and request.brain_path is not "":
             brain_temp_path = request.brain_path
             neurons_conf = request.populations
@@ -1111,7 +1163,7 @@ class ROSCLEServer(SimulationServer):
         Deletes a robot from the simulation
 
         :param request: rospy parameters sent from ROSCLEClient defined at
-                        DeleteRobot.srv in gazeborospackage
+                        DeleteRobot.srv in GazeboROSPackages
         :return: Successfully added. (success, error_message) = (True, None)
             or (False, error_message)
         """
@@ -1135,7 +1187,7 @@ class ROSCLEServer(SimulationServer):
         """
 
         :param request: rospy parameters sent from ROSCLEClient defined at
-            ChangePose.srv in gazeborospackage
+            ChangePose.srv in GazeboROSPackages
         :return: Successfully added. (success, error_message) = (True, None)
             or (False, error_message)
         """
@@ -1152,7 +1204,7 @@ class ROSCLEServer(SimulationServer):
         """
 
         :param request: rospy parameters sent from ROSCLEClient defined at
-            ChangePose.srv in gazeborospackage
+            ChangePose.srv in GazeboRosPackages
         :return: Successfully added. (success, error_message) = (True, None)
             or (False, error_message)
         """
@@ -1161,7 +1213,7 @@ class ROSCLEServer(SimulationServer):
                 ret, status = self._robotHandler.prepare_custom_robot(request.resource_path)
             # pylint: disable=broad-except
             except Exception as e:
-                logger.error("An error occured while preparing custom model" + str(e))
+                logger.error("An error occurred while preparing custom model" + str(e))
         else:
             raise NotImplementedError("Not implemented")
 

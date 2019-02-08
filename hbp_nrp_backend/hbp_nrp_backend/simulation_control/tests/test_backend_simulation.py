@@ -149,6 +149,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
     def test_backend_initialize_noclecommunication(self):
         self.rospy_mock.ROSException = rospy.ROSException
         self.factory_mock.side_effect = rospy.ROSException
+
         self.assertRaises(NRPServicesGeneralException,
                           self.lifecycle.initialize, Mock())
 

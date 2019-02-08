@@ -27,24 +27,21 @@ ROSCLEClient unit test
 
 import rospy
 from hbp_nrp_backend.cle_interface import ROSCLEClient, \
-    SERVICE_SIM_START_ID, SERVICE_SIM_PAUSE_ID, \
-    SERVICE_SIM_STOP_ID, SERVICE_SIM_RESET_ID, SERVICE_SIM_STATE_ID, \
-    SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
-    SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
-    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, \
-    SERVICE_CLEAN_CSV_RECORDERS_FILES, SERVICE_SIMULATION_RECORDER, \
-    SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
+    SERVICE_SIM_RESET_ID, SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION,\
+    SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN,\
+    SERVICE_GET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES,\
+    SERVICE_SIMULATION_RECORDER, SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED
 from cle_ros_msgs.srv import ResetSimulationRequest, \
     SimulationRecorderRequest
 from std_srvs.srv import Empty
 from cle_ros_msgs.srv import GetTransferFunctions, EditTransferFunction, \
-    AddTransferFunction, DeleteTransferFunction, ActivateTransferFunction, GetBrain, SetBrain
+    AddTransferFunction, DeleteTransferFunction, ActivateTransferFunction, GetBrain, SetBrain, \
+    SetPopulations
 from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from mock import patch, MagicMock, Mock, call
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 import unittest
 
-from cle_ros_msgs import srv
 
 __author__ = 'Lorenzo Vannucci, Daniel peppicelli, Georg Hinkel'
 
@@ -215,17 +212,29 @@ class TestROSCLEClient(unittest.TestCase):
 
         client = ROSCLEClient.ROSCLEClient(0)
 
-        change_population = srv.SetBrainRequest.DO_RENAME_POPULATION
-
         client._ROSCLEClient__cle_set_brain = MagicMock(return_value=resp)
         self.assertEquals(client.set_simulation_brain(
-            'data', 'py', 'text', '{"population_1": 2}', change_population), resp)
+            'py', 'text', 'data'), resp)
         client._ROSCLEClient__cle_set_brain.assert_called_once_with(
-            'data', 'py', 'text', '{"population_1": 2}', change_population)
+            'py', 'text', 'data')
 
         client.stop_communication("Test stop")
         with self.assertRaises(ROSCLEClientException):
-            client.set_simulation_brain('data', 'py', 'text', '{"population_1": 2}', change_population)
+            client.set_simulation_brain('py', 'text', 'data')
+
+    @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
+    def test_set_populations(self, service_proxy_mock):
+        msg = SetPopulations()
+        resp = msg._response_class(message='error message')
+
+        client = ROSCLEClient.ROSCLEClient(0)
+        client._ROSCLEClient__cle_set_populations = MagicMock(return_value=resp)
+
+        # client.stop_communication("Test stop")
+        client.set_simulation_populations('py', 'brain_population', 'data', 'change_population')
+
+        client._ROSCLEClient__cle_set_populations.assert_called_once_with(
+            'py', 'brain_population', 'data', 'change_population')
 
     @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
     def test_get_populations(self, service_proxy_mock):
@@ -314,6 +323,7 @@ class TestROSCLEClient(unittest.TestCase):
         client.stop_communication("Test stop")
         with self.assertRaises(ROSCLEClientException):
             client.command_simulation_recorder(0)
+
 
 if __name__ == '__main__':
     unittest.main()

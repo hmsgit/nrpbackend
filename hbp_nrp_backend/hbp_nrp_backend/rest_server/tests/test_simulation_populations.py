@@ -32,12 +32,42 @@ import mock
 import rospy
 import json
 from hbp_nrp_backend.rest_server.tests import RestTest
+from collections import defaultdict
 
 ros_service_object = mock.Mock()
 rospy.wait_for_service = mock.Mock(return_value=ros_service_object)
 rospy.ServiceProxy = mock.Mock(return_value=ros_service_object)
 
 from hbp_nrp_backend.simulation_control import simulations, Simulation
+
+class DefaultDotDict(defaultdict):
+    """
+    Creates a Dictionary that can be accessed via dot-Syntax
+    e.g. data['more_data'] -> data.more_data
+    Overkill but i like it to create my mock return value :)
+
+    Credits go to Zaar Hai
+    http://tech.zarmory.com/2013/08/python-putting-dot-in-dict.html
+    """
+    def __init__(self, *args, **kwargs):
+        super(DefaultDotDict, self).__init__(DefaultDotDict)
+        if args or kwargs:
+            dict.__init__(self, *args, **kwargs)
+
+    def __getattr__(self, attr):
+        if attr.startswith('_'):
+            raise AttributeError  # Magic only works for key that do not start with "_"
+        val = self.__getitem__(attr)
+        if isinstance(val, dict) and not isinstance(val, DefaultDotDict):
+            val = DefaultDotDict(val)
+        self[attr] = val
+        return val
+
+    def __setattr__(self, attr, val):
+        return self.__setitem__(attr, val)
+
+    def __delattr__(self, attr):
+        return self.__delitem__(attr)
 
 neurons = {'populations': [
               {
@@ -50,6 +80,14 @@ neurons = {'populations': [
               }
             ]
            }
+send_pops_data = {
+    'brain_type': 'py',
+    'brain_populations': 'populations',
+    'data_type': 'text',
+    'change_population': 'change'
+}
+set_ret_ok = DefaultDotDict(message="")
+set_ret_error = DefaultDotDict(message="Crash boom bang")
 
 class TestSimulationService(RestTest):
 
@@ -57,6 +95,7 @@ class TestSimulationService(RestTest):
         del simulations[:]
         simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
         simulations[0].cle = mock.MagicMock()
+        simulations[0].cle.set_simulation_populations = mock.MagicMock(return_value=set_ret_ok)
         simulations[0].cle.get_populations = mock.MagicMock(return_value=neurons)
 
     def test_get_neurons_sim_ok(self):
@@ -69,6 +108,22 @@ class TestSimulationService(RestTest):
     def test_get_neurons_sim_not_found(self):
         response = self.client.get('/simulation/1/populations')
         self.assertEqual(404, response.status_code)
+
+    def test_simulation_brain_put(self):
+        response = self.client.put('/simulation/0/populations', data=json.dumps(send_pops_data))
+        self.assertEqual(simulations[0].cle.set_simulation_populations.call_count, 1)
+
+        simulations[0].cle.set_simulation_populations.assert_called_with(
+            brain_type='py',
+            brain_populations= '"populations"',
+            data_type='text',
+            change_population='change')
+
+        self.assertEqual(response.status_code, 200)
+
+        simulations[0].cle.set_simulation_populations = mock.MagicMock(return_value=set_ret_error)
+        response = self.client.put('/simulation/0/populations', data=json.dumps(send_pops_data))
+        self.assertEqual(response.status_code, 400)
 
 if __name__ == '__main__':
     unittest.main()

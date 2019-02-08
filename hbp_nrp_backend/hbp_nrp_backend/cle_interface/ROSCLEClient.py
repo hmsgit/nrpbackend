@@ -29,13 +29,13 @@ import logging
 import rospy
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages repository.
-from cle_ros_msgs import srv
-from cle_ros_msgs import msg
+from cle_ros_msgs import srv, msg
 from hbp_nrp_backend.cle_interface import SERVICE_SIM_RESET_ID, \
     SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ACTIVATE_TRANSFER_FUNCTION, SERVICE_ADD_TRANSFER_FUNCTION, \
     SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_SET_BRAIN, SERVICE_GET_BRAIN, \
-    SERVICE_GET_POPULATIONS, SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
+    SERVICE_GET_POPULATIONS, SERVICE_SET_POPULATIONS, \
+    SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_SIM_EXTEND_TIMEOUT_ID, \
     SERVICE_SIMULATION_RECORDER, \
     SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
     SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE, \
@@ -190,6 +190,8 @@ class ROSCLEClient(object):
         self.__cle_set_brain = ROSCLEServiceWrapper(SERVICE_SET_BRAIN(sim_id), srv.SetBrain, self)
         self.__cle_get_populations = ROSCLEServiceWrapper(SERVICE_GET_POPULATIONS(sim_id),
                                                           srv.GetPopulations, self)
+        self.__cle_set_populations = ROSCLEServiceWrapper(SERVICE_SET_POPULATIONS(sim_id),
+                                                          srv.SetPopulations, self)
         self.__cle_get_CSV_recorders_files = ROSCLEServiceWrapper(
             SERVICE_GET_CSV_RECORDERS_FILES(sim_id), srv.GetCSVRecordersFiles, self)
 
@@ -268,34 +270,45 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_get_brain()
 
-    ReplaceBehaviorEnum = hbp_nrp_commons.enum('ASK_USER', 'REPLACE', 'NO_REPLACE')
-
-    def set_simulation_brain(self,
-                             brain_type='py', data=None, data_type='text',
-                             brain_populations=None,
-                             change_population=ReplaceBehaviorEnum.REPLACE):
+    def set_simulation_brain(self, brain_type='py', data_type='text', data=None):
         """
         Set the brain of the running simulation (will pause the simulation)
 
         :param brain_type: Type of the brain file ('h5' or 'py')
         :param data: Contents of the brain file. Encoding given in field data_type
         :param data_type: Type of the data field ('text' or 'base64')
-        :param brain_populations: A dictionary indexed by population names and containing neuron
-                                  indices. Neuron indices could be defined by individual integers,
-                                  lists of integers or python slices. Python slices are defined by a
-                                  dictionary containing the 'from', 'to' and 'step' values.
+        :return: response of the cle
+        """
+        if self.__stop_reason is not None:
+            raise ROSCLEClientException(self.__stop_reason)
+        return self.__cle_set_brain(brain_type, data_type, data)
+
+    ReplaceBehaviorEnum = hbp_nrp_commons.enum('ASK_USER', 'REPLACE', 'NO_REPLACE')
+
+    def set_simulation_populations(self, brain_type, brain_populations,
+                                   data_type='text',
+                                   change_population=ReplaceBehaviorEnum.REPLACE):
+        """
+        Set the populations of the running simulation
+
+        :param brain_type: Type of the brain file ('h5' or 'py')
+        :param brain_populations: Contents of the brain file. Encoding given in field data_type
+        :param data_type: Type of the data field ('text' or 'base64')
         :param change_population: a flag to select an action on population name change, currently
                                   possible values are:
-                                  - ReplaceBehaviorEnum.ASK_USER ask user for permission to replace;
-                                  - ReplaceBehaviorEnum.REPLACE replace old name with a new one;
-                                  - ReplaceBehaviorEnum.NO_REPLACE proceed with no replace action
+                                  0 = ReplaceBehaviorEnum.ASK_USER ask permission to replace
+                                  1 = ReplaceBehaviorEnum.REPLACE replace old name with a new one
+                                  2 = ReplaceBehaviorEnum.NO_REPLACE proceed with no replace action
 
         :return: response of the cle
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_set_brain(brain_type, data, data_type, brain_populations,
-                                    change_population)
+
+        return self.__cle_set_populations(brain_type,
+                                          brain_populations,
+                                          data_type,
+                                          change_population)
 
     @fallback_retval(([], []))
     def get_simulation_transfer_functions(self):
@@ -351,7 +364,7 @@ class ROSCLEClient(object):
         return self.__cle_add_transfer_function(transfer_function_source).error_message
 
     def activate_simulation_transfer_function(self, transfer_function_name,
-                                              activate_transfer_function):
+                                              activate_transfer_function):  # pragma: no cover
         """
         Set the activation status of a transfer function
         :param transfer_function_name: the name of the tf to be set
