@@ -104,7 +104,7 @@ class SimulationFiles(Resource):    # pragma: no cover
         except ROSCLEClientException as e:
             raise NRPServicesGeneralException(str(e), 'CLE error', 500)
 
-        return {'res': 'success'}, 200 if ret else {'res': err}, 500
+        return ({'res': 'success'}, 200) if ret else ({'res': err}, 500)
 
     @staticmethod
     def __download_file(sim, resource_type, resource_path):
