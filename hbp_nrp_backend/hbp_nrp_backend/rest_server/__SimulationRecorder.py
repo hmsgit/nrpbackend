@@ -186,8 +186,8 @@ class SimulationRecorder(Resource):
         # pure local command to save file to storage
         if command == 'save':
             try:
-                self.save_record_to_user_storage(sim)
-                return 'success', 200
+                file_name = self.save_record_to_user_storage(sim)
+                return {'filename': file_name}, 200
 
             except Exception as e:
                 raise NRPServicesClientErrorException('Cannot copy record to client storage',
@@ -254,3 +254,5 @@ class SimulationRecorder(Resource):
                     "application/octet-stream")
         finally:
             os.remove(temp_dest)
+
+        return file_name

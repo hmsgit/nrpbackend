@@ -86,7 +86,10 @@ class TestSimulationRecorder(RestTest):
                 for command in ['start', 'stop', 'cancel', 'reset', 'save']:
                     response = self.client.post('/simulation/0/recorder/%s' % command)
                     self.assertEqual(200, response.status_code)
-                    self.assertEqual('"success"', response.data.strip())
+                    if command=='save':                        
+                        self.assertEqual('{"filename', response.data.strip()[0:10])
+                    else:
+                        self.assertEqual('"success"', response.data.strip())
 
         # call returns an error message
         simulations[0].cle.command_simulation_recorder.return_value.value = False
