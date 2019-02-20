@@ -63,7 +63,6 @@ class SimulationRobots(Resource):
         responseMessages=[
             {"code": 500, "message": ErrorMessages.SERVER_ERROR_500},
             {"code": 404, "message": ErrorMessages.SIMULATION_NOT_FOUND_404},
-            {"code": 401, "message": ErrorMessages.SIMULATION_PERMISSION_401},
             {"code": 400, "message": "Invalid request, the JSON parameters are incorrect."},
             {"code": 200, "message": "Success."},
         ]
@@ -74,9 +73,6 @@ class SimulationRobots(Resource):
         """
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
-
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
-            raise NRPServicesWrongUserException()
 
         try:
             robots = SimulationRobots.__get_simulation_robots(sim)
