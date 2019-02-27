@@ -47,9 +47,6 @@ tz = pytz.timezone("Europe/Zurich")
 __author__ = 'Georg Hinkel, Bernd Eckstein'
 
 
-@patch("hbp_nrp_cleserver.server.ROSCLESimulationFactory.get_experiment_basepath",
-    new=Mock(return_value=PATH)
-)
 class TestROSCLESimulationFactory(unittest.TestCase):
 
     LOGGER_NAME = 'hbp_nrp_cleserver'
@@ -168,7 +165,7 @@ class TestROSCLESimulationFactory(unittest.TestCase):
                 self.mocked_service_request
             )
 
-        self.assertEqual(mocked_logger.info.call_count, 9)
+        self.assertEqual(mocked_logger.info.call_count, 5)
         self.assertEqual(mocked_logger.error.call_count, 0)
 
         self.assertEqual(self.__mocked_threading.Thread.call_count, 1)

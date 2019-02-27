@@ -96,24 +96,6 @@ def correct_indentation(text, first_line_indent_level, indent_string=FOUR_SPACES
     return "\n".join(result)
 
 
-def import_referenced_python_tfs(bibi_conf_inst, experiments_path):
-    """
-    Parses the BIBI configuration, resolves references to external python transfer functions and
-    embeds them into the BIBI configuration instance
-
-    :param bibi_conf_inst: A completely parsed 'bibi_api_gen.BIBIconfiguration' instance
-    """
-
-    for tf in bibi_conf_inst.transferFunction:
-        if hasattr(tf, "src") and tf.src:
-            # If the "src" tag is specified, no embedded code is allowed. To make sure
-            # clean content beforehand
-            assert isinstance(tf, bibi_api_gen.PythonTransferFunction)
-            del tf.orderedContent()[:]
-            with open(os.path.join(experiments_path, tf.src)) as f:
-                tf.append(f.read())
-
-
 def get_tf_name(tf_code):
     """
     Returns the function name of transfer function code
@@ -126,14 +108,22 @@ def get_tf_name(tf_code):
     return ret[0] if ret else None
 
 
-def generate_tf(tf):
+def generate_tf(tf, external_tf_path=None):
     """
     Generates the code for the given transfer function
 
     :param tf: The transfer function to generate code for
+    :param external_tf_path: Base folder where external python TFs are stored
     :return: A unicode string with the generated code
     """
-    tf_source = '\n'.join(correct_indentation(cont.value, 1) for cont in tf.orderedContent())
-    tf.name = get_tf_name(tf_source)
+    if hasattr(tf, "src") and tf.src:
+        # If the "src" tag is specified, ignore embedded code (if present)
+        assert isinstance(tf, bibi_api_gen.PythonTransferFunction)
+        assert external_tf_path is not None
+        del tf.orderedContent()[:]
+        with open(os.path.join(external_tf_path, tf.src)) as f:
+            tf_source = correct_indentation(f.read(), 0)
+    else:
+        tf_source = '\n'.join(correct_indentation(cont.value, 0) for cont in tf.orderedContent())
 
     return ''.join(l for l in tf_source.splitlines(True) if not l.isspace())

@@ -166,6 +166,7 @@ class SimulationService(Resource):
                          ctx_id=ctx_id,
                          token=token)
 
+        # TODO: remove me. I probably am not used anywhere
         sim.creationUniqueID = body.get('creationUniqueID', str(time.time() + random.random()))
 
         sim.state = "initialized"

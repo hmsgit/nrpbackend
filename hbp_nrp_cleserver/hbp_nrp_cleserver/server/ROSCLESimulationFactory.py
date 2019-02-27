@@ -42,19 +42,17 @@ from hbp_nrp_cleserver.server import ROS_CLE_NODE_NAME, SERVICE_CREATE_NEW_SIMUL
     SERVICE_VERSION, SERVICE_IS_SIMULATION_RUNNING
 from hbp_nrp_cleserver.server.PlaybackServer import PlaybackSimulationAssembly
 
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
-from pyxb import ValidationError, NamespaceError
 from hbp_nrp_cleserver.server import ServerConfigurations
 import gc
 from hbp_nrp_cleserver.server.__signal_patch import patch_signal
 from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
+from hbp_nrp_commons.sim_config.SimConfig import SimConfig, SimulationType
 
-__author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli"
-
-logger = logging.getLogger('hbp_nrp_cleserver')
+__author__ = "Lorenzo Vannucci, Stefan Deser, Daniel Peppicelli, Hossain Mahmud"
 
 # Warning: We do not use __name__  here, since it translates to __main__
 # when this file is run directly (such as python ROSCLESimulationFactory.py)
+logger = logging.getLogger('hbp_nrp_cleserver')
 
 
 class ROSCLESimulationFactory(object):
@@ -62,7 +60,6 @@ class ROSCLESimulationFactory(object):
     The purpose of this class is to start simulation thread and to
     provide a ROS service for that. Only one simulation can run at a time.
     """
-
     def __init__(self):
         """
         Create a CLE simulation factory.
@@ -125,8 +122,8 @@ class ROSCLESimulationFactory(object):
         :param request: The ROS Service message
         :return: True, if a simulation is running, otherwise False
         """
-        return self.running_simulation_thread is not None and \
-            self.running_simulation_thread.is_alive()
+        return (self.running_simulation_thread is not None and
+                self.running_simulation_thread.is_alive())
 
     # pylint: disable=too-many-locals, too-many-statements, too-many-branches
     def create_new_simulation(self, service_request):
@@ -142,116 +139,94 @@ class ROSCLESimulationFactory(object):
             logger.info("Waiting for previous simulation to terminate")
             self.simulation_terminate_event.wait()
 
-        if (self.running_simulation_thread is None) or \
-                (not self.running_simulation_thread.is_alive()):
-            logger.info("No simulation running, starting a new simulation.")
-
-            environment_file = service_request.environment_file
-            gzserver_host = service_request.gzserver_host
-            reservation = service_request.reservation
-            sim_id = service_request.sim_id
-            exc_config_file = service_request.exd_config_file
-            timeout_type = service_request.timeout_type
-            timeout = self.__get_timeout(service_request.timeout, timeout_type)
-            playback_path = service_request.playback_path
-            token = service_request.token
-            ctx_id = service_request.ctx_id
-            experiment_id = service_request.experiment_id
-
-            logger.info(
-                "Preparing new simulation with environment file: %s "
-                "and ExD config file: %s.",
-                environment_file, exc_config_file
-            )
-            logger.info("Starting the experiment closed loop engine.")
-
-            # Initializing the simulation
-            try:
-                logger.info("Read XML Files")
-                exd, bibi = get_experiment_data(exc_config_file)
-
-                # user override for number of brain processes
-                if exd.bibiConf.processes != service_request.brain_processes:
-                    logger.info("User overrode number of brain processes, launching with {0:d} "
-                                "brain processes instead of {1:d} specified in ExD conf!"
-                                .format(service_request.brain_processes, exd.bibiConf.processes))
-                    exd.bibiConf.processes = service_request.brain_processes
-
-                    # do not use MUSIC for overridden single-process simulations
-                    if bibi.mode == bibi_api_gen.SimulationMode.SynchronousMUSICNestSimulation and\
-                       exd.bibiConf.processes == 1:
-                        bibi.mode = bibi_api_gen.SimulationMode.SynchronousNestSimulation
-
-                # backwards compatibility, default to synchronous Nest simulation
-                if bibi.mode is None:
-                    bibi.mode = bibi_api_gen.SimulationMode.SynchronousNestSimulation
-
-                # simulation playback
-                if playback_path:
-                    assembly = PlaybackSimulationAssembly
-
-                # single brain process launch
-                elif exd.bibiConf.processes == 1:
-                    assembly = getattr(ServerConfigurations, bibi.mode)
-
-                # distributed, multi-process launch (inline imports to avoid circular dependencies)
-                else:
-
-                    # MUSIC-based Nest distributed simulation
-                    if bibi.mode == bibi_api_gen.SimulationMode.SynchronousMUSICNestSimulation:
-                        logger.info("Creating distributed MUSICLauncher object")
-                        from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
-                        assembly = MUSICLauncher
-
-                    # non-MUSIC based Nest distributed simulation
-                    elif bibi.mode == bibi_api_gen.SimulationMode.SynchronousNestSimulation:
-                        logger.info("Creating distributed NestLauncher object")
-                        from hbp_nrp_distributed_nest.launch.NestLauncher import NestLauncher
-                        assembly = NestLauncher
-
-                    # unsupported multi-process mode
-                    else:
-                        raise Exception("Unsupported multi-process simulation mode requested: "
-                                        "{0:s}".format(str(bibi.mode)))
-
-                # create and initialize the selected launcher
-                launcher = assembly(sim_id, exd, bibi,
-                                    gzserver_host=gzserver_host,
-                                    reservation=reservation,
-                                    timeout=timeout,
-                                    timeout_type=timeout_type,
-                                    playback_path=playback_path,
-                                    context_id=ctx_id,
-                                    token=token,
-                                    experiment_id=experiment_id)
-                try:
-                    launcher.initialize(environment_file, self.except_hook)
-                # pylint: disable=broad-except
-                except Exception:
-                    launcher.shutdown()
-                    raise
-
-            # pylint: disable=broad-except
-            except Exception:
-                logger.exception("Initialization failed")
-                print sys.exc_info()
-                raise
-
-            logger.info("Initialization done")
-
-            self.running_simulation_thread = threading.Thread(
-                target=self.__simulation,
-                args=(launcher, )
-            )
-            self.running_simulation_thread.daemon = True
-            logger.info(
-                "Spawning new thread that will manage the experiment execution.")
-            self.running_simulation_thread.start()
-        else:
-            error_message = "Trying to initialize a new simulation even though the " \
-                            "previous one has not been terminated."
+        if self.is_simulation_running(None):
+            error_message = "CLE server is already running an experiment. Cannot initialize another"
             logger.error(error_message)
             raise Exception(error_message)
+
+        exc_config_file = service_request.exd_config_file
+        logger.info("Preparing new simulation with {} config file".format(exc_config_file))
+
+        #environment_file = service_request.environment_file
+        gzserver_host = service_request.gzserver_host
+        reservation = service_request.reservation
+        sim_id = service_request.sim_id
+        timeout_type = service_request.timeout_type
+        timeout = self.__get_timeout(service_request.timeout, timeout_type)
+        playback_path = service_request.playback_path
+        token = service_request.token
+        ctx_id = service_request.ctx_id
+        experiment_id = service_request.experiment_id
+        brain_processes = service_request.brain_processes
+
+        sim_config = SimConfig(exc_config_file,
+                               sim_id=sim_id,
+                               gzserver_host=gzserver_host,
+                               reservation=reservation,
+                               timeout=timeout,
+                               timeout_type=timeout_type,
+                               playback_path=playback_path,
+                               context_id=ctx_id,
+                               token=token,
+                               experiment_id=experiment_id,
+                               brain_processes=brain_processes)
+
+        # simulation playback
+        if playback_path:
+            assembly = PlaybackSimulationAssembly
+
+        # single brain process launch
+        elif sim_config.num_brain_processes == 1:
+            if sim_config.simulation_type is SimulationType.NEST_SYNC:
+                assembly = ServerConfigurations.SynchronousNestSimulation
+            elif sim_config.simulation_type is SimulationType.SPINNAKER_SYNC:
+                assembly = ServerConfigurations.SynchronousSpinnakerSimulation
+            elif sim_config.simulation_type is SimulationType.NENGO_SYNC:
+                assembly = ServerConfigurations.SynchronousNengoSimulation
+            elif sim_config.simulation_type is SimulationType.ROBOT_ROS_SYNC:
+                assembly = ServerConfigurations.SynchronousRobotRosNest
+
+        # distributed, multi-process launch (inline imports to avoid circular dependencies)
+        else:
+            # MUSIC-based Nest distributed simulation
+            if sim_config.simulation_type is SimulationType.MUSIC_SYNC:
+                logger.info("Creating distributed MUSICLauncher object")
+                from hbp_nrp_music_interface.launch.MUSICLauncher import MUSICLauncher
+                assembly = MUSICLauncher
+
+            # non-MUSIC based Nest distributed simulation
+            elif sim_config.simulation_type is SimulationType.NEST_DIST:
+                logger.info("Creating distributed NestLauncher object")
+                from hbp_nrp_distributed_nest.launch.NestLauncher import NestLauncher
+                assembly = NestLauncher
+
+        # Initializing the simulation
+        try:
+            # create and initialize the selected launcher
+            launcher = assembly(sim_config)
+
+            try:
+                logger.info("Starting the experiment closed loop engine.")
+                launcher.initialize(self.except_hook)
+            # pylint: disable=broad-except
+            except Exception:
+                launcher.shutdown()
+                raise
+
+        # pylint: disable=broad-except
+        except Exception:
+            logger.exception("Initialization failed")
+            print sys.exc_info()
+            raise
+
+        logger.info("Initialization done")
+
+        self.running_simulation_thread = threading.Thread(target=self.__simulation,
+                                                          args=(launcher, ))
+        self.running_simulation_thread.daemon = True
+        logger.info("Spawning new thread that will manage the experiment execution.")
+        self.running_simulation_thread.start()
+
         return []
 
     @staticmethod
@@ -302,63 +277,6 @@ class ROSCLESimulationFactory(object):
                 gc.collect()  # NRRPLT-5374
 
 
-def get_experiment_basepath(experiment_file_path):
-    """
-    Get the name of the folder containing the experiment configuration path.
-
-    :param: experiment_file_path: path to the experiment configuration file
-    :return: path to the directory that contains the experiment configuration
-    """
-    return os.path.split(experiment_file_path)[0]
-
-
-def get_experiment_data(experiment_file_path):
-    """
-    Parse experiment and bibi and return the objects
-
-    @param experiment_file: experiment file
-    @return experiment, bibi, parsed experiment and bibi
-    """
-    with open(experiment_file_path) as exc_file:
-        try:
-            experiment = exp_conf_api_gen.CreateFromDocument(exc_file.read())
-            experiment.path = experiment_file_path
-        except ValidationError, ve:
-            raise Exception("Could not parse experiment configuration {0:s} due to validation "
-                            "error: {1:s}".format(experiment_file_path, str(ve)))
-
-    bibi_file = experiment.bibiConf.src
-    logger.info("Bibi: " + bibi_file)
-    experiment_dir = os.path.dirname(experiment_file_path)
-    bibi_file_abs = os.path.join(experiment_dir, bibi_file)
-    experiment.dir = experiment_dir
-    logger.info("BibiAbs:" + bibi_file_abs)
-    with open(bibi_file_abs) as b_file:
-        try:
-            bibi = bibi_api_gen.CreateFromDocument(b_file.read())
-            bibi.path = bibi_file_abs
-        except ValidationError, ve:
-            raise Exception("Could not parse brain configuration {0:s} due to validation "
-                            "error: {1:s}".format(bibi_file_abs, str(ve)))
-        except NamespaceError, ne:
-            # first check to see if the BIBI file appears to have a valid
-            # namespace
-            namespace = str(ne).split(" ", 1)[0]
-            if not namespace.startswith("http://schemas.humanbrainproject.eu/SP10") or \
-               not namespace.endswith("BIBI"):
-                raise Exception("Unknown brain configuration file format for: {0:s} with "
-                                "namespace: {1:s}".format(bibi_file_abs, namespace))
-
-            # notify the user that their file is out of date
-            raise Exception("The BIBI file for the requested experiment is out of date and no "
-                            "longer supported. Please contact neurorobotics@humanbrainproject.eu "
-                            "with the following information for assistance in updating this file."
-                            "\n\nExperiment Configuration:\n\tName: {0:s}\n\tBIBI: {1:s}"
-                            "\n\tVersion: {2:s}".format(experiment.name, bibi_file, namespace))
-
-    return experiment, bibi
-
-
 # pylint: disable=unused-argument
 def print_full_stack_trace(sig, frame):
     """
@@ -389,8 +307,7 @@ def __except_hook(ex_type, value, ex_traceback):
     :param value: The exception value
     :param ex_traceback: The traceback
     """
-    logger.critical(
-        "Unhandled exception of type {0}: {1}".format(ex_type, value))
+    logger.critical("Unhandled exception of type {0}: {1}".format(ex_type, value))
     logger.exception(ex_traceback)
 
 

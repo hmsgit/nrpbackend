@@ -30,9 +30,6 @@ import os
 import re
 import logging
 
-from hbp_nrp_commons.generated import exp_conf_api_gen as excXmlParser
-from hbp_nrp_commons.generated import bibi_api_gen as bibiXmlParser
-
 logger = logging.getLogger(__name__)
 
 
@@ -53,7 +50,7 @@ class ExcBibiHandler(object):   # pragma: no cover
         :param pose: A cle_ros_msgs.msgs.Pose object (defines an object's Euler pos and orientation)
         :return:
         """
-        with open(self._cle_assembly.exc.path, 'r') as excFile:
+        with open(self._cle_assembly.sim_config.exc_abs_path, 'r') as excFile:
             exc = excFile.read()
 
         # Get tag prefix if there's one in the tag, e.g., <ns1:ExD>
@@ -78,20 +75,14 @@ class ExcBibiHandler(object):   # pragma: no cover
         exc = re.sub(r'<\/([\w\d]*:*)environmentModel>', robotpose + r'</\g<1>environmentModel>',
                      exc, 1)
 
-        # Update DOM object, don't know any better way. Probably not been used anyway
-        path = self._cle_assembly.exc.path
-        self._cle_assembly.exc = excXmlParser.CreateFromDocument(exc)
-        self._cle_assembly.exc.path = path
-        self._cle_assembly.exc.dir = os.path.dirname(path)
-
         # Update sim dir copy of the exc
         self.rewrite_exc(exc)
 
         # update storage's copy
         self._cle_assembly.storage_client.create_or_update(
-            self._cle_assembly.token,
-            self._cle_assembly.experiment_id,
-            os.path.basename(self._cle_assembly.exc.path),
+            self._cle_assembly.sim_config.token,
+            self._cle_assembly.sim_config.experiment_id,
+            os.path.basename(self._cle_assembly.sim_config.exc_abs_path),
             self._prettify_xml(exc),
             "text/plain"
         )
@@ -103,7 +94,7 @@ class ExcBibiHandler(object):   # pragma: no cover
         :param robot_id: robotId attribute for the tag
         :return: Tuple (True, SDF relative path) or (False, error message) to update config files
         """
-        with open(self._cle_assembly.exc.path, 'r') as excFile:
+        with open(self._cle_assembly.sim_config.exc_abs_path, 'r') as excFile:
             exc = excFile.read()
 
         # trial and errored. try https://regexr.com/
@@ -117,20 +108,14 @@ class ExcBibiHandler(object):   # pragma: no cover
         logger.info("Removing robotPose tag for {0} from exc".format(robot_id))
         exc = re.sub(regex, '>', exc, 1)
 
-        # Update DOM object, don't know any better way. Probably not been used anyway
-        path = self._cle_assembly.exc.path
-        self._cle_assembly.exc = excXmlParser.CreateFromDocument(exc)
-        self._cle_assembly.exc.path = path
-        self._cle_assembly.exc.dir = os.path.dirname(path)
-
         # Update sim dir copy of the exc
         self.rewrite_exc(exc)
 
         # update storage's copy
         self._cle_assembly.storage_client.create_or_update(
-            self._cle_assembly.token,
-            self._cle_assembly.experiment_id,
-            os.path.basename(self._cle_assembly.exc.path),
+            self._cle_assembly.sim_config.token,
+            self._cle_assembly.sim_config.experiment_id,
+            os.path.basename(self._cle_assembly.sim_config.exc_abs_path),
             self._prettify_xml(exc),
             "text/plain"
         )
@@ -166,7 +151,7 @@ class ExcBibiHandler(object):   # pragma: no cover
         if is_custom and zip_path is None:
             raise Exception("Please provide the custom zip location")
 
-        with open(self._cle_assembly.bibi.path, 'r') as bibiFile:
+        with open(self._cle_assembly.sim_config.bibi_path.abs_path, 'r') as bibiFile:
             bibi = bibiFile.read()
 
         # Get tag prefix if there's one in the tag, e.g., <ns1:ExD>
@@ -198,20 +183,14 @@ class ExcBibiHandler(object):   # pragma: no cover
             else:
                 bibi = re.sub(r'<\/(.*)bibi>', bodymodel + r'</\g<1>bibi>', bibi, 1)
 
-        # Update DOM object, don't know any better way
-        path = self._cle_assembly.bibi.path
-        self._cle_assembly.bibi = bibiXmlParser.CreateFromDocument(bibi)
-        self._cle_assembly.bibi.path = path
-        self._cle_assembly.bibi.dir = os.path.dirname(path)
-
         # Update sim dir copy of the bibi
         self.rewrite_bibi(bibi)
 
         # update storage's copy
         self._cle_assembly.storage_client.create_or_update(
-            self._cle_assembly.token,
-            self._cle_assembly.experiment_id,
-            self._cle_assembly.exc.bibiConf.src,
+            self._cle_assembly.sim_config.token,
+            self._cle_assembly.sim_config.experiment_id,
+            self._cle_assembly.sim_config.bibi_path.rel_path,
             self._prettify_xml(bibi),
             "text/plain"
         )
@@ -223,7 +202,7 @@ class ExcBibiHandler(object):   # pragma: no cover
         :param robot_id: attribute robotId in the tag
         :return:
         """
-        with open(self._cle_assembly.bibi.path, 'r') as bibiFile:
+        with open(self._cle_assembly.sim_config.bibi_path.abs_path, 'r') as bibiFile:
             bibi = bibiFile.read()
 
         # trial and errored. try https://regexr.com/
@@ -239,20 +218,14 @@ class ExcBibiHandler(object):   # pragma: no cover
         logger.info("Removing bodyModel tag for {0} from bibi".format(robot_id))
         bibi = re.sub(regex, '>', bibi, 1)
 
-        # Update DOM object, don't know any better way
-        path = self._cle_assembly.bibi.path
-        self._cle_assembly.bibi = bibiXmlParser.CreateFromDocument(bibi)
-        self._cle_assembly.bibi.path = path
-        self._cle_assembly.bibi.dir = os.path.dirname(path)
-
         # Update sim dir copy of the bibi
         self.rewrite_bibi(bibi)
 
         # update storage's copy
         self._cle_assembly.storage_client.create_or_update(
-            self._cle_assembly.token,
-            self._cle_assembly.experiment_id,
-            self._cle_assembly.exc.bibiConf.src,
+            self._cle_assembly.sim_config.token,
+            self._cle_assembly.sim_config.experiment_id,
+            self._cle_assembly.sim_config.bibi_path.rel_path,
             self._prettify_xml(bibi),
             "text/plain"
         )
@@ -298,7 +271,7 @@ class ExcBibiHandler(object):   # pragma: no cover
         # pylint: disable=no-self-use
         return self._write_xml(
             plain_xml,
-            self._cle_assembly.exc.path
+            self._cle_assembly.sim_config.exc_abs_path
         )
 
     def rewrite_bibi(self, plain_xml):
@@ -311,5 +284,5 @@ class ExcBibiHandler(object):   # pragma: no cover
         # pylint: disable=no-self-use
         return self._write_xml(
             plain_xml,
-            self._cle_assembly.bibi.path
+            self._cle_assembly.sim_config.bibi_path.abs_path
         )

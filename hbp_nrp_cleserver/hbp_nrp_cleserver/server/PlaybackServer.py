@@ -213,37 +213,29 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
     This class is used to realize the assembly of a playback simulation
     """
 
-    def __init__(self, sim_id, exc, bibi, **par):
+    def __init__(self, sim_config):
         """
         Creates a new simulation assembly to simulate an experiment using the CLE and Gazebo
-        :param sim_id: The simulation id
-        :param exc: The experiment configuration
-        :param bibi: The BIBI configuration
+        :param sim_config: config of the simulation to be managed
         """
-        super(PlaybackSimulationAssembly, self).__init__(sim_id, exc, bibi)
-        self.__playback_path = par.get('playback_path', None)
+        super(PlaybackSimulationAssembly, self).__init__(sim_config)
         self.playback = None
 
-    def _initialize(self, environment, except_hook):
+    def _initialize(self, except_hook):
         """
         Internally initialize the simulation
-        :param environment: The environment that should be simulated
         :param except_hook: A method that should be called when there is a critical error
         """
 
         # create the CLE server and lifecycle first to report any failures
         # properly
         logger.info("Creating Playback Server")
-        self.playback = PlaybackServer(self.sim_id, self._timeout, self._timeout_type,
-                                       self.gzserver,
-                                       self.ros_notificator,
-                                       self.__playback_path)
+        self.playback = PlaybackServer(
+            self.sim_config.sim_id, self.sim_config.timeout, self.gzserver,
+            self.ros_notificator, self.sim_config.playback_path)
 
-        # disable roslaunch for playback
-        self.exc.rosLaunch = None
-
-        # start Gazebo simulator and bridge (RNG seed is irrelevant for playback)
-        self._start_gazebo(123456, self.__playback_path, None, environment)
+        # start Gazebo simulator and bridge
+        self._start_gazebo(None)
 
         # create playback CLE server
         logger.info("Preparing Playback Server")

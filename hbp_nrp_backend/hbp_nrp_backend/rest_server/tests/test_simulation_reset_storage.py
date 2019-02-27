@@ -125,11 +125,9 @@ class TestSimulationResetStorage(RestTest):
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_sdf_world_from_storage')
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage._get_brain_info_from_storage")
-    @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.get_experiment_data")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient")
     @patch("hbp_nrp_backend.simulation_control.__Simulation.Simulation.lifecycle")
     def test_reset_is_called_properly(self, mock_lifecycle, mock_storage_client,
-                                      mock_get_experiment_data,
                                       mock_get_brain_info_from_storage,
                                       mock_get_sdf_world_from_storage):
         simulations[0].cle = mock.MagicMock()
@@ -139,25 +137,6 @@ class TestSimulationResetStorage(RestTest):
 
         mock_get_sdf_world_from_storage.return_value = '<sdf></sdf>'
         experiment_file_path = os.path.join(PATH, 'experiments/experiment_data/test_1.exc')
-
-        with open(experiment_file_path) as exd_file:
-            try:
-                experiment = exp_conf_api_gen.CreateFromDocument(
-                    exd_file.read())
-            except ValidationError, ve:
-                raise Exception("Could not parse experiment configuration {0:s} due to validation "
-                                "error: {1:s}".format(experiment_file_path, str(ve)))
-
-            bibi_file = experiment.bibiConf.src
-            bibi_file_abs = os.path.join(EXPERIMENT_DATA_PATH, bibi_file)
-            with open(bibi_file_abs) as b_file:
-                try:
-                    bibi = bibi_api_gen.CreateFromDocument(b_file.read())
-                except ValidationError, ve:
-                    raise Exception("Could not parse brain configuration {0:s} due to validation "
-                                    "error: {1:s}".format(bibi_file_abs, str(ve)))
-
-        mock_get_experiment_data.return_value = experiment, bibi
 
         response = self.client.put(self.correct_reset_url, data=json.dumps({
             'resetType': ResetSimulationRequest.RESET_ROBOT_POSE
@@ -359,11 +338,9 @@ class TestSimulationResetStorage(RestTest):
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage.reset_brain")
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage.reset_transfer_functions")
     @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.SimulationResetStorage.reset_state_machines")
-    @patch("hbp_nrp_backend.rest_server.__SimulationResetStorage.get_experiment_data")
     @patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.UserAuthentication.get_header_token')
     def test_reset_from_storage_all(self,
                                     mock_get_header_token,
-                                    mock_get_experiment_data,
                                     mock_reset_brain,
                                     mock_resetTFs,
                                     mock_resetSMs,
@@ -377,27 +354,7 @@ class TestSimulationResetStorage(RestTest):
         mock_dirname.return_value = os.path.join(PATH, 'experiments/experiment_data')
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_transfer_function.return_value = None
-
-        experiment_file_path = os.path.join(PATH, 'experiments/experiment_data/test_5.exc')
-
-        with open(experiment_file_path) as exd_file:
-            try:
-                experiment = exp_conf_api_gen.CreateFromDocument(
-                    exd_file.read())
-            except ValidationError, ve:
-                raise Exception("Could not parse experiment configuration {0:s} due to validation "
-                                "error: {1:s}".format(experiment_file_path, str(ve)))
-
-            bibi_file = experiment.bibiConf.src
-            bibi_file_abs = os.path.join(EXPERIMENT_DATA_PATH, bibi_file)
-            with open(bibi_file_abs) as b_file:
-                try:
-                    bibi = bibi_api_gen.CreateFromDocument(b_file.read())
-                except ValidationError, ve:
-                    raise Exception("Could not parse brain configuration {0:s} due to validation "
-                                    "error: {1:s}".format(bibi_file_abs, str(ve)))
-
-        mock_get_experiment_data.return_value = experiment, bibi
+        simulations[0].lifecycle.experiment_path = os.path.join(PATH, 'experiments/experiment_data/test_5.exc')
 
         SimulationResetStorage.reset_from_storage_all(simulations[0], 'ExperimentId', 'fakeContextID')
 

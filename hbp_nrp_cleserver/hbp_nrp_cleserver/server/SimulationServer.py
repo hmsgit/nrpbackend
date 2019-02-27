@@ -94,9 +94,9 @@ class SimulationServer(object):
         self.__timer = Timer.Timer(SimulationServer.STATUS_UPDATE_INTERVAL,
                                    self.publish_state_update)
         self.__timeout = timeout
-        self.__timeout_type = TimeoutType.SIMULATION \
-                            if timeout_type == TimeoutType.SIMULATION \
-                            else TimeoutType.REAL
+        self.__timeout_type = (TimeoutType.SIMULATION
+                               if timeout_type == TimeoutType.SIMULATION
+                               else TimeoutType.REAL)
         self.__gzserver = gzserver
         self._notificator = notificator
 

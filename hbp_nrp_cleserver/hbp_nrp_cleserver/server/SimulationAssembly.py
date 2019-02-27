@@ -26,6 +26,8 @@ This module contains the abstract base class of a simulation assembly
 """
 
 import os
+import sys
+import random
 import logging
 from hbp_nrp_cleserver.server.ROSNotificator import ROSNotificator
 from hbp_nrp_cleserver.bibi_config.notificator import Notificator
@@ -38,83 +40,66 @@ class SimulationAssembly(object):
     This class is the abstract base class of a simulation assembly
     """
 
-    def __init__(self, sim_id, exc, bibi, par):
+    def __init__(self, sim_config):
         """
         Creates a new simulation assembly
 
-        :param sim_id: The simulation ID
-        :param exc: The experiment configuration
-        :param bibi: The BIBI configuration
-        :param token: the request token in case we want to use the storage
-        :param ctx_id: the ctx_id of collab based simulations
+        :param sim_config: Simulation configuration
         """
-        self.__sim_id = sim_id
-        self.__exc = exc
-        self.__bibi = bibi
-        self.__token = par.get('token')
-        self.__ctx_id = par.get('ctx_id')
+        self._sim_config = sim_config
 
         self._abort_initialization = None
         self.ros_notificator = None
+        self.rng_seed = None
 
     @property
-    def bibi(self):
+    def sim_config(self):
         """
-        Gets the BIBI configuration for this simulation assembly
+        Gets the sim_config
         """
-        return self.__bibi
+        return self._sim_config
+
+    @sim_config.setter
+    def sim_config(self, sim_config):
+        """
+        Restrict external assignment of sim_config
+        :raises AttributeError if the setter is called
+        """
+        # pylint: disable=no-self-use
+        logger.info("Raising exception instead of assigning {} to sim_config".format(sim_config))
+        raise AttributeError("sim_config has to be initialized on Assembly instantiation")
+
+    # TODO: remove
+    @property
+    def simdir(self):
+        """
+        Gets the simulation directory
+        """
+        return self._sim_config.sim_dir
 
     @property
-    def exc(self):
+    def sim_dir(self):
         """
-        Gets the experiment configuration for this simulation assembly
+        Gets the simulation directory
         """
-        return self.__exc
+        return self._sim_config.sim_dir
 
-    @bibi.setter
-    def bibi(self, bibi):
-        """
-        Sets the BIBI configuration for this simulation assembly
-        """
-        self.__bibi = bibi
-
-    @exc.setter
-    def exc(self, exc):
-        """
-        Sets the experiment configuration for this simulation assembly
-        """
-        self.__exc = exc
-
-    @property
-    def token(self):
-        """
-        Returns the token assigned to this simulation
-        """
-        return self.__token
-
-    @property
-    def ctx_id(self):
-        """
-        Returns the context id assigned to this simulation
-        """
-        return self.__ctx_id
-
-    @property
-    def sim_id(self):
-        """
-        Gets the simulation id
-        """
-        return self.__sim_id
-
-    def initialize(self, environment, except_hook):
+    def initialize(self, except_hook):
         """
         Initializes the simulation
         :param environment: The environment that should be simulated
         :param except_hook: A method that should be called when there is a critical error
         """
         # Change working directory to experiment directory
-        logger.info("Path is " + self.__exc.path)
-        os.chdir(self.__exc.dir)
+        logger.info("Path is " + self._sim_config.sim_dir)
+        os.chdir(self._sim_config.sim_dir)
+
+        # RNG seed for components, use config value if specified or generate a new one
+        self.rng_seed = self.sim_config.rng_seed
+        if self.rng_seed is None:
+            logger.info('No RNG seed specified in the exc, using random value.')
+            self.rng_seed = random.randint(1, sys.maxint)
+        logger.info('RNG seed = %i', self.rng_seed)
 
         # Create backend->frontend/client ROS notificator
         logger.info("Setting up backend Notificator")
@@ -131,7 +116,7 @@ class SimulationAssembly(object):
                                         block_ui=True)
         self._notify("Starting Neurorobotics Platform")
 
-        self._initialize(environment, except_hook)
+        self._initialize(except_hook)
 
         # Loading is completed.
         self._notify("Finished")
@@ -139,7 +124,7 @@ class SimulationAssembly(object):
 
         logger.info("CLELauncher Finished.")
 
-    def _initialize(self, environment, except_hook):  # pragma: no cover
+    def _initialize(self, except_hook):  # pragma: no cover
         """
         Internally initialize the simulation
         :param environment: The environment that should be simulated

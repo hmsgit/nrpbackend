@@ -26,15 +26,12 @@ This module contains the unit tests for the cle launcher
 """
 
 import unittest
-import os
-from mock import patch
+from mock import patch, MagicMock, Mock, mock_open, ANY
+from hbp_nrp_cle.robotsim.RobotManager import Robot
 from hbp_nrp_cleserver.server.ServerConfigurations import SynchronousNestSimulation, SynchronousRobotRosNest
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_backend import NRPServicesGeneralException
-
-PATH = os.path.split(__file__)[0]
-
+from hbp_nrp_commons.MockUtil import MockUtil
 
 def robot_value():
     return "robots/this_is_a_robot.sdf"
@@ -51,75 +48,70 @@ class CustomModel(object):
 
 class TestCLEGazeboSimulationAssembly(unittest.TestCase):
     def setUp(self):
-        _dir = os.path.split(__file__)[0]
-        with open(os.path.join(_dir, "experiment_data/milestone2.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        with open(os.path.join(_dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
-            exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-        exd.path = "/somewhere/over/the/rainbow/exc"
-        exd.dir = "/somewhere/over/the/rainbow"
-        bibi.path = "/somewhere/over/the/rainbow/bibi"
+        self.m_ziputil = MockUtil.fakeit(self, 'hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ZipUtil')
+
+        self.m_simconf = MagicMock()
+        self.m_simconf.sim_id = 123
+        self.m_simconf.token = 123
+        self.m_simconf.experiment_id = 'experiment'
+        self.m_simconf.timeout = 'YYYY-MM-DD-HH:MM:SS'
+        self.m_simconf.timeout_type = 'real'
+        self.m_simconf.sim_dir = '/my/experiment'
+        self.m_simconf.gzserver_host = 'local'
+        self.m_simconf.ros_notificator = 'real'
+        self.m_simconf.world_model.resource_path.abs_path = '/my/experiment/world.sdf'
+        self.m_simconf.brain_model.is_custom = False
+        self.m_simconf.brain_model.resource_path.rel_path = 'brain.sdf'
+        self.m_simconf.brain_model.resource_path.abs_path = '/my/experiment/brain.sdf'
+        # alternate set is_custom in individual test
+        self.m_simconf.brain_model.zip_path.rel_path = 'brains/brain.zip'
+        self.m_simconf.brain_model.zip_path.abs_path = '/my/experiment/brains/brain.sdf'
+        self.m_simconf.robot_models = {
+            'bb8': Robot('bb8', '/my/experiment/bb8/model.sdf', 'my bb8', Mock()),
+            'r2d2': Robot('r2d2', '/my/experiment/bb8/model.sdf', 'my r2d2', Mock(),
+                          True, '/my/experiment/ros.launch')
+        }
+        self.m_simconf.retina_config = 'retina_configuration'
+        self.m_simconf.ext_robot_controller = 'xyz.model'
+
         with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient"):
-            self.launcher = SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
+            self.launcher = SynchronousNestSimulation(self.m_simconf)
 
     def tearDown(self):
         pass
 
     def test_custom_brain_fails(self):
-        self.launcher._storageClient.get_custom_models.return_value = [
-            {'path': "brains/brain_.zip"}    # DON'T PUT brain.zip HERE. FIX _extract_brain_zip impl
-        ]
+        self.m_simconf.brain_model.is_custom = True
+
+        self.launcher._storageClient.get_custom_models.return_value = [{'path': "brains/brain_.zip"}]
         self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
-        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
-        with open(os.path.join(PATH, "experiment_data/milestone2_2.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        self.launcher._SimulationAssembly__bibi = bibi
-        rng_seed = 0
-        self.assertRaises(NRPServicesGeneralException, self.launcher._load_brain, rng_seed)
 
-    @patch("zipfile.ZipFile")
-    def test_custom_brain_succeeds(self, mocked_zip):
-        self.launcher._storageClient.get_custom_models.return_value = [{'path':"brains/brain.zip"}]
+        self.assertRaises(NRPServicesGeneralException, self.launcher._load_brain)
+
+    def test_custom_brain_succeeds(self):
+        self.launcher._storageClient.get_custom_models.return_value = [{'path': "brains/brain.zip"}]
         self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
-        self.launcher._simDir = os.path.join(PATH, 'experiment_data')
-        with open(os.path.join(PATH, "experiment_data/milestone2_2.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        self.launcher._SimulationAssembly__bibi = bibi
 
-        self.launcher._extract_brain_zip()
-        mocked_zip.assert_called_once_with(os.path.join(PATH, 'experiment_data', 'brain.zip'))
+        self.m_simconf.brain_model.zip_path.rel_path = 'brains/brain.zip'
+        self.m_simconf.brain_model.zip_path.abs_path = '/my/experiment/brains/brain.zip'
 
-    def test_load_brain_storage(self):
-        self.launcher._storageClient.get_folder_uuid_by_name.return_value = 'brains'
-        self.launcher._simDir = PATH
-        with open(os.path.join(PATH, 'experiment_data/braitenberg.py')) as brain:
-            brain_contents = brain.read()
-        self.launcher._storageClient.get_file.return_value = brain_contents
-        with open(os.path.join(PATH, "experiment_data/milestone2_1.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        self.launcher._SimulationAssembly__bibi = bibi
-        braincontrol, braincomm, brainfilepath, neurons_config = self.launcher._load_brain(1234)
-        self.assertEqual(brainfilepath, os.path.join(PATH, 'braitenberg.py'))
-        self.assertEqual(neurons_config, {u'sensors': slice(
-            0L, 5L, None), u'actors': slice(5L, 8L, None)})
+        with patch("__builtin__.open", mock_open(read_data='bibi')):
+            self.launcher._extract_brain_zip()
+
+        self.m_ziputil.extractall.assert_called_once_with(
+            overwrite=False, flatten=True, zip_abs_path='/my/experiment/brains/brain.zip',
+            extract_to='/my/experiment'
+        )
 
     def test_invalid_simulation(self):
-        dir = os.path.split(__file__)[0]
-        with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
-            exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-        exd.path = "/somewhere/over/the/rainbow/exc"
-        exd.dir = "/somewhere/over/the/rainbow"
-        exd.physicsEngine = None
-        bibi.path = "/somewhere/over/the/rainbow/bibi"
-
+        self.m_simconf.physics_engine = None
         try:
-            SynchronousNestSimulation(42, exd, bibi, gzserver_host="local")
+            SynchronousNestSimulation(self.m_simconf)
         except Exception:
             self.fail("FAILED test_cle_assembly.test_invalid_simulation(). Should have initialized")
 
-        self.assertRaises(Exception, SynchronousNestSimulation, 42, exd, bibi, gzserver_host="bullshit")
+        self.m_simconf.gzserver_host = 'something not supported'
+        self.assertRaises(Exception, SynchronousNestSimulation, self.m_simconf)
 
     @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
     @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
@@ -132,17 +124,11 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 class TestCLEGazeboSimulationAssemblyRobot(TestCLEGazeboSimulationAssembly):
 
     def setUp(self):
-        dir = os.path.split(__file__)[0]
-        with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
-            exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-        exd.path = "/somewhere/over/the/rainbow/exc"
-        exd.dir = "/somewhere/over/the/rainbow"
-        bibi.path = "/somewhere/over/the/rainbow/bibi"
+        super(TestCLEGazeboSimulationAssemblyRobot, self).setUp()
 
+        # override launcher
         with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient"):
-            self.launcher = SynchronousRobotRosNest(42, exd, bibi, gzserver_host="local")
+            self.launcher = SynchronousRobotRosNest(self.m_simconf)
 
     @patch("hbp_nrp_cle.robotsim.RosRobotControlAdapter.RosRobotControlAdapter", new=MockRobotControlAdapter)
     @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)

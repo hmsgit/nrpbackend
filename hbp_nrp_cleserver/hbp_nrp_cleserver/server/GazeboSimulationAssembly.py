@@ -48,45 +48,29 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
     The abstract base class for a simulation assembly that uses Gazebo for world simulation
     """
 
-    def __init__(self, sim_id, exc, bibi, **par):
+    def __init__(self, sim_config):
         """
         Creates a new simulation assembly to simulate an experiment using the CLE and Gazebo
-        :param sim_id: The simulation id
-        :param exc: The experiment configuration
-        :param bibi: The BIBI configuration
-        :param gzserver_host: The gazebo host
-        :param reservation: The reservation number
-        :param timeout: The timeout for the simulation
-        :param experiment_id: The experiment_id of the simulation
+        :param sim_config: config of the simulation to be managed
         """
-        super(GazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, par)
+        super(GazeboSimulationAssembly, self).__init__(sim_config)
         self.robotManager = RobotManager()
 
-        # determine the Gazebo simulator target, due to dependencies this must
-        # happen here
-        gzserver_host = par.get('gzserver_host', 'local')
-        timeout = par.get('timeout', None)
-        timeout_type = par.get('timeout_type', None)
-        reservation = par.get('reservation', None)
-        experiment_id = par.get('experiment_id', None)
-
-        if gzserver_host == 'local':
+        if self.sim_config.gzserver_host == 'local':
             self.gzserver = LocalGazeboServerInstance()
-        elif gzserver_host == 'lugano':
-            self.gzserver = LuganoVizClusterGazebo(
-                timeout.tzinfo if timeout is not None else None, reservation)
+        elif self.sim_config.gzserver_host == 'lugano':
+            self.gzserver = LuganoVizClusterGazebo(self.sim_config.timeout.tzinfo
+                                                   if self.sim_config.timeout is not None
+                                                   else None, self.sim_config.reservation)
         else:
-            raise Exception("The gzserver location '{0}' is not supported.", gzserver_host)
+            raise Exception("The gzserver location '{0}' is not supported.",
+                            self.sim_config.gzserver_host)
 
-        self._timeout = timeout
-        self._timeout_type = timeout_type
-        self.__gzserver_host = gzserver_host
-        self.experiment_id = experiment_id
         self.gzweb = None
         self.ros_launcher = None
         self.gazebo_recorder = None
 
-    def _start_gazebo(self, rng_seed, playback_path, extra_models, world_file):
+    def _start_gazebo(self, extra_models):
         """
         Configures and starts the Gazebo simulator and backend services
 
@@ -104,34 +88,23 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
 
         self.gzserver.gazebo_died_callback = self._handle_gazebo_shutdown
 
-        # Physics engine selection from ExDConfig; pass as -e <physics_engine> to gzserver
-        physics_engine = self.exc.physicsEngine
-        logger.info("Looking for physicsEngine tag value in ExDConfig")
-        if physics_engine is not None:
-            logger.info("Physics engine specified in ExDConfig: " + str(repr(physics_engine)))
-            # No need to check that the physics engine is valid, pyxb already does that
-        else:
-            logger.info("No physics engine specified explicitly. Using default setting 'ode'")
-            physics_engine = "ode"
-
         # experiment specific gzserver command line arguments
-        gzserver_args = '--seed {rng_seed} -e {engine} {world_file}'\
-            .format(rng_seed=rng_seed, engine=physics_engine, world_file=world_file)
+        gzserver_args = '--seed {rng_seed} -e {engine} {world_file}'.format(
+            rng_seed=self.rng_seed, engine=self.sim_config.physics_engine,
+            world_file=self.sim_config.world_model.resource_path.abs_path)
 
         # If playback is specified, load the first log/world file in the recording at Gazebo launch
-        # TODO: when storage server is available this should be updated
-        if playback_path:
+        if self.sim_config.playback_path:
             gzserver_args += ' --play {path}'.format(
-                path=os.path.join(playback_path, 'gzserver/1.log'))
+                path=os.path.join(self.sim_config.playback_path, 'gzserver/1.log'))
+        else:
+            # optional roslaunch support prior to Gazebo launch for non-playback simulations
+            if self.sim_config.ros_launch_abs_path is not None:
+                if self.sim_config.gzserver_host != 'local':
+                    raise Exception('roslaunch is currently only supported on local installs.')
 
-        # optional roslaunch support prior to Gazebo launch
-        if self.exc.rosLaunch is not None:
-            # NRRPLT-5134, only local installs are currently supported
-            if self.__gzserver_host != 'local':
-                raise Exception('roslaunch is currently only supported on local installs.')
-
-            self._notify("Launching experiment ROS nodes and configuring parameters")
-            self.ros_launcher = ROSLaunch(self.exc.rosLaunch.src)
+                self._notify("Launching experiment ROS nodes and configuring parameters")
+                self.ros_launcher = ROSLaunch(self.sim_config.ros_launch_abs_path)
 
         try:
             logger.info("gzserver arguments: " + gzserver_args)
@@ -145,7 +118,7 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
         self.robotManager.init_scene_handler()
 
         self._notify("Connecting to Gazebo simulation recorder")
-        self.gazebo_recorder = GazeboSimulationRecorder(self.sim_id)
+        self.gazebo_recorder = GazeboSimulationRecorder(self.sim_config.sim_id)
 
         self._notify("Starting Gazebo web client")
         os.environ['GAZEBO_MASTER_URI'] = self.gzserver.gazebo_master_uri
@@ -157,30 +130,12 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
         self.gzweb.restart()
 
     # pylint: disable=missing-docstring
-    # pylint: disable=broad-except
     def __set_env_for_gzbridge(self):
-        def get_gzbridge_setting(name, default):
-            """
-            Obtain parameter from pyxb bindings of experiment schema.
-            If something goes wrong return default value. The default
-            also defines the type that the parameter should have.
-            :param name: Name of the parameter
-            :param default_: default value
-            :return: a string
-            """
-            try:
-                s = self.exc.gzbridgesettings
-                val = getattr(s, name)
-                val = type(default)(val)
-            # pylint: disable=broad-except
-            except Exception:
-                val = default
-            return repr(val)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] = get_gzbridge_setting(
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_TRANSLATION'] = self.sim_config.gzbridge_setting(
             'pose_update_delta_translation', 1.e-5)
-        os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = get_gzbridge_setting(
+        os.environ['GZBRIDGE_POSE_FILTER_DELTA_ROTATION'] = self.sim_config.gzbridge_setting(
             'pose_update_delta_rotation', 1.e-4)
-        os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = get_gzbridge_setting(
+        os.environ['GZBRIDGE_UPDATE_EARLY_THRESHOLD'] = self.sim_config.gzbridge_setting(
             'pose_update_early_threshold', 0.02)
 
     def _handle_gazebo_shutdown(self):  # pragma: no cover
@@ -203,9 +158,9 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
 
         # Clean up gazebo after ourselves
         number_of_subtasks = 4
-        if self.exc.rosLaunch is not None:
+        if self.sim_config.ros_launch_abs_path is not None:
             number_of_subtasks += 1
-        if self.bibi.extRobotController is not None:
+        if self.sim_config.ext_robot_controller is not None:
             number_of_subtasks += 1
 
         try:
@@ -254,8 +209,8 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
                     logger.exception(e)
 
             # Stop any external robot controllers
-            if self.bibi.extRobotController:
-                robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
+            if self.sim_config.ext_robot_controller:
+                robot_controller_filepath = find_file_in_paths(self.sim_config.ext_robot_controller,
                                                                get_model_basepath())
                 if robot_controller_filepath:
                     if notifications:
@@ -264,7 +219,7 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
                     subprocess.check_call([robot_controller_filepath, 'stop'])
 
             # Stop any ROS nodes launched via roslaunch
-            if self.exc.rosLaunch is not None and self.ros_launcher is not None:
+            if self.sim_config.ros_launch_abs_path is not None and self.ros_launcher is not None:
                 if notifications:
                     self.ros_notificator.update_task("Shutting down launched ROS nodes",
                                                      update_progress=True, block_ui=False)

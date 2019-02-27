@@ -44,8 +44,7 @@ class SimulationLifecycle(object):
     """
 
     states = [
-        'created', 'paused', 'started', 'stopped',
-        'halted', 'failed'
+        'created', 'paused', 'started', 'stopped', 'halted', 'failed'
     ]
 
     final_states = ['stopped', 'failed']

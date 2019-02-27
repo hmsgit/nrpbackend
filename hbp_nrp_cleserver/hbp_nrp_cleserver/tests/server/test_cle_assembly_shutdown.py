@@ -31,6 +31,7 @@ from mock import patch, Mock, MagicMock
 from hbp_nrp_cleserver.server import CLEGazeboSimulationAssembly
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 
+from hbp_nrp_commons.MockUtil import MockUtil
 
 MockOs = Mock()
 MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
@@ -39,24 +40,20 @@ MockOs.path.join.return_value = "/a/really/nice/place"
 
 
 @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient", new = MagicMock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=Mock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.subprocess", new=Mock())
 class TestCLELauncherShutdown(unittest.TestCase):
     def setUp(self):
-        dir = os.path.split(__file__)[0]
-        with open(os.path.join(dir, "experiment_data/milestone2.bibi")) as bibi_file:
-            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
-        with open(os.path.join(dir, "experiment_data/ExDXMLExample.exc")) as exd_file:
-            exd = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-
-        exd.path = "/somewhere/over/the/rainbow/exc"
-        exd.dir = "/somewhere/over/the/rainbow"
-        bibi.path = "/somewhere/over/the/rainbow/bibi"
+        self.m_simconf = MagicMock()
+        self.m_simconf.gzserver_host = 'local'
 
         self.mocked_cleserver = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer").start()
         self.mocked_cleserver._robotHandler.download_custom_robot.return_value = "somewhere/over/the/rainbow"
 
         with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", MockOs):
-            self.launcher = CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly(42, exd, bibi, gzserver_host="local")
+            self.launcher = CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly(self.m_simconf)
         self.launcher.cle_server = Mock()
         self.launcher.gzweb = Mock()
         self.launcher.gzserver = Mock()
@@ -70,12 +67,11 @@ class TestCLELauncherShutdown(unittest.TestCase):
         self.__assert_everything_properly_shut_down()
 
     def __assert_everything_properly_shut_down(self):
-        self.launcher.gzweb.stop.assert_called_once_with()
-        self.launcher.gzserver.stop.assert_called_once_with()
-        self.launcher.cle_server.shutdown.assert_called_once_with()
-        self.launcher.cle_server._csv_logger.shutdown.assert_called_once_with()
-        self.launcher.gazebo_recorder.shutdown.assert_called_once_with()
-        self.launcher.ros_notificator.shutdown.assert_called_once_with()
+        self.launcher.gzweb.stop.assert_called_once()
+        self.launcher.gzserver.stop.assert_called_once()
+        self.launcher.cle_server.shutdown.assert_called_once()
+        self.launcher.gazebo_recorder.shutdown.assert_called_once()
+        self.launcher.ros_notificator.shutdown.assert_called_once()
 
     def test_notify_throws_but_assets_shut_down(self):
         self.launcher.cle_server.notify_start_task.side_effect = Exception
@@ -117,16 +113,3 @@ class TestCLELauncherShutdown(unittest.TestCase):
         launch = exp_conf_api_gen.RosLaunch()
         launch.src = "some launch file"
         return launch
-
-    def test_roslaunch_shutdown(self):
-        self.launcher.exc.rosLaunch = self.__create_roslaunch()
-        self.launcher.shutdown()
-        self.__assert_everything_properly_shut_down()
-        self.launcher.ros_launcher.shutdown.assert_called_once_with()
-
-    def test_roslaunch_raises(self):
-        self.launcher.exc.rosLaunch = self.__create_roslaunch()
-        self.launcher.ros_launcher.side_effect = Exception
-        self.launcher.shutdown()
-        self.__assert_everything_properly_shut_down()
-        self.launcher.ros_launcher.shutdown.assert_called_once_with()

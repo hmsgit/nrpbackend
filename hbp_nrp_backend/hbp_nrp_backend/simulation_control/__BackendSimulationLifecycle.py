@@ -248,19 +248,16 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 environment_path = experiment_paths['environment_conf']
             else:
                 self.__experiment_path = os.path.join(
-                    self.__experiment_path, simulation.experiment_conf
-                )
-                self.__simulation_root_folder = os.path.dirname(
-                    self.__experiment_path)
+                    self.__experiment_path, simulation.experiment_conf)
+                self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
                 environment_path = simulation.environment_conf
-            experiment, environment_path = self._parse_exp_and_initialize_paths(
-                self.__experiment_path,
-                environment_path,
-                using_storage)
 
-            simulation.timeout_type = TimeoutType.SIMULATION \
-                    if experiment.timeout.time == TimeoutType.SIMULATION  \
-                    else TimeoutType.REAL
+            experiment, environment_path = self._parse_exp_and_initialize_paths(
+                self.__experiment_path, environment_path, using_storage)
+
+            simulation.timeout_type = (TimeoutType.SIMULATION
+                                       if experiment.timeout.time == TimeoutType.SIMULATION
+                                       else TimeoutType.REAL)
 
             timeout = experiment.timeout.value()
 
@@ -275,7 +272,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
             simulation_factory_client = ROSCLESimulationFactoryClient()
             simulation_factory_client.create_new_simulation(
-                environment_path, self.__experiment_path,
+                "CLE IGNORES ME", self.__experiment_path,
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
                 simulation.sim_id, str(timeout), simulation.timeout_type,
                 simulation.playback_path,

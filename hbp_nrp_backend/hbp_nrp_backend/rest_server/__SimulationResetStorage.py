@@ -46,9 +46,8 @@ from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf, \
-    import_referenced_python_tfs, correct_indentation, get_tf_name, get_all_neurons_as_dict
+    correct_indentation, get_tf_name, get_all_neurons_as_dict
 
-from hbp_nrp_cleserver.server.ROSCLESimulationFactory import get_experiment_data
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen
 
@@ -194,15 +193,20 @@ class SimulationResetStorage(Resource):
         simulation_dir = cls.storage_client.get_simulation_directory()
         cls.storage_client.clear_temp_sim_directory()
 
-        _ = cls.storage_client.clone_all_experiment_files(
-            UserAuthentication.get_header_token(),
-            experiment_id)
+        token = UserAuthentication.get_header_token()
+        _ = cls.storage_client.clone_all_experiment_files(token, experiment_id)
 
-        exp_conf, bibi_conf = get_experiment_data(simulation.lifecycle.experiment_path)
+        with open(simulation.lifecycle.experiment_path) as exc_file:
+            exc = exp_conf_api_gen.CreateFromDocument(exc_file.read())
+
+        bibi_path = os.path.join(os.path.dirname(simulation.lifecycle.experiment_path),
+                                 exc.bibiConf.src)
+        with open(bibi_path) as bibi_file:
+            bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
 
         cls.reset_brain(simulation, experiment_id, context_id)
-        cls.reset_transfer_functions(simulation, bibi_conf, simulation_dir)
-        cls.reset_state_machines(simulation, exp_conf, simulation_dir)
+        cls.reset_transfer_functions(simulation, bibi, simulation_dir)
+        cls.reset_state_machines(simulation, exc, simulation_dir)
 
     @classmethod
     def reset_brain(cls, simulation, experiment_id, context_id):
@@ -280,13 +284,11 @@ class SimulationResetStorage(Resource):
             if old_tf_name is not None:  # ignore broken TFs
                 simulation.cle.delete_simulation_transfer_function(old_tf_name)
 
-        import_referenced_python_tfs(bibi_conf, base_path)
-
         for tf in bibi_conf.transferFunction:
-            tf_code = '{}\n'.format(correct_indentation(generate_tf(tf), 0).strip())
+            tf_code = '{}\n'.format(correct_indentation(generate_tf(tf, base_path), 0).strip())
 
             logger.debug(" RESET TF: {tf_name}\n{tf_code}\n"
-                         .format(tf_name=tf.name, tf_code=tf_code))
+                         .format(tf_name=get_tf_name(tf_code), tf_code=tf_code))
             # adding original TFs from the bibi
             # do not check the error message.
             # CLE will handle also invalid TFs

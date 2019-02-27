@@ -27,21 +27,14 @@ This module contains the abstract base class of a simulation assembly using the 
 
 import logging
 import os
-import random
 import subprocess
-import sys
-import tempfile
-import zipfile
 import json
 logger = logging.getLogger(__name__)
 
 from RestrictedPython import compile_restricted
-from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import \
-    get_all_neurons_as_dict, generate_tf, import_referenced_python_tfs, correct_indentation
-from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
 from hbp_nrp_backend import NRPServicesGeneralException
-from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, \
-    get_model_basepath, find_file_in_paths
+from hbp_nrp_backend.storage_client_api.StorageClient import (
+    StorageClient, get_model_basepath, find_file_in_paths)
 from hbp_nrp_cleserver.server.GazeboSimulationAssembly import GazeboSimulationAssembly
 from hbp_nrp_commons.ZipUtil import ZipUtil
 
@@ -57,26 +50,16 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
     This class assembles the simulation using the CLE
     """
 
-    def __init__(self, sim_id, exc, bibi, **par):
+    def __init__(self, sim_config):
         """
         Creates a new simulation assembly to simulate an experiment using the CLE and Gazebo
-        :param sim_id: The simulation id
-        :param exc: The experiment configuration
-        :param bibi: The BIBI configuration
+        :param sim_config: config of the simulation to be managed
         """
-        super(CLEGazeboSimulationAssembly, self).__init__(sim_id, exc, bibi, **par)
+        super(CLEGazeboSimulationAssembly, self).__init__(sim_config)
         self.cle_server = None
         self.tempAssetsDir = 'assets'
 
         self._storageClient = StorageClient()
-        self._simDir = self._storageClient.get_simulation_directory()
-
-    @property
-    def simdir(self):
-        """
-        Gets the simulation directory
-        """
-        return self._simDir
 
     @property
     def storage_client(self):
@@ -85,7 +68,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         return self._storageClient
 
-    def _initialize(self, environment, except_hook):
+    def _initialize(self, except_hook):
         """
         Internally initialize the simulation
         :param environment: The environment that should be simulated
@@ -96,33 +79,29 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # create the CLE server and lifecycle first to report any failures properly
         # initialize the cle server and services
         logger.info("Creating CLE Server")
-        self.cle_server = ROSCLEServer(self.sim_id, self._timeout, self._timeout_type,
-                                       self.gzserver, self.ros_notificator)
+        self.cle_server = ROSCLEServer(self.sim_config.sim_id,
+                                       self.sim_config.timeout,
+                                       self.sim_config.timeout_type,
+                                       self.gzserver,
+                                       self.ros_notificator)
+
         self.cle_server.setup_handlers(self)
 
-        # RNG seed for components, use config value if specified or generate a new one
-        rng_seed = self.exc.rngSeed
-        if rng_seed is None:
-            logger.warn('No RNG seed specified, generating a random value.')
-            rng_seed = random.randint(1, sys.maxint)
-        logger.info('RNG seed = %i', rng_seed)
-
         # start Gazebo simulator and bridge
-        extra_model_dirs = os.path.join(self._simDir, self.tempAssetsDir) + ':' + self._simDir
-        playback_path = None
-        self._start_gazebo(rng_seed, playback_path, extra_model_dirs, environment)
+        extra_model_dirs = os.path.join(self.sim_dir, self.tempAssetsDir) + ':' + self.sim_dir
+        self._start_gazebo(extra_model_dirs)
 
         # load user textures in Gazebo
         self._load_textures()
 
         # load environment and robot models
-        models, lights = self._load_environment(environment)
+        models, lights = self._load_environment(self.sim_config.world_model.resource_path.abs_path)
 
         # find robot
-        robot_poses = {}
-        self.robotManager.remove_all_robots()
-
+        self.robotManager.set_robot_dict(self.sim_config.robot_models)
         self._load_robot()
+
+        robot_poses = {}
         for rid, robot in self.robotManager.get_robot_dict().iteritems():
             robot_poses[rid] = robot.pose
 
@@ -130,7 +109,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         robotcomm, robotcontrol = self._create_robot_adapters()
 
         # load the brain
-        braincontrol, braincomm, brainfile, brainconf = self._load_brain(rng_seed)
+        braincontrol, braincomm, brainfile, brainconf = self._load_brain()
 
         # initialize the cle server and services
         logger.info("Preparing CLE Server")
@@ -148,86 +127,57 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # pylint: disable=protected-access
         self.cle_server._csv_logger.initialize()
 
-    # TODO: remove this function when exc and bibi abstraction (SimConf) is implemented
-    # TODO: remove code duplication with _RobotCallHandler once TODO mentioned inside is resolved
-    def _add_bibi_robots(self):
+    def _prepare_simconfig_robots(self):
         """
         Reads robot list from bibi and poses from exc and populates robot manager
         :return: -
         """
         # pylint: disable=too-many-branches
-        if (not self.bibi.bodyModel):
+        if not self.sim_config.robot_models:
             return
 
-        for modelTag in self.bibi.bodyModel:
-            if (modelTag.robotId is None):
-                modelTag.robotId = 'robot'
-            elif (not modelTag.robotId or modelTag.robotId in self.robotManager.get_robot_dict()):
-                raise Exception("Multiple bodyModels has been defined with same or no names. "
-                                "Please check bibi config file.")
-
-            pose = None
-            path = None
-            isCustom = False
-            for rpose in self.exc.environmentModel.robotPose:
-                if not (rpose.robotId) or rpose.robotId == modelTag.robotId:
-                    pose = RobotManager.convertXSDPosetoPyPose(rpose)
-
-            if hasattr(modelTag, 'customAsset') and modelTag.customAsset is not None:
-                isCustom = modelTag.customAsset
-            else:
-                modelTag.customAsset = False
-
-            if isCustom:
-                if not hasattr(modelTag, "assetPath"):
-                    raise Exception("No zipped model path is provided in bibi.bodyModel.assetPath")
+        for robot in self.sim_config.robot_models.values():
+            if robot.isCustom:
                 # pylint: disable=protected-access
-                downloadedZipPath = self.cle_server._robotHandler.download_custom_robot(
-                    modelTag.assetPath,
-                    self._simDir,
-                    modelTag.assetPath)
-                if downloadedZipPath is not None:
-                    ZipUtil.extractall(
-                        zip_abs_path=downloadedZipPath,
-                        extract_to=os.path.join(self._simDir, self.tempAssetsDir),
-                        overwrite=True)
-
-                    path = os.path.join(self._simDir, modelTag.value())
+                status, ret = self.cle_server._robotHandler.prepare_custom_robot(
+                    # SDFFileAbsPath is holding relative path at the moment (from sim_config)
+                    robot_zip_rel_path=robot.SDFFileAbsPath)
+                if not status:
+                    raise Exception("Could not prepare custom robot {err}".format(ret))
+                robot.SDFFileAbsPath = ret
 
             else:
-                path = find_file_in_paths(os.path.join(
-                    modelTag.robotId, os.path.basename(modelTag.value())), get_model_basepath())
+                robot.SDFFileAbsPath = find_file_in_paths(
+                    os.path.join(robot.id, os.path.basename(robot.SDFFileAbsPath)),
+                    get_model_basepath())
 
                 # Perhaps it's a previously coned experiment? Try with modelTag.value() BUT
                 # only look into the simulation_directory, as DELETE robot REST call, if called,
-                # would delete this file
+                # would delete this file. Only for the exps without robotid folder in the storage
                 # TODO: backward compatibility code. Remove when we decide not to support anymore
-                if not path:
-                    path = find_file_in_paths(modelTag.value(), [self._simDir])
+                if not robot.SDFFileAbsPath:
+                    robot.SDFFileAbsPath = find_file_in_paths(robot.value(), [self.sim_dir])
 
             # still couldn't find the SDF, abort!
-            if not path:
-                raise Exception("Could not find robot file: {0}".format(modelTag.value()))
+            if not robot.SDFFileAbsPath:
+                raise Exception("Could not find robot file: {0}".format(robot.value()))
 
             # Find robot specific roslaunch file in the directory where the SDF resides
             # Take the first one (by name) if multiple available
-            rosLaunchRelPath = next((f for f in os.listdir(os.path.dirname(path))
+            rosLaunchRelPath = next((f for f in os.listdir(os.path.dirname(robot.SDFFileAbsPath))
                                      if f.endswith('.launch')), None)
-            rosLaunchAbsPath = (None if rosLaunchRelPath is None
-                                else os.path.join(os.path.dirname(path), rosLaunchRelPath))
+            robot.rosLaunchAbsPath = (None if rosLaunchRelPath is None
+                                      else os.path.join(os.path.dirname(robot.SDFFileAbsPath),
+                                                        rosLaunchRelPath))
 
-            self.robotManager.add_robot(
-                Robot(modelTag.robotId, path, modelTag.robotId, pose, isCustom, rosLaunchAbsPath)
-            )
-
-    def _load_environment(self, world_file):
+    def _load_environment(self, world_file_abs_path):
         """
         Loads the environment and robot in Gazebo
-        :param world_file Backwards compatibility for world file specified through webpage
+
+        :param world_file_abs_path Path to the world sdf
         """
-        # load the world file if provided first
         self._notify("Loading experiment environment")
-        return self.robotManager.scene_handler().parse_gazebo_world_file(world_file)
+        return self.robotManager.scene_handler().parse_gazebo_world_file(world_file_abs_path)
 
     def _load_textures(self):
         """
@@ -236,7 +186,8 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         self._notify("Loading textures")
 
         try:
-            textures = self.storage_client.get_textures(self.experiment_id, self.token)
+            textures = self.storage_client.get_textures(
+                self.sim_config.experiment_id, self.sim_config.token)
         except:  # pylint: disable=bare-except
             logger.info("Non-existent textures or folder!")
             return  # ignore missing textures or texture folder
@@ -253,21 +204,22 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         Loads robots defined in the bibi and initializes any external controller
         """
         # Set retina config for the robotManager
-        for conf in self.bibi.configuration:
-            if conf.type == 'retina':
-                self._notify("Configuring Retina Camera Plugin")
-                self.robotManager.retina_config = conf.src
+        if self.sim_config.retina_config:
+            self._notify("Configuring Retina Camera Plugin")
+            self.robotManager.retina_config = self.sim_config.retina_config
 
         self._notify("Loading robots")
-        self._add_bibi_robots()
+        self._prepare_simconfig_robots()
+        for robot in self.robotManager.get_robot_dict().values():
+            self.robotManager.initialize(robot)
 
         # load external robot controller
-        if self.bibi.extRobotController is not None:
-            robot_controller_filepath = find_file_in_paths(self.bibi.extRobotController,
+        if self.sim_config.ext_robot_controller is not None:
+            robot_controller_filepath = find_file_in_paths(self.sim_config.ext_robot_controller,
                                                            get_model_basepath())
-            if not os.path.isfile(robot_controller_filepath) and self._simDir is not None:
-                robot_controller_filepath = os.path.join(self._simDir,
-                                                         self.bibi.extRobotController)
+            if not os.path.isfile(robot_controller_filepath) and self.sim_dir is not None:
+                robot_controller_filepath = os.path.join(self.sim_dir,
+                                                         self.sim_config.ext_robot_controller)
             if os.path.isfile(robot_controller_filepath):
                 self._notify("Loading external robot controllers")  # +1
                 res = subprocess.call([robot_controller_filepath, 'start'])
@@ -284,49 +236,41 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         raise NotImplementedError("This method must be overridden in an implementation")
 
-    def _load_brain(self, rng_seed):
+    def _load_brain(self):
         """
         Loads the neural simulator, interfaces, and configuration
-
-        :param rng_seed RNG seed to spawn Nest with
         """
 
         # Create interfaces to brain
         self._notify("Loading neural simulator")
-        brainconfig.rng_seed = rng_seed
+        brainconfig.rng_seed = self.rng_seed
         braincomm, braincontrol = self._create_brain_adapters()
 
         self._notify("Loading brain and population configuration")
-        # load brain
-
-        # find robot
-        if not self.bibi.brainModel:
+        if not self.sim_config.brain_model:
             return braincontrol, braincomm, None, None
 
-        brainfilepath = self.bibi.brainModel.file
-        if self.bibi.brainModel.customModelPath:
+        if self.sim_config.brain_model.is_custom:
             self._extract_brain_zip()
-        if self.__is_collab_hack():
-            if self.exc.dir is not None:
-                brainfilepath = os.path.join(self.exc.dir, brainfilepath)
-        elif 'storage://' in brainfilepath:
-            brainfilepath = os.path.join(self._simDir, os.path.basename(brainfilepath))
-            with open(brainfilepath, "w") as f:
-                f.write(self._storageClient.get_file(
-                    self.token,
-                    self._storageClient.get_folder_uuid_by_name(self.token, self.ctx_id, 'brains'),
-                    os.path.basename(brainfilepath),
-                    by_name=True))
-        else:
-            brainfilepath = find_file_in_paths(brainfilepath, get_model_basepath())
 
-            #if not brainfilepath:
-            #    raise Exception("Could not find brain file: ".format(brainfilepath))
+        brain_abs_path = self.sim_config.brain_model.resource_path.abs_path
+        brain_rel_path = self.sim_config.brain_model.resource_path.rel_path
+        if not os.path.exists(brain_abs_path):
+            logger.info(
+                "Cannot find specified brain file {file} in {dir}. Searching in default "
+                "directories {default}".format(
+                    file=brain_rel_path, dir=self.sim_dir, default=str(get_model_basepath())))
+            brain_abs_path = find_file_in_paths(brain_rel_path, get_model_basepath())
 
-        neurons_config = get_all_neurons_as_dict(
-            self.bibi.brainModel.populations)
+            if brain_abs_path:
+                self.sim_config.brain_model.resource_path.abs_path = brain_abs_path
+            else:
+                raise NRPServicesGeneralException(
+                    "Could not find brain file: {}".format(brain_rel_path))
 
-        return braincontrol, braincomm, brainfilepath, neurons_config
+        neurons_config = self.sim_config.get_populations_dict()
+
+        return braincontrol, braincomm, brain_abs_path, neurons_config
 
     def _extract_brain_zip(self):
         """
@@ -337,41 +281,42 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         the .py from the experiment folder cause the user may have modified it
         """
         # pylint: disable=too-many-locals
-        brains_list = self._storageClient.get_custom_models(self.token, self.ctx_id, 'brains')
-        # we use the paths of the uploaded zips to make sure the selected
-        # zip is there
+        brains_list = self._storageClient.get_custom_models(
+            self.sim_config.token, self.sim_config.ctx_id, 'brains')
+        # we use the paths of the uploaded zips to make sure the selected zip is there
         paths_list = [brain['path'] for brain in brains_list]
 
         # check if the zip is in the user storage
-        zipped_model_path = [
-            path for path in paths_list if self.bibi.brainModel.customModelPath in path]
+        zipped_model_path = [path for path in paths_list
+                             if self.sim_config.brain_model.zip_path.rel_path in path]
+
         if len(zipped_model_path):
             model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
-            storage_brain_zip_data = self._storageClient.get_custom_model(self.token,
-                                                                          self.ctx_id,
-                                                                          json_model_data)
-            brain_name = os.path.basename(self.bibi.brainModel.file)
-            brn_zip_path = os.path.join(self._simDir, self.bibi.brainModel.customModelPath)
-            with open(brn_zip_path, 'w') as brain_zip:
+            # Get the data
+            storage_brain_zip_data = self._storageClient.get_custom_model(
+                self.sim_config.token, self.sim_config.ctx_id, json_model_data)
+            # Write the zip in sim dir
+            with open(self.sim_config.brain_model.zip_path.abs_path, 'w') as brain_zip:
                 brain_zip.write(storage_brain_zip_data)
-            with zipfile.ZipFile(brn_zip_path) as brain_zip_to_extract:
-                for brain_file in brain_zip_to_extract.namelist():
-                    _, file_name = os.path.split(brain_file)
-                    if file_name:
-                        with open(os.path.join(self._simDir, file_name), 'w') as file_to_write:
-                            file_to_write.write(brain_zip_to_extract.read(brain_file))
+            # Extract and flatten
+            # FixME: not sure exactly why flattening is required
+            ZipUtil.extractall(zip_abs_path=self.sim_config.brain_model.zip_path.abs_path,
+                               extract_to=self.sim_dir, overwrite=False, flatten=True)
 
             # copy back the .py from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
-            self._storageClient.clone_file(brain_name, self.token, self.experiment_id)
-        # if the zip is not there, prompt the user to check his uploaded
-        # models
+            # TODO: verify if this still required and why only one file is copied
+            brain_name = os.path.basename(self.sim_config.brain_model.resource_path.rel_path)
+            self._storageClient.clone_file(
+                brain_name, self.sim_config.token, self.sim_config.experiment_id)
+
+        # if the zip is not there, prompt the user to check his uploaded models
         else:
             raise NRPServicesGeneralException(
-                "Could not find selected zip {zip} in the list of uploaded models. ".format(
-                    zip=os.path.dirname(self.bibi.brainModel.customModelPath)
-                ) + "Please make sure that it has been uploaded correctly",
+                "Could not find selected zip {zip} in the list of uploaded models. Please make "
+                "sure that it has been uploaded correctly".format(
+                    zip=os.path.dirname(self.sim_config.brain_model.zip_path.rel_path)),
                 "Zipped model retrieval failed")
 
     def _create_brain_adapters(self):  # pragma: no cover
@@ -411,11 +356,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         tfmanager.robot_adapter = roscomm
         tfmanager.brain_adapter = braincomm
 
-        # integration timestep between simulators, convert from ms to s
-        # (default to CLE value)
-        timestep = ClosedLoopEngine.DEFAULT_TIMESTEP
-        if self.bibi.timestep is not None:
-            timestep = float(self.bibi.timestep) / 1000.0
+        # integration timestep between simulators, convert from ms to s (default to CLE value)
+        timestep = (ClosedLoopEngine.DEFAULT_TIMESTEP
+                    if self.sim_config.timestep is None else self.sim_config.timestep)
 
         roscontrol.set_robots(self.robotManager.get_robot_dict())
 
@@ -445,34 +388,26 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         self._notify("Loading transfer functions")
 
-        # Create transfer functions
-        import_referenced_python_tfs(self.bibi, self.exc.dir)
-
-        for i, tf in enumerate(self.bibi.transferFunction):
-            self._notify("Generating transfer function: %i" % (i + 1))
-            tf_code = generate_tf(tf)
-            self._notify("Loading transfer function: %s" % tf.name)
-            tf_code = correct_indentation(tf_code, 0)
-            tf_code = tf_code.strip() + "\n"
-            logger.debug("TF: " + tf.name + "\n" + tf_code + '\n')
+        for tf in self.sim_config.transfer_functions:
+            self._notify("Loading transfer function: {}".format(tf.name))
+            #tf.code = correct_indentation(tf.code, 0)
+            tf.code = tf.code.strip() + "\n"
+            logger.debug("TF: " + tf.name + "\n" + tf.code + '\n')
 
             try:
-                new_code = compile_restricted(tf_code, '<string>', 'exec')
+                new_code = compile_restricted(tf.code, '<string>', 'exec')
             # pylint: disable=broad-except
             except Exception as e:
-                message = "Error while compiling the updated transfer function named "\
-                          + tf.name +\
-                          " in restricted mode.\n"\
-                          + str(e)
-                logger.error(message)
-                nrp.set_flawed_transfer_function(tf_code, tf.name, e)
+                logger.error("Error while compiling the transfer function {name} in restricted "
+                             "mode with error {err}".format(name=tf.name, err=str(e)))
+                nrp.set_flawed_transfer_function(tf.code, tf.name, e)
                 continue
 
             try:
-                nrp.set_transfer_function(tf_code, new_code, tf.name)
+                nrp.set_transfer_function(tf.code, new_code, tf.name)
             except nrp.TFLoadingException as loading_e:
                 logger.error(loading_e)
-                nrp.set_flawed_transfer_function(tf_code, tf.name, loading_e)
+                nrp.set_flawed_transfer_function(tf.code, tf.name, loading_e)
 
     def _handle_gazebo_shutdown(self):
         """
@@ -512,14 +447,3 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             logger.exception(e)
         finally:
             self._storageClient.remove_temp_sim_directory()
-        # kill the csv logger thread
-        # pylint: disable=protected-access
-        self.cle_server._csv_logger.shutdown()
-
-    def __is_collab_hack(self):
-        """
-        This horrible hack is supposed to be dropped when we remove support for SDF cloning
-        when we have introduced robot and env libraries.
-        :return: true if we detect we are in collab models
-        """
-        return self.exc.dir.startswith(tempfile.gettempdir())

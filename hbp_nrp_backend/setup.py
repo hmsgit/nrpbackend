@@ -61,8 +61,6 @@ config = {
                  'hbp_nrp_backend.rest_server',
                  'hbp_nrp_backend.storage_client_api',
                  'hbp_nrp_backend.simulation_control',
-                 'hbp_nrp_backend.exd_config',
-                 'hbp_nrp_backend.exd_config.generated',
                  'hbp_nrp_backend.cle_interface'],
     'scripts': [],
     'name': 'hbp_nrp_backend',

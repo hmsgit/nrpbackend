@@ -33,7 +33,8 @@ import json
 from pyxb import ValidationError
 
 from cle_ros_msgs import msg
-from hbp_nrp_cle.robotsim.RobotManager import Robot, RobotManager
+from hbp_nrp_cle.robotsim.RobotManager import Robot
+from hbp_nrp_commons.sim_config.SimConfUtil import SimConfUtil
 from hbp_nrp_commons.generated import robot_conf_api_gen as robotXmlParser
 from hbp_nrp_commons.ZipUtil import ZipUtil
 from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, get_model_basepath
@@ -51,7 +52,7 @@ class RobotCallHandler(object):
     def __init__(self, assembly):
         self._cle_assembly = assembly
         self._client = self._cle_assembly.storage_client
-        self._simdir = self._cle_assembly.simdir
+        self._simdir = self._cle_assembly.sim_dir
 
     def get_robots(self):
         """
@@ -140,7 +141,7 @@ class RobotCallHandler(object):
                                     .format(robot_model_rel_path))
                 sdf_filename = os.path.basename(sdf_abs_path)
 
-            pose = RobotManager.convertXSDPosetoPyPose(pose)
+            pose = SimConfUtil.convertXSDPosetoPyPose(pose)
 
             # copy sdf to <simulation dir>/<robot_id>/<whatever>.sdf
             # this would then be uploaded to the storage and referenced in bibi
@@ -194,8 +195,8 @@ class RobotCallHandler(object):
         with open(robot_sdf_abs_path, 'r') as sdf:
             data = sdf.read()
         self._client.create_or_update(
-            self._cle_assembly.token,
-            self._cle_assembly.experiment_id,
+            self._cle_assembly.sim_config.token,
+            self._cle_assembly.sim_config.experiment_id,
             os.path.join(robot_id, sdf_filename),
             data,
             "application/octet-stream"
@@ -205,8 +206,8 @@ class RobotCallHandler(object):
             with open(ros_launch_abs_path, 'r') as ros_launch:
                 data = ros_launch.read()
             self._client.create_or_update(
-                self._cle_assembly.token,
-                self._cle_assembly.experiment_id,
+                self._cle_assembly.sim_config.token,
+                self._cle_assembly.sim_config.experiment_id,
                 os.path.join(robot_id, os.path.basename(ros_launch_abs_path)),
                 data,
                 "application/octet-stream"
@@ -227,8 +228,8 @@ class RobotCallHandler(object):
 
             # delete model file from the storage
             self._client.delete_file(
-                self._cle_assembly.token,
-                self._cle_assembly.experiment_id,
+                self._cle_assembly.sim_config.token,
+                self._cle_assembly.sim_config.experiment_id,
                 robot_id
             )
             # delete model from the simulation dir
@@ -322,8 +323,8 @@ class RobotCallHandler(object):
         # download zip from storage
         try:
             data = self._client.get_custom_model(
-                self._cle_assembly.token,
-                self._cle_assembly.ctx_id,
+                self._cle_assembly.sim_config.token,
+                self._cle_assembly.sim_config.ctx_id,
                 json.dumps({'uuid': requestFile})
             )
         # pylint: disable=broad-except

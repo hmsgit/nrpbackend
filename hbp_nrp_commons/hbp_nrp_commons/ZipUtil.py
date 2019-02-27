@@ -35,25 +35,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _filter_zip_namelist(zip_namelist):
-    """
-    Helper function to filter contents of zip. The reason for the filtering
-    is that the extractall function breaks if there is a directory inside
-    the zip with the same name as the zip, which for some absurd reason
-    is treated as a file on exraction and not as a folder.
-    :param: zip_namelist: all the folders and files inside a zip
-    :return: the list of names without the root directory
-    """
-    return [name for name in zip_namelist if os.path.dirname(name) is not ""]
-
-
 class ZipUtil(object):
     """
     This class provides helper functions to handle zip
     """
 
     @staticmethod
-    def extractall(zip_abs_path, extract_to, overwrite=False):  # pragma: no cover
+    def extractall(zip_abs_path, extract_to, overwrite=False, flatten=False):  # pragma: no cover
         """
         Extract a zip in the given location
         :param zip_abs_path: absolute path of the zip file
@@ -61,17 +49,29 @@ class ZipUtil(object):
         :param overwrite: boolean to indicate whether to overwrite the existing contents
         :return: -
         """
-        with zipfile.ZipFile(zip_abs_path) as rzip:
+        with zipfile.ZipFile(zip_abs_path) as zf:
             if not overwrite:
-                for f in rzip.namelist():
+                for f in zf.namelist():
                     if os.path.exists(os.path.join(extract_to, f)):
                         logger.info("Aborting extraction. {file} exists.".format(file=f))
                         return None
             try:
                 if not os.path.exists(extract_to):
                     os.makedirs(extract_to)
-                with zipfile.ZipFile(zip_abs_path) as rzip:
-                    rzip.extractall(extract_to, _filter_zip_namelist(rzip.namelist()))
+                with zipfile.ZipFile(zip_abs_path) as zf:
+                    if not flatten:
+                        zf.extractall(extract_to)
+                    else:
+                        for zip_info in zf.infolist():
+                            if zip_info.filename[-1] == '/':
+                                continue  # skip directories
+                            zip_info.filename = os.path.basename(zip_info.filename)
+                            zf.extract(zip_info, extract_to)
+                        # for f in zf.namelist():
+                        #     f_name = os.path.basename(f)
+                        #     if f_name:
+                        #         with open(os.path.join(extract_to, f_name), 'w') as file_to_write:
+                        #             file_to_write.write(zf.read(f))
             except IOError as ex:
                 logger.info("Extraction failed due to {err}".format(err=str(ex)))
 
@@ -83,12 +83,11 @@ class ZipUtil(object):
         :param dest_zip_file: file name and path to the zip archive
         :return: The created zip file
         """
-        with zipfile.ZipFile(dest_zip_file, 'w', zipfile.ZIP_DEFLATED) as zip_f:
+        with zipfile.ZipFile(dest_zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             for root, _, files in os.walk(path):
                 for f in files:
-                    zip_f.write(
-                        os.path.join(root, f),
-                        os.path.relpath(os.path.join(root, f), os.path.join(path, '..')))
+                    zf.write(os.path.join(root, f),
+                             os.path.relpath(os.path.join(root, f), os.path.join(path, '..')))
 
     @staticmethod
     def get_rootname(zip_abs_path):  # pragma: no cover
@@ -99,6 +98,7 @@ class ZipUtil(object):
 
         :return: root folder name inside a zip
         """
+
         with zipfile.ZipFile(zip_abs_path) as rzip:
             first_item = rzip.namelist()[0]
             if first_item.endswith('/'):

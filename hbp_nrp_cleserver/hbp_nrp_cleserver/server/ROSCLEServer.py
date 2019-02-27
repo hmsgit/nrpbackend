@@ -990,6 +990,10 @@ class ROSCLEServer(SimulationServer):
             logger.info("Shutting down prepare_custom_model service")
             self.__service_prepare_custom_model.shutdown()
 
+        # kill the csv logger thread
+        if self._csv_logger is not None:
+            self._csv_logger.shutdown()
+
     def _reset_world(self, request):
         """
         Helper function for reset() call, it handles the RESET_WORLD message.

@@ -35,7 +35,7 @@ __author__ = 'Hossain Mahmud'
 class TestRobotCallHandler(unittest.TestCase):
 
     def setUp(self):
-        self.mocked_robotmanager = patch("hbp_nrp_cleserver.server._RobotCallHandler.RobotManager").start()
+        self.mocked_simconfUtil = patch("hbp_nrp_cleserver.server._RobotCallHandler.SimConfUtil").start()
         self.mocked_robot = patch("hbp_nrp_cleserver.server._RobotCallHandler.Robot").start()
         self.mocked_clemsg = patch("hbp_nrp_cleserver.server._RobotCallHandler.msg").start()
         self.mocked_parser = patch("hbp_nrp_cleserver.server._RobotCallHandler.robotXmlParser").start()
@@ -50,7 +50,7 @@ class TestRobotCallHandler(unittest.TestCase):
         self.handler = RobotCallHandler(self.mocked_assembly)
 
     def tearDown(self):
-        self.mocked_robotmanager.stop()
+        self.mocked_simconfUtil.stop()
         self.mocked_robot.stop()
         self.mocked_clemsg.stop()
         self.mocked_parser.stop()

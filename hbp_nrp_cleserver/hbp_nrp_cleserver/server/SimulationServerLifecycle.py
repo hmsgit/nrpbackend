@@ -111,12 +111,12 @@ class SimulationServerLifecycle(SimulationLifecycle):
 
         :param future: The future that represented the start call
         """
-        exc = future.exception()
-        if isinstance(exc, TFException):
-            self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, exc.error_type,
-                                        str(exc), function_name=exc.tf_name)
-        elif exc is not None:
-            self.__server.publish_error("CLE", "General Error", str(exc),
+        ex = future.exception()
+        if isinstance(ex, TFException):
+            self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, ex.error_type,
+                                        str(ex), function_name=ex.tf_name)
+        elif ex is not None:
+            self.__server.publish_error("CLE", "General Error", str(ex),
                                         severity=CLEError.SEVERITY_CRITICAL)
             self.failed()
 

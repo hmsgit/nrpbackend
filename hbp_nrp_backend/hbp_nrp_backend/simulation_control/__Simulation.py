@@ -90,8 +90,7 @@ class Simulation(object):
         self.__creation_datetime = datetime.datetime.now(tz=timezone)
         self.__cle = None
         self.__state_machines_manager = StateMachineManager()
-        self.__kill_datetime = self.__creation_datetime + \
-            datetime.timedelta(minutes=30)
+        self.__kill_datetime = self.__creation_datetime + datetime.timedelta(minutes=30)
         self.__creationUniqueID = None
         self.__playback_path = playback_path
         self.__timeout_type = None
