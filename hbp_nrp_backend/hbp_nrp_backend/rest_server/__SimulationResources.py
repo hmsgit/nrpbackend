@@ -29,10 +29,11 @@ for retrieving the simulation resource file list
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
 
-from hbp_nrp_backend import NRPServicesClientErrorException
+from hbp_nrp_backend import NRPServicesClientErrorException, NRPServicesWrongUserException
 from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.rest_server.RestSyncMiddleware import RestSyncMiddleware
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 
 from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
 from hbp_nrp_commons.bibi_functions import docstring_parameter
@@ -105,6 +106,10 @@ class SimulationResources(Resource):
                                                ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404)
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+            {
                 "code": 200,
                 "message": "Success. The simulation resource files were retrieved"
             }
@@ -112,7 +117,8 @@ class SimulationResources(Resource):
     )
     @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
                          ErrorMessages.EXPERIMENT_CONF_FILE_NOT_FOUND_404,
-                         ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404)
+                         ErrorMessages.EXPERIMENT_BIBI_FILE_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     @RestSyncMiddleware.threadsafe
     def get(self, sim_id):
         """
@@ -124,10 +130,15 @@ class SimulationResources(Resource):
 
         :status 500: {0}
         :status 404: {1}. Or, {2}.
+        :status 401: {3}
         :status 200: Success. The simulation BIBI configuration files were retrieved
         """
 
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
+
         experiment_file = simulation.lifecycle.experiment_path
 
         if not os.path.isfile(experiment_file):

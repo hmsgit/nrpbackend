@@ -29,6 +29,7 @@ calling the service.
 __author__ = 'Oliver Denninger'
 
 from flask_restful import reqparse
+from flask import request
 import logging
 from backports.functools_lru_cache import lru_cache
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
@@ -50,11 +51,9 @@ class UserAuthentication(object):
     client = StorageClient()
 
     @staticmethod
-    def get_header(request, header_name, default_value):
+    def get_header(header_name, default_value):
         """
-        Gets the value of the headername header from the given HTTP request
-        :param request: The request
-        :param header_name: The name of the header
+        Gets the value of the headername header from the current HTTP
         :param default_value: If nothing is found, this will be returned
         :return: The value of the headername header or if not found default_value
         """
@@ -68,26 +67,22 @@ class UserAuthentication(object):
         return header_value
 
     @staticmethod
-    def get_x_user_name_header(request):
+    def get_x_user_name_header():
         """
-        Gets the value of the 'X-User-Name' header from the given HTTP request
-        :param request: The request
+        Gets the value of the 'X-User-Name' header from the current HTTP
         :return: The value of the 'X-User-Name' header or if not found 'default-owner'
         """
-        return UserAuthentication.get_header(request,
-                                               UserAuthentication.HTTP_HEADER_USER_NAME,
-                                               UserAuthentication.DEFAULT_OWNER)
+        return UserAuthentication.get_header(UserAuthentication.HTTP_HEADER_USER_NAME,
+                                              UserAuthentication.DEFAULT_OWNER)
 
     @staticmethod
-    def get_header_token(request):
+    def get_header_token():
         """
-        Gets the value of the 'Authorization' header from the given HTTP request
-        :param request: The request
+        Gets the value of the 'Authorization' header from the current HTTP
         :return: The value of the 'Authorization' header or if not found 'no-token'
         """
-        token_field = UserAuthentication.get_header(request,
-                                                      UserAuthentication.HEADER_TOKEN,
-                                                      UserAuthentication.NO_TOKEN)
+        token_field = UserAuthentication.get_header(UserAuthentication.HEADER_TOKEN,
+                                                     UserAuthentication.NO_TOKEN)
         if (token_field != UserAuthentication.NO_TOKEN):
             return token_field.split()[1]
         else:
@@ -109,18 +104,17 @@ class UserAuthentication(object):
             return None
 
     @staticmethod
-    def get_user(request):
+    def get_user():
         """
-        Gets the owner of a request, from the header data
+        Gets the owner of the current request, from the header data
         It uses the x-user-name if specified, else by the authentication token
-        :param token: The authenticatiomn token
         :return: The user's id
         """
-        username = UserAuthentication.get_x_user_name_header(request)
+        username = UserAuthentication.get_x_user_name_header()
         if username != UserAuthentication.DEFAULT_OWNER:
             return username
 
-        token = UserAuthentication.get_header_token(request)
+        token = UserAuthentication.get_header_token()
         if token == UserAuthentication.NO_TOKEN:
             return username
 
@@ -128,15 +122,48 @@ class UserAuthentication(object):
         return token_owner if token_owner else username
 
     @staticmethod
-    def matches_x_user_name_header(request, user):
+    @lru_cache()
+    def __user_can_access_experiment(token, context_id, experiment_id):
         """
-        Checks if the value of the 'X-User-Name' header from the given HTTP request matches
-        the given user name
-        :param request: The request
-        :param user: The user name to check
-        :return: True if value of the 'X-User-Name' header and user name match, False otherwise
+        Checkis if a user can access a simulation.
+        :param token: The authentication token
+        :param context_id: Optional context idenfifier
+        :param experiment_id: The simulation's experiment id
+        :return: Whether the user can access the simulation
         """
-        request_user = UserAuthentication.get_user(request)
+
+        if token == UserAuthentication.NO_TOKEN:
+            return False
+
+        try:
+            return UserAuthentication.client.can_acess_experiment(token, context_id, experiment_id)
+        # pylint: disable=broad-except
+        except Exception:
+            return False
+
+    @staticmethod
+    def can_view(simulation):
+        """
+        Checks if the current HTTP request is authenticated by
+        someone the simulation was shared with
+        :param simulation: The simulation
+        :return: True if the simulation was shared with the request's user, False otherwise
+        """
+
+        token = UserAuthentication.get_header_token()
+        return UserAuthentication.__user_can_access_experiment(token,
+                                                               simulation.ctx_id,
+                                                               simulation.experiment_id)
+
+    @staticmethod
+    def can_modify(simulation):
+        """
+        Checks if the current HTTP request is authenticated by the simulation owner
+        :param simulation: The simulation
+        :return: True if the request was triggered by a simulation owner, False otherwise
+        """
+        user = simulation.owner
+        request_user = UserAuthentication.get_user()
         if user == request_user:
             return True
         else:

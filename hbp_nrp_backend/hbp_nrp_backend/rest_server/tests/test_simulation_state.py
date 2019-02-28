@@ -47,9 +47,14 @@ class TestSimulationStateService(RestTest):
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state', new_callable=PropertyMock)
         self.mock_state = self.patch_state.start()
 
+        self.path_can_view = patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
+
     def tearDown(self):
         del simulations[:]
         self.patch_state.stop()
+        self.path_can_view.stop()
 
     def test_get_state(self):
         self.mock_state.return_value = "foobar"
@@ -66,7 +71,7 @@ class TestSimulationStateService(RestTest):
 
     @patch("hbp_nrp_backend.rest_server.__SimulationState.UserAuthentication")
     def test_set_state_wrong_user(self, user_auth):
-        user_auth.matches_x_user_name_header.return_value = False
+        user_auth.can_modify.return_value = False
         self.mock_state.return_value = "foo"
         response = self.client.put('/simulation/0/state', data='{"state": "bar"}')
         assert (isinstance(response, Response))

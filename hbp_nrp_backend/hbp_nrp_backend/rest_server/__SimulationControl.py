@@ -82,12 +82,17 @@ class SimulationControl(Resource):
                 "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+            {
                 "code": 200,
                 "message": "Success. The simulation with the given ID is retrieved"
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     @marshal_with(Simulation.resource_fields)
     def get(self, sim_id):
         """
@@ -110,9 +115,15 @@ class SimulationControl(Resource):
         :> json string creationUniqueID: unique creation ID (used by Frontend to identify this sim.)
 
         :status 404: {0}
+        :status 401: {1}
         :status 200: The simulation with the given ID is successfully retrieved
         """
-        return _get_simulation_or_abort(sim_id), 200
+        simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
+
+        return simulation, 200
 
 
 @swagger.model
@@ -207,7 +218,7 @@ class LightControl(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesClientErrorException(
                 "You need to be the simulation owner to trigger interactions", error_code=401)
 
@@ -412,7 +423,7 @@ class MaterialControl(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)

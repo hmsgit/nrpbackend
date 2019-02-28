@@ -30,7 +30,7 @@ __author__ = 'Bernd Eckstein'
 import unittest
 import json
 
-from mock import MagicMock
+from mock import MagicMock, patch
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest
 from collections import defaultdict
@@ -123,6 +123,12 @@ class TestSimulationBrain(RestTest):
         self.sim.cle = MagicMock()
         self.sim.cle.get_simulation_brain = MagicMock(return_value=brain_data)
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_ok)
+
+        self.path_can_view = patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
+    def tearDown(self):
+        self.path_can_view.stop()
 
     def test_simulation_brain_get(self):
         response = self.client.get('/simulation/0/brain')

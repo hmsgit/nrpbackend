@@ -148,7 +148,7 @@ class SimulationService(Resource):
         sim_experiment_id = body.get('experimentID', None)
         sim_state = body.get('state', 'created')
         playback_path = body.get('playbackPath', None)
-        sim_owner = UserAuthentication.get_user(request)
+        sim_owner = UserAuthentication.get_user()
         sim_brain_processes = body.get('brainProcesses', 1)
         private = body.get('private', False)
         ctx_id = body.get('ctxId', None)

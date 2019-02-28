@@ -32,6 +32,7 @@ import requests
 from mock import patch, mock_open, Mock
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.storage_client_api import StorageClient
+from hbp_nrp_backend import NRPServicesGeneralException
 
 # Used to mock all the http requests by providing a response and a
 # status code
@@ -380,6 +381,22 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
 
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
+    def test_filter_textures(self):
+        textures_names = [
+            'a.txt',
+            'b',
+            'c.jpg',
+            'd.jpeg',
+            'e.png',
+            'f.gif',
+            'g.zip',
+            ]
+        textures = [{'name': name} for name in textures_names]
+        filtered_textures = StorageClient.StorageClient.filter_textures(textures)
+        expectation = textures[2:6]
+        self.assertEqual(filtered_textures, expectation)
+
+
     # CREATE OR UPDATE
     @patch('requests.post', side_effect=mocked_create_or_update_ok)
     def test_create_or_update_successfully(self, mocked_post):
@@ -689,6 +706,24 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
                                                    exp_conf_api_gen.CreateFromDocument,
                                                    exp_conf_api_gen.ExD_)
         self.assertEqual(res.name, 'Baseball tutorial experiment - Exercise')
+
+    def test_parse_and_check_fails(self):
+        # invalid exc file
+        experiment_path = os.path.join(self.experiments_directory, "experiment_configuration.exc")
+        self.assertRaises(NRPServicesGeneralException,
+                          StorageClient.StorageClient.parse_and_check_file_is_valid,
+                          experiment_path,
+                          lambda _: None,
+                          exp_conf_api_gen.ExD_)
+
+    def test_parse_and_check_throws(self):
+        # invalid exc file
+        experiment_path = os.path.join(self.experiments_directory, "experiment_configuration.exc")
+        self.assertRaises(NRPServicesGeneralException,
+                          StorageClient.StorageClient.parse_and_check_file_is_valid,
+                          experiment_path,
+                          lambda _: Exception(),
+                          exp_conf_api_gen.ExD_)
 
     # CLONE ALL EXPERIMENT FILES
     @patch('hbp_nrp_backend.storage_client_api.StorageClient.exp_conf_api_gen')

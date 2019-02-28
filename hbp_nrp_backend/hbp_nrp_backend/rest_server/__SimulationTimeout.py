@@ -26,7 +26,6 @@ This module contains the REST implementation
 for extending the simulation timeout
 """
 
-from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
@@ -101,7 +100,7 @@ class SimulationTimeout(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         if simulation.timeout_type == TimeoutType.SIMULATION:

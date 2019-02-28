@@ -115,6 +115,17 @@ class StorageClient(object):
             logger.exception(err)
             raise err
 
+    def can_acess_experiment(self, token, context_id, experiment_id):
+        """
+        Verifies if an authenticated user can access an experiment
+         :param token: The authentication token
+        :param context_id: Optional context idenfifier
+        :param experiment_id: The  experiment id
+        :return: Whether the user can access the experiment
+        """
+
+        return self.list_experiments(token, context_id, name=experiment_id) is not None
+
     def list_experiments(self, token, context_id, get_all=False, name=None):
         """
         Lists the experiments the user has access to depending on his token

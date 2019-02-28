@@ -122,12 +122,17 @@ class SimulationTransferFunctions(Resource):
                 "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+            {
                 "code": 200,
                 "message": "Success. Transfer functions retrieved successfully"
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id):
         """
         Gets all transfer functions (robot to neuron and neuron to robot) in a dictionary with
@@ -139,10 +144,14 @@ class SimulationTransferFunctions(Resource):
         :> json dict active: Dictionary containing a mask for active TFs ('name': 'isActive')
 
         :status 404: {0}
+        :status 401: {1}
         :status 200: Transfer functions retrieved successfully
         """
 
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
 
         transfer_functions = dict()
         active_tfs_mask = dict()
@@ -218,7 +227,7 @@ class SimulationTransferFunctions(Resource):
         :status 200: Success. The transfer function was successfully added
         """
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         transfer_function_source = request.data
@@ -312,7 +321,7 @@ class SimulationTransferFunction(Resource):
         :status 200: Success. The transfer function was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         transfer_function_source = request.data
@@ -379,7 +388,7 @@ class SimulationTransferFunction(Resource):
         :status 200: Success. The code was successfully patched
         """
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         response = simulation.cle.delete_simulation_transfer_function(transfer_function_name)
@@ -463,7 +472,7 @@ class SimulationTransferFunctionActivation(Resource):
         """
 
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         activate_bool = activate.lower() == "true"  # convert unicode to boolean

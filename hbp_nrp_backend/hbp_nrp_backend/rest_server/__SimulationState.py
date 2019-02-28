@@ -86,7 +86,8 @@ class SimulationState(Resource):
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id):
         """
         Gets the state of the simulation with the specified simulation id. Possible values are:
@@ -97,9 +98,14 @@ class SimulationState(Resource):
         :> json string state: The state of the simulation
 
         :status 404: {0}
+        :status 401: {1}
         :status 200: The state of the simulation with the given ID was successfully retrieved
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
+
         return {'state': str(simulation.state)}, 200
 
     @swagger.operation(
@@ -161,7 +167,7 @@ class SimulationState(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)

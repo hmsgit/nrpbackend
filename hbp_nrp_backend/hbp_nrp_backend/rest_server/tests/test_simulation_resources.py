@@ -43,6 +43,7 @@ class MockedSimulationLifeCycle:
 class MockedSimulation:
 
     lifecycle = MockedSimulationLifeCycle()
+    ctx_id = None
     experiment_id = False
 
 
@@ -50,6 +51,11 @@ class TestSimulationResources(RestTest):
 
     def setUp(self):
         self.test_directory = os.path.split(__file__)[0]
+        self.path_can_view = patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
+    def tearDown(self):
+        self.path_can_view.stop()
 
     @patch('hbp_nrp_backend.rest_server.__SimulationResources._get_simulation_or_abort')
     def test_get_simulation_resources(self, patch_SimulationControl):

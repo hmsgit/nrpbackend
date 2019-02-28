@@ -36,6 +36,9 @@ from cle_ros_msgs import srv
 class TestSimulationRecorder(RestTest):
     def setUp(self):
 
+        self.path_can_view = patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
         del simulations[:]
         simulations.append(Simulation(0, 'experiment1', 'default-owner', 'created'))
         simulations.append(Simulation(1, 'experiment2', 'other-owner', 'created'))
@@ -43,6 +46,9 @@ class TestSimulationRecorder(RestTest):
         for s in simulations:
             s.cle = MagicMock()
             s.cle.command_simulation_recorder = MagicMock(return_value=srv.SimulationRecorderResponse())
+
+    def tearDown(self):
+        self.path_can_view.stop()
 
     def test_get(self):
 
@@ -112,7 +118,7 @@ class TestSimulationRecorder(RestTest):
         # incorrect owner
         response = self.client.post('/simulation/1/recorder/start')
         self.assertEqual(401, response.status_code)
-        self.assertEqual('{"data": null, "message": "You need to be the simulation owner to apply your changes.                If you are the owner, try leaving and then re-joining the experiment.", "type": "Wrong user"}', response.data.strip())
+        self.assertEqual('{"data": null, "message": "You need to be the simulation owner to apply your changes or the simulation should be shared with you for you to be able to access it.                 If you are supposed to have the access, try leaving and then re-joining the experiment.", "type": "Wrong user"}', response.data.strip())
 
         # invalid command / request path
         response = self.client.post('/simulation/0/recorder/foo')

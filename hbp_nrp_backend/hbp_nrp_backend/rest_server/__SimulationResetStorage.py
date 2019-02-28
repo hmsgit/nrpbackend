@@ -140,7 +140,7 @@ class SimulationResetStorage(Resource):
         """
         sim = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
+        if not UserAuthentication.can_modify(sim):
             raise NRPServicesWrongUserException()
 
         req_body = request.get_json(force=True)
@@ -193,7 +193,7 @@ class SimulationResetStorage(Resource):
         cls.storage_client.clear_temp_sim_directory()
 
         _ = cls.storage_client.clone_all_experiment_files(
-            UserAuthentication.get_header_token(request),
+            UserAuthentication.get_header_token(),
             experiment_id)
 
         exp_conf, bibi_conf = get_experiment_data(simulation.lifecycle.experiment_path)
@@ -302,7 +302,7 @@ class SimulationResetStorage(Resource):
         """
         del context_id  # Unused
 
-        request_token = UserAuthentication.get_header_token(request)
+        request_token = UserAuthentication.get_header_token()
 
         experiment_file = cls.storage_client.get_file(
             request_token, experiment_id, 'experiment_configuration.exc', by_name=True)
@@ -358,7 +358,7 @@ class SimulationResetStorage(Resource):
         """
         del context_id  # Unused
 
-        request_token = UserAuthentication.get_header_token(request)
+        request_token = UserAuthentication.get_header_token()
 
         # find the sdf filename from the .exc
         experiment_file = cls.storage_client.get_file(

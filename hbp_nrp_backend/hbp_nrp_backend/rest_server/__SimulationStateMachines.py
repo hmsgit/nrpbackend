@@ -103,12 +103,18 @@ class SimulationStateMachines(Resource):
                 "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+
+            {
                 "code": 200,
                 "message": "Success. The state machines were returned"
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id):
         """
         Get code of all state machines. This works in all simulation states except 'created', where
@@ -119,9 +125,14 @@ class SimulationStateMachines(Resource):
         :> json dict data: Dictionary containing all state machines ('name': 'source')
 
         :status 404: {0}
+        :status 401: {1}
         :status 200: Success. The state machines were returned
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
+
         state_machines = dict()
         for sm in simulation.state_machines:
             state_machines[sm.sm_id] = simulation.get_state_machine_code(sm.sm_id)
@@ -204,7 +215,7 @@ class SimulationStateMachine(Resource):
         """
         simulation = _get_simulation_or_abort(sim_id)
         assert simulation, Simulation
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         state_machine_source = request.data
@@ -296,7 +307,7 @@ class SimulationStateMachine(Resource):
                      state machine function was correctly deleted though.
         """
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         failure_message = "State machine destruction failed: "

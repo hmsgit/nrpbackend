@@ -43,6 +43,13 @@ class MockServiceResponse:
 
 class TestWorldSDFService(RestTest):
 
+    def setUp(self):
+        self.path_can_view = mock.patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
+    def tearDown(self):
+        self.path_can_view.stop()
+
     @mock.patch('hbp_nrp_backend.rest_server.__WorldSDFService.rospy')
     def test_worldSDF_service_get(self, mckd_rospy):
         # setup the mocks

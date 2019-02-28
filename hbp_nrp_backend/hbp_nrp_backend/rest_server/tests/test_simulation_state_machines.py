@@ -56,6 +56,9 @@ class TestSimulationStateMachines(RestTest):
 
     def setUp(self):
 
+        self.path_can_view = patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state')
         self.mock_state = self.patch_state.start()
 
@@ -84,6 +87,7 @@ class TestSimulationStateMachines(RestTest):
 
     def tearDown(self):
         del simulations[:]
+        self.path_can_view.stop()
         self.patch_state.stop()
         self.patch_sm.stop()
 

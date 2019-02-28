@@ -45,7 +45,7 @@ from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 logger = logging.getLogger(__name__)
 
 
-class SimulationRobots(Resource):
+class SimulationRobots(Resource): # pragma: no cover
     """
     This resource handles the robot models in a running simulation
     """
@@ -63,6 +63,7 @@ class SimulationRobots(Resource):
         responseMessages=[
             {"code": 500, "message": ErrorMessages.SERVER_ERROR_500},
             {"code": 404, "message": ErrorMessages.SIMULATION_NOT_FOUND_404},
+            {"code": 401, "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW},
             {"code": 400, "message": "Invalid request, the JSON parameters are incorrect."},
             {"code": 200, "message": "Success."},
         ]
@@ -73,6 +74,9 @@ class SimulationRobots(Resource):
         """
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(sim):
+            raise NRPServicesWrongUserException()
 
         try:
             robots = SimulationRobots.__get_simulation_robots(sim)
@@ -116,7 +120,7 @@ class SimulationRobots(Resource):
         } if pose else {}
 
 
-class SimulationRobot(Resource):
+class SimulationRobot(Resource): # pragma: no cover
     """
     This resource handles the robot models in a running simulation
     """
@@ -193,7 +197,7 @@ class SimulationRobot(Resource):
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
+        if not UserAuthentication.can_modify(sim):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
@@ -261,7 +265,7 @@ class SimulationRobot(Resource):
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
+        if not UserAuthentication.can_modify(sim):
             raise NRPServicesWrongUserException()
         try:
             res, err = SimulationRobot.__delete_robot(sim, robot_id)
@@ -320,7 +324,7 @@ class SimulationRobot(Resource):
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
+        if not UserAuthentication.can_modify(sim):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)

@@ -53,6 +53,10 @@ class ErrorMessages(object):
     OPERATION_INVALID_IN_CURRENT_STATE_403 = "The operation is forbidden while the simulation is " \
                                              "in its current state"
 
+    SIMULATION_PERMISSION_401_VIEW = "Insufficient permissions to see the simulation changes." \
+                                "You can only see the simulations you own or those for which " \
+                                "the experiment has been shared with you"
+
     SIMULATION_PERMISSION_401 = "Insufficient permissions to apply changes. Operation only allowed"\
                                 " by simulation owner"
 

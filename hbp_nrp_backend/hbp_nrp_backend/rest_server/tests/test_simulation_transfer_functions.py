@@ -55,8 +55,10 @@ class TestSimulationTransferFunctions(RestTest):
         self.assertEqual("tf1", get_tf_name(
             "def tf1(a,b,c):\n  def tf2(a):\n    return  return"))
 
+    @patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
-    def test_simulation_transfer_functions_get(self, mocked_get_simulation_or_abort):
+    def test_simulation_transfer_functions_get(self, mocked_get_simulation_or_abort, mocked_can_view):
+        mocked_can_view.return_value = True
         mocked_simulation = MagicMock()
         mocked_simulation.cle = MagicMock()
         transfer_functions_list = [
@@ -87,7 +89,7 @@ class TestSimulationTransferFunctions(RestTest):
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
         self.assertEqual(response.data, '200\n')
-    
+
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_functions_post_duplicate(self, mocked_get_simulation_or_abort):
         mocked_get_simulation_or_abort.return_value = self.sim
@@ -129,7 +131,7 @@ class TestSimulationTransferFunctions(RestTest):
             '/simulation/1/transfer-functions/amazing_tf_35')
         self.assertRaises(NRPServicesClientErrorException)
         self.assertEqual(response.status_code, 401)
-    
+
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_function_post_success(self, mocked_get_simulation_or_abort):
         mocked_get_simulation_or_abort.return_value = self.sim
@@ -140,7 +142,7 @@ class TestSimulationTransferFunctions(RestTest):
                                         "def tf1  (a,b,c):\n return"),
                                     content_type='plain/text')
         self.assertEqual(response.data, '200\n')
-    
+
     @patch('hbp_nrp_backend.rest_server.__SimulationTransferFunctions._get_simulation_or_abort')
     def test_simulation_transfer_function_put_duplicate(self, mocked_get_simulation_or_abort):
         mocked_get_simulation_or_abort.return_value = self.sim

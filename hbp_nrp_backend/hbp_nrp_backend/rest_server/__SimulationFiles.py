@@ -27,7 +27,6 @@ This module contains REST services for handling files in a running simulation
 
 import logging
 
-from flask import request
 from flask_restful import Resource
 from flask_restful_swagger import swagger
 
@@ -78,7 +77,7 @@ class SimulationFiles(Resource):    # pragma: no cover
         responseMessages=[
             {"code": 500, "message": ErrorMessages.SERVER_ERROR_500},
             {"code": 404, "message": ErrorMessages.SIMULATION_NOT_FOUND_404},
-            {"code": 401, "message": ErrorMessages.SIMULATION_PERMISSION_401},
+            {"code": 401, "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW},
             {"code": 400, "message": "Invalid request, the JSON parameters are incorrect."},
             {"code": 200, "message": "Success."},
         ]
@@ -93,7 +92,7 @@ class SimulationFiles(Resource):    # pragma: no cover
         # pylint: disable=no-self-use
         sim = _get_simulation_or_abort(sim_id)
 
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
+        if not UserAuthentication.can_view(sim):
             raise NRPServicesWrongUserException()
 
         if resource_type not in SimulationFiles.RESOURCE_TYPES:

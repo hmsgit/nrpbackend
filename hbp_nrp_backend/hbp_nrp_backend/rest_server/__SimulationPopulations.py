@@ -129,12 +129,17 @@ class SimulationPopulations(Resource):
                 "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+            {
                 "code": 200,
                 "message": "Success. The population of the brain are retrieved"
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id):
         """
         Gets the neurons of the brain in a simulation with the specified simulation id.
@@ -145,9 +150,13 @@ class SimulationPopulations(Resource):
                                    name, neuron indices, neuron model, parameters and gids
 
         :status 404: {0}
+        :status 401: {1}
         :status 200: The neurons of the simulation with the given ID where successfully retrieved
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
 
         # Get Neurons from cle
         neurons = simulation.cle.get_populations()
@@ -220,7 +229,7 @@ class SimulationPopulations(Resource):
         """
 
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)

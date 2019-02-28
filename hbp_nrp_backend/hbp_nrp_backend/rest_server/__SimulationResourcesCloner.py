@@ -76,8 +76,7 @@ class SimulationResourcesCloner(Resource):
         exp_id = body.get('exp_id', None)
         client = StorageClient()
         try:
-            client.copy_resources_folders_to_tmp(UserAuthentication.get_header_token(
-                request), exp_id)
+            client.copy_resources_folders_to_tmp(UserAuthentication.get_header_token(), exp_id)
             return {'msg': 'The files were copied successfull'}, 200
         except Exception:
             raise NRPServicesGeneralException(

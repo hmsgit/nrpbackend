@@ -28,7 +28,6 @@ of a simulation.
 
 from flask_restful_swagger import swagger
 from flask_restful import Resource
-from flask import request
 
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
@@ -86,12 +85,18 @@ class SimulationRecorder(Resource):
                 'message': ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+            {
                 'code': 200,
                 'message': 'Recorder status retrieved successfully'
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SERVER_ERROR_500, ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id, command):
         """
         Queries the simulation recorder for a value/status. See parameter description for
@@ -102,11 +107,15 @@ class SimulationRecorder(Resource):
 
         :status 500: {0}
         :status 404: {1}
+        :status 401: {2}
         :status 200: Success. The query was issued and value returned.
         """
 
         # validate simulation id, allow any users/viewers to query recorder
         sim = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(sim):
+            raise NRPServicesWrongUserException()
 
         # validate the command type
         if command not in ['is-recording']:
@@ -152,6 +161,10 @@ class SimulationRecorder(Resource):
                 'message': ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401
+            },
+            {
                 'code': 400,
                 'message': 'Invalid/refused command based on recorder state'
             },
@@ -161,7 +174,9 @@ class SimulationRecorder(Resource):
             }
         ]
     )
-    @docstring_parameter(ErrorMessages.SERVER_ERROR_500, ErrorMessages.SIMULATION_NOT_FOUND_404)
+    @docstring_parameter(ErrorMessages.SERVER_ERROR_500,
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401)
     def post(self, sim_id, command):
         """
         Issue user commands to the simulator recorder. See parameter description for
@@ -172,6 +187,7 @@ class SimulationRecorder(Resource):
 
         :status 500: {0}
         :status 404: {1}
+        :status 401: {2}
         :status 400: The command is invalid/refused by recorder - see message returned.
         :status 200: Success. The command was issued.
         """
@@ -180,7 +196,7 @@ class SimulationRecorder(Resource):
         sim = _get_simulation_or_abort(sim_id)
 
         # only the simulation owner can command the recorder
-        if not UserAuthentication.matches_x_user_name_header(request, sim.owner):
+        if not UserAuthentication.can_modify(sim):
             raise NRPServicesWrongUserException()
 
         # pure local command to save file to storage
@@ -240,14 +256,14 @@ class SimulationRecorder(Resource):
 
         client = StorageClient()
 
-        client.create_folder(UserAuthentication.get_header_token(request),
+        client.create_folder(UserAuthentication.get_header_token(),
                                 sim.experiment_id,
                                 client_record_folder)
         try:
             with open(temp_dest, 'rb') as record_file:
                 zip_data = record_file.read()
                 client.create_or_update(
-                    UserAuthentication.get_header_token(request),
+                    UserAuthentication.get_header_token(),
                     sim.experiment_id,
                     os.path.join(client_record_folder, file_name),
                     zip_data,

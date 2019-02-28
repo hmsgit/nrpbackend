@@ -30,7 +30,6 @@ import datetime
 import zipfile
 import json
 import logging
-from flask import request
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.cle_interface import TOPIC_LIFECYCLE
@@ -123,7 +122,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         # pylint: disable=too-many-locals
         environments_list = self.__storageClient.get_custom_models(
-            UserAuthentication.get_header_token(request),
+            UserAuthentication.get_header_token(),
             self.simulation.ctx_id, 'environments')
         # we use the paths of the uploaded zips to make sure the selected
         # zip is there
@@ -138,7 +137,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             model_data = {'uuid': zipped_model_path[0]}
             json_model_data = json.dumps(model_data)
             storage_env_zip_data = self.__storageClient.get_custom_model(
-                UserAuthentication.get_header_token(request),
+                UserAuthentication.get_header_token(),
                 self.simulation.ctx_id, json_model_data)
             env_sdf_name = os.path.basename(
                 experiment.environmentModel.src)
@@ -154,7 +153,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             # in the zip, cause the user might have made manual changes
             self.__storageClient.clone_file(
                 env_sdf_name,
-                UserAuthentication.get_header_token(request),
+                UserAuthentication.get_header_token(),
                 self.simulation.experiment_id)
         # if the zip is not there, prompt the user to check his uploaded
         # models
@@ -177,9 +176,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                                         os.path.basename(experiment.environmentModel.src))
         with open(environment_path, "w") as f:
             f.write(self.__storageClient.get_file(
-                UserAuthentication.get_header_token(request),
+                UserAuthentication.get_header_token(),
                 self.__storageClient.get_folder_uuid_by_name(
-                    UserAuthentication.get_header_token(request),
+                    UserAuthentication.get_header_token(),
                     self.simulation.ctx_id, 'environments'),
                 os.path.basename(experiment.environmentModel.src),
                 by_name=True))
@@ -211,9 +210,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                                                 os.path.basename(experiment.environmentModel.src))
                 with open(environment_path, "w") as f:
                     f.write(self.__storageClient.get_file(
-                        UserAuthentication.get_header_token(request),
+                        UserAuthentication.get_header_token(),
                         self.__storageClient.get_folder_uuid_by_name(
-                            UserAuthentication.get_header_token(request),
+                            UserAuthentication.get_header_token(),
                             self.simulation.ctx_id, 'environments'),
                         os.path.basename(experiment.environmentModel.src), by_name=True))
             else:
@@ -234,7 +233,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             using_storage = simulation.private
             if using_storage:
                 experiment_paths = self.__storageClient.clone_all_experiment_files(
-                    UserAuthentication.get_header_token(request),
+                    UserAuthentication.get_header_token(),
                     simulation.experiment_id)
                 self.__experiment_path = experiment_paths['experiment_conf']
                 self.__simulation_root_folder = self.__storageClient.get_simulation_directory()
@@ -272,7 +271,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
                 simulation.sim_id, str(timeout), simulation.timeout_type,
                 simulation.playback_path,
-                UserAuthentication.get_header_token(request),
+                UserAuthentication.get_header_token(),
                 self.simulation.ctx_id,
                 self.simulation.experiment_id
             )

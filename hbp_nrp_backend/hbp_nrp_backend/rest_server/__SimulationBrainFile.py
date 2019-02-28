@@ -141,13 +141,18 @@ class SimulationBrainFile(Resource):
                 "message": ErrorMessages.SIMULATION_NOT_FOUND_404
             },
             {
+                "code": 401,
+                "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+            },
+            {
                 "code": 200,
                 "message": "Success. The brain file was retrieved"
             }
         ]
     )
     @docstring_parameter(ErrorMessages.MODEXP_VARIABLE_ERROR,
-                         ErrorMessages.SIMULATION_NOT_FOUND_404)
+                         ErrorMessages.SIMULATION_NOT_FOUND_404,
+                         ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id):
         """
         Get brain data of the simulation specified with simulation ID.
@@ -162,10 +167,14 @@ class SimulationBrainFile(Resource):
 
         :status 500: {0}
         :status 404: {1}
+        :status 401: {2}
         :status 200: Success. The experiment brain file was retrieved
         """
 
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
 
         result = simulation.cle.get_simulation_brain()
 
@@ -247,7 +256,7 @@ class SimulationBrainFile(Resource):
         """
 
         simulation = _get_simulation_or_abort(sim_id)
-        if not UserAuthentication.matches_x_user_name_header(request, simulation.owner):
+        if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)

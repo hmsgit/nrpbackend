@@ -36,13 +36,13 @@ from hbp_nrp_backend import NRPServicesClientErrorException, NRPServicesUnavaila
 from gazebo_msgs.srv import ExportWorldSDF
 from flask_restful import fields, Resource
 from flask_restful_swagger import swagger
-from flask import request
 from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
+from hbp_nrp_backend import NRPServicesWrongUserException
 
 # pylint: disable=no-self-use
 
@@ -71,12 +71,16 @@ class WorldSDFService(Resource):
             "code": 500,
             "message": "ROS service not available"
         }, {
+            "code": 401,
+            "message": ErrorMessages.SIMULATION_PERMISSION_401_VIEW
+        }, {
             "code": 400,
             "message": "A ROS error occurred"
         }, {
             "code": 200,
             "message": "SDF successfully returned"
         }])
+    @docstring_parameter(ErrorMessages.SIMULATION_PERMISSION_401_VIEW)
     def get(self, sim_id):
         """
         Returns the SDF file describing the world in which the simulation is carried out
@@ -84,10 +88,15 @@ class WorldSDFService(Resource):
         :> json string sdf: the SDF string describing the world excluding the robots involved
 
         :status 500: ROS service not available
+        :status 401: {0}
         :status 400: A ROS error occurred
         :status 200: SDF file successfully returned
         """
         simulation = _get_simulation_or_abort(sim_id)
+
+        if not UserAuthentication.can_view(simulation):
+            raise NRPServicesWrongUserException()
+
         try:
             rospy.wait_for_service('/gazebo/export_world_sdf', 3)
         except rospy.ROSException as exc:
@@ -166,8 +175,7 @@ class WorldSDFService(Resource):
 
         # find the sdf world filename from the .exc
         exp_xml_file_path = client.clone_file('experiment_configuration.exc',
-                                              UserAuthentication.get_header_token(
-                                                  request),
+                                              UserAuthentication.get_header_token(),
                                               simulation.experiment_id)
 
         experiment_file = client.parse_and_check_file_is_valid(exp_xml_file_path,
@@ -177,8 +185,7 @@ class WorldSDFService(Resource):
         world_file_name = experiment_file.environmentModel.src
 
         client.create_or_update(
-            UserAuthentication.get_header_token(
-                request), simulation.experiment_id,
+            UserAuthentication.get_header_token(), simulation.experiment_id,
             world_file_name, sdf_string, "text/plain")
 
         return 200

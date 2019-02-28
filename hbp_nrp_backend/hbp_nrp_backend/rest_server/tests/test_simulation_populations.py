@@ -98,6 +98,12 @@ class TestSimulationService(RestTest):
         simulations[0].cle.set_simulation_populations = mock.MagicMock(return_value=set_ret_ok)
         simulations[0].cle.get_populations = mock.MagicMock(return_value=neurons)
 
+        self.path_can_view = mock.patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
+        self.path_can_view.start().return_value = True
+
+    def tearDown(self):
+        self.path_can_view.stop()
+
     def test_get_neurons_sim_ok(self):
         response = self.client.get('/simulation/0/populations')
         self.assertEqual(200, response.status_code)
