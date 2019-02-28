@@ -38,15 +38,45 @@ from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_a
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
+import json
+
 # pylint: disable=no-self-use
 # because it seems to be buggy:
 # pylint: disable=pointless-string-statement
+
+
+@swagger.model
+class PopulationIndices(object):
+    """
+    Swagger documentation object
+    """
+    resource_fields = {
+        'to': fields.Integer,
+        'step': fields.Integer,
+        'from': fields.Integer
+    }
+    required = ['to', 'step', 'from']
+
+
+@swagger.model
+@swagger.nested(population_name=PopulationIndices.__name__)
+class PopulationDictionary(object):
+    """
+    Swagger documentation object
+    Population dictionary
+    """
+    resource_fields = {
+        'population_name': fields.Nested(PopulationIndices.resource_fields)
+    }
+    required = ['population_name']
 
 
 class SimulationBrainFile(Resource):
     """
     The resource to get and set brain files in the running simulation
     """
+    @swagger.model
+    @swagger.nested(brain_populations=PopulationDictionary.__name__)
     class GetBrain(object):
         """
         Get Experiment Brain
@@ -56,7 +86,8 @@ class SimulationBrainFile(Resource):
         resource_fields = {
             'brain_type': fields.String(),
             'data_type': fields.String(),
-            'data': fields.String()
+            'data': fields.String(),
+            'brain_populations': fields.Nested(PopulationDictionary.resource_fields)
         }
         required = ['brain_type', 'data_type', 'data', 'brain_populations']
 
@@ -69,7 +100,8 @@ class SimulationBrainFile(Resource):
         resource_fields = {
             'brain_type': fields.String(),
             'data_type': fields.String(),
-            'data': fields.String()
+            'data': fields.String(),
+            'brain_populations': fields.Nested(PopulationDictionary.resource_fields)
         }
         required = ['brain_type', 'data_type', 'data']
 
@@ -140,7 +172,8 @@ class SimulationBrainFile(Resource):
         return {
             'data': result.brain_data,
             'brain_type': result.brain_type,
-            'data_type': result.data_type
+            'data_type': result.data_type,
+            'brain_populations': json.loads(result.brain_populations)
         }, 200
 
     @swagger.operation(
@@ -198,7 +231,8 @@ class SimulationBrainFile(Resource):
         :< json string brain_type: Type of the brain file ('h5' or 'py')
         :< json string data_type: type of the data field ('text' or 'base64')
         :< json string data: Contents of the brain file. Encoding given in field data_type
-
+        :< json dict brain_populations: A dictionary indexed by population names and containing
+                                        neuron indices
         :> json string error_message: Error Message if there is a syntax error in the code
         :> json int error_line: Line of code, where error occurred
         :> json int error_column: Column, where error occurred (if available)
@@ -217,12 +251,13 @@ class SimulationBrainFile(Resource):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
-
         result = simulation.cle.set_simulation_brain(brain_type=body['brain_type'],
+                                                     data=body['data'],
                                                      data_type=body['data_type'],
-                                                     data=body['data']
-                                                     )
-        if not result.error_message:
+                                                     brain_populations=json.dumps(
+                                                        body['brain_populations']))
+
+        if result.error_message:
             # Error in given brain
             return {'error_message': result.error_message,
                     'error_line': result.error_line,

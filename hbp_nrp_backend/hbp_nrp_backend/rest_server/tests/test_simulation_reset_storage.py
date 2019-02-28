@@ -405,8 +405,10 @@ class TestSimulationResetStorage(RestTest):
     def test_reset_brain(self, mock_get_brain_info):
         simulations[0].cle = mock.MagicMock()
 
-        simulations[0].cle.set_simulation_brain.return_value = mock.Mock(error_message='')
-        simulations[0].cle.set_simulation_populations.return_value = mock.Mock(error_message='')
+        simulations[0].cle.set_simulation_brain.return_value = mock.Mock(error_message="",
+                                                                         error_line=10,
+                                                                         error_column=50)
+        simulations[0].cle.set_simulation_populations.return_value = mock.Mock(message='')
         mock_get_brain_info.return_value = os.path.join(PATH,
                                                         'models/braitenberg.py'), None, {u'record': slice(0L, 2L, 1L), u'neurons': slice(0L, 2L, 1L)}
 
@@ -418,8 +420,7 @@ class TestSimulationResetStorage(RestTest):
         simulations[0].cle = mock.MagicMock()
         simulations[0].cle.set_simulation_brain.return_value = mock.Mock(error_message="error",
                                                                          error_line=10,
-                                                                         error_column=50,
-                                                                         handle_population_change=None)
+                                                                         error_column=50)
 
         mock_get_brain_info.return_value = (os.path.join(PATH, 'models/braitenberg.py'),
                                             None,

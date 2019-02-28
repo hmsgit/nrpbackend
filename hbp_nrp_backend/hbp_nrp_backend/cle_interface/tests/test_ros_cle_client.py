@@ -214,13 +214,13 @@ class TestROSCLEClient(unittest.TestCase):
 
         client._ROSCLEClient__cle_set_brain = MagicMock(return_value=resp)
         self.assertEquals(client.set_simulation_brain(
-            'py', 'text', 'data'), resp)
+            'py', 'text', 'data', '{"population_1": 2}'), resp)
         client._ROSCLEClient__cle_set_brain.assert_called_once_with(
-            'py', 'text', 'data')
+            'py', 'data', 'text', '{"population_1": 2}')
 
         client.stop_communication("Test stop")
         with self.assertRaises(ROSCLEClientException):
-            client.set_simulation_brain('py', 'text', 'data')
+            client.set_simulation_brain('py', 'text', 'data', '{"population_1": 2}')
 
     @patch('hbp_nrp_backend.cle_interface.ROSCLEClient.rospy.ServiceProxy')
     def test_set_populations(self, service_proxy_mock):

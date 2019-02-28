@@ -270,7 +270,9 @@ class ROSCLEClient(object):
             raise ROSCLEClientException(self.__stop_reason)
         return self.__cle_get_brain()
 
-    def set_simulation_brain(self, brain_type='py', data_type='text', data=None):
+    def set_simulation_brain(self,
+                             brain_type='py', data=None, data_type='text',
+                             brain_populations=None):
         """
         Set the brain of the running simulation (will pause the simulation)
 
@@ -281,7 +283,7 @@ class ROSCLEClient(object):
         """
         if self.__stop_reason is not None:
             raise ROSCLEClientException(self.__stop_reason)
-        return self.__cle_set_brain(brain_type, data_type, data)
+        return self.__cle_set_brain(brain_type, data_type, data, brain_populations)
 
     ReplaceBehaviorEnum = hbp_nrp_commons.enum('ASK_USER', 'REPLACE', 'NO_REPLACE')
 

@@ -557,13 +557,13 @@ class ROSCLEServer(SimulationServer):
 
         return_value = self.__set_brain(request.brain_type,
                                         request.data_type,
-                                        request.brain_data)
+                                        request.brain_data,
+                                        request.brain_populations)
 
-        prev_braintype, prev_brain_code, prev_data_type, _ = self.__get_brain(None)
-
+        prev_braintype, prev_brain_code, prev_data_type, prev_brain_pops = self.__get_brain(None)
         if return_value[0] != "":
             # failed to set new brain, we re set previous valid brain
-            self.__set_brain(prev_braintype, prev_data_type, prev_brain_code)
+            self.__set_brain(prev_braintype, prev_data_type, prev_brain_code, prev_brain_pops)
         else:
             self._notificator.publish_state(json.dumps({"action": "setbrain"}))
 
@@ -571,7 +571,7 @@ class ROSCLEServer(SimulationServer):
             self.__cle.start()
         return return_value
 
-    def __set_brain(self, brain_type, data_type, brain_data):  # pragma: no cover
+    def __set_brain(self, brain_type, data_type, brain_data, brain_populations):  # pragma: no cover
         """
         Sets the neuronal network according to the given parameters
 
@@ -587,7 +587,7 @@ class ROSCLEServer(SimulationServer):
                         brain_file.write(brain_data)
                     else:
                         brain_file.write(base64.decodestring(brain_data))
-                self.__cle.load_brain(tmp.name)
+                self.__cle.load_brain(tmp.name, **json.loads(brain_populations))
 
         except ValueError, e:
             logger.exception(e)

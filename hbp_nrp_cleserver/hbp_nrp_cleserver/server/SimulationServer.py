@@ -210,10 +210,10 @@ class SimulationServer(object):
             if self.__timeout_type == TimeoutType.SIMULATION:
                 remaining = self.__timeout - self.simulation_time
             else:
-                # pylint: disable-all
+                # pylint: disable=all
                 # false positive
                 tzinfo = self.__timeout.tzinfo
-                # pylint: enable-all
+                # pylint: enable=all
                 remaining = (self.__timeout - datetime.datetime.now(tzinfo)) \
                     .total_seconds()
                 # pylint: enable=E1103

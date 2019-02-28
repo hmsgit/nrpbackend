@@ -276,7 +276,11 @@ class TestROSCLEServer(unittest.TestCase):
           'slice_1': slice1,
           'list1': [1, 2, 3]
         }
-
+        populations_erroneous = json.dumps({
+            'index1': 1,
+            'list1': [1, 2, 3],
+            'slice1 new': {'from': 1, 'to': 2, 'step': 1}
+        })
         mocked_tf_framework.get_brain_populations.return_value = populations_json_slice
 
         ros_callbacks = self.__get_handlers_for_testing_main()
@@ -288,6 +292,7 @@ class TestROSCLEServer(unittest.TestCase):
         request.data_type = "text"
         request.brain_type = "py"
         request.brain_data = "Dummy = None"
+        request.brain_populations = populations_erroneous
 
         populations_new = json.dumps({
             'index1': 1,
@@ -334,6 +339,7 @@ class TestROSCLEServer(unittest.TestCase):
             request.data_type = "text"
             request.brain_type = "py"
             request.brain_data = "Dummy = None"
+            request.brain_populations = json.dumps(populations_json_slice)
             response = set_brain_implementation(request)
 
             self.assertEqual(response[0], 'BrainParameterException')

@@ -97,12 +97,14 @@ brain_data = DefaultDotDict(
 send_data = {
     'data': "Data",
     'brain_type': "py",
-    'data_type': "text"
+    'data_type': "text",
+    'brain_populations': brain_populations_json
 }
 get_return_data = {
     'brain_type': "py",
     'data': "Data",
-    'data_type': "text"
+    'data_type': "text",
+    'brain_populations': json.loads(brain_populations_json)
 }
 set_ret_ok = DefaultDotDict(error_message="")
 set_ret_error = DefaultDotDict(error_message="Crash boom bang", error_line=10, error_column=5)
@@ -136,14 +138,14 @@ class TestSimulationBrain(RestTest):
         self.assertEqual(self.sim.cle.set_simulation_brain.call_count, 1)
 
         self.sim.cle.set_simulation_brain.assert_called_with(brain_type='py',
+                                                             data='Data',
                                                              data_type='text',
-                                                             data='Data')
-
-        self.assertEqual(response.status_code, 400)
+                                                             brain_populations=json.dumps(brain_populations_json)
+                                                            )
 
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_error)
         response = self.client.put('/simulation/0/brain', data=json.dumps(send_data))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
 
         response = self.client.put('/simulation/4/brain')
         self.assertEqual(response.status_code, 404)
@@ -178,7 +180,7 @@ class TestSimulationBrain(RestTest):
         }
         _ = self.client.put('/simulation/0/brain', data=json.dumps(request))
         request['brain_populations'] = new_brain_populations_json
-        self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_popl_change_handle)
+        self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_ok)
         response = self.client.put('/simulation/0/brain', data=json.dumps(request))
         self.assertEqual(response.status_code, 200)
 
