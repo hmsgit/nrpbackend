@@ -152,6 +152,7 @@ class SimulationService(Resource):
         sim_brain_processes = body.get('brainProcesses', 1)
         private = body.get('private', False)
         ctx_id = body.get('ctxId', None)
+        token = UserAuthentication.get_header_token()
 
         sim = Simulation(sim_id,
                          sim_experiment_id,
@@ -162,7 +163,8 @@ class SimulationService(Resource):
                          sim_state,
                          playback_path=playback_path,
                          private=private,
-                         ctx_id=ctx_id)
+                         ctx_id=ctx_id,
+                         token=token)
 
         sim.creationUniqueID = body.get('creationUniqueID', str(time.time() + random.random()))
 

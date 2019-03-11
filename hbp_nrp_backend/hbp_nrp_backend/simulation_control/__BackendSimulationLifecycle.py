@@ -42,6 +42,12 @@ from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
+from cle_ros_msgs.srv import SimulationRecorderRequest
+from hbp_nrp_commons.ZipUtil import ZipUtil
+
+from tempfile import gettempdir
+
+import time
 
 __author__ = 'Georg Hinkel, Manos Angelidis'
 
@@ -318,6 +324,12 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that led to releasing simulation resources
         """
+
+        isRecording = self.simulation.cle.command_simulation_recorder(
+                           SimulationRecorderRequest.STATE).value
+        if isRecording is True:
+            self.save_record_to_user_storage()
+
         self.simulation.kill_datetime = None
 
         if self.simulation.cle is not None:
@@ -361,6 +373,43 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         self.simulation.state_machine_manager.terminate_all()
 
         logger.info("simulation reset")
+
+    def save_record_to_user_storage(self):
+        """
+        Save the record to user storage
+
+        """
+
+        client_record_folder = 'recordings'
+        record_path = self.simulation.cle.command_simulation_recorder(
+                           SimulationRecorderRequest.STATE).message
+
+        file_name = 'recording_{timestamp}.{ext}'.format(
+            timestamp=time.strftime('%Y-%m-%d_%H-%M-%S'),
+            ext='zip')
+
+        temp_dest = os.path.join(gettempdir(), file_name)
+        ZipUtil.create_from_path(record_path, temp_dest)
+        client = StorageClient()
+
+        client.create_folder(self.simulation.token,
+                                self.simulation.experiment_id,
+                                client_record_folder)
+
+        try:
+            with open(temp_dest, 'rb') as record_file:
+                zip_data = record_file.read()
+                client.create_or_update(
+                    self.simulation.token,
+                    self.simulation.experiment_id,
+                    os.path.join(client_record_folder, file_name),
+                    zip_data,
+                    "application/octet-stream")
+
+        finally:
+            os.remove(temp_dest)
+
+        return file_name
 
     @property
     def experiment_path(self):

@@ -39,13 +39,8 @@ from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from cle_ros_msgs.srv import SimulationRecorderRequest
 
 from hbp_nrp_commons.bibi_functions import docstring_parameter
-from hbp_nrp_commons.ZipUtil import ZipUtil
-from tempfile import gettempdir
-from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 import string
-import time
-import os
 
 # pylint: disable=no-self-use
 
@@ -202,23 +197,23 @@ class SimulationRecorder(Resource):
         # pure local command to save file to storage
         if command == 'save':
             try:
-                file_name = self.save_record_to_user_storage(sim)
+                file_name = sim.lifecycle.save_record_to_user_storage()
                 return {'filename': file_name}, 200
 
             except Exception as e:
                 raise NRPServicesClientErrorException('Cannot copy record to client storage',
-                                                        error_code=404)
+                                                      error_code=404)
 
         else:
 
             # validate the remote command type
             valid_commands = {'start': SimulationRecorderRequest.START,
-                                'stop': SimulationRecorderRequest.STOP,
-                                'cancel': SimulationRecorderRequest.CANCEL,
-                                'reset': SimulationRecorderRequest.RESET}
+                              'stop': SimulationRecorderRequest.STOP,
+                              'cancel': SimulationRecorderRequest.CANCEL,
+                              'reset': SimulationRecorderRequest.RESET}
             if command not in valid_commands:
                 raise NRPServicesClientErrorException('Invalid recorder command: %s' % command,
-                                                        error_code=404)
+                                                      error_code=404)
 
             # command the recorder, if unsuccessful return the error message
             try:
@@ -234,41 +229,3 @@ class SimulationRecorder(Resource):
             # internal CLE ROS error if service call fails, notify frontend
             except ROSCLEClientException as e:
                 raise NRPServicesGeneralException(str(e), 'CLE error', 500)
-
-    @staticmethod
-    def save_record_to_user_storage(sim):
-        """
-        Save the record to user storage
-
-        :param sim: The simulation
-        """
-
-        client_record_folder = 'recordings'
-        record_path = sim.cle.command_simulation_recorder(SimulationRecorderRequest.STATE).message
-
-        file_name = 'record_{timestamp}.{ext}'.format(
-            timestamp=time.strftime('%Y-%m-%d_%H-%M-%S'),
-            ext='zip')
-
-        temp_dest = os.path.join(gettempdir(), file_name)
-
-        ZipUtil.create_from_path(record_path, temp_dest)
-
-        client = StorageClient()
-
-        client.create_folder(UserAuthentication.get_header_token(),
-                                sim.experiment_id,
-                                client_record_folder)
-        try:
-            with open(temp_dest, 'rb') as record_file:
-                zip_data = record_file.read()
-                client.create_or_update(
-                    UserAuthentication.get_header_token(),
-                    sim.experiment_id,
-                    os.path.join(client_record_folder, file_name),
-                    zip_data,
-                    "application/octet-stream")
-        finally:
-            os.remove(temp_dest)
-
-        return file_name

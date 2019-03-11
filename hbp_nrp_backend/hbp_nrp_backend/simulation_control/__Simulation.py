@@ -58,7 +58,8 @@ class Simulation(object):
                  state='created',
                  private=False,
                  playback_path=None,
-                 ctx_id=None):
+                 ctx_id=None,
+                 token=None):
         """
         Creates a new simulation
 
@@ -78,6 +79,7 @@ class Simulation(object):
         :param private: (optional) Defines whether the simulation is based on a private experiment
         :param ctx_id: (optional) The context id of the collab if we are running a collab based
                        simulation
+        :param token: the request token
         """
         self.__sim_id = sim_id
         self.__owner = owner
@@ -93,6 +95,7 @@ class Simulation(object):
         self.__creationUniqueID = None
         self.__playback_path = playback_path
         self.__timeout_type = None
+        self.__token = token
 
         # enable the full dynamic backend lifecycle for non-playback launches
         if playback_path is None:
@@ -133,6 +136,14 @@ class Simulation(object):
         """
 
         return 1 if not self.cle.valid or self.state in ['failed', 'halted'] else 0
+
+    @property
+    def token(self):
+        """
+        :return: the token
+        """
+
+        return self.__token
 
     @property
     def timeout_type(self):
