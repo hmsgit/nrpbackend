@@ -83,6 +83,7 @@ class CSVLogger(object):
         """
         if self._log_csv_thread:
             self._log_csv_thread.terminate()
+            self._log_csv()
 
     def reset(self):
         """
