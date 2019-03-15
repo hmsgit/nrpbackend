@@ -190,7 +190,13 @@ class ExcBibiHandler(object):   # pragma: no cover
         if 'bodyModel' in bibi:
             bibi = re.sub(r'<\/(.*)bodyModel>', r'</\g<1>bodyModel>' + bodymodel, bibi, 1)
         else:
-            bibi = re.sub(r'<\/(.*)bibi>', bodymodel + r'</\g<1>bibi>', bibi, 1)
+            if re.search(r'<(.*)bibi([^<>]*)/>', bibi):
+                # basically empty <bibi />
+                bibi = re.sub(r'<(.*)bibi([^<>]*)/>',
+                              r'<\g<1>bibi\g<2>>' + bodymodel + r'</\g<1>bibi>',
+                              bibi, 1)
+            else:
+                bibi = re.sub(r'<\/(.*)bibi>', bodymodel + r'</\g<1>bibi>', bibi, 1)
 
         # Update DOM object, don't know any better way
         path = self._cle_assembly.bibi.path
