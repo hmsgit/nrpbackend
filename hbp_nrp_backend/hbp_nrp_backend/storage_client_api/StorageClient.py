@@ -644,8 +644,8 @@ class StorageClient(object):
                                            texture['name'],
                                            is_texture=True)
 
-    # pylint: disable=broad-except
-    def clone_all_experiment_files(self, token, experiment, destination_dir=None):
+    # pylint: disable=broad-except, dangerous-default-value
+    def clone_all_experiment_files(self, token, experiment, destination_dir=None, exclude=[]):
         """
         Clones all the experiment files to a simulation folder.
         The caller has then the responsibility of managing this folder.
@@ -654,8 +654,10 @@ class StorageClient(object):
         :param experiment: The experiment to clone
         :param destination_dir: the directory in which to clone the files,
         defaults to the path returned by get_simulation_directory()
+        :param exclude: a list of folders of files not to clone (folder names ends with '/')
         :return: A dictionary containing the paths to the experiment files
         """
+        # pylint: disable=too-many-locals
         experiment_paths = dict()
         list_entries_to_clone = self.list_files(token, experiment, folder=True)
         self.copy_resources_folders_to_tmp(token, experiment)
@@ -669,7 +671,19 @@ class StorageClient(object):
 
         dest_dir = destination_dir if destination_dir else self.get_simulation_directory()
 
+        exclude_files = [f for f in exclude if not f.endswith('/')]
+        exclude_dirs = [os.path.dirname(d) for d in exclude if d.endswith('/')]
+
         for entry_to_clone in list_entries_to_clone:
+            # Filter out excluded folders and files
+            if entry_to_clone['type'] == 'folder':
+                if entry_to_clone['name'] in exclude_dirs:
+                    continue
+            else:
+                if (entry_to_clone['name'] in exclude_files
+                        or os.path.dirname(entry_to_clone['name']) in exclude_dirs):
+                    continue
+
             if entry_to_clone['type'] == 'folder':
                 self.copy_folder_content_to_tmp(token, entry_to_clone)
             else:  # == 'file'

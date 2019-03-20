@@ -26,17 +26,18 @@
 """
 Playback ROS wrapper overriding the SimulationServer implementation for playback
 """
-from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
-from hbp_nrp_cleserver.server.PlaybackServerLifecycle import PlaybackServerLifecycle
-from hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly import GazeboSimulationAssembly
-from hbp_nrp_cleserver.bibi_config.notificator import NotificatorHandler
 
+import logging
 import rospy
 from cle_ros_msgs import srv
 from rosgraph_msgs.msg import Clock
 from std_srvs.srv import Trigger
 
-import logging
+from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
+from hbp_nrp_cleserver.server.PlaybackServerLifecycle import PlaybackServerLifecycle
+from hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly import GazeboSimulationAssembly
+from hbp_nrp_cleserver.bibi_config.notificator import NotificatorHandler
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class PlaybackServer(SimulationServer):
         :param notificator: ROS state/error notificator interface
         :param playback_path: Absolute path to the playback files (where gzserver/1.log file is)
         """
+
         super(PlaybackServer, self).__init__(sim_id, timeout, timeout_type, gzserver, notificator)
 
         # simulation time from playback for frontend display
@@ -228,13 +230,14 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
         :param environment: The environment that should be simulated
         :param except_hook: A method that should be called when there is a critical error
         """
-        # TODO: validate playback path / download with storage server API
 
         # create the CLE server and lifecycle first to report any failures
         # properly
         logger.info("Creating Playback Server")
-        self.playback = PlaybackServer(self.sim_id, self._timeout, self.gzserver,
-                                         self.ros_notificator, self.__playback_path)
+        self.playback = PlaybackServer(self.sim_id, self._timeout, self._timeout_type,
+                                       self.gzserver,
+                                       self.ros_notificator,
+                                       self.__playback_path)
 
         # disable roslaunch for playback
         self.exc.rosLaunch = None
@@ -257,11 +260,15 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
                 self.ros_notificator.update_task("Shutting down Playback",
                                                  update_progress=True, block_ui=False)
 
+            self.robotManager.shutdown()
             self.playback.shutdown()
         #pylint: disable=broad-except
         except Exception, e:
             logger.error("The cle server could not be shut down")
             logger.exception(e)
+
+        finally:
+            StorageClient().remove_temp_sim_directory()
 
     def run(self):
         """

@@ -407,6 +407,14 @@ class Simulation(object):
         """
         return self.__playback_path
 
+    @playback_path.setter
+    def playback_path(self, playback_path):
+        """
+        Sets the playback path
+        :param playback_path: new playback path
+        """
+        self.__playback_path = playback_path
+
     resource_fields = {
         'state': fields.String,
         'simulationID': fields.Integer(attribute='sim_id'),

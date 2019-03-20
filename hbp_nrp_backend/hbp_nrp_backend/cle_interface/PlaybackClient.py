@@ -65,19 +65,23 @@ class PlaybackClient(ROSCLEClient):
         # required to support reset
         self._ROSCLEClient__cle_set_brain = lambda a, b, c, d, e: srv.SetBrainResponse()
         self._ROSCLEClient__cle_add_transfer_function = \
-                                       lambda a: srv.AddTransferFunctionResponse(error_message=None)
+            lambda a: srv.AddTransferFunctionResponse(error_message=None)
 
         # optional support for editor tabs
         self._ROSCLEClient__cle_get_populations = srv.GetPopulationsResponse
         self._ROSCLEClient__cle_get_structured_transfer_functions = \
-                                                          srv.GetStructuredTransferFunctionsResponse
+            srv.GetStructuredTransferFunctionsResponse
+        self._ROSCLEClient__cle_convert_transfer_function_raw_to_structured = \
+            srv.ConvertTransferFunctionRawToStructuredResponse
+
         self._ROSCLEClient__cle_get_CSV_recorders_files = srv.GetCSVRecordersFiles
 
         # no support required for backwards compatibility
         self._ROSCLEClient__cle_edit_transfer_function = lambda: None
         self._ROSCLEClient__cle_set_structured_transfer_function = lambda: None
         self._ROSCLEClient__cle_delete_transfer_function = lambda: None
-        self._ROSCLEClient__simulation_recorder = lambda c: None
+        self._ROSCLEClient__simulation_recorder = lambda c: srv.SimulationRecorderResponse(
+            value=False, message='Playback simulation is not recordable')
 
         self._ROSCLEClient__stop_reason = None
 

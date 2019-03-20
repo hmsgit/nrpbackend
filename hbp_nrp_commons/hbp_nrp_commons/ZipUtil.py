@@ -94,7 +94,16 @@ class ZipUtil(object):
     def get_rootname(zip_abs_path):  # pragma: no cover
         """
         Gets the root folder name inside a zip
+        Note: for some zip, namelist doesn't contain the folders as entries
+        Possibly dependent upon how the zip was bundled, hence the extra check
+
         :return: root folder name inside a zip
         """
         with zipfile.ZipFile(zip_abs_path) as rzip:
-            return rzip.namelist()[0]
+            first_item = rzip.namelist()[0]
+            if first_item.endswith('/'):
+                return first_item
+            elif '/' in first_item:
+                return first_item.split('/')[0]
+            else:
+                return None

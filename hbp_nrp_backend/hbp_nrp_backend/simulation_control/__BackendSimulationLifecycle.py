@@ -239,8 +239,10 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             using_storage = simulation.private
             if using_storage:
                 experiment_paths = self.__storageClient.clone_all_experiment_files(
-                    UserAuthentication.get_header_token(),
-                    simulation.experiment_id)
+                    token=UserAuthentication.get_header_token(),
+                    experiment=simulation.experiment_id,
+                    exclude=['recordings/'] if not simulation.playback_path else []
+                )
                 self.__experiment_path = experiment_paths['experiment_conf']
                 self.__simulation_root_folder = self.__storageClient.get_simulation_directory()
                 environment_path = experiment_paths['environment_conf']
