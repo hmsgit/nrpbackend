@@ -165,7 +165,9 @@ class SimulationResetStorage(Resource):
             elif reset_type == rsr.RESET_FULL:
                 brain_path, populations, _ = \
                     self._get_brain_info_from_storage(experiment_id, context_id)
-                self.reset_from_storage_all(sim, experiment_id, context_id)
+
+                if sim.playback_path is None:
+                    self.reset_from_storage_all(sim, experiment_id, context_id)
 
                 sim.cle.reset(reset_type,
                               world_sdf=self._get_sdf_world_from_storage(experiment_id, context_id),

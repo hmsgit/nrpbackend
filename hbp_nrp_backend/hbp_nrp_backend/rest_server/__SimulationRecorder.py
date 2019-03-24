@@ -113,13 +113,17 @@ class SimulationRecorder(Resource):
             raise NRPServicesWrongUserException()
 
         # validate the command type
-        if command not in ['is-recording']:
+        if command not in ['is-recording', 'is-playingback']:
             raise NRPServicesClientErrorException('Invalid recorder query: %s' % command,
                                                   error_code=404)
 
-        # command the recorder, return boolean state as a string
         try:
-            state = str(sim.cle.command_simulation_recorder(SimulationRecorderRequest.STATE).value)
+            if command == 'is-recording':
+                state = str(sim.cle.command_simulation_recorder(
+                    SimulationRecorderRequest.STATE).value)
+            elif command == 'is-playingback':
+                state = 'False' if sim.playback_path is None else 'True'
+
             return {'state': state}, 200
 
         # internal CLE ROS error if service call fails, notify frontend

@@ -327,10 +327,11 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param state_change: The state change that led to releasing simulation resources
         """
 
-        isRecording = self.simulation.cle.command_simulation_recorder(
-                           SimulationRecorderRequest.STATE).value
-        if isRecording is True:
-            self.save_record_to_user_storage()
+        if self.simulation.cle is not None:
+            isRecording = self.simulation.cle.command_simulation_recorder(
+                SimulationRecorderRequest.STATE).value
+            if isRecording is True:
+                self.save_record_to_user_storage()
 
         self.simulation.kill_datetime = None
 
