@@ -144,10 +144,10 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     robot_zip_rel_path=robot.SDFFileAbsPath)
                 if not status:
                     raise Exception("Could not prepare custom robot {err}".format(ret))
-                robot.SDFFileAbsPath = ret
+                sdf_abs_path = ret
 
             else:
-                robot.SDFFileAbsPath = find_file_in_paths(
+                sdf_abs_path = find_file_in_paths(
                     os.path.join(robot.id, os.path.basename(robot.SDFFileAbsPath)),
                     get_model_basepath())
 
@@ -155,12 +155,14 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 # only look into the simulation_directory, as DELETE robot REST call, if called,
                 # would delete this file. Only for the exps without robotid folder in the storage
                 # TODO: backward compatibility code. Remove when we decide not to support anymore
-                if not robot.SDFFileAbsPath:
-                    robot.SDFFileAbsPath = find_file_in_paths(robot.value(), [self.sim_dir])
+                if not sdf_abs_path:
+                    sdf_abs_path = find_file_in_paths(robot.SDFFileAbsPath, [self.sim_dir])
 
             # still couldn't find the SDF, abort!
-            if not robot.SDFFileAbsPath:
-                raise Exception("Could not find robot file: {0}".format(robot.value()))
+            if not sdf_abs_path:
+                raise Exception("Could not find robot file: {0}".format(robot.SDFFileAbsPath))
+
+            robot.SDFFileAbsPath = sdf_abs_path
 
             # Find robot specific roslaunch file in the directory where the SDF resides
             # Take the first one (by name) if multiple available

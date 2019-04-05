@@ -325,9 +325,11 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
 
         if self.simulation.cle is not None:
-            isRecording = self.simulation.cle.command_simulation_recorder(
+
+            is_recording = self.simulation.cle.command_simulation_recorder(
                 SimulationRecorderRequest.STATE).value
-            if isRecording is True:
+
+            if is_recording is True:
                 self.save_record_to_user_storage()
 
         self.simulation.kill_datetime = None

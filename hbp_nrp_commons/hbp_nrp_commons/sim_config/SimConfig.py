@@ -299,7 +299,7 @@ class SimConfig(object):
                 located_at=self.sim_dir)
 
         # Populations
-        if (self._bibi_dom.brainModel and self._bibi_dom.brainModel.populations):
+        if self._bibi_dom.brainModel and self._bibi_dom.brainModel.populations:
             self._populations_dict = get_all_neurons_as_dict(self._bibi_dom.brainModel.populations)
 
         # Transfer functions
