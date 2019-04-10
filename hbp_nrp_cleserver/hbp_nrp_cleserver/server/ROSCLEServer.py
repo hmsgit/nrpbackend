@@ -950,6 +950,10 @@ class ROSCLEServer(SimulationServer):
         """
         super(ROSCLEServer, self).shutdown()
 
+        # kill the csv logger thread
+        if self._csv_logger is not None:
+            self._csv_logger.shutdown()
+
         # the cle and services are initialized in prepare_simulation, which is not
         # guaranteed to have occurred before shutdown is called
         if self.__cle is not None:
@@ -989,10 +993,6 @@ class ROSCLEServer(SimulationServer):
             self.__service_set_exc_robot_pose.shutdown()
             logger.info("Shutting down prepare_custom_model service")
             self.__service_prepare_custom_model.shutdown()
-
-        # kill the csv logger thread
-        if self._csv_logger is not None:
-            self._csv_logger.shutdown()
 
     def _reset_world(self, request):
         """

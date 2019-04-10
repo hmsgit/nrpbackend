@@ -57,7 +57,6 @@ class ConfigEditor(object):  # pragma: no cover
         :param pose: A cle_ros_msgs.msgs.Pose object (defines an object's Euler pos and orientation)
         :return:
         """
-
         # RobotPose is the type of <robotPose> defined in the exc schema (xsd) file in Experiments
         tag = exc_parser.RobotPose()
         tag.robotId = robot_id
@@ -78,6 +77,12 @@ class ConfigEditor(object):  # pragma: no cover
 
         self._exc_dom.environmentModel.append(tag)
 
+        # HACK: Replace exc and bibi representation by reading from storage
+        rp = self._exc_dom.environmentModel.robotPose
+        self._hack_()
+        self._exc_dom.environmentModel.robotPose = rp
+        # END HACK
+
         # Update sim dir copy of the exc
         self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_abs_path)
 
@@ -97,6 +102,12 @@ class ConfigEditor(object):  # pragma: no cover
 
         if del_index is not None:
             del self._exc_dom.environmentModel.robotPose[del_index]
+
+        # HACK: Replace exc and bibi representation by reading from storage
+        rp = self._exc_dom.environmentModel.robotPose
+        self._hack_()
+        self._exc_dom.environmentModel.robotPose = rp
+        # END HACK
 
         # Update sim dir copy of the exc
         self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_abs_path)
@@ -121,6 +132,12 @@ class ConfigEditor(object):  # pragma: no cover
                 tag.roll = pose.roll
                 tag.pitch = pose.pitch
                 tag.yaw = pose.yaw
+
+        # HACK: Replace exc and bibi representation by reading from storage
+        rp = self._exc_dom.environmentModel.robotPose
+        self._hack_()
+        self._exc_dom.environmentModel.robotPose = rp
+        # END HACK
 
         # Update sim dir copy of the exc
         self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_abs_path)
@@ -152,6 +169,12 @@ class ConfigEditor(object):  # pragma: no cover
         else:
             self._bibi_dom.append(tag)
 
+        # HACK: Replace exc and bibi representation by reading from storage
+        bm = self._bibi_dom.bodyModel
+        self._hack_()
+        self._bibi_dom.bodyModel = bm
+        # END HACK
+
         # Update sim dir copy of the bibi
         self._write_xml(self._bibi_dom.toxml('utf-8'), self._sim_config.bibi_path.abs_path)
 
@@ -171,6 +194,12 @@ class ConfigEditor(object):  # pragma: no cover
 
         if del_index is not None:
             del self._bibi_dom.bodyModel[del_index]
+
+        # HACK: Replace exc and bibi representation by reading from storage
+        bm = self._bibi_dom.bodyModel
+        self._hack_()
+        self._bibi_dom.bodyModel = bm
+        # END HACK
 
         # Update sim dir copy of the exc
         self._write_xml(self._bibi_dom.toxml('utf-8'), self._sim_config.bibi_path.abs_path)
@@ -207,3 +236,34 @@ class ConfigEditor(object):  # pragma: no cover
             return False, str(e)
 
         return True, None
+
+    def _hack_(self):
+        """
+        TODO: please remove me at earliest convenience
+
+        HACK for the inconsistent proxy and backend behavior
+        Replace exc and bibi representation by reading from storage
+        Proxy might have changed something that backend is not aware of
+        """
+        from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+        import os
+        import urllib
+
+        client = StorageClient()
+
+        latest_exc = client.get_file(
+            self._sim_config.token, urllib.quote_plus(self._sim_config.experiment_id),
+            os.path.basename(self._sim_config.exc_abs_path), by_name=True
+        )
+        latest_bibi = client.get_file(
+            self._sim_config.token, urllib.quote_plus(self._sim_config.experiment_id),
+            os.path.basename(self._sim_config.bibi_path.rel_path), by_name=True
+        )
+
+        try:
+            self._exc_dom = exc_parser.CreateFromDocument(latest_exc)
+            self._bibi_dom = bibi_parser.CreateFromDocument(latest_bibi)
+
+        except Exception as ex:
+            raise Exception("Something went horribly wrong while creating latest "
+                            "config objects with following exception {}".format(str(ex)))
