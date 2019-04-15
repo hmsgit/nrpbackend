@@ -72,7 +72,7 @@ config = {
     'description': 'NRP Backend shared functionality',
     'author': 'HBP Neurorobotics',
     'url': 'http://neurorobotics.net',
-    'author_email': 'neurorobotics@humanbrainproject.eu',
+    'author_email': 'neurorobotics-support@humanbrainproject.eu',
     'version': hbp_nrp_commons.__version__,
     'install_requires': REQS,
     'extras_require': EXTRA_REQS,

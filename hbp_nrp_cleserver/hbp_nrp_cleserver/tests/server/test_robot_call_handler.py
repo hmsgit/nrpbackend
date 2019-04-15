@@ -67,9 +67,9 @@ class TestRobotCallHandler(unittest.TestCase):
 
     def test_add_robot(self):
         self.mocked_assembly.storage_client = Mock()
-        self.mocked_assembly.simDir = '/somewhere/over/the/rainbow'
-        self.mocked_assembly.token = 'my_awesome_token'
-        self.mocked_assembly.ctx_id = 0xFFFF
+        self.mocked_assembly.sim_config.simDir = '/somewhere/over/the/rainbow'
+        self.mocked_assembly.sim_config.token = 'my_awesome_token'
+        self.mocked_assembly.sim_config.ctx_id = 0xFFFF
 
         with patch("hbp_nrp_cleserver.server._RobotCallHandler.find_file_in_paths") as findFile, \
             patch("hbp_nrp_cleserver.server._RobotCallHandler.get_model_basepath") as getpath:
@@ -87,9 +87,9 @@ class TestRobotCallHandler(unittest.TestCase):
 
     def test_prepare_custom_robot(self):
         self.mocked_assembly.storage_client = Mock()
-        self.mocked_assembly.simDir = '/somewhere/over/the/rainbow'
-        self.mocked_assembly.token = 'my_awesome_token'
-        self.mocked_assembly.ctx_id = 0xFFFF
+        self.mocked_assembly.sim_config.simDir = '/somewhere/over/the/rainbow'
+        self.mocked_assembly.sim_config.token = 'my_awesome_token'
+        self.mocked_assembly.sim_config.ctx_id = 0xFFFF
 
         with patch("hbp_nrp_cleserver.server._RobotCallHandler.find_file_in_paths") as findFile, \
             patch("hbp_nrp_cleserver.server._RobotCallHandler.get_model_basepath") as getpath:

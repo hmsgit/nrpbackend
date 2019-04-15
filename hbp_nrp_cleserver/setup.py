@@ -71,7 +71,7 @@ config = {
     'description': 'CLE Simulation Factory for HBP SP10',
     'author': 'HBP Neurorobotics',
     'url': 'http://neurorobotics.net',
-    'author_email': 'neurorobotics@humanbrainproject.eu',
+    'author_email': 'neurorobotics-support@humanbrainproject.eu',
     'version': hbp_nrp_cleserver.__version__,
     'install_requires': REQS,
     'extras_require': EXTRA_REQS,

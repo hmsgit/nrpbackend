@@ -54,7 +54,7 @@ config = {
     'description': 'Experiment Backend for HBP SP10',
     'author': 'HBP Neurorobotics',
     'url': 'http://neurorobotics.net',
-    'author_email': 'neurorobotics@humanbrainproject.eu',
+    'author_email': 'neurorobotics-support@humanbrainproject.eu',
     'version': hbp_nrp_backend.__version__,
     'install_requires': reqs,
     'packages': ['hbp_nrp_backend',

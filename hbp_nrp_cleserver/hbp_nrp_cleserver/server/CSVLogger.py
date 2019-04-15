@@ -28,10 +28,10 @@ the content of the CSV recorders of the simulation.
 """
 import time
 import os
+import threading
 from cle_ros_msgs.msg import CSVRecordedFile
 from hbp_nrp_backend import get_date_and_time_string
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, find_file_in_paths
-from hbp_nrp_commons import killable_threads
 import hbp_nrp_cle.tf_framework as tf_framework
 
 __author__ = 'Manos Angelidis'
@@ -61,20 +61,25 @@ class CSVLogger(object):
         self._folder_name = folder_name
         self._storage_client = StorageClient()
 
+        self.stop_flag = threading.Event()
+
     def initialize(self):
         """
         Initializes a killable thread which runs the log_csv function
         every interval seconds, and starts the thread
         """
 
+        self.stop_flag.clear()
+
         def _log_csv_job():  # pragma: no cover
             """
             The job to put in the thread
             """
-            while True:
+            while not self.stop_flag.isSet():
                 self._log_csv()
                 time.sleep(self._interval)
-        self._log_csv_thread = killable_threads.Thread(target=_log_csv_job)
+
+        self._log_csv_thread = threading.Thread(target=_log_csv_job)
         self._log_csv_thread.start()
 
     def shutdown(self):
@@ -82,8 +87,12 @@ class CSVLogger(object):
         Terminates the killable thread that saves the csv data
         """
         if self._log_csv_thread:
-            self._log_csv_thread.terminate()
+            self.stop_flag.set()
             self._log_csv()
+
+        if self._log_csv_thread:
+            self._log_csv_thread.join()  # wait till thread returns
+            self._log_csv_thread = None
 
     def reset(self):
         """
@@ -108,9 +117,12 @@ class CSVLogger(object):
                 else '_'.join(['csv_records', time_string])
             # no harm calling the function since the create_folder does
             # nothing if the folder exists
-            folder_uuid = self._storage_client.create_folder(self._assembly.token,
-                                                             self._assembly.experiment_id,
-                                                             subfolder_name)['uuid']
+            folder_uuid = self._storage_client.create_folder(
+                self._assembly.sim_config.token,
+                self._assembly.sim_config.experiment_id,
+                subfolder_name
+            )['uuid']
+
             for csv_file in csv_files:
                 # if there is no lock file it means that for the currently running sim
                 # no csv files have been created, thus we create them in the storage and
@@ -132,9 +144,6 @@ class CSVLogger(object):
                         pass
                 else:
                     content = ''.join(csv_file.values)
-                self._storage_client.create_or_update(self._assembly.token,
-                                                      folder_uuid,
-                                                      csv_file.name,
-                                                      content,
-                                                      'text/plain',
-                                                      append=lock)
+                self._storage_client.create_or_update(
+                    self._assembly.sim_config.token, folder_uuid, csv_file.name,
+                    content, 'text/plain', append=lock)
