@@ -231,8 +231,12 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
         # properly
         logger.info("Creating Playback Server")
         self.playback = PlaybackServer(
-            self.sim_config.sim_id, self.sim_config.timeout, self.gzserver,
-            self.ros_notificator, self.sim_config.playback_path)
+            self.sim_config.sim_id,
+            self.sim_config.timeout,
+            self.sim_config.timeout_type,
+            self.gzserver,
+            self.ros_notificator,
+            self.sim_config.playback_path)
 
         # start Gazebo simulator and bridge
         self._start_gazebo(None)
