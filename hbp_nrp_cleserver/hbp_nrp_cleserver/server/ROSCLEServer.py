@@ -867,9 +867,9 @@ class ROSCLEServer(SimulationServer):
         except TFLoadingException as e:
             self.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, "Loading", e.message,
                                severity=CLEError.SEVERITY_ERROR,
-                               function_name=request.transfer_function_name)
+                               function_name=new_name)
             err = e.message
-            tf_framework.set_flawed_transfer_function(new_source, request.transfer_function_name, e)
+            tf_framework.set_flawed_transfer_function(new_source, new_name, e)
 
         if running:
             self.__cle.start()
