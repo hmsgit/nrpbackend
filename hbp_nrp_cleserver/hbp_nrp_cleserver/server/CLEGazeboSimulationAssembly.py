@@ -143,7 +143,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                     # SDFFileAbsPath is holding relative path at the moment (from sim_config)
                     robot_zip_rel_path=robot.SDFFileAbsPath)
                 if not status:
-                    raise Exception("Could not prepare custom robot {err}".format(ret))
+                    raise Exception("Could not prepare custom robot {err}".format(err=ret))
                 sdf_abs_path = ret
 
             else:
