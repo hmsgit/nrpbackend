@@ -1145,7 +1145,6 @@ class ROSCLEServer(SimulationServer):
             or (False, error_message)
         """
         rinfo = request.robot
-        ret, status = self._robotHandler.prepare_custom_robot(rinfo.robot_model_rel_path)
         ret, status = self._robotHandler.add_robot(robot_id=rinfo.robot_id,
                                                    robot_model_rel_path=rinfo.robot_model_rel_path,
                                                    is_custom=rinfo.is_custom,
