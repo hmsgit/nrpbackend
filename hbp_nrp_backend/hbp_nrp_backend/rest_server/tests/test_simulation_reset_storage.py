@@ -387,7 +387,7 @@ class TestSimulationResetStorage(RestTest):
             SimulationResetStorage.reset_brain(simulations[0], 'expId', 'contextId')
 
         self.assertEqual(
-            'error, line:10, column:50', context.exception.message)
+            'error, column: 50', context.exception.message)
 
     def test_reset_transfer_functions(self):
         simulations[0].cle = mock.MagicMock()

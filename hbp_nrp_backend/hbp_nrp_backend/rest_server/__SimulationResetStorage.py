@@ -233,13 +233,10 @@ class SimulationResetStorage(Resource):
                 data=brain_file.read(),
                 brain_populations=json.dumps(neurons_config))
 
-            if result_set_brain is not None and\
-                    result_set_brain.error_message is not "":
+            if result_set_brain is not None and result_set_brain.error_message:
                 # Error in given brain
-                raise ROSCLEClientException(
-                    '{error_message}, line:{error_line},'
-                    ' column:{error_column}'
-                    .format(**result_set_brain.__dict__))
+                raise ROSCLEClientException('{err}, column: {col}'.format(
+                    err=result_set_brain.error_message, col=result_set_brain.error_column))
 
     @staticmethod
     def reset_state_machines(sim, experiment, sm_base_path):
