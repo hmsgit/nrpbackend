@@ -67,10 +67,10 @@ class ResourceType(Enum):  # pragma: no cover
     """
     Enumeration for model types. Robot resources are enhanced in a different structure
     """
-
     MODEL = 0x11100001
+    ROBOT = 0x11100002
     BRAIN = 0x11100003
-    WORLD = 0x11100004
+    ENVIRONMENT = 0x11100005
 
 
 class ResourcePath(object):  # pragma: no cover
@@ -273,7 +273,7 @@ class SimConfig(object):
 
         # Environment model
         self._world_model = ExperimentResource(
-            resource_type=ResourceType.WORLD,
+            resource_type=ResourceType.ENVIRONMENT,
             resource_rel_path=self._exc_dom.environmentModel.src,
             is_custom=True if self._exc_dom.environmentModel.customModelPath else False,
             zip_rel_path=(self._exc_dom.environmentModel.customModelPath
@@ -325,24 +325,27 @@ class SimConfig(object):
                 if (not rpose.robotId) or rpose.robotId == elem.robotId:
                     pose = SimConfUtil.convertXSDPosetoPyPose(rpose)
 
-            if hasattr(elem, 'customAsset') and elem.customAsset is not None:
-                is_custom = elem.customAsset
+            if hasattr(elem, 'isCustom') and elem.isCustom is not None:
+                is_custom = elem.isCustom
             else:
-                elem.customAsset = False
+                elem.isCustom = False
 
+            robot_model = None
             if is_custom:
-                if not hasattr(elem, "assetPath"):
-                    raise Exception("No zipped model path is provided in bibi.bodyModel.assetPath")
+                if not hasattr(elem, "model"):
+                    raise Exception("No robotModelName is provided in bibi.bodyModel.model")
+                robot_model = elem.model
 
             # Robot has specialized info. Create direct Robot object instead of ExperimentResource
             self._robot_models[elem.robotId] = Robot(
                 rid=elem.robotId,
                 # store the relative path for the time being
-                sdf_abs_path=elem.assetPath if is_custom else elem.value(),
+                sdf_abs_path=None if is_custom else elem.value(),
                 display_name=elem.robotId,
                 pose=pose,
                 is_custom=is_custom,
-                roslaunch_abs_path=None)  # gets updated during the Assembly initialization
+                roslaunch_abs_path=None,
+                model=robot_model)  # gets updated during the Assembly initialization
 
     def get_populations_dict(self):
         """

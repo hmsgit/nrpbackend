@@ -189,7 +189,8 @@ class SimulationServer(object):
         """
         try:
             if self.__lifecycle is None:
-                logger.warn("Trying to publish state even though no simulation is active")
+                logger.warn(
+                    "Trying to publish state even though no simulation is active")
                 return
             message = self._create_state_message()
             message['simulationTime'] = self.simulation_time
@@ -210,13 +211,11 @@ class SimulationServer(object):
             if self.__timeout_type == TimeoutType.SIMULATION:
                 remaining = self.__timeout - self.simulation_time
             else:
-                # pylint: disable=all
-                # false positive
+                # pylint: disable-all
                 tzinfo = self.__timeout.tzinfo
-                # pylint: enable=all
+                # pylint: enable-all
                 remaining = (self.__timeout - datetime.datetime.now(tzinfo)) \
                     .total_seconds()
-                # pylint: enable=E1103
 
             if remaining < 0:
                 self.__lifecycle.stopped()

@@ -86,7 +86,7 @@ class SimulationRobots(Resource): # pragma: no cover
         result = {
             'robots': [{
                            ParamNames.ROBOT_ID: robot.robot_id,
-                           ParamNames.ROBOT_ABS_PATH: robot.robot_model_rel_path,
+                           ParamNames.ROBOT_ABS_PATH: robot.robot_model,
                            ParamNames.IS_CUSTOM: robot.is_custom,
                            ParamNames.ROBOT_POSE: SimulationRobots.__jsonisePose(robot.pose)
                        } for robot in robots
@@ -130,7 +130,7 @@ class SimulationRobot(Resource): # pragma: no cover
         Represents a request for the API implemented by SimulationRobot
         """
         resource_fields = {
-            ParamNames.ROBOT_REL_PATH: fields.String,
+            ParamNames.ROBOT_MODEL: fields.String,
             ParamNames.IS_CUSTOM: fields.Boolean,
             ParamNames.ROBOT_POSE: fields.String
         }
@@ -140,7 +140,7 @@ class SimulationRobot(Resource): # pragma: no cover
         """
         Lists required fields for a POST new pose request
         """
-        required = [ParamNames.ROBOT_REL_PATH]
+        required = [ParamNames.ROBOT_MODEL]
 
     @swagger.model
     class RobotPutRequest(RobotRequest):
@@ -212,7 +212,7 @@ class SimulationRobot(Resource): # pragma: no cover
             res, err = SimulationRobot.__add_new_robot(
                 sim=sim,
                 robot_id=robot_id,
-                robot_model_rel_path=body.get(ParamNames.ROBOT_REL_PATH),
+                robot_model=body.get(ParamNames.ROBOT_MODEL),
                 is_custom=(body.get(ParamNames.IS_CUSTOM, None) == 'True'),
                 initial_pose=body.get(ParamNames.ROBOT_POSE, None)
             )
@@ -347,11 +347,11 @@ class SimulationRobot(Resource): # pragma: no cover
         return {'res': 'success'}, 200
 
     @staticmethod
-    def __add_new_robot(sim, robot_id, robot_model_rel_path, is_custom, initial_pose):
+    def __add_new_robot(sim, robot_id, robot_model, is_custom, initial_pose):
         """
         Add a new robot
         """
-        return sim.cle.add_simulation_robot(robot_id, robot_model_rel_path, is_custom, initial_pose)
+        return sim.cle.add_simulation_robot(robot_id, robot_model, is_custom, initial_pose)
 
     @staticmethod
     def __delete_robot(sim, robot_id):

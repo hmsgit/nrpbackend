@@ -28,13 +28,13 @@ This module contains the abstract base class of a simulation assembly using the 
 import logging
 import os
 import subprocess
-import json
 logger = logging.getLogger(__name__)
 
 from RestrictedPython import compile_restricted
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.storage_client_api.StorageClient import (
     StorageClient, get_model_basepath, find_file_in_paths)
+from hbp_nrp_commons.sim_config.SimConfig import ResourceType
 from hbp_nrp_cleserver.server.GazeboSimulationAssembly import GazeboSimulationAssembly
 from hbp_nrp_commons.ZipUtil import ZipUtil
 
@@ -139,9 +139,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         for robot in self.sim_config.robot_models.values():
             if robot.isCustom:
                 # pylint: disable=protected-access
-                status, ret = self.cle_server._robotHandler.prepare_custom_robot(
-                    # SDFFileAbsPath is holding relative path at the moment (from sim_config)
-                    robot_zip_rel_path=robot.SDFFileAbsPath)
+                status, ret = self.cle_server._robotHandler.prepare_custom_robot(robot.model)
                 if not status:
                     raise Exception("Could not prepare custom robot {err}".format(err=ret))
                 sdf_abs_path = ret
@@ -283,21 +281,19 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         the .py from the experiment folder cause the user may have modified it
         """
         # pylint: disable=too-many-locals
-        brains_list = self._storageClient.get_custom_models(
-            self.sim_config.token, self.sim_config.ctx_id, 'brains')
+        brains_list = self._storageClient.get_models(
+            self.sim_config.token, self.sim_config.ctx_id, ResourceType.BRAIN)
         # we use the paths of the uploaded zips to make sure the selected zip is there
-        paths_list = [brain['path'] for brain in brains_list]
+        brain_element = None
+        for item in brains_list:
+            if self.sim_config.brain_model.zip_path.rel_path in item.path:
+                brain_element = item
 
-        # check if the zip is in the user storage
-        zipped_model_path = [path for path in paths_list
-                             if self.sim_config.brain_model.zip_path.rel_path in path]
-
-        if len(zipped_model_path):
-            model_data = {'uuid': zipped_model_path[0]}
-            json_model_data = json.dumps(model_data)
+        if brain_element:
+            storage_brain_zip_data = self._storageClient.get_model(
+                self.sim_config.token,
+                self.sim_config.ctx_id, brain_element)
             # Get the data
-            storage_brain_zip_data = self._storageClient.get_custom_model(
-                self.sim_config.token, self.sim_config.ctx_id, json_model_data)
             # Write the zip in sim dir
             with open(self.sim_config.brain_model.zip_path.abs_path, 'w') as brain_zip:
                 brain_zip.write(storage_brain_zip_data)

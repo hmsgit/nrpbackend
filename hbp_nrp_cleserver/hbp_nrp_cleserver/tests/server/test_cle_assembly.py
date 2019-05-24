@@ -45,7 +45,6 @@ class CustomModel(object):
         self.path = 'test'
         self.robotId = 'robot'
 
-
 class TestCLEGazeboSimulationAssembly(unittest.TestCase):
     def setUp(self):
         self.m_ziputil = MockUtil.fakeit(self, 'hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ZipUtil')
@@ -67,9 +66,11 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         self.m_simconf.brain_model.zip_path.rel_path = 'brains/brain.zip'
         self.m_simconf.brain_model.zip_path.abs_path = '/my/experiment/brains/brain.sdf'
         self.m_simconf.robot_models = {
-            'bb8': Robot('bb8', '/my/experiment/bb8/model.sdf', 'my bb8', Mock()),
-            'r2d2': Robot('r2d2', '/my/experiment/bb8/model.sdf', 'my r2d2', Mock(),
-                          True, '/my/experiment/ros.launch')
+            'bb8': Robot(rid='bb8', sdf_abs_path='/my/experiment/bb8/model.sdf', display_name='my bb8', is_custom=False,
+                         pose=Mock(), roslaunch_abs_path='/my/experiment/ros.launch', model='model_name'
+                         ),
+            'r2d2': Robot(rid='r2d2', sdf_abs_path='/my/experiment/bb8/model.sdf', display_name='my r2d2', pose=Mock(),
+                          is_custom=True, roslaunch_abs_path='/my/experiment/ros.launch', model='model_name')
         }
         self.m_simconf.retina_config = 'retina_configuration'
         self.m_simconf.ext_robot_controller = 'xyz.model'
@@ -82,15 +83,23 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
 
     def test_custom_brain_fails(self):
         self.m_simconf.brain_model.is_custom = True
-
-        self.launcher._storageClient.get_custom_models.return_value = [{'path': "brains/brain_.zip"}]
-        self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
+        model = MagicMock()
+        model.name = 'model_brain'
+        model.path = 'brains'
+        model.type = 'brains/brain.zip'
+        self.launcher._storageClient.get_models.return_value = [model]
+        self.launcher._storageClient.get_model.return_value = r'awesome brain data'
 
         self.assertRaises(NRPServicesGeneralException, self.launcher._load_brain)
 
     def test_custom_brain_succeeds(self):
-        self.launcher._storageClient.get_custom_models.return_value = [{'path': "brains/brain.zip"}]
-        self.launcher._storageClient.get_custom_model.return_value = r'awesome brain data'
+        model = MagicMock()
+        model.name = 'model_brain'
+        model.path = 'brains/brain.zip'
+        model.type = 0x11000003
+
+        self.launcher._storageClient.get_models.return_value = [model]
+        self.launcher._storageClient.get_model.return_value = r'awesome brain data'
 
         self.m_simconf.brain_model.zip_path.rel_path = 'brains/brain.zip'
         self.m_simconf.brain_model.zip_path.abs_path = '/my/experiment/brains/brain.zip'

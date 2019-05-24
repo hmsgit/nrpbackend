@@ -83,7 +83,7 @@ class TestRobotCallHandler(unittest.TestCase):
             findFile.return_value = "/some/model/abs/path/model.sdf"
             self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"
 
-            ret, status = self.handler.add_robot('id', 'over/the/rainbow')
+            ret, status = self.handler.add_robot('id', 'name', 'over/the/rainbow')
 
     def test_prepare_custom_robot(self):
         self.mocked_assembly.storage_client = Mock()
@@ -98,17 +98,15 @@ class TestRobotCallHandler(unittest.TestCase):
             self.mocked_os.path.basename.return_value = "model.sdf"
             self.handler.download_custom_robot = MagicMock()
 
-            ret, status = self.handler.prepare_custom_robot("over/the/rainbow")
+            ret, status = self.handler.prepare_custom_robot("model_name")
             self.handler.download_custom_robot.assert_called_once_with(
-                robot_rel_path="over/the/rainbow",
-                save_to="/simdir/zip/abs/path/",
-                save_as="model.sdf")
+                "model_name")
             self.handler.download_custom_robot.return_value = "some/other/path"
 
             findFile.return_value = "/some/model/abs/path/model.sdf"
             self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"
 
-            ret, status = self.handler.add_robot('id', 'over/the/rainbow')
+            ret, status = self.handler.add_robot('id', 'model_name', 'over/the/rainbow')
 
     def test_delete_robot(self):
         self.mocked_assembly.robotManager.get_robot.return_value.SDFFileAbsPath = "somewhere/over/the/rainbow"

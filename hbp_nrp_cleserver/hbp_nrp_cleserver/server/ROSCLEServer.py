@@ -1146,15 +1146,16 @@ class ROSCLEServer(SimulationServer):
         """
         rinfo = request.robot
         ret, status = self._robotHandler.add_robot(robot_id=rinfo.robot_id,
-                                                   robot_model_rel_path=rinfo.robot_model_rel_path,
+                                                   robot_model=rinfo.robot_model,
                                                    is_custom=rinfo.is_custom,
                                                    pose=rinfo.pose)
         if ret:
             # add new tag into bibi and exc
             try:
                 self._excBibiHandler.add_robotpose(rinfo.robot_id, rinfo.pose)
-                self._excBibiHandler.add_bodymodel(rinfo.robot_id, status, rinfo.is_custom,
-                                                          rinfo.robot_model_rel_path)
+                self._excBibiHandler.add_bodymodel(rinfo.robot_id, status,
+                                                   rinfo.is_custom,
+                                                   rinfo.robot_model)
             except Exception as e:
                 logger.error("An error occurred while updating exc and bibi for the newly added "
                              "robot" + str(e))

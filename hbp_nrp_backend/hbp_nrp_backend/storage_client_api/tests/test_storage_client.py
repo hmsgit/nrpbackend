@@ -29,10 +29,11 @@ import unittest
 import shutil
 import os
 import requests
-from mock import patch, mock_open, Mock
+from mock import patch, MagicMock, mock_open, Mock
 from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_backend.storage_client_api import StorageClient
 from hbp_nrp_backend import NRPServicesGeneralException
+from hbp_nrp_commons.sim_config.SimConfig import ResourceType
 
 # Used to mock all the http requests by providing a response and a
 # status code
@@ -162,11 +163,12 @@ def mocked_list_files_ok(*args, **kwargs):
     }], 200)
 
 
-def mocked_get_custom_models_ok(*args, **kwargs):
-    return MockResponse([{'name': 'testZip1'}, {'name': 'testZip2'}], 200)
+def mocked_get_models_ok(*args, **kwargs):
+    return MockResponse([{'name': 'testZip1', 'type': 'robots', 'path': 'somepath'},
+                        {'name': 'testZip2', 'type': 'robots', 'path': 'somepath'}], 200)
 
 
-def mocked_get_custom_model_ok(*args, **kwargs):
+def mocked_get_model_ok(*args, **kwargs):
     return MockResponse({'name': 'testZip1'}, 200, content='Test')
 
 
@@ -471,70 +473,81 @@ class TestNeuroroboticsStorageClient(unittest.TestCase):
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
     # GET CUSTOM MODELS
-    @patch('requests.get', side_effect=mocked_get_custom_models_ok)
-    def test_get_custom_models_successfully(self, mocked_get):
+    @patch('requests.get', side_effect=mocked_get_models_ok)
+    def test_get_models_successfully(self, mocked_get):
         client = StorageClient.StorageClient()
-        res = client.get_custom_models(
+        res = client.get_models(
             "fakeToken",
             "fakeContextId",
-            "environments")
-        self.assertEqual(res[0], {'name': 'testZip1'})
-        self.assertEqual(res[1], {'name': 'testZip2'})
+            ResourceType.ROBOT)
+        self.assertEqual(res[0].name, 'testZip1')
+
 
     @patch('requests.get', side_effect=mocked_request_not_ok)
-    def test_get_custom_models_failed(self, mocked_get):
+    def test_get_models_failed(self, mocked_get):
         client = StorageClient.StorageClient()
         with self.assertRaises(Exception) as context:
-            client.get_custom_models(
+            client.get_models(
                 "fakeToken",
                 "fakeContextId",
-                "environments")
+                ResourceType.ROBOT)
 
         self.assertTrue(
             'Failed to communicate with the storage server, status code 404' in context.exception)
 
     @patch('requests.get')
-    def test_get_custom_models_connection_error(self, mocked_get):
+    def test_get_models_connection_error(self, mocked_get):
         client = StorageClient.StorageClient()
         mocked_get.side_effect = requests.exceptions.ConnectionError()
         with self.assertRaises(requests.exceptions.ConnectionError) as context:
-            client.get_custom_models(
+            client.get_models(
                 "fakeToken",
                 "fakeContextId",
-                "environments")
+                ResourceType.ROBOT)
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
     # GET CUSTOM MODEL
-    @patch('requests.get', side_effect=mocked_get_custom_model_ok)
-    def test_get_custom_model_successfully(self, mocked_get):
+    @patch('requests.get', side_effect=mocked_get_model_ok)
+    def test_get_model_successfully(self, mocked_get):
         client = StorageClient.StorageClient()
-        res = client.get_custom_model(
+        model = MagicMock()
+        model.name = 'model_brain'
+        model.type = ResourceType.BRAIN
+        res = client.get_model(
             "fakeToken",
             "fakeContextId",
-            "modelZipPath")
+            model)
         self.assertEqual(res, 'Test')
 
     @patch('requests.get', side_effect=mocked_request_not_ok)
     def test_get_custom_model_failed(self, mocked_get):
         client = StorageClient.StorageClient()
+        model = MagicMock()
+        model.name = 'model_brain'
+        model.type = ResourceType.BRAIN
         with self.assertRaises(Exception) as context:
-            client.get_custom_model(
+            client.get_model(
                 "fakeToken",
                 "fakeContextId",
-                "modelZipPath")
+                model
+                )
 
         self.assertTrue(
             'Failed to communicate with the storage server, status code 404' in context.exception)
 
     @patch('requests.get')
-    def test_get_custom_model_connection_error(self, mocked_get):
+    def test_get_model_connection_error(self, mocked_get):
         client = StorageClient.StorageClient()
         mocked_get.side_effect = requests.exceptions.ConnectionError()
+        model = MagicMock()
+        model.name = 'model_brain'
+        model.type = ResourceType.BRAIN
         with self.assertRaises(requests.exceptions.ConnectionError) as context:
-            client.get_custom_model(
+            client.get_model(
                 "fakeToken",
                 "fakeContextId",
-                "modelZipPath")
+                 model,
+                )
         self.assertEqual(requests.exceptions.ConnectionError, context.expected)
 
     # GET TEXTURES

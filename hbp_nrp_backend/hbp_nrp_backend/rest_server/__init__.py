@@ -33,6 +33,7 @@ class ParamNames(object):
     ROBOT_ID = 'robotId'
     ROBOT_REL_PATH = 'robotRelPath'
     ROBOT_ABS_PATH = 'robotAbsPath'
+    ROBOT_MODEL = 'robotModel'
     ROBOT_POSE = 'robotPose'
     IS_CUSTOM = 'isCustom'
 

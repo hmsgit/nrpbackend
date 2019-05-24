@@ -469,13 +469,14 @@ class ROSCLEClient(object):
         return response.robots
 
     @fallback_retval((False, "An error occurred while processing request."))
-    def add_simulation_robot(self, robot_id, robot_model_rel_path,
+    def add_simulation_robot(self, robot_id, robot_model,
                              is_custom=False, initial_pose=None):
         """
         Add a new robot with the given information in the simulation
 
         :param robot_id: id of the robot to be added
-        :param robot_model_rel_path: a relative path to the SDF or ZIP file
+        :param robot_model: if custom, it says the name of the custom model template name
+                            if not custom, it is a relative path to the SDF or ZIP file
         :param is_custom: path to a custom robot (zip)
         :param initial_pose: initial pose of the robot
         :return: True if the call to ROS is successful, False otherwise
@@ -495,7 +496,7 @@ class ROSCLEClient(object):
 
         response = self.__cle_add_robot(
             msg.RobotInfo(robot_id=robot_id,
-                          robot_model_rel_path=robot_model_rel_path,
+                          robot_model=robot_model,
                           is_custom=is_custom,
                           pose=pose))
         return response.success, response.error_message

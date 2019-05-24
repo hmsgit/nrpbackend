@@ -28,6 +28,7 @@ This module tests the backend implementation of the simulation lifecycle
 from mock import Mock, patch
 import unittest
 import os
+from mock import patch, MagicMock
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import BackendSimulationLifecycle
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -222,8 +223,11 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
 
     def test_parse_env_path_custom_environment_throws(self):
         with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
-            self.storage_mock.return_value.get_custom_models.return_value = [
-                {'path': 'fakePath'}]
+            model = MagicMock()
+            model.name = 'model_brain'
+            model.path = 'brains.zip'
+            model.type = 0x11000003
+            self.storage_mock.return_value.get_models.return_value = [model]
             exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
             with open(exp_path, 'r') as exp_file:
                 exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
@@ -235,8 +239,12 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
     @patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.zipfile")
     def test_parse_env_path_custom_environment_ok(self, mock_zip):
         with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
-            self.storage_mock.return_value.get_custom_models.return_value = [{'path': 'virtual_room.zip'}]
-            self.storage_mock.return_value.get_custom_model.return_value = 'test'
+            model = MagicMock()
+            model.name = 'model_name'
+            model.path = 'virtual_room.zip'
+            model.type = 0x11000003
+            self.storage_mock.return_value.get_models.return_value = [model]
+            self.storage_mock.return_value.get_model.return_value = 'test'
             self.storage_mock.return_value.get_simulation_directory.return_value = os.path.join(os.path.dirname(
                 os.path.realpath(__file__)), 'zipped_data')
             import zipfile

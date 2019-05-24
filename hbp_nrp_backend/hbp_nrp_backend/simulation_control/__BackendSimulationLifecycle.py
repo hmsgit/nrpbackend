@@ -28,7 +28,6 @@ import os
 import rospy
 import datetime
 import zipfile
-import json
 import logging
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -40,6 +39,7 @@ from hbp_nrp_backend.cle_interface.ROSCLESimulationFactoryClient \
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
+from hbp_nrp_commons.sim_config.SimConfig import ResourceType
 from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
 from cle_ros_msgs.srv import SimulationRecorderRequest
@@ -127,24 +127,21 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param experiment: The experiment object.
         """
         # pylint: disable=too-many-locals
-        environments_list = self.__storageClient.get_custom_models(
+        environments_list = self.__storageClient.get_models(
             UserAuthentication.get_header_token(),
-            self.simulation.ctx_id, 'environments')
-        # we use the paths of the uploaded zips to make sure the selected
-        # zip is there
-        paths_list = [environment['path']
-                      for environment in environments_list]
+            self.simulation.ctx_id, ResourceType.ENVIRONMENT)
         # check if the zip is in the user storage
-        zipped_model_path = [
-            path for path in paths_list if experiment.environmentModel.customModelPath in path]
-        if len(zipped_model_path):
+        env_element = None
+        for item in environments_list:
+            if experiment.environmentModel.customModelPath in item.path:
+                env_element = item
+
+        if env_element:
             environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
                                             os.path.basename(experiment.environmentModel.src))
-            model_data = {'uuid': zipped_model_path[0]}
-            json_model_data = json.dumps(model_data)
-            storage_env_zip_data = self.__storageClient.get_custom_model(
+            storage_env_zip_data = self.__storageClient.get_model(
                 UserAuthentication.get_header_token(),
-                self.simulation.ctx_id, json_model_data)
+                self.simulation.ctx_id, env_element)
             env_sdf_name = os.path.basename(
                 experiment.environmentModel.src)
             env_path = os.path.join(

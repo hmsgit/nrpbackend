@@ -86,17 +86,17 @@ class ExcBibiHandler(object):   # pragma: no cover
 
         return ret, status
 
-    def add_bodymodel(self, robot_id, model_path, is_custom, zip_path=None):
+    def add_bodymodel(self, robot_id, model_path, is_custom, robot_model=None):
         """
         Adds a <bodyModel> tag in the bibi
 
         :param robot_id: attribute robotId in the tag
         :param model_path: value() fo the tag
         :param is_custom: attribute customAsset in the tag
-        :param zip_path: if custom, then value of the assetPath attribute
+        :param robot_model: if custom, name of the custom template model
         """
 
-        self._conf_editor.add_bodymodel(robot_id, model_path, is_custom, zip_path)
+        self._conf_editor.add_bodymodel(robot_id, model_path, is_custom, robot_model)
         self._write_file_to_storage(
             self._cle_assembly.sim_config.bibi_path.abs_path,
             self._cle_assembly.sim_config.bibi_path.rel_path)

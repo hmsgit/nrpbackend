@@ -36,10 +36,44 @@ from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.sim_config.SimConfig import ResourceType
 import textwrap
 
 __author__ = "Manos Angelidis"
 logger = logging.getLogger(__name__)
+
+
+class Model(object):  # pragma: no cover
+    """
+    This class represents the model that we have in the model DB.
+    """
+
+    def __init__(self, nameModel, typeModel, pathModel=None):
+        """
+        Creates the model object.
+        """
+        self.name = nameModel
+        self.type = typeModel
+        self.path = pathModel
+
+
+class ModelType(object):  # pragma: no cover
+    """
+    Enumeration for model types. Model resources are enhanced in a different structure
+    """
+    types = {ResourceType.ROBOT: 'robots',
+             ResourceType.ENVIRONMENT: 'environments',
+             ResourceType.BRAIN: 'brains'
+             }
+
+
+def getKeyByValue(valueToFind):
+    """
+    returns the key of the valueToFind form the types dictionary.
+    """
+    lKey = [key for key, value in ModelType.types.iteritems() if value ==
+            valueToFind][0]
+    return lKey
 
 
 class StorageClient(object):
@@ -222,8 +256,8 @@ class StorageClient(object):
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                    'Failed to communicate with the storage server, status code ' +
+                    str(res.status_code))
             else:
                 return "Success"
         except requests.exceptions.ConnectionError, err:
@@ -287,8 +321,8 @@ class StorageClient(object):
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                    'Failed to communicate with the storage server, status code ' +
+                    str(res.status_code))
             else:
                 return res.json()
         except requests.exceptions.ConnectionError, err:
@@ -316,60 +350,94 @@ class StorageClient(object):
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                    'Failed to communicate with the storage server, status code ' +
+                    str(res.status_code))
             else:
                 # folder variable is added because copy_resources_folders_to_tmp needs
                 # to list the folders too
                 return [entry for entry in res.json()
-                        if (entry['type'] == 'file' or folder)
-                        and not self.check_file_extension(entry['name'], ['.swp'])]
+                        if (entry['type'] == 'file' or folder) and
+                        not self.check_file_extension(entry['name'], ['.swp'])]
 
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err
 
-    def get_custom_models(self, token, context_id, folder_name):
+    def get_models(self, token, context_id, model_type):
         """
         Returns the contents of a custom models folder provided its name
         :param token: a valid token to be used for the request
         :param context_id: the context_id of the collab
-        :param folder_name: the name of the folder
-        :return: if found, the uuid of the named folder
+        :param model_type: the type of the model defined in ModelType
+        :return: if found, list of Models objects
         """
         try:
-
-            request_url = '{proxy_url}/storage/custommodels/{folder_name}'.format(
+            request_url = '{proxy_url}/storage/models/all/{modelType}'.format(
                 proxy_url=self.__proxy_url,
-                folder_name=folder_name
+                modelType=ModelType.types[model_type]
             )
-
             res = requests.get(request_url,
                                headers={'Authorization': 'Bearer ' + token,
                                         'context-id': context_id})
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                    'Failed to communicate with the storage server, status code ' +
+                    str(res.status_code))
             else:
-                return res.json()
+                list_models = []
+                for model in res.json():
+                    model_type_key = getKeyByValue(model['type'])
+                    model = Model(model['name'], model_type_key, model['path'])
+                    list_models.append(model)
+                return list_models
+
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err
 
-    def get_custom_model(self, token, context_id, model_path):
+    def get_model_path(self, token, context_id, model):
+        """
+            Returns a custom model provided its path
+            :param token: a valid token to be used for the request
+            :param context_id: the context_id of the collab
+            :param model: model object, check class Model
+            :return: if found, the uuid of the named folder
+        """
+        try:
+            request_url = '{proxy_url}/storage/models/path/{model_type}/{model_name}'.format(
+                proxy_url=self.__proxy_url,
+                model_type=ModelType.types[model.type],
+                model_name=model.name
+            )
+            res = requests.get(request_url,
+                               headers={'Authorization': 'Bearer ' + token,
+                                        'context-id': context_id})
+
+            if res.status_code < 200 or res.status_code >= 300:
+                raise Exception(
+                    'Failed to communicate with the storage server, status code {}'
+                    .format(res.status_code))
+
+            else:
+                return res.content
+        except requests.exceptions.ConnectionError, err:
+            logger.exception(err)
+            raise err
+
+    def get_model(self, token, context_id, model):
         """
         Returns a custom model provided its path
         :param token: a valid token to be used for the request
         :param context_id: the context_id of the collab
-        :param model_path: the path to the model
+        :param model: the model object, check class Model
         :return: if found, the uuid of the named folder
         """
         try:
-            request_url = '{proxy_url}/storage/custommodel/{model_path}'.format(
+            request_url = '{proxy_url}/storage/models/{model_type}/{model_name}'.format(
                 proxy_url=self.__proxy_url,
-                model_path=model_path)
-
+                model_type=ModelType.types[model.type],
+                model_name=model.name
+            )
             res = requests.get(request_url,
                                headers={'Authorization': 'Bearer ' + token,
                                         'context-id': context_id})
@@ -403,8 +471,8 @@ class StorageClient(object):
 
             if res.status_code < 200 or res.status_code >= 300:
                 raise Exception(
-                    'Failed to communicate with the storage server, status code '
-                    + str(res.status_code))
+                    'Failed to communicate with the storage server, status code ' +
+                    str(res.status_code))
             else:
                 return res.json()
         except requests.exceptions.ConnectionError, err:
@@ -680,8 +748,8 @@ class StorageClient(object):
                 if entry_to_clone['name'] in exclude_dirs:
                     continue
             else:
-                if (entry_to_clone['name'] in exclude_files
-                        or os.path.dirname(entry_to_clone['name']) in exclude_dirs):
+                if (entry_to_clone['name'] in exclude_files or
+                        os.path.dirname(entry_to_clone['name']) in exclude_dirs):
                     continue
 
             if entry_to_clone['type'] == 'folder':
@@ -724,11 +792,11 @@ class StorageClient(object):
                 if not isinstance(file_obj, instance_type):
                     raise NRPServicesGeneralException(
                         "{filepath} configuration file content is not valid."
-                            .format(filepath=filepath), "File not valid")
+                        .format(filepath=filepath), "File not valid")
             except (ValidationError, SAXParseException) as ve:
                 raise NRPServicesGeneralException(
                     "Could not parse file {filepath} due to validation error: {validation_error}"
-                        .format(filepath=filepath, validation_error=str(ve)), "File not valid")
+                    .format(filepath=filepath, validation_error=str(ve)), "File not valid")
         return file_obj
 
     def get_folder_uuid_by_name(self, token, context_id, folder_name):

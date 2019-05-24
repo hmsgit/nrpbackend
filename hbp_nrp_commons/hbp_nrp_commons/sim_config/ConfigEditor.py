@@ -144,7 +144,7 @@ class ConfigEditor(object):  # pragma: no cover
 
         return True, "Tag updated successfully"
 
-    def add_bodymodel(self, robot_id, model_path, is_custom, zip_path=None):
+    def add_bodymodel(self, robot_id, model_path, is_custom, robot_model=None):
         """
         Adds a <bodyModel> tag in the bibi
 
@@ -152,17 +152,16 @@ class ConfigEditor(object):  # pragma: no cover
         :param model_path: value() fo the tag
         :param is_custom: attribute customAsset in the tag
         :param zip_path: if custom, then value of the assetPath attribute
+        :param robot_model_name: if custom, the name of the custom model is based the robot
         :return:
         """
-
-        if is_custom and zip_path is None:
-            raise Exception("Please provide the custom zip location")
-
         # SDFWithPath is the type of <bodyModel> defined in the bibi schema (xsd) file
         tag = bibi_parser.SDFWithPath(model_path)
         tag.robotId = robot_id
-        tag.customAsset = "true" if is_custom else "false"
-        tag.assetPath = zip_path if is_custom else None
+        tag.isCustom = "true" if is_custom else "false"
+
+        if is_custom and robot_model is not None:
+            tag.model = robot_model
 
         if self._bibi_dom.bodyModel:
             self._bibi_dom.bodyModel.append(tag)

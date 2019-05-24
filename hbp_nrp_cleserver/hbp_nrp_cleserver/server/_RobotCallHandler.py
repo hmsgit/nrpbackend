@@ -29,7 +29,6 @@ This module provides support methods to perform operation using cle_nrp_cle.Robo
 import os
 import logging
 import tf
-import json
 from pyxb import ValidationError
 
 from cle_ros_msgs import msg
@@ -37,7 +36,9 @@ from hbp_nrp_cle.robotsim.RobotManager import Robot
 from hbp_nrp_commons.sim_config.SimConfUtil import SimConfUtil
 from hbp_nrp_commons.generated import robot_conf_api_gen as robotXmlParser
 from hbp_nrp_commons.ZipUtil import ZipUtil
-from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, get_model_basepath
+from hbp_nrp_commons.sim_config.SimConfig import ResourceType
+from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, \
+    get_model_basepath, Model
 
 __author__ = 'Hossain Mahmud'
 
@@ -83,14 +84,14 @@ class RobotCallHandler(object):
                                 )
             # SDFFileAbsPath contains a absolute path
             ret.append(msg.RobotInfo(robot_id=str(rid),
-                                     robot_model_rel_path=str(robot.SDFFileAbsPath),
+                                     robot_model=str(robot.SDFFileAbsPath),
                                      is_custom=bool(robot.isCustom),
                                      pose=pose)
                        )
 
         return ret
 
-    def add_robot(self, robot_id, robot_model_rel_path, is_custom=False, pose=None):
+    def add_robot(self, robot_id, robot_model, is_custom=False, pose=None):
         """
         Adds a robot in the currently running simulation
         REST request POST /robots/<sim_id> ends up here
@@ -99,7 +100,8 @@ class RobotCallHandler(object):
         in robot_model_rel_path.
 
         :param robot_id: Id of the robot
-        :param robot_model_rel_path: SDF or the zip path of the robot
+        :param robot_model: if it is custom, the name of the models based the robot
+                            if it is not custom SDF
         :param is_custom: is the asset custom (zip or sdf !)
         :param pose: initial robot pose
         :return: Tuple (True, SDF relative path) or (False, error message) to update config files
@@ -108,7 +110,12 @@ class RobotCallHandler(object):
         robot_sdf_abs_path = None
         try:
             if is_custom:  # pragma: no cover
-                zip_storage_path = robot_model_rel_path
+                robot = Model(robot_model, ResourceType.ROBOT)
+                zip_storage_path = self._client.get_model_path(
+                    self._cle_assembly.sim_config.token,
+                    self._cle_assembly.sim_config.ctx_id,
+                    robot
+                )
                 try:
                     # It is assumed that prepare_custom_robot is called by this point
                     # Hence, files should be present already
@@ -135,10 +142,10 @@ class RobotCallHandler(object):
 
             else:  # if template robot
                 # find the SDF in the template directories
-                sdf_abs_path = find_file_in_paths(robot_model_rel_path, get_model_basepath())
+                sdf_abs_path = find_file_in_paths(robot_model, get_model_basepath())
                 if not sdf_abs_path:
                     raise Exception("Could not find {0} in the template library"
-                                    .format(robot_model_rel_path))
+                                    .format(robot_model))
                 sdf_filename = os.path.basename(sdf_abs_path)
 
             pose = SimConfUtil.convertXSDPosetoPyPose(pose)
@@ -176,7 +183,7 @@ class RobotCallHandler(object):
 
             # add to the robot manager
             robot = Robot(robot_id, robot_sdf_abs_path, robot_id,
-                          pose, is_custom, ros_launch_abs_path)
+                          pose, is_custom, ros_launch_abs_path, robot_model)
             self._cle_assembly.cle_server.cle.initial_robot_poses[robot_id] = pose
 
             # now try to add it to the scene
@@ -256,23 +263,19 @@ class RobotCallHandler(object):
 
         return True, "Robot deleted"
 
-    def prepare_custom_robot(self, robot_zip_rel_path):
+    def prepare_custom_robot(self, robot_model):
         """
         Downloads and extracts a custom robot to the simulation directory
-        :param robot_zip_rel_path: relative path to the zip to be requested to the storage server
+        :param name: name of the robot in the DB.
         :return: Tuple (True, extracted SDF absolute path) or (False, error message)
         """
         try:
             # download zip from storage
-            zipAbsPath = self.download_custom_robot(
-                robot_rel_path=robot_zip_rel_path,
-                save_to=os.path.join(self._simdir, os.path.dirname(robot_zip_rel_path)),
-                save_as=os.path.basename(robot_zip_rel_path)
-            )
+            zipAbsPath = self.download_custom_robot(robot_model)
 
             if zipAbsPath is None:
                 raise Exception("Could not find {0} in the template library"
-                                .format(robot_zip_rel_path))
+                                .format(robot_model))
             # extract assets
             ZipUtil.extractall(
                 zip_abs_path=zipAbsPath,
@@ -300,37 +303,37 @@ class RobotCallHandler(object):
 
         return True, sdf_abs_path
 
-    def download_custom_robot(self, robot_rel_path, save_to, save_as=None):
+    def download_custom_robot(self, robot_name, save_to=None, save_as=None):
         """
         Downloads custom zipped robot model from the storage
-        :param robot_rel_path: relative path* to the zip in the storage.
+        :param name: name of the robot in the DB.
         * from the internal robot folder
         :param save_to: download location
         :param save_as: filename to save as
         :return: None if failed. Otherwise path to the downloaded file i.e. save_to+save_as
         """
-        if save_as is None:
-            save_as = os.path.basename(robot_rel_path)
-        if not save_as:
-            logger.error("Aborting download of {sdf} from storage due to invalid 'Save As' name"
-                         .format(sdf=robot_rel_path))
-            return None
 
-        # Hack the file name for the storage server. Replace spaces and slashes.
-        # How do you know this? divine knowledge!
-        # FIXME: get_custom_model should take a path, custom logic should be done there
-        requestFile = ('robots/' + robot_rel_path).replace(' ', '%20').replace('/', '%2F')
         # download zip from storage
         try:
-            data = self._client.get_custom_model(
+
+            robot = Model(robot_name, ResourceType.ROBOT)
+            data = self._client.get_model(
                 self._cle_assembly.sim_config.token,
                 self._cle_assembly.sim_config.ctx_id,
-                json.dumps({'uuid': requestFile})
+                robot
             )
+
+            if save_as is None:
+                path = self._client.get_model_path(
+                    self._cle_assembly.sim_config.token,
+                    self._cle_assembly.sim_config.ctx_id,
+                    robot)
+                save_as = os.path.basename(path)
+                save_to = os.path.join(self._simdir, os.path.dirname(path))
         # pylint: disable=broad-except
         except Exception as ex:
-            logger.error("StorageClient failed to download {sdf} with following error. {err}"
-                         .format(sdf=robot_rel_path, err=str(ex)))
+            logger.error("StorageClient failed to download {zip} with following error. {err}"
+                         .format(zip=robot_name, err=str(ex)))
             return None
 
         # write the zip
@@ -341,7 +344,7 @@ class RobotCallHandler(object):
                 destAbsPath.write(data)
         except IOError as ex:
             logger.error("Could not write downloaded SDF {sdf} in directory {dir} due to {err}"
-                         .format(sdf=robot_rel_path, dir=save_to, err=str(ex)))
+                         .format(sdf=data.path, dir=save_to, err=str(ex)))
             return None
 
         return os.path.join(save_to, save_as)

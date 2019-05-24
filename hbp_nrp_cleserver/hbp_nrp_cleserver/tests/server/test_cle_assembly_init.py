@@ -106,15 +106,16 @@ class TestCLELauncherInit(unittest.TestCase):
         # alternate set is_custom in individual test
         self.m_simconf.brain_model.zip_path.rel_path = 'brains/brain.zip'
         self.m_simconf.brain_model.zip_path.abs_path = '/my/experiment/brains/brain.sdf'
+
         self.m_simconf.robot_models = {
-            'bb8': Robot('bb8', '/my/experiment/bb8/model.sdf', 'my bb8', Mock()),
-            'r2d2': Robot('r2d2', '/my/experiment/r2d2/model.zip', 'my r2d2', Mock(),
-                          True, '/my/experiment/ros.launch')
+            'bb8': Robot('bb8', '/my/experiment/bb8/model.sdf', 'my bb8', Mock(), False, 'my/roslauch/path',
+                         'modelname'),
+            'r2d2': Robot('r2d2', '/my/experiment/r2d2/model.zip', 'my r2d2', Mock(), True,
+                          '/my/experiment/ros.launch', 'modelname')
         }
         self.m_simconf.retina_config = 'retina_configuration'
         self.m_simconf.ext_robot_controller = 'xyz.model'
         self.m_simconf.ros_launch_abs_path = '/my/experiment/ros.launch'
-
         self.patch_cleserver = patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ROSCLEServer")
         self.mocked_cleserver = self.patch_cleserver.start()
         #self.mocked_cleserver._robotHandler.download_custom_robot.return_value = "somewhere/over/the/rainbow"
