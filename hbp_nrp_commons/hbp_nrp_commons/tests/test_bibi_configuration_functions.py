@@ -41,7 +41,7 @@ class TestScript(unittest.TestCase):
         populations = [api.List(population='foo', element=[1,3])]
         self.assertEqual(get_all_neurons_as_dict(populations), {'foo':[1,3]})
         populations = [api.Population(population='foo', count=5)]
-        self.assertEqual(get_all_neurons_as_dict(populations), {'foo':None})
+        self.assertEqual(get_all_neurons_as_dict(populations), {'foo':'foo'})
         self.assertRaises(Exception, get_all_neurons_as_dict, ['foo'])
 
 if __name__ == '__main__':

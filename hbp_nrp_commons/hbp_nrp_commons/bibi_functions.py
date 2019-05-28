@@ -43,7 +43,7 @@ def get_all_neurons_as_dict(populations):
         elif isinstance(neurons, bibi_api_gen.List):
             pop[neurons.population] = neurons.element[:]
         elif isinstance(neurons, bibi_api_gen.Population):
-            pop[neurons.population] = None
+            pop[neurons.population] = neurons.population
         else:
             raise Exception("Neuron Print: Don't know how to process neuron selector " +
                             str(neurons))
