@@ -44,8 +44,8 @@ class TestSimulationTopics(RestTest):
         self.assertTrue(self.__assert_topic_visible("/husky/camera", "sensor_msgs/msg/camera"))
         self.assertTrue(self.__assert_topic_visible("/husky/cmd_vel", "cmd_msgs/cmd_vel"))
 
-    def test_gazebo_topics_filtered(self):
-        self.assertFalse(self.__assert_topic_visible("/gazebo/joint_states", "gazebo_ros_msgs/msg/jointStates"))
+    def test_gazebo_topics_available(self):
+        self.assertTrue(self.__assert_topic_visible("/gazebo/joint_states", "gazebo_ros_msgs/msg/jointStates"))
 
     def test_clock_topic_filtered(self):
         self.assertFalse(self.__assert_topic_visible("/clock", "Time"))

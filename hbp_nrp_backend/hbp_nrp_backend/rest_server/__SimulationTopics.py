@@ -45,7 +45,6 @@ class SimulationTopics(Resource):
         filtered_dict = {
             k: v for k, v in m.getTopicTypes()
             if not k.startswith('/monitor') and
-            not k.startswith('/gazebo') and
             not k.startswith('/ros') and
             not k.startswith('/odom') and
             not k.startswith('/clock')
