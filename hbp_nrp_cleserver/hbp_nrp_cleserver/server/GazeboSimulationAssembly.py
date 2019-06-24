@@ -30,6 +30,9 @@ import logging
 import netifaces
 import os
 import subprocess
+import rospy
+import rosnode
+
 logger = logging.getLogger(__name__)
 
 from hbp_nrp_cle.cle import config
@@ -67,6 +70,8 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
                             self.sim_config.gzserver_host)
 
         self.gzweb = None
+        self._initial_ros_params = None
+        self._initial_ros_nodes = None
         self.ros_launcher = None
         self.gazebo_recorder = None
 
@@ -79,6 +84,8 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
         :param extra_models: An additional models path or None
         :param world_file: The world file that should be loaded by Gazebo
         """
+        self._initial_ros_params = rospy.get_param_names()
+        self._initial_ros_nodes = rosnode.get_node_names()
 
         # Gazebo configuration and launch
         self._notify("Starting Gazebo robotic simulator")
@@ -243,6 +250,14 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
         # Cleanup ROS core nodes, services, and topics (the command should be almost
         # instant and exit, but wrap it in a timeout since it's semi-officially supported)
         logger.info("Cleaning up ROS nodes and services")
+
+        for param in rospy.get_param_names():
+            if param not in self._initial_ros_params:
+                rospy.delete_param(param)
+
+        for node in rosnode.get_node_names():
+            if node not in self._initial_ros_nodes:
+                os.system('rosnode kill ' + str(node))
 
         try:
             res = subprocess.check_output(["rosnode", "list"])

@@ -27,7 +27,6 @@ This module tests the simulate routine of the ROSCLESimulationFactory class
 
 __author__ = 'Bernd Eckstein'
 
-
 import unittest
 import os
 from datetime import datetime, timedelta
@@ -36,6 +35,7 @@ from hbp_nrp_cleserver.server.ROSCLESimulationFactory import ROSCLESimulationFac
 from mock import Mock, patch, MagicMock
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
 from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboServerInstance
+
 MODELS_PATH = os.path.split(__file__)[0]
 EXPERIMENTS_PATH = os.path.join(MODELS_PATH, 'experiment_data')
 tz = pytz.timezone("Europe/Zurich")
@@ -73,7 +73,6 @@ class MockedGazeboHelper(object):
 
 
 class MockedClosedLoopEngine(Mock):
-
     DEFAULT_TIMESTEP = 0.02
 
 
@@ -82,9 +81,11 @@ class MockOs(object):
     system = Mock()
     path = Mock()
 
+
 class MockOs2(object):
     environ = {'NRP_SIMULATION_DIR':'/tmp/nrp-simulation-dir'}
     path = os.path
+
 
 @patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
 @patch("hbp_nrp_cle.common.os", new=MockOs2())
@@ -102,6 +103,8 @@ class MockOs2(object):
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.listdir", new=Mock(return_value=[]))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient", new=MagicMock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy", new=MagicMock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rosnode", new=MagicMock())
 class SimulationTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -132,6 +135,7 @@ class SimulationTestCase(unittest.TestCase):
         MockedServiceRequest.gzserver_host = 'lugano'
         self.factory.create_new_simulation(MockedServiceRequest())
         self.factory.simulation_terminate_event.wait()
+
 
 if __name__ == '__main__':
     unittest.main()

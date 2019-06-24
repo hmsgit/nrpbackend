@@ -34,7 +34,6 @@ import hbp_nrp_cle.tf_framework as nrp
 from hbp_nrp_cle.robotsim.RobotManager import Robot
 from hbp_nrp_commons.MockUtil import MockUtil
 
-
 class MockedGazeboHelper(object):
 
     def load_gazebo_world_file(self, world):
@@ -83,6 +82,8 @@ class SomeWeirdTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.listdir", new=Mock(return_value=[]))
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy", new=MagicMock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rosnode", new=MagicMock())
 class TestCLELauncherInit(unittest.TestCase):
 
     @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.LocalGazeboServerInstance")
@@ -125,10 +126,14 @@ class TestCLELauncherInit(unittest.TestCase):
         self.mocked_robotManager = self.patch_robotManager.start()
         self.mocked_robotManager.return_value.scene_handler.return_value.parse_gazebo_world_file.return_value = {}, {}
 
-        self.launcher = CLEGazeboSimulationAssembly(self.m_simconf)
+        with patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy"), patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rosnode"):
+            self.launcher = CLEGazeboSimulationAssembly(self.m_simconf)
 
     def tearDown(self):
-        self.launcher.shutdown()
+        with patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy") as patched_rospy, patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rosnode") as patched_rosnode:
+            patched_rospy.get_param_names.return_value = []
+            patched_rosnode.get_node_names.return_value = []
+            self.launcher.shutdown()
         self.patch_robotManager.stop()
         self.patch_cleserver.stop()
 
@@ -195,7 +200,8 @@ class TestCLELauncherInit(unittest.TestCase):
         try:
             self.launcher.initialize(None)
         except SyntaxError:
-            self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
+            self.fail(
+                'CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
 
         mock_nrp.set_faulty_transfer_function.assert_called_once()
 

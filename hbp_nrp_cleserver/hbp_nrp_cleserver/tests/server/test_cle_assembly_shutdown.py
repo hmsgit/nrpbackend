@@ -44,6 +44,8 @@ MockOs.path.join.return_value = "/a/really/nice/place"
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=Mock())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.subprocess", new=Mock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy", new=MagicMock())
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rosnode", new=MagicMock())
 class TestCLELauncherShutdown(unittest.TestCase):
     def setUp(self):
         self.m_simconf = MagicMock()
