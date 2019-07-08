@@ -28,6 +28,7 @@ This module contains the simulation server implementation of the simulation life
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_cleserver.server import TOPIC_LIFECYCLE
 from hbp_nrp_cle.tf_framework import TFException
+from hbp_nrp_cle.cle.CLEInterface import BrainRuntimeException
 from cle_ros_msgs.msg import CLEError
 import threading
 import logging
@@ -115,6 +116,9 @@ class SimulationServerLifecycle(SimulationLifecycle):
         if isinstance(ex, TFException):
             self.__server.publish_error(CLEError.SOURCE_TYPE_TRANSFER_FUNCTION, ex.error_type,
                                         str(ex), function_name=ex.tf_name)
+        elif isinstance(ex, BrainRuntimeException):
+            self.__server.publish_error("Brain Interface", "Brain Interface Error ", str(ex),
+                                        severity=CLEError.SEVERITY_MAJOR)
         elif ex is not None:
             self.__server.publish_error("CLE", "General Error", str(ex),
                                         severity=CLEError.SEVERITY_CRITICAL)

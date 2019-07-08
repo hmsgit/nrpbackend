@@ -166,8 +166,11 @@ class ROSCLEServer(SimulationServer):
             CLEError(severity, source_type, error_type, message,
                      function_name, line_number, offset, line_text, file_name))
 
-        if severity == CLEError.SEVERITY_CRITICAL and self.lifecycle is not None:
-            self.lifecycle.failed()
+        if self.lifecycle is not None:
+            if severity == CLEError.SEVERITY_MAJOR:
+                self.lifecycle.accept_command('paused')
+            elif severity == CLEError.SEVERITY_CRITICAL:
+                self.lifecycle.failed()
 
     def __tf_except_hook(self, tf, tf_error, tb):
         """
