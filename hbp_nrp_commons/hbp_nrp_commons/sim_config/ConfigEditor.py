@@ -150,8 +150,7 @@ class ConfigEditor(object):  # pragma: no cover
 
         :param robot_id: attribute robotId in the tag
         :param model_path: value() fo the tag
-        :param is_custom: attribute customAsset in the tag
-        :param zip_path: if custom, then value of the assetPath attribute
+        :param is_custom: attribute isCustom in the tag
         :param robot_model_name: if custom, the name of the custom model is based the robot
         :return:
         """

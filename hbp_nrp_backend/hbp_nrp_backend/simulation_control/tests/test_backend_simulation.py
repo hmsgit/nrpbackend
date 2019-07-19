@@ -28,7 +28,7 @@ This module tests the backend implementation of the simulation lifecycle
 from mock import Mock, patch
 import unittest
 import os
-from mock import patch, MagicMock
+from mock import patch, MagicMock, mock_open
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import BackendSimulationLifecycle
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -39,6 +39,17 @@ PATH = os.path.split(__file__)[0]
 
 __author__ = 'Georg Hinkel'
 
+class MockZipFile:
+    def __exit__(self):
+        pass
+    def __init__(self):
+        pass
+    def __call__(self):
+        pass
+    def __iter__(self):
+        pass
+    def write(self, fname):
+        pass
 
 class TestBackendSimulationLifecycle(unittest.TestCase):
 
@@ -111,13 +122,10 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
             self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
 
             self.lifecycle.initialize(Mock())
-
             state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]
-
             self.assertEqual(2, len(state_machines))
             directory = PATH
             self.assertEqual(os.path.join(directory, "SM1.py"), state_machines["SM1"])
-            self.assertEqual(os.path.join(directory, "SM2.py"), state_machines["SM2"])
 
     def test_backend_initialize_storage(self):
         self.simulation.experiment_id = "Foobar"
@@ -227,7 +235,7 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
             model.name = 'model_brain'
             model.path = 'brains.zip'
             model.type = 0x11000003
-            self.storage_mock.return_value.get_models.return_value = [model]
+            self.storage_mock.return_value.get_model.return_value = None
             exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
             with open(exp_path, 'r') as exp_file:
                 exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
@@ -236,27 +244,31 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
 
             self.assertEqual(NRPServicesGeneralException, context.expected)
 
-    @patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.zipfile")
+    @patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.zipfile.ZipFile")
     def test_parse_env_path_custom_environment_ok(self, mock_zip):
         with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
             model = MagicMock()
             model.name = 'model_name'
             model.path = 'virtual_room.zip'
             model.type = 0x11000003
-            self.storage_mock.return_value.get_models.return_value = [model]
             self.storage_mock.return_value.get_model.return_value = 'test'
+            self.storage_mock.return_value.get_model_path.return_value = "environment/model.zip"
             self.storage_mock.return_value.get_simulation_directory.return_value = os.path.join(os.path.dirname(
                 os.path.realpath(__file__)), 'zipped_data')
             import zipfile
-            mock_zip.ZipFile.return_value = zipfile.ZipFile(os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), 'zipped_data', 'mouse_ymaze_world.zip'), 'r')
             exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
             with open(exp_path, 'r') as exp_file:
                 exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
 
-            self.lifecycle._parse_env_path(exp.environmentModel.src, exp, True)
-            self.assertEqual(exp.environmentModel.src, 'virtual_room.sdf')
-            self.assertEqual(exp.environmentModel.customModelPath, 'virtual_room.zip')
+            archive = Mock()
+            mocked_read = Mock()
+            archive.return_value.read = mocked_read
+            mock_zip.return_value.__enter__ = archive
+
+            with patch("__builtin__.open", mock_open(read_data="data")):
+                with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.os"):
+                    self.lifecycle._parse_env_path(exp.environmentModel.src, exp, True)
+                    self.assertEqual(exp.environmentModel.model, 'virtual_room')
 
     def test_parse_env_path_template_storage(self):
         exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')

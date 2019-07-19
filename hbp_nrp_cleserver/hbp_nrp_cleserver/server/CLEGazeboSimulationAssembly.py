@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 from RestrictedPython import compile_restricted
 from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.storage_client_api.StorageClient import (
-    StorageClient, get_model_basepath, find_file_in_paths)
+    StorageClient, get_model_basepath, find_file_in_paths, Model)
 from hbp_nrp_commons.sim_config.SimConfig import ResourceType
 from hbp_nrp_cleserver.server.GazeboSimulationAssembly import GazeboSimulationAssembly
 from hbp_nrp_commons.ZipUtil import ZipUtil
@@ -281,21 +281,30 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         the .py from the experiment folder cause the user may have modified it
         """
         # pylint: disable=too-many-locals
-        brains_list = self._storageClient.get_models(
-            self.sim_config.token, self.sim_config.ctx_id, ResourceType.BRAIN)
-        # we use the paths of the uploaded zips to make sure the selected zip is there
-        brain_element = None
-        for item in brains_list:
-            if self.sim_config.brain_model.zip_path.rel_path in item.path:
-                brain_element = item
+        brain = Model(
+            self.sim_config.brain_model.model,
+            ResourceType.BRAIN)
 
-        if brain_element:
-            storage_brain_zip_data = self._storageClient.get_model(
-                self.sim_config.token,
-                self.sim_config.ctx_id, brain_element)
+        storage_brain_zip_data = self._storageClient.get_model(
+            self.sim_config.token,
+            self.sim_config.ctx_id, brain)
+
+        if storage_brain_zip_data:
             # Get the data
             # Write the zip in sim dir
-            with open(self.sim_config.brain_model.zip_path.abs_path, 'w') as brain_zip:
+            zip_model_path = self._storageClient.get_model_path(
+                self.sim_config.token,
+                self.sim_config.ctx_id,
+                brain)
+
+            brain_abs_zip_path = os.path.join(
+                self._storageClient.get_simulation_directory(),
+                zip_model_path)
+
+            if not os.path.exists(os.path.dirname(brain_abs_zip_path)):
+                os.makedirs(os.path.dirname(brain_abs_zip_path))
+
+            with open(brain_abs_zip_path, 'w') as brain_zip:
                 brain_zip.write(storage_brain_zip_data)
             # Extract and flatten
             # FixME: not sure exactly why flattening is required
@@ -312,9 +321,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         # if the zip is not there, prompt the user to check his uploaded models
         else:
             raise NRPServicesGeneralException(
-                "Could not find selected zip {zip} in the list of uploaded models. Please make "
-                "sure that it has been uploaded correctly".format(
-                    zip=os.path.dirname(self.sim_config.brain_model.zip_path.rel_path)),
+                "Could not find selected brain model {name} in the list of uploaded models. "
+                "Please make sure that it has been uploaded correctly".format(
+                    name=self.sim_config.brain_model.model),
                 "Zipped model retrieval failed")
 
     def _create_brain_adapters(self):  # pragma: no cover

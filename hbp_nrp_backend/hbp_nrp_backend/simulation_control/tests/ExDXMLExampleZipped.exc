@@ -13,7 +13,7 @@
     </description>
     <timeout>600</timeout>
     <maturity>production</maturity>
-    <environmentModel src="virtual_room.sdf" customModelPath="virtual_room.zip">
+    <environmentModel src="virtual_room.sdf" model="virtual_room">
         <robotPose x="0.0" y="0.0" z="0.0" ux="0.0" uy="0.0" uz="1.0" theta="0.0"/>
     </environmentModel>
     <bibiConf src="BIBI/milestone2.xml"/>

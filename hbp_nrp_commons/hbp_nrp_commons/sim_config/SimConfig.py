@@ -94,24 +94,24 @@ class ExperimentResource(object):  # pragma: no cover
     """
 
     def __init__(self, resource_type, resource_rel_path,
-                 is_custom=False, zip_rel_path=None, located_at=None):
+                 is_custom=False, model_name=None, located_at=None):
         """
         Initializes an experiment resource
 
         :param string resource_type: type of the resource
         :param string resource_rel_path: relative path of the resource
         :param bool is_custom: True if the resource is custom, False otherwise
-        :param string zip_rel_path: location of the custom zip
+        :param string model_name: id name in the model DB
         :param string located_at: location of the resources (where relative paths are valid)
         """
 
-        if is_custom and not zip_rel_path:
+        if is_custom and not model_name:
             logger.warning("Cannot create custom resource without zip path")
             return None
         self.resource_type = resource_type
         self.resource_path = ResourcePath(resource_rel_path, located_at)
         self.is_custom = is_custom
-        self.zip_path = None if zip_rel_path is None else ResourcePath(zip_rel_path, located_at)
+        self.model = model_name
 
 
 class _TF(object):  # pragma: no cover
@@ -240,6 +240,41 @@ class SimConfig(object):
         # set config version based of something
         self.exc_version = Version.CURRENT
 
+    def get_world_model(self):
+        """
+        it gets the data necessary to create a world model
+        """
+        is_custom_model = False
+        model_name = None
+        if self._exc_dom.environmentModel.model:
+            is_custom_model = True
+            model_name = self._exc_dom.environmentModel.model
+
+        self._world_model = ExperimentResource(
+            resource_type=ResourceType.ENVIRONMENT,
+            resource_rel_path=self._exc_dom.environmentModel.src,
+            is_custom=is_custom_model,
+            model_name=model_name,
+            located_at=self._sim_dir)
+
+    def get_brain_model(self):
+        """
+        it gets the data necessary to create the brain model
+        """
+        is_custom_model = False
+        brain_model_name = None
+        if self._bibi_dom.brainModel and self._bibi_dom.brainModel.model:
+            is_custom_model = True
+            brain_model_name = self._bibi_dom.brainModel.model
+
+        if self._bibi_dom.brainModel:
+            self._brain_model = ExperimentResource(
+                resource_type=ResourceType.BRAIN,
+                resource_rel_path=self._bibi_dom.brainModel.file,
+                is_custom=is_custom_model,
+                model_name=brain_model_name,
+                located_at=self.sim_dir)
+
     def _read_dom_data(self):
         """
         Populate different models
@@ -272,13 +307,7 @@ class SimConfig(object):
             self._simulation_type = SimulationType.NEST_DIST
 
         # Environment model
-        self._world_model = ExperimentResource(
-            resource_type=ResourceType.ENVIRONMENT,
-            resource_rel_path=self._exc_dom.environmentModel.src,
-            is_custom=True if self._exc_dom.environmentModel.customModelPath else False,
-            zip_rel_path=(self._exc_dom.environmentModel.customModelPath
-                          if self._exc_dom.environmentModel.customModelPath else None),
-            located_at=self._sim_dir)
+        self.get_world_model()
 
         # physics engine
         self._physics_engine = (self._exc_dom.physicsEngine
@@ -289,15 +318,7 @@ class SimConfig(object):
         self._read_robot_models()
 
         # Brain model
-        if self._bibi_dom.brainModel:
-            self._brain_model = ExperimentResource(
-                resource_type=ResourceType.BRAIN,
-                resource_rel_path=self._bibi_dom.brainModel.file,
-                is_custom=(self._bibi_dom.brainModel.customModelPath is not None),
-                zip_rel_path=(None if self._bibi_dom.brainModel.customModelPath is None
-                              else self._bibi_dom.brainModel.customModelPath),
-                located_at=self.sim_dir)
-
+        self.get_brain_model()
         # Populations
         if self._bibi_dom.brainModel and self._bibi_dom.brainModel.populations:
             self._populations_dict = get_all_neurons_as_dict(self._bibi_dom.brainModel.populations)

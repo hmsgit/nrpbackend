@@ -92,7 +92,7 @@ class ExcBibiHandler(object):   # pragma: no cover
 
         :param robot_id: attribute robotId in the tag
         :param model_path: value() fo the tag
-        :param is_custom: attribute customAsset in the tag
+        :param is_custom: attribute isCustom in the tag
         :param robot_model: if custom, name of the custom template model
         """
 

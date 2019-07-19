@@ -39,7 +39,7 @@ def robot_value():
 
 class CustomModel(object):
     def __init__(self):
-        self.customModelPath = None  # only used for custom brains, remove when refactored
+        self.model = None  # only used for custom brains, remove when refactored
         self.assetPath = None
         self.value = robot_value
         self.path = 'test'
@@ -87,12 +87,11 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         model.name = 'model_brain'
         model.path = 'brains'
         model.type = 'brains/brain.zip'
-        self.launcher._storageClient.get_models.return_value = [model]
-        self.launcher._storageClient.get_model.return_value = r'awesome brain data'
-
+        self.launcher._storageClient.get_model.return_value = None
         self.assertRaises(NRPServicesGeneralException, self.launcher._load_brain)
 
-    def test_custom_brain_succeeds(self):
+    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ZipUtil")
+    def test_custom_brain_succeeds(self, mock_zip):
         model = MagicMock()
         model.name = 'model_brain'
         model.path = 'brains/brain.zip'
@@ -105,12 +104,10 @@ class TestCLEGazeboSimulationAssembly(unittest.TestCase):
         self.m_simconf.brain_model.zip_path.abs_path = '/my/experiment/brains/brain.zip'
 
         with patch("__builtin__.open", mock_open(read_data='bibi')):
-            self.launcher._extract_brain_zip()
+            with patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os"):
+                self.launcher._extract_brain_zip()
 
-        self.m_ziputil.extractall.assert_called_once_with(
-            overwrite=False, flatten=True, zip_abs_path='/my/experiment/brains/brain.zip',
-            extract_to='/my/experiment'
-        )
+        self.m_ziputil.extractall.assert_called_once()
 
     def test_invalid_simulation(self):
         self.m_simconf.physics_engine = None

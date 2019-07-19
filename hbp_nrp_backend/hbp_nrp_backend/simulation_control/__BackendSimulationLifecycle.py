@@ -40,7 +40,7 @@ from hbp_nrp_backend import NRPServicesGeneralException
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.simulation_control import timezone
 from hbp_nrp_commons.sim_config.SimConfig import ResourceType
-from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, Model
 from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
 from cle_ros_msgs.srv import SimulationRecorderRequest
 from hbp_nrp_commons.ZipUtil import ZipUtil
@@ -127,31 +127,37 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param experiment: The experiment object.
         """
         # pylint: disable=too-many-locals
-        environments_list = self.__storageClient.get_models(
+        env = Model(
+            experiment.environmentModel.model,
+            ResourceType.ENVIRONMENT)
+        data = self.__storageClient.get_model(
             UserAuthentication.get_header_token(),
-            self.simulation.ctx_id, ResourceType.ENVIRONMENT)
+            self.simulation.ctx_id,
+            env
+        )
         # check if the zip is in the user storage
-        env_element = None
-        for item in environments_list:
-            if experiment.environmentModel.customModelPath in item.path:
-                env_element = item
-
-        if env_element:
-            environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
-                                            os.path.basename(experiment.environmentModel.src))
-            storage_env_zip_data = self.__storageClient.get_model(
-                UserAuthentication.get_header_token(),
-                self.simulation.ctx_id, env_element)
+        if data:
+            environment_sdf_path = os.path.join(
+                self.__storageClient.get_simulation_directory(),
+                os.path.basename(experiment.environmentModel.src))
+            zip_model_path = self.__storageClient.get_model_path(
+                                UserAuthentication.get_header_token(),
+                                self.simulation.ctx_id,
+                                env)
             env_sdf_name = os.path.basename(
                 experiment.environmentModel.src)
             env_path = os.path.join(
                 self.__storageClient.get_simulation_directory(),
-                experiment.environmentModel.customModelPath)
+                zip_model_path)
+            if not os.path.exists(os.path.dirname(env_path)):
+                os.makedirs(os.path.dirname(env_path))
             with open(env_path, 'w') as environment_zip:
-                environment_zip.write(storage_env_zip_data)
+                environment_zip.write(data)
             with zipfile.ZipFile(env_path) as env_zip_to_extract:
                 env_zip_to_extract.extractall(
-                    path=os.path.join(self.__storageClient.get_simulation_directory(), 'assets'))
+                    path=os.path.join(
+                            self.__storageClient.get_simulation_directory(),
+                            'assets'))
             # copy back the .sdf from the experiment folder, cause we don't want the one
             # in the zip, cause the user might have made manual changes
             self.__storageClient.clone_file(
@@ -166,7 +172,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                     sure that it has been uploaded correctly" % (
                     os.path.dirname(experiment.environmentModel.src)),
                 "Zipped model retrieval failed")
-        return environment_path
+        return environment_sdf_path
 
     def _copy_storage_environment(self, experiment):
         """
@@ -175,8 +181,10 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param experiment: The experiment object.
         """
-        environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
-                                        os.path.basename(experiment.environmentModel.src))
+        environment_path = os.path.join(
+            self.__storageClient.get_simulation_directory(),
+            os.path.basename(
+                experiment.environmentModel.src))
         with open(environment_path, "w") as f:
             f.write(self.__storageClient.get_file(
                 UserAuthentication.get_header_token(),
@@ -199,7 +207,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         :param using_storage: Private or template simulation
         """
         if using_storage:
-            custom = experiment.environmentModel.customModelPath
+            custom = experiment.environmentModel.model
             if custom:
                 environment_path = self._check_and_extract_environment_zip(
                     experiment)
@@ -209,15 +217,20 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                         experiment)
         else:
             if not environment_path and 'storage://' in experiment.environmentModel.src:
-                environment_path = os.path.join(self.__storageClient.get_simulation_directory(),
-                                                os.path.basename(experiment.environmentModel.src))
+                environment_path = os.path.join(
+                    self.__storageClient.get_simulation_directory(), os.path.basename(
+                        experiment.environmentModel.src))
                 with open(environment_path, "w") as f:
-                    f.write(self.__storageClient.get_file(
-                        UserAuthentication.get_header_token(),
-                        self.__storageClient.get_folder_uuid_by_name(
+                    f.write(
+                        self.__storageClient.get_file(
                             UserAuthentication.get_header_token(),
-                            self.simulation.ctx_id, 'environments'),
-                        os.path.basename(experiment.environmentModel.src), by_name=True))
+                            self.__storageClient.get_folder_uuid_by_name(
+                                UserAuthentication.get_header_token(),
+                                self.simulation.ctx_id,
+                                'environments'),
+                            os.path.basename(
+                                experiment.environmentModel.src),
+                            by_name=True))
             else:
                 environment_path = os.path.join(
                     self.models_path, str(experiment.environmentModel.src))
