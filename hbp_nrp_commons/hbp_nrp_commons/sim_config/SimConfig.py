@@ -118,7 +118,7 @@ class _TF(object):  # pragma: no cover
     """
     Model to store TF information
     """
-    def __init__(self, name, code, src=None):
+    def __init__(self, name, code, src=None, active=False):
         """
         Initialize a transfer function object
 
@@ -129,6 +129,7 @@ class _TF(object):  # pragma: no cover
         self.name = name
         self.code = code
         self.src = src
+        self.active = active
 
 
 class SimConfig(object):
@@ -328,7 +329,8 @@ class SimConfig(object):
             code = generate_tf(_tf, self.sim_dir)
             name = get_tf_name(code)
             src = _tf.src if _tf.src else None  # must be not None and not ""
-            self._tfs.append(_TF(name, code, src))
+            active = bool(_tf.active) if _tf.active else False
+            self._tfs.append(_TF(name, code, src, active))
 
     def _read_robot_models(self):
         """

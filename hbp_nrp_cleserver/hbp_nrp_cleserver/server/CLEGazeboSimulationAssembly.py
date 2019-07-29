@@ -411,7 +411,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 continue
 
             try:
-                nrp.set_transfer_function(tf.code, new_code, tf.name)
+                nrp.set_transfer_function(tf.code, new_code, tf.name, tf.active)
             except nrp.TFLoadingException as loading_e:
                 logger.error(loading_e)
                 nrp.set_flawed_transfer_function(tf.code, tf.name, loading_e)
