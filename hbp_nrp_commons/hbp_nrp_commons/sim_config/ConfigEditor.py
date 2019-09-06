@@ -84,7 +84,7 @@ class ConfigEditor(object):  # pragma: no cover
         # END HACK
 
         # Update sim dir copy of the exc
-        self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_abs_path)
+        self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_path.abs_path)
 
     def delete_robotpose(self, robot_id):
         """
@@ -110,7 +110,7 @@ class ConfigEditor(object):  # pragma: no cover
         # END HACK
 
         # Update sim dir copy of the exc
-        self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_abs_path)
+        self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_path.abs_path)
 
     def update_robotpose(self, robot_id, pose):
         """
@@ -140,7 +140,7 @@ class ConfigEditor(object):  # pragma: no cover
         # END HACK
 
         # Update sim dir copy of the exc
-        self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_abs_path)
+        self._write_xml(self._exc_dom.toxml('utf-8'), self._sim_config.exc_path.abs_path)
 
         return True, "Tag updated successfully"
 
@@ -244,18 +244,17 @@ class ConfigEditor(object):  # pragma: no cover
         Proxy might have changed something that backend is not aware of
         """
         from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
-        import os
         import urllib
 
         client = StorageClient()
 
         latest_exc = client.get_file(
             self._sim_config.token, urllib.quote_plus(self._sim_config.experiment_id),
-            os.path.basename(self._sim_config.exc_abs_path), by_name=True
+            self._sim_config.exc_path.rel_path, by_name=True
         )
         latest_bibi = client.get_file(
             self._sim_config.token, urllib.quote_plus(self._sim_config.experiment_id),
-            os.path.basename(self._sim_config.bibi_path.rel_path), by_name=True
+            self._sim_config.bibi_path.rel_path, by_name=True
         )
 
         try:

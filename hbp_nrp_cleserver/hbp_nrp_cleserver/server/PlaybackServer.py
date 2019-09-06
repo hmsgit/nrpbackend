@@ -37,7 +37,6 @@ from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
 from hbp_nrp_cleserver.server.PlaybackServerLifecycle import PlaybackServerLifecycle
 from hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly import GazeboSimulationAssembly
 from hbp_nrp_cleserver.bibi_config.notificator import NotificatorHandler
-from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 logger = logging.getLogger(__name__)
 
@@ -262,9 +261,6 @@ class PlaybackSimulationAssembly(GazeboSimulationAssembly):
         except Exception, e:
             logger.error("The cle server could not be shut down")
             logger.exception(e)
-
-        finally:
-            StorageClient().remove_temp_sim_directory()
 
     def run(self):
         """

@@ -26,22 +26,17 @@ This module contains the unit tests for the cle launcher shutdown
 """
 
 import unittest
-import os
 from mock import patch, Mock, MagicMock
 from hbp_nrp_cleserver.server import CLEGazeboSimulationAssembly
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
-
-from hbp_nrp_commons.MockUtil import MockUtil
+from hbp_nrp_commons.generated import exp_conf_api_gen
 
 MockOs = Mock()
-MockOs.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
-                  'ROS_MASTER_URI': "localhost:0815"}
+MockOs.environ = {'ROS_MASTER_URI': "localhost:0815"}
 MockOs.path.join.return_value = "/a/really/nice/place"
 
 
 @patch("hbp_nrp_backend.storage_client_api.StorageClient.StorageClient", new = MagicMock())
-@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
-@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
+@patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.SimUtil", new=Mock())
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os", new=Mock())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.subprocess", new=Mock())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy", new=MagicMock())

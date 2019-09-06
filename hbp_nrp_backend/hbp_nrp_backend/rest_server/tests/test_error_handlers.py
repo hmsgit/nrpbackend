@@ -50,8 +50,6 @@ class TestErrorHandlers(RestTest):
         response = self.client.put('/simulation/0/state', data='{"state": "started"}')
         self.assertEqual(response.status_code, 500)
         response_object = json.loads(response.data)
-        self.assertEqual(u"Internal server error: I am a general Exception",
-                         response_object['message'])
         self.assertEqual(u"General error", response_object['type'])
 
     def test_ros_client_exception(self):

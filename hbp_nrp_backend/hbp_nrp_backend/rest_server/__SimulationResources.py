@@ -150,7 +150,7 @@ class SimulationResources(Resource):
                 exd_file.read())
 
         bibi_fullpath = os.path.join(
-            simulation.lifecycle.simulation_root_folder, experiment_dom.bibiConf.src)
+            simulation.lifecycle.sim_dir, experiment_dom.bibiConf.src)
 
         if not os.path.isfile(bibi_fullpath):
             raise NRPServicesClientErrorException(
@@ -170,7 +170,7 @@ class SimulationResources(Resource):
         if simulation.private:
             root_dir = os.path.join(
                 '/config-from-cloned-folder',
-                os.path.basename(simulation.lifecycle.simulation_root_folder)
+                os.path.basename(simulation.lifecycle.sim_dir)
             )
         else:
             # Get the template experiment folder name, e.g., "template_husky"

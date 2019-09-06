@@ -31,7 +31,7 @@ import os
 from mock import patch, MagicMock, mock_open
 from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import BackendSimulationLifecycle
 from hbp_nrp_backend import NRPServicesGeneralException
-from hbp_nrp_commons.generated import exp_conf_api_gen
+from hbp_nrp_commons.MockUtil import MockUtil
 import datetime
 import rospy
 
@@ -39,18 +39,12 @@ PATH = os.path.split(__file__)[0]
 
 __author__ = 'Georg Hinkel'
 
-class MockZipFile:
-    def __exit__(self):
-        pass
-    def __init__(self):
-        pass
-    def __call__(self):
-        pass
-    def __iter__(self):
-        pass
-    def write(self, fname):
-        pass
+_base_path = 'hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.'
 
+
+@patch("__builtin__.open", mock_open(read_data='somedata'))
+@patch(_base_path + 'io', new=MagicMock())
+@patch(_base_path + 'UserAuthentication', new=MagicMock())
 class TestBackendSimulationLifecycle(unittest.TestCase):
 
     def setUp(self):
@@ -61,39 +55,39 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.simulation.experiment_id = None
         self.simulation.state_machines = []
         self.simulation.playback_path = None
-        self.simulation.private = None
+        self.simulation.private = True
 
         caller_id = patch("hbp_nrp_commons.simulation_lifecycle.get_caller_id", return_value="test_client")
         caller_id.start()
         self.addCleanup(caller_id.stop)
 
-        factory_client = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.ROSCLESimulationFactoryClient")
-        self.factory_mock = factory_client.start()
-        self.addCleanup(factory_client.stop)
+        self.rospy_mock = MockUtil.fakeit(self, _base_path + 'rospy')
+        self.cle_factory_mock = MockUtil.fakeit(self, _base_path + 'ROSCLEClient')
+        self.storage_mock = MockUtil.fakeit(self, _base_path + 'StorageClient')
+        self.zip_util = MockUtil.fakeit(self, _base_path + 'ZipUtil')
+        self.mocked_os = MockUtil.fakeit(self, _base_path + 'os')
+        self.exp_mocked = MockUtil.fakeit(self, _base_path + 'exp_conf_api_gen')
+        self.factory_mock = MockUtil.fakeit(self, _base_path + 'ROSCLESimulationFactoryClient')
+        self.playback_mock = MockUtil.fakeit(self, 'hbp_nrp_backend.cle_interface.PlaybackClient.PlaybackClient')
 
-        cle_factory_client = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.ROSCLEClient")
-        self.cle_factory_mock = cle_factory_client.start()
-        self.addCleanup(cle_factory_client.stop)
+        self.storage_mock.get_model.return_value = None
+        self.storage_mock.get_model_path.return_value = None
 
-        playback_client = patch("hbp_nrp_backend.cle_interface.PlaybackClient.PlaybackClient")
-        self.playback_mock = playback_client.start()
-        self.addCleanup(playback_client.stop)
+        self.zip_util.extractall.return_value = None
 
-        rospy_patch = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.rospy")
-        self.rospy_mock = rospy_patch.start()
-        self.addCleanup(rospy_patch.stop)
+        self.mocked_os.path.join.return_value = "/some/tmp/dir/"
+        self.mocked_os.path.exists.return_value = True
+        self.mocked_os.path.makedirs.return_value = None
 
-        storage_patch = patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.StorageClient")
-        self.storage_mock = storage_patch.start()
-        self.addCleanup(storage_patch.stop)
+        self.exp_mocked.CreateFromDocument.return_value.timeout.value.return_value = 1
+
 
         with patch("hbp_nrp_commons.simulation_lifecycle.Publisher"):
             with patch("hbp_nrp_commons.simulation_lifecycle.Subscriber"):
                 self.lifecycle = BackendSimulationLifecycle(self.simulation)
 
-        self.lifecycle.models_path = PATH
         self.lifecycle.experiment_path = PATH
-        self.assertEqual("", self.lifecycle.simulation_root_folder)
+        self.assertEqual(None, self.lifecycle.sim_dir)
 
     def test_init_playback(self):
         self.simulation.playback_path = 'foo'
@@ -101,87 +95,47 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         self.playback_mock.assert_callled_once_with(42)
 
     def test_backend_initialize_non_storage(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
-            self.lifecycle.initialize(Mock())
+        self.lifecycle.initialize(Mock())
 
-            # Assert state machines have been initialized
-            self.assertTrue(self.simulation.state_machine_manager.add_all.called)
-            self.assertTrue(self.simulation.state_machine_manager.initialize_all.called)
+        # Assert state machines have been initialized
+        self.assertTrue(self.simulation.state_machine_manager.add_all.called)
+        self.assertTrue(self.simulation.state_machine_manager.initialize_all.called)
 
-            # Assert Simulation server has been called
-            self.assertTrue(self.factory_mock.called)
+        # Assert Simulation server has been called
+        self.assertTrue(self.factory_mock.called)
 
-            # Assert the simulation will be killed eventually
-            self.assertIsInstance(self.simulation.kill_datetime, datetime.datetime)
-
-            self.assertEqual(self.lifecycle.simulation_root_folder, self.lifecycle.models_path)
-            self.assertIsNotNone(self.lifecycle.experiment_path)
-
-    def test_backend_initialize_state_machines(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
-            self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
-
-            self.lifecycle.initialize(Mock())
-            state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]
-            self.assertEqual(2, len(state_machines))
-            directory = PATH
-            self.assertEqual(os.path.join(directory, "SM1.py"), state_machines["SM1"])
-
-    def test_backend_initialize_storage(self):
-        self.simulation.experiment_id = "Foobar"
-        self.simulation.experiment_conf = "ExDXMLExampleWithStateMachines.xml"
-        directory = PATH
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
-
-            storage_paths = {
-                'experiment_conf': os.path.join(directory, "ExDXMLExampleWithStateMachines.xml"),
-                'environment_conf': "Neverland.sdf"
-            }
-            self.storage_mock.return_value.clone_all_experiment_files.return_value = storage_paths
-
-            self.lifecycle.initialize(Mock())
-
-            self.assertTrue(self.storage_mock.return_value.clone_all_experiment_files)
-
-        # Assert that the state machine experiment has been called
-        state_machines = self.simulation.state_machine_manager.add_all.call_args[0][0]
-        self.assertEqual(2, len(state_machines))
+        # Assert the simulation will be killed eventually
+        self.assertIsInstance(self.simulation.kill_datetime, datetime.datetime)
 
         self.assertIsNotNone(self.lifecycle.experiment_path)
-        self.assertIsNotNone(self.lifecycle.simulation_root_folder)
 
     def test_backend_initialize_nonexisting_experiment(self):
-        self.simulation.experiment_conf = "DoesNotExist.xml"
-        self.assertRaises(NRPServicesGeneralException,
-                          self.lifecycle.initialize, Mock())
+        self.storage_mock.return_value.clone_all_experiment_files.side_effect = Exception
+        self.assertRaises(NRPServicesGeneralException, self.lifecycle.initialize, Mock())
 
     def test_backend_initialize_noclecommunication(self):
         self.rospy_mock.ROSException = rospy.ROSException
         self.factory_mock.side_effect = rospy.ROSException
 
-        self.assertRaises(NRPServicesGeneralException,
-                          self.lifecycle.initialize, Mock())
+        self.assertRaises(NRPServicesGeneralException, self.lifecycle.initialize, Mock())
 
     def test_backend_initialize_service_problem(self):
         self.rospy_mock.ServiceException = rospy.ServiceException
         self.factory_mock.side_effect = rospy.ServiceException
-        self.assertRaises(NRPServicesGeneralException,
-                          self.lifecycle.initialize, Mock())
+        self.assertRaises(NRPServicesGeneralException, self.lifecycle.initialize, Mock())
 
     def test_backend_start(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
-            self.lifecycle.start(Mock())
+        self.lifecycle.start(Mock())
 
-            # Assert state machines have been started
-            self.assertTrue(self.simulation.state_machine_manager.start_all.called)
+        # Assert state machines have been started
+        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_start_state_machines_failed(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
-            self.simulation.state_machine_manager.start_all.side_effect = IOError
-            self.lifecycle.start(Mock())
+        self.simulation.state_machine_manager.start_all.side_effect = IOError
+        self.lifecycle.start(Mock())
 
-            # Assert no exception, but state machine manager was still called
-            self.assertTrue(self.simulation.state_machine_manager.start_all.called)
+        # Assert no exception, but state machine manager was still called
+        self.assertTrue(self.simulation.state_machine_manager.start_all.called)
 
     def test_backend_stop(self):
         self.simulation.context_id = "Foobar"
@@ -222,74 +176,8 @@ class TestBackendSimulationLifecycle(unittest.TestCase):
         # Assert state machines have been terminated
         self.assertTrue(self.simulation.state_machine_manager.terminate_all.called)
 
-    def test_parse_env_path_template(self):
-        exp_path = os.path.join(PATH, self.simulation.experiment_conf)
-        with open(exp_path, 'r') as exp_file:
-            exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
-        env_path = self.lifecycle._parse_env_path(exp.environmentModel.src, exp, False)
-        self.assertEqual(env_path, os.path.join(PATH, 'virtual_room/virtual_room.sdf'))
-
-    def test_parse_env_path_custom_environment_throws(self):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
-            model = MagicMock()
-            model.name = 'model_brain'
-            model.path = 'brains.zip'
-            model.type = 0x11000003
-            self.storage_mock.return_value.get_model.return_value = None
-            exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
-            with open(exp_path, 'r') as exp_file:
-                exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
-            with self.assertRaises(NRPServicesGeneralException) as context:
-                self.lifecycle._parse_env_path(exp.environmentModel.src, exp, True)
-
-            self.assertEqual(NRPServicesGeneralException, context.expected)
-
-    @patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.zipfile.ZipFile")
-    def test_parse_env_path_custom_environment_ok(self, mock_zip):
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token") as user_auth:
-            model = MagicMock()
-            model.name = 'model_name'
-            model.path = 'virtual_room.zip'
-            model.type = 0x11000003
-            self.storage_mock.return_value.get_model.return_value = 'test'
-            self.storage_mock.return_value.get_model_path.return_value = "environment/model.zip"
-            self.storage_mock.return_value.get_simulation_directory.return_value = os.path.join(os.path.dirname(
-                os.path.realpath(__file__)), 'zipped_data')
-            import zipfile
-            exp_path = os.path.join(PATH, 'ExDXMLExampleZipped.exc')
-            with open(exp_path, 'r') as exp_file:
-                exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
-
-            archive = Mock()
-            mocked_read = Mock()
-            archive.return_value.read = mocked_read
-            mock_zip.return_value.__enter__ = archive
-
-            with patch("__builtin__.open", mock_open(read_data="data")):
-                with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.os"):
-                    self.lifecycle._parse_env_path(exp.environmentModel.src, exp, True)
-                    self.assertEqual(exp.environmentModel.model, 'virtual_room')
-
-    def test_parse_env_path_template_storage(self):
-        exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')
-        with open(exp_path, 'r') as exp_file:
-            exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
-        self.storage_mock.return_value.get_simulation_directory.return_value = PATH
-        self.storage_mock.return_value.get_file.return_value = '<sdf></sdf>'
-        self.storage_mock.return_value.get_folder_uuid_by_name.return_value = 'environments'
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
-            env_path = self.lifecycle._parse_env_path(
-                None, exp, False)
-            self.assertEqual(env_path, os.path.join(PATH, 'virtual_room.sdf'))
-
-    def test_parse_env_path_template_storage_user_env(self):
-        exp_path = os.path.join(PATH, 'ExDXMLExample_2.xml')
-        with open(exp_path, 'r') as exp_file:
-            exp = exp_conf_api_gen.CreateFromDocument(exp_file.read())
-
-        self.storage_mock.return_value.get_simulation_directory.return_value = PATH
-        self.storage_mock.return_value.get_file.return_value = '<sdf></sdf>'
-        self.storage_mock.return_value.get_folder_uuid_by_name.return_value = 'environments'
-        with patch("hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle.UserAuthentication.get_header_token"):
-            env_path = self.lifecycle._parse_env_path(exp.environmentModel.src, exp, True)
-            self.assertEqual(env_path, os.path.join(PATH, 'virtual_room.sdf'))
+    def test_prepare_custom_environment_template(self):
+        exp = MagicMock()
+        exp.environmentModel.model = 'myAwesomeModel'
+        self.lifecycle._prepare_custom_environment(exp)
+        self.zip_util.extractall.assert_called_once()

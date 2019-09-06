@@ -103,12 +103,12 @@ class TestSimulationCSVLogger(unittest.TestCase):
     @patch('__builtin__.open')
     @patch('os.makedirs')
     @patch('os.path.exists')
-    @patch("hbp_nrp_cleserver.server.CSVLogger.find_file_in_paths")
+    @patch("hbp_nrp_cleserver.server.CSVLogger.SimUtil")
     @patch('hbp_nrp_cleserver.server.CSVLogger.threading.Thread')
     @patch('hbp_nrp_cleserver.server.CSVLogger.tf_framework')
     @patch('hbp_nrp_cleserver.server.CSVLogger.get_date_and_time_string')
     def test_CSV_logger_log(self, mock_get_date_and_time_string, mock_tf_framework,
-                            mock_killable, mock_find_file, mock_os_exists, mock_os_makedirs,
+                            mock_killable, mock_sim_util, mock_os_exists, mock_os_makedirs,
                             mock_open):
         time = 'fakeTime'
         mock_get_date_and_time_string.return_value = time
@@ -123,13 +123,13 @@ class TestSimulationCSVLogger(unittest.TestCase):
         csv_logger._log_csv()
         self.mock_storageClient_instance.create_or_update.assert_called_once()
         self.mock_storageClient_instance.create_folder.assert_called_once_with('token', 'expId', 'testFolder')
-        mock_find_file.return_value = False
+        mock_sim_util.find_file_in_paths.return_value = False
         csv_logger._log_csv()
         self.mock_storageClient_instance.create_or_update.assert_called_with(
             'token', 'mockUUID', 'bar1', 'bar1 header\ndata1data2\n', 'text/plain', append=False)
         self.mock_storageClient_instance.create_folder.assert_called_with('token', 'expId', 'testFolder')
-        mock_find_file.assert_called_once()
-        mock_find_file.return_value = True
+        mock_sim_util.find_file_in_paths.assert_called_once()
+        mock_sim_util.find_file_in_paths.return_value = True
         csv_logger._log_csv()
         self.mock_storageClient_instance.create_or_update.assert_called_with(
             'token', 'mockUUID', 'bar1', 'data1data2\n', 'text/plain', append=True)

@@ -42,7 +42,6 @@ from mock import patch, MagicMock, Mock, call
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 import unittest
 
-
 __author__ = 'Lorenzo Vannucci, Daniel peppicelli, Georg Hinkel'
 
 

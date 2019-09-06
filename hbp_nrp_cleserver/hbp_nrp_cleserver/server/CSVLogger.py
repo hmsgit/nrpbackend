@@ -31,7 +31,8 @@ import os
 import threading
 from cle_ros_msgs.msg import CSVRecordedFile
 from hbp_nrp_backend import get_date_and_time_string
-from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, find_file_in_paths
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 import hbp_nrp_cle.tf_framework as tf_framework
 
 __author__ = 'Manos Angelidis'
@@ -131,10 +132,10 @@ class CSVLogger(object):
                 # if not, we create it
                 lock_filename = csv_file.name + '.lock'
                 lock_full_path = os.path.join(
-                    self._storage_client.get_simulation_directory(), subfolder_name, lock_filename)
+                    self._assembly.sim_dir, subfolder_name, lock_filename)
                 dirname = os.path.dirname(lock_full_path)
-                lock = find_file_in_paths(lock_filename, [dirname]) or find_file_in_paths(
-                    csv_file.name, [dirname])
+                lock = (SimUtil.find_file_in_paths(lock_filename, [dirname])
+                        or SimUtil.find_file_in_paths(csv_file.name, [dirname]))
                 if not lock:
                     content = ''.join(csv_file.headers) + \
                         ''.join(csv_file.values)

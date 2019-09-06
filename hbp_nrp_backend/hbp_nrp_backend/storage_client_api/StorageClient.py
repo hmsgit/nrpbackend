@@ -31,13 +31,14 @@ import requests
 import shutil
 import urllib
 import re
-from hbp_nrp_backend.config import Config
+import textwrap
+import tempfile
 from pyxb import ValidationError
 from xml.sax import SAXParseException
 from hbp_nrp_backend import NRPServicesGeneralException
-from hbp_nrp_commons.generated import exp_conf_api_gen
 from hbp_nrp_commons.sim_config.SimConfig import ResourceType
-import textwrap
+from hbp_nrp_commons.workspace.Settings import Settings
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 
 __author__ = "Manos Angelidis"
 logger = logging.getLogger(__name__)
@@ -61,19 +62,18 @@ class ModelType(object):  # pragma: no cover
     """
     Enumeration for model types. Model resources are enhanced in a different structure
     """
-    types = {ResourceType.ROBOT: 'robots',
-             ResourceType.ENVIRONMENT: 'environments',
-             ResourceType.BRAIN: 'brains'
-             }
+    types = {
+        ResourceType.ROBOT: 'robots',
+        ResourceType.ENVIRONMENT: 'environments',
+        ResourceType.BRAIN: 'brains'
+    }
 
-
-def getKeyByValue(valueToFind):
-    """
-    returns the key of the valueToFind form the types dictionary.
-    """
-    lKey = [key for key, value in ModelType.types.iteritems() if value ==
-            valueToFind][0]
-    return lKey
+    @staticmethod
+    def getResourceType(value):
+        """
+        returns the key of the valueToFind form the types dictionary.
+        """
+        return [key for key, value in ModelType.types.iteritems() if value == value][0]
 
 
 class StorageClient(object):
@@ -83,51 +83,46 @@ class StorageClient(object):
     requests to the storage server
     """
 
+    __instance = None
+
+    def __new__(cls):
+        """
+        Overridden new for the singleton implementation
+        :return: Singleton instance
+        """
+
+        if StorageClient.__instance is None:
+            StorageClient.__instance = object.__new__(cls)
+
+            # pylint: disable=protected-access
+            StorageClient.__instance._sim_dir = None
+            # adding the resources folder into the created sim dir
+            StorageClient.__instance.__resources_path = None
+
+        return StorageClient.__instance
+
     def __init__(self):
         """
         Creates the storage client
         """
-        self.__proxy_url = Config.LOCAL_STORAGE_URI['storage_uri']
-        sim_dir = os.environ['NRP_SIMULATION_DIR']
-        if sim_dir is None:
-            raise Exception("Server Error. NRP_SIMULATION_DIR not defined.")
-
-        self.__simulation_directory = sim_dir
-
-        self.create_temp_sim_directory()
+        self.__proxy_url = Settings.storage_uri
 
         # Paths related to the textures
-
-        # The path to the gazebo media path
-        self.__local_gazebo_path = os.path.join(
-            os.environ['HOME'], '.local', 'share', 'gazebo-7', 'media')
-
-        # The path to the gzweb media path
-        self.__gzweb_assets_media_path = os.path.join(
-            os.environ['HBP'], 'gzweb', 'http', 'client', 'assets', 'media')
-
-        # The path to the gzweb custom_textures path
-        self.__gzweb_custom_textures_path = os.path.join(
-            os.environ['HBP'], 'gzweb', 'http', 'client', 'assets', 'custom_textures')
-
-        # Array that holds all the textures related paths
-        self.__texture_directories = [
-            self.__local_gazebo_path,
-            self.__gzweb_assets_media_path,
-            self.__gzweb_custom_textures_path]
-
-        # adding the resources folder into the created temp_directory
-        self.__resources_path = os.path.join(
-            self.__simulation_directory, "resources")
+        self.__texture_directories = (Settings.local_gazebo_path
+                                      + Settings.gzweb_assets_media_path
+                                      + Settings.gzweb_custom_textures_path)
 
         # folders in resources we want to filter
         self.__filtered_resources = ['textures']
 
-    def get_simulation_directory(self):
+    def set_sim_dir(self, sim_dir):
         """
-        Returns the simulation directory where all the simulation based files are stored
+        Sets the sim_dir for this client
+
+        :param sim_dir: Simulation directory
         """
-        return self.__simulation_directory
+
+        self._sim_dir = sim_dir
 
     def get_user(self, token):
         """
@@ -353,43 +348,11 @@ class StorageClient(object):
                     'Failed to communicate with the storage server, status code ' +
                     str(res.status_code))
             else:
-                # folder variable is added because copy_resources_folders_to_tmp needs
+                # folder variable is added because copy_resources_folder needs
                 # to list the folders too
                 return [entry for entry in res.json()
                         if (entry['type'] == 'file' or folder) and
                         not self.check_file_extension(entry['name'], ['.swp'])]
-
-        except requests.exceptions.ConnectionError, err:
-            logger.exception(err)
-            raise err
-
-    def get_models(self, token, context_id, model_type):
-        """
-        Returns the contents of a custom models folder provided its name
-        :param token: a valid token to be used for the request
-        :param context_id: the context_id of the collab
-        :param model_type: the type of the model defined in ModelType
-        :return: if found, list of Models objects
-        """
-        try:
-            request_url = '{proxy_url}/storage/models/all/{modelType}'.format(
-                proxy_url=self.__proxy_url,
-                modelType=ModelType.types[model_type]
-            )
-            res = requests.get(request_url,
-                               headers={'Authorization': 'Bearer ' + token,
-                                        'context-id': context_id})
-            if res.status_code < 200 or res.status_code >= 300:
-                raise Exception(
-                    'Failed to communicate with the storage server, status code ' +
-                    str(res.status_code))
-            else:
-                list_models = []
-                for model in res.json():
-                    model_type_key = getKeyByValue(model['type'])
-                    model = Model(model['name'], model_type_key, model['path'])
-                    list_models.append(model)
-                return list_models
 
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
@@ -430,7 +393,7 @@ class StorageClient(object):
         :param token: a valid token to be used for the request
         :param context_id: the context_id of the collab
         :param model: the model object, check class Model
-        :return: if found, the uuid of the named folder
+        :return: if found, returns the content of the model
         """
         try:
             request_url = '{proxy_url}/storage/models/{model_type}/{model_name}'.format(
@@ -449,6 +412,38 @@ class StorageClient(object):
 
             else:
                 return res.content
+        except requests.exceptions.ConnectionError, err:
+            logger.exception(err)
+            raise err
+
+    def get_models(self, token, context_id, model_type):
+        """
+        Returns the contents of a custom models folder provided its name
+        :param token: a valid token to be used for the request
+        :param context_id: the context_id of the collab
+        :param model_type: the type of the model defined in ModelType
+        :return: if found, list of Models objects
+        """
+        try:
+            request_url = '{proxy_url}/storage/models/all/{modelType}'.format(
+                proxy_url=self.__proxy_url,
+                modelType=ModelType.types[model_type]
+            )
+            res = requests.get(request_url,
+                               headers={'Authorization': 'Bearer ' + token,
+                                        'context-id': context_id})
+            if res.status_code < 200 or res.status_code >= 300:
+                raise Exception(
+                    'Failed to communicate with the storage server, status code ' +
+                    str(res.status_code))
+            else:
+                list_models = []
+                for model in res.json():
+                    model_type_key = ModelType.getResourceType(model['type'])
+                    model = Model(model['name'], model_type_key, model['path'])
+                    list_models.append(model)
+                return list_models
+
         except requests.exceptions.ConnectionError, err:
             logger.exception(err)
             raise err
@@ -492,7 +487,7 @@ class StorageClient(object):
         """
         for folder_entry in self.list_files(token, experiment):
             if filename in folder_entry['name']:
-                clone_destination = os.path.join(self.__simulation_directory, filename)
+                clone_destination = os.path.join(self._sim_dir, filename)
                 with open(clone_destination, "w") as f:
                     f.write(self.get_file(token, experiment, filename, by_name=True))
                 break
@@ -542,25 +537,9 @@ class StorageClient(object):
         """
         return os.path.splitext(filename)[1].lower() in extensions
 
-    # pylint: disable=no-self-use
-    def check_create_folder(self, folder_path):
-        """
-        checks if the folder exists and if it does not exist, then it is created it
-
-        :param folder_path: folder location to be checked
-        """
-        try:
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-            return None
-        except OSError as ex:
-            logger.exception(
-                'An error happened trying to create ' + folder_path)
-            raise ex
-
     def copy_folder_content_to_tmp(self, token, folder):
         """
-        copy the content of the folder located in storage/experiment into tmp folder
+        copy the content of the folder located in storage/experiment into sim_dir folder
 
         :param token: The token of the request
         :param folder: the folder in the storage folder to copy in tmp folder,
@@ -580,30 +559,14 @@ class StorageClient(object):
                         folder_path, folder_entry['name'])
                     child_folders.append(folder_entry)
                 if folder_entry['type'] == 'file':
-                    folder_tmp_path = str(os.path.join(
-                        self.__simulation_directory, folder_path))
-                    self.check_create_folder(folder_tmp_path)
+                    folder_tmp_path = str(os.path.join(self._sim_dir, folder_path))
+                    SimUtil.makedirs(folder_tmp_path)
                     self.copy_file_content(
                         token, folder_tmp_path, folder_uuid, folder_entry['name'])
 
-    # pylint: disable=no-self-use
-    @staticmethod
-    def delete_directory_content(folder_path):
+    def copy_resources_folder(self, token, experiment):
         """
-        delete the content of the folder.
-
-        :param folder_path: The path of the folder.
-        """
-        for file_entry in os.listdir(folder_path):
-
-            file_path = os.path.join(folder_path, file_entry)
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-        return None
-
-    def copy_resources_folders_to_tmp(self, token, experiment):
-        """
-        Copy the resources folder located in storage/experiment into tmp folder
+        Copy the resources folder located in storage/experiment into simulation folder
 
         :param token: The token of the request
         :param experiment: The experiment which contains the resource folder
@@ -612,12 +575,10 @@ class StorageClient(object):
             for folder_entry in self.list_files(token, experiment, True):
                 if folder_entry['name'] == 'resources' and folder_entry['type'] == 'folder':
                     if os.path.exists(self.__resources_path):
-                        self.delete_directory_content(self.__resources_path)
-                    self.copy_folder_content_to_tmp(
-                        token, folder_entry)
+                        SimUtil.clear_dir(self.__resources_path)
+                    self.copy_folder_content_to_tmp(token, folder_entry)
         except Exception:
-            logger.exception(
-                'An error happened trying to copy resources to tmp ')
+            logger.exception('An error happened trying to copy resources to tmp ')
             raise
 
     def create_material_from_textures(self, textures):
@@ -675,10 +636,10 @@ class StorageClient(object):
         relative_path = ''
         for directory in self.__texture_directories:
             for path in ['materials']:
-                self.check_create_folder(os.path.join(directory, relative_path))
+                SimUtil.makedirs(os.path.join(directory, relative_path))
                 relative_path = os.path.join(relative_path, path)
-            self.check_create_folder(os.path.join(directory, relative_path, 'scripts'))
-            self.check_create_folder(os.path.join(directory, relative_path, 'textures'))
+            SimUtil.makedirs(os.path.join(directory, relative_path, 'scripts'))
+            SimUtil.makedirs(os.path.join(directory, relative_path, 'textures'))
             relative_path = ''
 
     def generate_textures(self, experiment, token):
@@ -721,15 +682,12 @@ class StorageClient(object):
         :param token: The token of the request
         :param experiment: The experiment to clone
         :param destination_dir: the directory in which to clone the files,
-        defaults to the path returned by get_simulation_directory()
+            if None is provided, clones in a temporary folder
         :param exclude: a list of folders of files not to clone (folder names ends with '/')
         :return: A dictionary containing the paths to the experiment files
         """
-        # pylint: disable=too-many-locals
-        experiment_paths = dict()
-        list_entries_to_clone = self.list_files(token, experiment, folder=True)
-        self.copy_resources_folders_to_tmp(token, experiment)
 
+        # pylint: disable=too-many-locals
         # if something goes wrong while generating textures we just log the error
         # and continue like nothing happened
         try:
@@ -737,12 +695,14 @@ class StorageClient(object):
         except Exception as e:
             logger.info("Could not generate textures, error occurred : %s", (str(e)))
 
-        dest_dir = destination_dir if destination_dir else self.get_simulation_directory()
+        destination_dir = destination_dir if destination_dir else tempfile.mkdtemp(prefix='nrp.')
+        self._sim_dir = destination_dir
+        self.__resources_path = os.path.join(self._sim_dir, "resources")
 
         exclude_files = [f for f in exclude if not f.endswith('/')]
         exclude_dirs = [os.path.dirname(d) for d in exclude if d.endswith('/')]
 
-        for entry_to_clone in list_entries_to_clone:
+        for entry_to_clone in self.list_files(token, experiment, folder=True):
             # Filter out excluded folders and files
             if entry_to_clone['type'] == 'folder':
                 if entry_to_clone['name'] in exclude_dirs:
@@ -755,25 +715,16 @@ class StorageClient(object):
             if entry_to_clone['type'] == 'folder':
                 self.copy_folder_content_to_tmp(token, entry_to_clone)
             else:  # == 'file'
-                file_clone_destination = os.path.join(dest_dir, entry_to_clone['name'])
-                with open(file_clone_destination, "w") as file_clone:
+                dest_file_path = os.path.join(destination_dir, entry_to_clone['name'])
+                with open(dest_file_path, "w") as file_clone:
 
                     zipped = os.path.splitext(entry_to_clone['name'])[1].lower() == '.zip'
-
                     file_contents = self.get_file(token, experiment, entry_to_clone['name'],
                                                   by_name=True, zipped=zipped)
-                    # in order to return the environment and experiment path
-                    # we have to read the .exc
-                    if 'experiment_configuration.exc' in str(file_clone_destination):
-                        experiment_paths['experiment_conf'] = file_clone_destination
-                        env_filename = exp_conf_api_gen.CreateFromDocument(
-                            file_contents).environmentModel.src
-                        experiment_paths['environment_conf'] = os.path.join(
-                            dest_dir, env_filename)
 
                     file_clone.write(file_contents)
 
-        return experiment_paths
+        return destination_dir
 
     @staticmethod
     def parse_and_check_file_is_valid(filepath, create_obj_function, instance_type):
@@ -811,54 +762,3 @@ class StorageClient(object):
 
         for folder in (f for f in folders if f["name"] == folder_name):
             return folder["uuid"]
-
-    def remove_temp_sim_directory(self):
-        """
-        Removes the simulation directory where all the simulation based files are stored
-        """
-        logger.debug(
-            "removing the simulation configuration folder %s",
-            self.__simulation_directory
-        )
-        shutil.rmtree(self.__simulation_directory)
-
-    def create_temp_sim_directory(self):
-        """
-        Creates the simulation directory where all the simulation based files are stored
-        """
-        try:
-            os.mkdir(self.__simulation_directory)
-        except OSError:
-            # directory already exists, pass
-            pass
-
-    def clear_temp_sim_directory(self):
-        """
-        Clears the simulation directory where all the simulation based files are stored
-        :raise OSError when the simulation directory can't be created
-        """
-        self.remove_temp_sim_directory()
-        self.create_temp_sim_directory()
-
-
-def get_model_basepath():
-    """
-    :return: path given in the environment variable 'NRP_MODELS_PATHS'
-    """
-    paths = os.environ.get('NRP_MODELS_PATHS')
-    if paths is None:
-        raise Exception("Server Error. NRP_MODELS_PATHS not defined.")
-
-    return [x for x in paths.split(':') if os.path.isdir(x)]  # models directories
-
-
-def find_file_in_paths(filename, paths):
-    """
-    :return: returns the absolute path of the first file found path lists.
-             if not found returns and empty string.
-    """
-
-    for path in (p for p in paths if os.path.isfile(os.path.join(p, filename))):
-        return os.path.join(path, filename)
-
-    return None

@@ -31,7 +31,7 @@ import unittest
 import mock
 from mock import mock_open
 import json
-from mock import patch, ANY
+from mock import patch, MagicMock
 import os
 import tempfile
 import shutil
@@ -39,8 +39,7 @@ from hbp_nrp_backend.cle_interface.ROSCLEClient import ROSCLEClientException
 from hbp_nrp_backend.rest_server.tests import RestTest
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from cle_ros_msgs.srv import ResetSimulationRequest
-from hbp_nrp_commons.generated import bibi_api_gen, exp_conf_api_gen
-from pyxb import ValidationError
+from hbp_nrp_commons.generated import bibi_api_gen
 
 from hbp_nrp_backend.rest_server.__SimulationResetStorage import SimulationResetStorage
 
@@ -49,6 +48,7 @@ PATH = os.path.split(__file__)[0]
 EXPERIMENT_DATA_PATH = os.path.join(PATH, 'experiments', 'experiment_data')
 
 
+@patch('hbp_nrp_backend.rest_server.__SimulationResetStorage.SimUtil', new=MagicMock())
 class TestSimulationResetStorage(RestTest):
 
     def setUp(self):

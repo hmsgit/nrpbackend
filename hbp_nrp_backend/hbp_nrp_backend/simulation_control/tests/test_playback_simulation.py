@@ -85,7 +85,6 @@ class TestPlaybackSimulationLifecycle(unittest.TestCase):
         self.m_base.stop.assert_callled_once_with(self.simulation, 'some state')
 
     def test_prepare_record_for_playback(self):
-        self.m_storage.return_value.get_simulation_directory.return_value = '/simulation/dir'
         self.m_os.path.exists.return_value = False
 
         from mock import mock_open

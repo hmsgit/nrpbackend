@@ -25,7 +25,6 @@
 """
 This module provides support methods to perform I/O operation of exc and bibi files.
 """
-import os
 import logging
 from hbp_nrp_commons.sim_config.ConfigEditor import ConfigEditor
 
@@ -53,8 +52,8 @@ class ExcBibiHandler(object):   # pragma: no cover
 
         self._conf_editor.add_robotpose(robot_id, pose)
         self._write_file_to_storage(
-            self._cle_assembly.sim_config.exc_abs_path,
-            os.path.basename(self._cle_assembly.sim_config.exc_abs_path))
+            self._cle_assembly.sim_config.exc_path.abs_path,
+            self._cle_assembly.sim_config.exc_path.rel_path)
 
     def delete_robotpose(self, robot_id):
         """
@@ -66,8 +65,8 @@ class ExcBibiHandler(object):   # pragma: no cover
 
         self._conf_editor.delete_robotpose(robot_id)
         self._write_file_to_storage(
-            self._cle_assembly.sim_config.exc_abs_path,
-            os.path.basename(self._cle_assembly.sim_config.exc_abs_path))
+            self._cle_assembly.sim_config.exc_path.abs_path,
+            self._cle_assembly.sim_config.exc_path.rel_path)
 
     def update_robotpose(self, robot_id, pose):
         """
@@ -81,8 +80,8 @@ class ExcBibiHandler(object):   # pragma: no cover
         ret, status = self._conf_editor.update_robotpose(robot_id, pose)
         if ret:
             self._write_file_to_storage(
-                self._cle_assembly.sim_config.exc_abs_path,
-                os.path.basename(self._cle_assembly.sim_config.exc_abs_path))
+                self._cle_assembly.sim_config.exc_path.abs_path,
+                self._cle_assembly.sim_config.exc_path.rel_path)
 
         return ret, status
 

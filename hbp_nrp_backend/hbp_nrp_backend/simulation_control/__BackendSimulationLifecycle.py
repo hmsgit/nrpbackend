@@ -25,9 +25,9 @@
 This module contains the implementation of the backend simulation lifecycle
 """
 import os
+import io
 import rospy
 import datetime
-import zipfile
 import logging
 from hbp_nrp_commons.simulation_lifecycle import SimulationLifecycle
 from hbp_nrp_commons.generated import exp_conf_api_gen
@@ -44,9 +44,10 @@ from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, Mode
 from hbp_nrp_cleserver.server.SimulationServer import TimeoutType
 from cle_ros_msgs.srv import SimulationRecorderRequest
 from hbp_nrp_commons.ZipUtil import ZipUtil
+from hbp_nrp_commons.workspace.Settings import Settings
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 
-from tempfile import gettempdir
-
+import tempfile
 import time
 
 __author__ = 'Georg Hinkel, Manos Angelidis'
@@ -69,9 +70,9 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         super(BackendSimulationLifecycle, self).__init__(TOPIC_LIFECYCLE(simulation.sim_id),
                                                          initial_state)
         self.__simulation = simulation
-        self.__simulation_root_folder = ""
-        self.__models_path = os.environ.get('NRP_MODELS_DIRECTORY')
-        self.__experiment_path = os.environ.get('NRP_EXPERIMENTS_DIRECTORY')
+        self._sim_dir = None
+        self.__models_path = Settings.nrp_models_directory
+        self.__experiment_path = None
         self.__textures_loaded = False
         self.__storageClient = StorageClient()
 
@@ -83,158 +84,57 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         """
         return self.__simulation
 
-    def _parse_exp_and_initialize_paths(self, experiment_path, environment_path, using_storage):
+    def _load_state_machines(self, exc):  # pragma: no cover
         """
-        Parses the experiment configuration, loads state machines and updates the environment path
-        with the one in the configuration file if none is passed as an argument, for supporting
-        custom environments.
+        Parses the experiment configuration, loads state machines
 
-        :param experiment_path: Path the experiment configuration.
-        :param environment_path: Path to the environment configuration.
-        :param using_storage: Private or template simulation
+        :param experiment_path: Path the experiment configuration
         """
-        # parse experiment
-        with open(experiment_path) as exd_file:
-            experiment = exp_conf_api_gen.CreateFromDocument(exd_file.read())
-
         state_machine_paths = {}
-        if experiment.experimentControl is not None and not self.simulation.playback_path:
-            state_machine_paths.update({sm.id: os.path.join(self.__simulation_root_folder, sm.src)
+        if exc.experimentControl is not None and not self.simulation.playback_path:
+            state_machine_paths.update({sm.id: os.path.join(self._sim_dir, sm.src)
                                         for sm in
-                                        experiment.experimentControl.stateMachine
+                                        exc.experimentControl.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
-        if experiment.experimentEvaluation is not None and not self.simulation.playback_path:
-            state_machine_paths.update({sm.id: os.path.join(self.__simulation_root_folder, sm.src)
+        if exc.experimentEvaluation is not None and not self.simulation.playback_path:
+            state_machine_paths.update({sm.id: os.path.join(self._sim_dir, sm.src)
                                         for sm in
-                                        experiment.experimentEvaluation.stateMachine
+                                        exc.experimentEvaluation.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
         self.simulation.state_machine_manager.add_all(
-            state_machine_paths, self.simulation.sim_id)
+            state_machine_paths, self.simulation.sim_id, self.sim_dir)
         self.simulation.state_machine_manager.initialize_all()
         logger.info("Requesting simulation resources")
 
-        return experiment, self._parse_env_path(environment_path, experiment, using_storage)
+        return exc
 
-    def _check_and_extract_environment_zip(self, experiment):
+    def _prepare_custom_environment(self, exc):
         """
-        Checks for validity and extracts a zipped environment. First we
-        make sure that the zip referenced in the experiment exists in the
-        list of user environments, then we unzip it on the fly in the temporary
-        simulation directory. After the extraction we also make sure to copy
-        the sdf from the experiment folder cause the user may have modified it
-        :param experiment: The experiment object.
+        Download and extracts zipped environment defined in the exc
+
+        :param exc: The exc DOM object
         """
+
         # pylint: disable=too-many-locals
-        env = Model(
-            experiment.environmentModel.model,
-            ResourceType.ENVIRONMENT)
+        env_model = Model(exc.environmentModel.model, ResourceType.ENVIRONMENT)
         data = self.__storageClient.get_model(
             UserAuthentication.get_header_token(),
             self.simulation.ctx_id,
-            env
+            env_model
         )
-        # check if the zip is in the user storage
-        if data:
-            environment_sdf_path = os.path.join(
-                self.__storageClient.get_simulation_directory(),
-                os.path.basename(experiment.environmentModel.src))
-            zip_model_path = self.__storageClient.get_model_path(
-                                UserAuthentication.get_header_token(),
-                                self.simulation.ctx_id,
-                                env)
-            env_sdf_name = os.path.basename(
-                experiment.environmentModel.src)
-            env_path = os.path.join(
-                self.__storageClient.get_simulation_directory(),
-                zip_model_path)
-            if not os.path.exists(os.path.dirname(env_path)):
-                os.makedirs(os.path.dirname(env_path))
-            with open(env_path, 'w') as environment_zip:
-                environment_zip.write(data)
-            with zipfile.ZipFile(env_path) as env_zip_to_extract:
-                env_zip_to_extract.extractall(
-                    path=os.path.join(
-                            self.__storageClient.get_simulation_directory(),
-                            'assets'))
-            # copy back the .sdf from the experiment folder, cause we don't want the one
-            # in the zip, cause the user might have made manual changes
-            self.__storageClient.clone_file(
-                env_sdf_name,
-                UserAuthentication.get_header_token(),
-                self.simulation.experiment_id)
-        # if the zip is not there, prompt the user to check his uploaded
-        # models
-        else:
+
+        # if the zip is not there, prompt the user to check his uploaded models
+        if not data:
             raise NRPServicesGeneralException(
-                "Could not find selected zip %s in the list of uploaded models. Please make\
-                    sure that it has been uploaded correctly" % (
-                    os.path.dirname(experiment.environmentModel.src)),
+                "Could not find selected zip {} in the list of uploaded custom models. Please make "
+                "sure that it has been uploaded correctly".format(
+                    os.path.dirname(exc.environmentModel.model)),
                 "Zipped model retrieval failed")
-        return environment_sdf_path
 
-    def _copy_storage_environment(self, experiment):
-        """
-        Copies a storage environment from the storage environment models
-        to the running simulation temporary folder
-
-        :param experiment: The experiment object.
-        """
-        environment_path = os.path.join(
-            self.__storageClient.get_simulation_directory(),
-            os.path.basename(
-                experiment.environmentModel.src))
-        with open(environment_path, "w") as f:
-            f.write(self.__storageClient.get_file(
-                UserAuthentication.get_header_token(),
-                self.__storageClient.get_folder_uuid_by_name(
-                    UserAuthentication.get_header_token(),
-                    self.simulation.ctx_id, 'environments'),
-                os.path.basename(experiment.environmentModel.src),
-                by_name=True))
-        return environment_path
-
-    def _parse_env_path(self, environment_path, experiment, using_storage):
-        """
-        Parses the environment path, depending if we are using a storage model from
-        a template experiment(where we have to fetch the model from the storage),
-        or we are running a storage experiment where the model is already there.
-        Default case is when we are not using a storage model
-
-        :param experiment: The experiment object.
-        :param environment_path: Path to the environment configuration.
-        :param using_storage: Private or template simulation
-        """
-        if using_storage:
-            custom = experiment.environmentModel.model
-            if custom:
-                environment_path = self._check_and_extract_environment_zip(
-                    experiment)
-            else:
-                if 'storage://' in environment_path:
-                    environment_path = self._copy_storage_environment(
-                        experiment)
-        else:
-            if not environment_path and 'storage://' in experiment.environmentModel.src:
-                environment_path = os.path.join(
-                    self.__storageClient.get_simulation_directory(), os.path.basename(
-                        experiment.environmentModel.src))
-                with open(environment_path, "w") as f:
-                    f.write(
-                        self.__storageClient.get_file(
-                            UserAuthentication.get_header_token(),
-                            self.__storageClient.get_folder_uuid_by_name(
-                                UserAuthentication.get_header_token(),
-                                self.simulation.ctx_id,
-                                'environments'),
-                            os.path.basename(
-                                experiment.environmentModel.src),
-                            by_name=True))
-            else:
-                environment_path = os.path.join(
-                    self.models_path, str(experiment.environmentModel.src))
-        return environment_path
+        ZipUtil.extractall(zip_abs_path=io.BytesIO(data),
+                           extract_to=os.path.join(self._sim_dir, 'assets'), overwrite=True)
 
     def initialize(self, state_change):
         """
@@ -242,38 +142,41 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
         :param state_change: The state change that caused the simulation to be initialized
         """
-        simulation = self.simulation
-        # make sure we start with a clean tmp directory
-        self.__storageClient.create_temp_sim_directory()
-        try:
-            using_storage = simulation.private
-            if using_storage:
-                experiment_paths = self.__storageClient.clone_all_experiment_files(
-                    token=UserAuthentication.get_header_token(),
-                    experiment=simulation.experiment_id,
-                    exclude=['recordings/'] if not simulation.playback_path else []
-                )
-                self.__experiment_path = experiment_paths['experiment_conf']
-                self.__simulation_root_folder = self.__storageClient.get_simulation_directory()
-                environment_path = experiment_paths['environment_conf']
-            else:
-                self.__experiment_path = os.path.join(
-                    self.__experiment_path, simulation.experiment_conf)
-                self.__simulation_root_folder = os.path.dirname(self.__experiment_path)
-                environment_path = simulation.environment_conf
 
-            experiment, environment_path = self._parse_exp_and_initialize_paths(
-                self.__experiment_path, environment_path, using_storage)
+        simulation = self.simulation
+        if not simulation.playback_path:
+            self._sim_dir = SimUtil.init_simulation_dir()
+
+        try:
+            if not simulation.private:
+                raise NRPServicesGeneralException(
+                    "Only private experiments are supported", "CLE error", 500)
+
+            self.__storageClient.clone_all_experiment_files(
+                token=UserAuthentication.get_header_token(),
+                experiment=simulation.experiment_id,
+                destination_dir=self._sim_dir,
+                exclude=['recordings/'] if not simulation.playback_path else []
+            )
+
+            # divine knowledge about the exc name
+            self.__experiment_path = os.path.join(self._sim_dir, 'experiment_configuration.exc')
+
+            with open(self.__experiment_path) as exd_file:
+                exc = exp_conf_api_gen.CreateFromDocument(exd_file.read())
+
+            self._load_state_machines(exc)
+            if exc.environmentModel.model:  # i.e., custom zipped environment
+                self._prepare_custom_environment(exc)
 
             simulation.timeout_type = (TimeoutType.SIMULATION
-                                       if experiment.timeout.time == TimeoutType.SIMULATION
+                                       if exc.timeout.time == TimeoutType.SIMULATION
                                        else TimeoutType.REAL)
 
-            timeout = experiment.timeout.value()
+            timeout = exc.timeout.value()
 
             if simulation.timeout_type == TimeoutType.REAL:
-                timeout = datetime.datetime.now(timezone) \
-                    + datetime.timedelta(seconds=timeout)
+                timeout = datetime.datetime.now(timezone) + datetime.timedelta(seconds=timeout)
                 simulation.kill_datetime = timeout
             else:
                 simulation.kill_datetime = None
@@ -282,7 +185,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
 
             simulation_factory_client = ROSCLESimulationFactoryClient()
             simulation_factory_client.create_new_simulation(
-                "CLE IGNORES ME", self.__experiment_path,
+                self.__experiment_path,
                 simulation.gzserver_host, simulation.reservation, simulation.brain_processes,
                 simulation.sim_id, str(timeout), simulation.timeout_type,
                 simulation.playback_path,
@@ -303,13 +206,18 @@ class BackendSimulationLifecycle(SimulationLifecycle):
                 "Models error")
         except rospy.ROSException as e:
             raise NRPServicesGeneralException(
-                "Error while communicating with the CLE (" +
-                repr(e.message) + ")",
+                "Error while communicating with the CLE (" + repr(e.message) + ")",
                 "CLE error")
         except rospy.ServiceException as e:
             raise NRPServicesGeneralException(
                 "Error starting the simulation. (" + repr(e.message) + ")",
                 "rospy.ServiceException",
+                data=e.message)
+        # pylint: disable=broad-except
+        except Exception as e:
+            raise NRPServicesGeneralException(
+                "Error starting the simulation. (" + repr(e) + ")",
+                "Unknown exception occured",
                 data=e.message)
 
     def start(self, state_change):
@@ -400,7 +308,7 @@ class BackendSimulationLifecycle(SimulationLifecycle):
             timestamp=time.strftime('%Y-%m-%d_%H-%M-%S'),
             ext='zip')
 
-        temp_dest = os.path.join(gettempdir(), file_name)
+        temp_dest = os.path.join(tempfile.gettempdir(), file_name)
         ZipUtil.create_from_path(record_path, temp_dest)
         client = StorageClient()
 
@@ -441,27 +349,10 @@ class BackendSimulationLifecycle(SimulationLifecycle):
         self.__experiment_path = value
 
     @property
-    def models_path(self):
-        """
-        Gets the models_path
-
-        :return: The models_path
-        """
-        return self.__models_path
-
-    @models_path.setter
-    def models_path(self, value):
-        """
-        Sets the models_path
-
-        """
-        self.__models_path = value
-
-    @property
-    def simulation_root_folder(self):
+    def sim_dir(self):
         """
         Gets the simulation root folder
 
-        :return: The __simulation_root_folder
+        :return: The _sim_dir
         """
-        return self.__simulation_root_folder
+        return self._sim_dir

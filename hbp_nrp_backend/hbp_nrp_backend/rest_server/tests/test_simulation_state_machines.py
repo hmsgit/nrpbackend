@@ -47,13 +47,8 @@ sm=mock.Mock()
 sm.execute=time.sleep
 """
 
-PATH = os.path.split(__file__)[0]
-
 
 class TestSimulationStateMachines(RestTest):
-
-    os.environ['NRP_MODELS_DIRECTORY'] = PATH
-
     def setUp(self):
 
         self.path_can_view = patch('hbp_nrp_backend.__UserAuthentication.UserAuthentication.can_view')
@@ -70,11 +65,10 @@ class TestSimulationStateMachines(RestTest):
         self.mock_sm_manager.return_value = self.mock_sm_manager_instance
 
         self.sm_instance_name = "Control1"
-        self.sm_instance = sm.create_state_machine(self.sm_instance_name, 0)
-        self.mock_sm_instance = MagicMock(name='SM_instance', sm_id=self.sm_instance_name, wraps=self.sm_instance)
+        self.sm_instance = sm.create_state_machine(self.sm_instance_name, 0, '/tmp/sim-dir')
+        self.mock_sm_instance = MagicMock(name='SM_instance', sm_id=self.sm_instance_name, sim_dir='/tmp/sim-dir', wraps=self.sm_instance)
         self.mock_sm_manager_instance.create_state_machine.return_value = self.mock_sm_instance
-        self.mock_sm_manager_instance.get_state_machine =\
-            Mock(side_effect=lambda name: self.mock_sm_instance if name == self.sm_instance_name else None)
+        self.mock_sm_manager_instance.get_state_machine = Mock(side_effect=lambda name: self.mock_sm_instance if name == self.sm_instance_name else None)
 
         load_data = {
             "experimentID": "some_experiment_id",
@@ -116,7 +110,6 @@ class TestSimulationStateMachines(RestTest):
         response = self.client.get('/simulation/0/state-machines')
 
         self.assertIsInstance(response, Response)
-        print("Response data=" + response.data)
         self.assertMultiLineEqual(json.loads(response.data)["data"][self.sm_instance_name], SM)
         self.assertEqual(response.status_code, 200)
 

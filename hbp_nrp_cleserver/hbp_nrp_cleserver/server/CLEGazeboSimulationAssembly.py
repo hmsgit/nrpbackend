@@ -27,21 +27,22 @@ This module contains the abstract base class of a simulation assembly using the 
 
 import logging
 import os
+import sys
 import subprocess
 logger = logging.getLogger(__name__)
 
 from RestrictedPython import compile_restricted
 from hbp_nrp_backend import NRPServicesGeneralException
-from hbp_nrp_backend.storage_client_api.StorageClient import (
-    StorageClient, get_model_basepath, find_file_in_paths, Model)
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient, Model
 from hbp_nrp_commons.sim_config.SimConfig import ResourceType
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 from hbp_nrp_cleserver.server.GazeboSimulationAssembly import GazeboSimulationAssembly
 from hbp_nrp_commons.ZipUtil import ZipUtil
 
 # These imports start NEST.
 from hbp_nrp_cleserver.server.ROSCLEServer import ROSCLEServer
 from hbp_nrp_cle.cle.ClosedLoopEngine import DeterministicClosedLoopEngine, ClosedLoopEngine
-import hbp_nrp_cle.tf_framework as nrp
+import hbp_nrp_cle.tf_framework as tfm
 import hbp_nrp_cle.brainsim.config as brainconfig
 
 
@@ -57,9 +58,11 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         """
         super(CLEGazeboSimulationAssembly, self).__init__(sim_config)
         self.cle_server = None
-        self.tempAssetsDir = 'assets'
+        self.simAssetsDir = os.path.join(sim_config.sim_dir, 'assets')
+        self._simResourcesDir = os.path.join(sim_config.sim_dir, 'resources')
 
         self._storageClient = StorageClient()
+        self._storageClient.set_sim_dir(sim_config.sim_dir)
 
     @property
     def storage_client(self):
@@ -86,10 +89,17 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                                        self.ros_notificator)
 
         self.cle_server.setup_handlers(self)
+        # Put the resources folder into the sys path for import
+        try:
+            SimUtil.makedirs(self._simResourcesDir)
+            with open(os.path.join(self._simResourcesDir, '__init__.py'), 'w+'):
+                pass  # make sure the __init__.py exists
+        except IOError as err:
+            logger.info("Failed to setup resource directory due to {err}".format(err=err))
+        sys.path.insert(0, self._simResourcesDir)
 
         # start Gazebo simulator and bridge
-        extra_model_dirs = os.path.join(self.sim_dir, self.tempAssetsDir) + ':' + self.sim_dir
-        self._start_gazebo(extra_model_dirs)
+        self._start_gazebo(extra_models=self.simAssetsDir + ':' + self.sim_dir)
 
         # load user textures in Gazebo
         self._load_textures()
@@ -145,16 +155,16 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 sdf_abs_path = ret
 
             else:
-                sdf_abs_path = find_file_in_paths(
+                sdf_abs_path = SimUtil.find_file_in_paths(
                     os.path.join(robot.id, os.path.basename(robot.SDFFileAbsPath)),
-                    get_model_basepath())
+                    self.sim_config.model_paths)
 
                 # Perhaps it's a previously coned experiment? Try with modelTag.value() BUT
                 # only look into the simulation_directory, as DELETE robot REST call, if called,
                 # would delete this file. Only for the exps without robotid folder in the storage
                 # TODO: backward compatibility code. Remove when we decide not to support anymore
                 if not sdf_abs_path:
-                    sdf_abs_path = find_file_in_paths(robot.SDFFileAbsPath, [self.sim_dir])
+                    sdf_abs_path = SimUtil.find_file_in_paths(robot.SDFFileAbsPath, [self.sim_dir])
 
             # still couldn't find the SDF, abort!
             if not sdf_abs_path:
@@ -215,8 +225,8 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # load external robot controller
         if self.sim_config.ext_robot_controller is not None:
-            robot_controller_filepath = find_file_in_paths(self.sim_config.ext_robot_controller,
-                                                           get_model_basepath())
+            robot_controller_filepath = SimUtil.find_file_in_paths(
+                self.sim_config.ext_robot_controller, self.sim_config.model_paths)
             if not os.path.isfile(robot_controller_filepath) and self.sim_dir is not None:
                 robot_controller_filepath = os.path.join(self.sim_dir,
                                                          self.sim_config.ext_robot_controller)
@@ -258,9 +268,9 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         if not os.path.exists(brain_abs_path):
             logger.info(
                 "Cannot find specified brain file {file} in {dir}. Searching in default "
-                "directories {default}".format(
-                    file=brain_rel_path, dir=self.sim_dir, default=str(get_model_basepath())))
-            brain_abs_path = find_file_in_paths(brain_rel_path, get_model_basepath())
+                "directories {default}".format(file=brain_rel_path, dir=self.sim_dir,
+                                               default=str(self.sim_config.model_paths)))
+            brain_abs_path = SimUtil.find_file_in_paths(brain_rel_path, self.sim_config.model_paths)
 
             if brain_abs_path:
                 self.sim_config.brain_model.resource_path.abs_path = brain_abs_path
@@ -297,9 +307,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
                 self.sim_config.ctx_id,
                 brain)
 
-            brain_abs_zip_path = os.path.join(
-                self._storageClient.get_simulation_directory(),
-                zip_model_path)
+            brain_abs_zip_path = os.path.join(self.sim_dir, zip_model_path)
 
             if not os.path.exists(os.path.dirname(brain_abs_zip_path)):
                 os.makedirs(os.path.dirname(brain_abs_zip_path))
@@ -354,10 +362,10 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
 
         # Needed in order to cleanup global static variables
         self._notify("Connecting brain simulator to robot")
-        nrp.start_new_tf_manager()
+        tfm.start_new_tf_manager()
 
         # Create transfer functions manager
-        tfmanager = nrp.config.active_node
+        tfmanager = tfm.config.active_node
 
         # set adapters
         tfmanager.robot_adapter = roscomm
@@ -407,14 +415,14 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
             except Exception as e:
                 logger.error("Error while compiling the transfer function {name} in restricted "
                              "mode with error {err}".format(name=tf.name, err=str(e)))
-                nrp.set_flawed_transfer_function(tf.code, tf.name, e)
+                tfm.set_flawed_transfer_function(tf.code, tf.name, e)
                 continue
 
             try:
-                nrp.set_transfer_function(tf.code, new_code, tf.name, tf.active)
-            except nrp.TFLoadingException as loading_e:
+                tfm.set_transfer_function(tf.code, new_code, tf.name, tf.active)
+            except tfm.TFLoadingException as loading_e:
                 logger.error(loading_e)
-                nrp.set_flawed_transfer_function(tf.code, tf.name, loading_e)
+                tfm.set_flawed_transfer_function(tf.code, tf.name, loading_e)
 
     def _handle_gazebo_shutdown(self):
         """
@@ -452,5 +460,7 @@ class CLEGazeboSimulationAssembly(GazeboSimulationAssembly):
         except Exception, e:
             logger.error("The cle server could not be shut down")
             logger.exception(e)
+
         finally:
-            self._storageClient.remove_temp_sim_directory()
+            # Restore sys path. Make sure that all instances are removed (if present)
+            sys.path[:] = (path for path in sys.path if path is not self._simResourcesDir)

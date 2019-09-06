@@ -30,7 +30,7 @@ from mock import patch, MagicMock, Mock
 from hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly import CLEGazeboSimulationAssembly
 from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import XvfbXvnError
 from hbp_nrp_cle.mocks.robotsim import MockRobotControlAdapter, MockRobotCommunicationAdapter
-import hbp_nrp_cle.tf_framework as nrp
+import hbp_nrp_cle.tf_framework as tfm
 from hbp_nrp_cle.robotsim.RobotManager import Robot
 from hbp_nrp_commons.MockUtil import MockUtil
 
@@ -56,15 +56,14 @@ class MockedClosedLoopEngine(Mock):
 
 
 mockedOS = Mock()
-mockedOS.environ = {'NRP_MODELS_DIRECTORY': '/somewhere/near/the/rainbow',
-                  'ROS_MASTER_URI': "localhost:0815",
-                  'NRP_SIMULATION_DIR': '/somewhere/near/the/rainbow',
-                  'NRP_MODELS_PATHS': '/somewhere/near/the/rainbow'}
+mockedOS.environ = {'ROS_MASTER_URI': "localhost:0815"}
 mockedOS.path.join.return_value = ''
 mockedOS.listdir.return_value = []
 
+
 class SomeWeirdTFException(Exception):
     pass
+
 
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ZipUtil", new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.os", new=Mock())
@@ -79,8 +78,6 @@ class SomeWeirdTFException(Exception):
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.CLEGazeboSimulationAssembly._create_robot_adapters", new=Mock(return_value=(Mock(), Mock())))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.environ", new=mockedOS.environ)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.listdir", new=Mock(return_value=[]))
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy", new=MagicMock())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rosnode", new=MagicMock())
@@ -90,6 +87,8 @@ class TestCLELauncherInit(unittest.TestCase):
     def setUp(self, mock_gazebo):
         self.m_ziputil = MockUtil.fakeit(self, 'hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ZipUtil')
         self.mock_gazebo = mock_gazebo
+        self.m_sim_util = MockUtil.fakeit(self, 'hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.SimUtil')
+        self.m_sim_util.find_file_in_paths.return_value = '/a/robot/under/the/rainbow/model.sdf'
 
         self.m_simconf = MagicMock()
         self.m_simconf.sim_id = 123
@@ -147,10 +146,10 @@ class TestCLELauncherInit(unittest.TestCase):
             exception_caught = True
         self.assertTrue(exception_caught)
 
-    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
+    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.tfm")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
-    def test_wrong_transfer_function_doesnt_abort_initialization(self,mock_os, mock_nrp):
-        mock_nrp.set_transfer_function.side_effect = SomeWeirdTFException
+    def test_wrong_transfer_function_doesnt_abort_initialization(self,mock_os, mock_tfm):
+        mock_tfm.set_transfer_function.side_effect = SomeWeirdTFException
         mock_os.environ.get.return_value = ""
         try:
             self.launcher.initialize(None)
@@ -158,13 +157,13 @@ class TestCLELauncherInit(unittest.TestCase):
             raise Exception("Faulty TF should not abort initialization")
 
         # tf should be set as faulty
-        mock_nrp.set_faulty_transfer_function.assert_called_once()
+        mock_tfm.set_faulty_transfer_function.assert_called_once()
 
-    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
+    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.tfm")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.compile_restricted")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
-    def test_faulty_tf_does_not_aborts_initialization_syntax_error(self, mock_os, comp_restricted_mock, mock_nrp):
-        mock_nrp.set_faulty_transfer_function = MagicMock()
+    def test_faulty_tf_does_not_aborts_initialization_syntax_error(self, mock_os, comp_restricted_mock, mock_tfm):
+        mock_tfm.set_faulty_transfer_function = MagicMock()
         mock_os.environ.get.return_value = ""
         comp_restricted_mock.side_effect = SyntaxError()
 
@@ -173,28 +172,28 @@ class TestCLELauncherInit(unittest.TestCase):
         except SyntaxError:
             self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
 
-        mock_nrp.set_faulty_transfer_function.assert_called_once()
+        mock_tfm.set_faulty_transfer_function.assert_called_once()
 
-    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
+    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.tfm")
     @patch("hbp_nrp_backend.storage_client_api.StorageClient.os")
-    def test_faulty_tf_does_not_aborts_initialization_TFLoading_exception(self, mock_os, mock_nrp):
-        mock_nrp.set_faulty_transfer_function = MagicMock()
+    def test_faulty_tf_does_not_aborts_initialization_TFLoading_exception(self, mock_os, mock_tfm):
+        mock_tfm.set_faulty_transfer_function = MagicMock()
         mock_os.environ.get.return_value = ""
-        mock_nrp.TFLoadingException = nrp.TFLoadingException  # restore TFLoadingException class in the mock
-        mock_nrp.set_transfer_function = MagicMock(side_effect=nrp.TFLoadingException('tf_foo', 'foo error'))
+        mock_tfm.TFLoadingException = tfm.TFLoadingException  # restore TFLoadingException class in the mock
+        mock_tfm.set_transfer_function = MagicMock(side_effect=tfm.TFLoadingException('tf_foo', 'foo error'))
 
         try:
             self.launcher.initialize(None)
-        except nrp.TFLoadingException:
+        except tfm.TFLoadingException:
             self.fail('CLEGazeboSimulationAssembly.initialize should NOT propagate a TFLoadingException.')
 
-        mock_nrp.set_faulty_transfer_function.assert_called_once()
+        mock_tfm.set_faulty_transfer_function.assert_called_once()
 
-    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp")
+    @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.tfm")
     @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.compile_restricted")
-    def test_faulty_tf_does_not_aborts_initialization_Syntax_exception(self, comp_restricted_mock, mock_nrp):
+    def test_faulty_tf_does_not_aborts_initialization_Syntax_exception(self, comp_restricted_mock, mock_tfm):
 
-        mock_nrp.set_faulty_transfer_function = MagicMock()
+        mock_tfm.set_faulty_transfer_function = MagicMock()
         comp_restricted_mock.side_effect = SyntaxError()
 
         try:
@@ -203,7 +202,7 @@ class TestCLELauncherInit(unittest.TestCase):
             self.fail(
                 'CLEGazeboSimulationAssembly.initialize should NOT propagate a SyntaxError.')
 
-        mock_nrp.set_faulty_transfer_function.assert_called_once()
+        mock_tfm.set_faulty_transfer_function.assert_called_once()
 
     def __launch_callback(self, *_):
         self.launcher.gzserver.gazebo_died_callback()

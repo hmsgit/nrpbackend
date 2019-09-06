@@ -43,7 +43,8 @@ from hbp_nrp_cleserver.server.LocalGazebo import LocalGazeboBridgeInstance, \
 from hbp_nrp_cleserver.server.LuganoVizClusterGazebo import LuganoVizClusterGazebo, XvfbXvnError
 from hbp_nrp_cleserver.server.GazeboSimulationRecorder import GazeboSimulationRecorder
 from hbp_nrp_cle.robotsim.RobotManager import RobotManager
-from hbp_nrp_backend.storage_client_api.StorageClient import get_model_basepath, find_file_in_paths
+
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 
 
 class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
@@ -217,8 +218,8 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
 
             # Stop any external robot controllers
             if self.sim_config.ext_robot_controller:
-                robot_controller_filepath = find_file_in_paths(self.sim_config.ext_robot_controller,
-                                                               get_model_basepath())
+                robot_controller_filepath = SimUtil.find_file_in_paths(
+                    self.sim_config.ext_robot_controller, self.sim_config.model_paths)
                 if robot_controller_filepath:
                     if notifications:
                         self.ros_notificator.update_task("Stopping external robot controllers",
@@ -246,6 +247,8 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
             except Exception, e:
                 logger.error("The ROS notificator could not be shut down")
                 logger.exception(e)
+
+            SimUtil.delete_simulation_dir()
 
         # Cleanup ROS core nodes, services, and topics (the command should be almost
         # instant and exit, but wrap it in a timeout since it's semi-officially supported)
@@ -281,4 +284,5 @@ class GazeboSimulationAssembly(SimulationAssembly):     # pragma: no cover
 
         :param notifications: A flag indicating whether notifications should be attempted to send
         """
+
         raise NotImplementedError("This method must be overridden in inherited classes")

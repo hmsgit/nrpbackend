@@ -82,25 +82,18 @@ class MockOs(object):
     path = Mock()
 
 
-class MockOs2(object):
-    environ = {'NRP_SIMULATION_DIR':'/tmp/nrp-simulation-dir'}
-    path = os.path
-
-
 @patch("hbp_nrp_cleserver.server.LocalGazebo.os", new=MockOs())
-@patch("hbp_nrp_cle.common.os", new=MockOs2())
 @patch('hbp_nrp_cleserver.server.LocalGazebo.Watchdog', new=Mock())
 @patch("hbp_nrp_cleserver.server.SimulationAssembly.ROSNotificator", new=Mock())
 @patch("hbp_nrp_cle.robotsim.RosControlAdapter.RosControlAdapter", new=MockRobotControlAdapter)
 @patch("hbp_nrp_cle.robotsim.RosCommunicationAdapter.RosCommunicationAdapter", new=MockRobotCommunicationAdapter)
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp.config.active_node", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.tfm.config.active_node", new=Mock())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.LuganoVizClusterGazebo", new=lambda x, y: LocalGazeboServerInstance())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.LocalGazeboBridgeInstance", new=Mock())
 @patch("hbp_nrp_cle.cle.DeterministicClosedLoopEngine.GazeboHelper", new=MockedGazeboHelper)
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.ClosedLoopEngine", new=MockedClosedLoopEngine())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.nrp", new=Mock())
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
-@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.get_model_basepath", new=Mock(return_value=("/a/robot/under/the/rainbow")))
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.tfm", new=Mock())
+@patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.SimUtil.find_file_in_paths", new=Mock(return_value=("/a/robot/under/the/rainbow/model.sdf")))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.os.listdir", new=Mock(return_value=[]))
 @patch("hbp_nrp_cleserver.server.CLEGazeboSimulationAssembly.StorageClient", new=MagicMock())
 @patch("hbp_nrp_cleserver.server.GazeboSimulationAssembly.rospy", new=MagicMock())

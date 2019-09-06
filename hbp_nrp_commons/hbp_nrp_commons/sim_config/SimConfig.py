@@ -32,9 +32,10 @@ from enum import Enum
 from pyxb import ValidationError, NamespaceError
 
 from hbp_nrp_cle.robotsim.RobotManager import Robot
+from hbp_nrp_commons.sim_config.SimConfUtil import SimConfUtil
+from hbp_nrp_commons.workspace.Settings import Settings
 from hbp_nrp_commons.generated import bibi_api_gen as bibi_parser, exp_conf_api_gen as exc_parser
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import (get_all_neurons_as_dict)
-from hbp_nrp_commons.sim_config.SimConfUtil import SimConfUtil
 from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import (generate_tf, get_tf_name)
 
 __author__ = 'Hossain Mahmud'
@@ -145,8 +146,8 @@ class SimConfig(object):
         """
 
         # ground truth
-        self._exc_abs_path = exc_abs_path
         self._sim_dir = os.path.dirname(exc_abs_path)
+        self._exc_path = ResourcePath(os.path.basename(exc_abs_path), self.sim_dir)
 
         # base assembly
         self._exc_dom = None
@@ -190,6 +191,7 @@ class SimConfig(object):
         self._num_brain_processes = params.get('brain_processes', None)
 
         # paths from system config
+        self._model_paths = [self._sim_dir]
 
         self.initialize()
 
@@ -200,17 +202,21 @@ class SimConfig(object):
         self._read_exc_and_bibi_dom_objects()
         self._read_dom_data()
 
+        self._model_paths.append(os.path.join(self._sim_dir, 'robots'))
+        if Settings.nrp_models_directory is not None:
+            self._model_paths.append(Settings.nrp_models_directory)
+
     def _read_exc_and_bibi_dom_objects(self):
         """
         Parse experiment and bibi and return the DOM objects
         """
         # Read exc
-        with open(self._exc_abs_path) as excFile:
+        with open(self._exc_path.abs_path) as excFile:
             try:
                 self._exc_dom = exc_parser.CreateFromDocument(excFile.read())
-            except ValidationError, ve:
+            except ValidationError as ve:
                 raise Exception("Could not parse experiment config {0} due to validation "
-                                "error: {1}".format(self._exc_abs_path, str(ve)))
+                                "error: {1}".format(self._exc_path.abs_path, str(ve)))
 
         self._bibi_path = ResourcePath(self._exc_dom.bibiConf.src, self.sim_dir)
         logger.info("Bibi absolute path:" + self._bibi_path.abs_path)
@@ -219,10 +225,10 @@ class SimConfig(object):
         with open(self._bibi_path.abs_path) as bibiFile:
             try:
                 self._bibi_dom = bibi_parser.CreateFromDocument(bibiFile.read())
-            except ValidationError, ve:
+            except ValidationError as ve:
                 raise Exception("Could not parse brain configuration {0:s} due to validation "
                                 "error: {1:s}".format(self._bibi_path.abs_path, str(ve)))
-            except NamespaceError, ne:
+            except NamespaceError as ne:
                 # first check to see if the BIBI file appears to have a valid namespace
                 namespace = str(ne).split(" ", 1)[0]
                 if not namespace.startswith("http://schemas.humanbrainproject.eu/SP10") or \
@@ -450,11 +456,11 @@ class SimConfig(object):
         return self._timeout_type
 
     @property
-    def exc_abs_path(self):
+    def exc_path(self):
         """
         Gets the simulation exc file path
         """
-        return self._exc_abs_path
+        return self._exc_path
 
     @property
     def bibi_path(self):
@@ -497,6 +503,13 @@ class SimConfig(object):
         Gets the experiment id (typically the folder name in the storage server)
         """
         return self._experiment_id
+
+    @property
+    def model_paths(self):
+        """
+        Gets the model paths
+        """
+        return self._model_paths
 
     @property
     def world_model(self):

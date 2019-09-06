@@ -37,7 +37,7 @@ from hbp_nrp_backend.rest_server.tests import RestTest
 class MockedSimulationLifeCycle:
 
     experiment_path = ""
-    simulation_root_folder = ""
+    sim_dir = ""
 
 
 class MockedSimulation:
@@ -66,7 +66,7 @@ class TestSimulationResources(RestTest):
 
         expected_file_list = ['test.json', 'brain_visualizer/brainvisualiserdata.json']
 
-        sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
+        sim.lifecycle.sim_dir = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
 
@@ -86,7 +86,7 @@ class TestSimulationResources(RestTest):
         sim = MockedSimulation()
         sim.lifecycle.experiment_path = ""
 
-        sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
+        sim.lifecycle.sim_dir = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
 
@@ -101,7 +101,7 @@ class TestSimulationResources(RestTest):
         sim.lifecycle.experiment_path = os.path.join(
             self.test_directory, "experiments", "experiment_data", "testsimulationresources.exc")
 
-        sim.lifecycle.simulation_root_folder = "wrong_folder"
+        sim.lifecycle.sim_dir = "wrong_folder"
 
         patch_SimulationControl.return_value = sim
 
@@ -116,7 +116,7 @@ class TestSimulationResources(RestTest):
         sim.lifecycle.experiment_path = os.path.join(
             self.test_directory, "experiments", "experiment_data", "test_1.exc")
 
-        sim.lifecycle.simulation_root_folder = os.path.dirname(sim.lifecycle.experiment_path)
+        sim.lifecycle.sim_dir = os.path.dirname(sim.lifecycle.experiment_path)
 
         patch_SimulationControl.return_value = sim
 

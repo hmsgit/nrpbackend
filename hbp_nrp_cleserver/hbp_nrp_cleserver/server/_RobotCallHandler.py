@@ -37,8 +37,9 @@ from hbp_nrp_commons.sim_config.SimConfUtil import SimConfUtil
 from hbp_nrp_commons.generated import robot_conf_api_gen as robotXmlParser
 from hbp_nrp_commons.ZipUtil import ZipUtil
 from hbp_nrp_commons.sim_config.SimConfig import ResourceType
-from hbp_nrp_backend.storage_client_api.StorageClient import find_file_in_paths, \
-    get_model_basepath, Model
+from hbp_nrp_commons.workspace.Settings import Settings
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
+from hbp_nrp_backend.storage_client_api.StorageClient import Model
 
 __author__ = 'Hossain Mahmud'
 
@@ -124,8 +125,7 @@ class RobotCallHandler(object):
                     # get the root directory within the zip
                     root_folder = ZipUtil.get_rootname(zip_abs_path)
                     sdf_abs_path = self.get_sdf_abs_path(
-                        os.path.join(self._simdir, self._cle_assembly.tempAssetsDir,
-                                     root_folder, 'model.config'))
+                        os.path.join(self._cle_assembly.simAssetsDir, root_folder, 'model.config'))
 
                     if sdf_abs_path is None:
                         return False, "'model.config' has no 'sdf' tag"
@@ -142,7 +142,8 @@ class RobotCallHandler(object):
 
             else:  # if template robot
                 # find the SDF in the template directories
-                sdf_abs_path = find_file_in_paths(robot_model, get_model_basepath())
+                sdf_abs_path = SimUtil.find_file_in_paths(
+                    robot_model, [Settings.nrp_models_directory])
                 if not sdf_abs_path:
                     raise Exception("Could not find {0} in the template library"
                                     .format(robot_model))
@@ -279,13 +280,12 @@ class RobotCallHandler(object):
             # extract assets
             ZipUtil.extractall(
                 zip_abs_path=zipAbsPath,
-                extract_to=os.path.join(self._simdir, self._cle_assembly.tempAssetsDir),
+                extract_to=self._cle_assembly.simAssetsDir,
                 overwrite=True)
             # get the root directory within the zip
             rootfolder = ZipUtil.get_rootname(zipAbsPath)
             sdf_abs_path = self.get_sdf_abs_path(
-                os.path.join(self._simdir, self._cle_assembly.tempAssetsDir,
-                             rootfolder, 'model.config'))
+                os.path.join(self._cle_assembly.simAssetsDir, rootfolder, 'model.config'))
 
             if sdf_abs_path is None:
                 return False, "'model.config' has no 'sdf' tag"

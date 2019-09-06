@@ -25,8 +25,8 @@
 This module contains the implementation of the playback simulation lifecycle
 """
 
-from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle \
-    import BackendSimulationLifecycle
+from hbp_nrp_backend.simulation_control.__BackendSimulationLifecycle import (
+    BackendSimulationLifecycle)
 
 import os
 import urllib
@@ -36,6 +36,7 @@ from hbp_nrp_commons.ZipUtil import ZipUtil
 
 from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend import NRPServicesClientErrorException
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 
 
 class PlaybackSimulationLifecycle(BackendSimulationLifecycle):
@@ -58,6 +59,7 @@ class PlaybackSimulationLifecycle(BackendSimulationLifecycle):
         :param state_change: The state change that caused the simulation to be initialized
         """
 
+        self._sim_dir = SimUtil.init_simulation_dir()
         self.prepare_record_for_playback()
         super(PlaybackSimulationLifecycle, self).initialize(state_change)
 
@@ -81,8 +83,7 @@ class PlaybackSimulationLifecycle(BackendSimulationLifecycle):
         """
 
         client = StorageClient()
-        file_clone_destination = os.path.join(client.get_simulation_directory(),
-                                              self.simulation.playback_path)  # zip path
+        file_clone_destination = os.path.join(self.sim_dir, self.simulation.playback_path)
         dest_path = os.path.dirname(file_clone_destination)
 
         try:
@@ -107,7 +108,7 @@ class PlaybackSimulationLifecycle(BackendSimulationLifecycle):
             os.remove(file_clone_destination)
 
         except Exception as ex:
-            client.remove_temp_sim_directory()
+            SimUtil.delete_simulation_dir()
             raise NRPServicesClientErrorException(
                 'Copying recording to backend tmp failed with {}'.format(str(ex)),
                 error_code=404)

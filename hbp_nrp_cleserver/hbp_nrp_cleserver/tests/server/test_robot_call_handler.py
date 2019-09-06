@@ -71,8 +71,8 @@ class TestRobotCallHandler(unittest.TestCase):
         self.mocked_assembly.sim_config.token = 'my_awesome_token'
         self.mocked_assembly.sim_config.ctx_id = 0xFFFF
 
-        with patch("hbp_nrp_cleserver.server._RobotCallHandler.find_file_in_paths") as findFile, \
-            patch("hbp_nrp_cleserver.server._RobotCallHandler.get_model_basepath") as getpath:
+        with patch("hbp_nrp_cleserver.server._RobotCallHandler.SimUtil") as simUtil, \
+            patch("hbp_nrp_cleserver.server._RobotCallHandler.Settings") as setting:
 
             self.mocked_os.path.join.return_value = "/simdir/zip/abs/path/"
             self.mocked_os.path.basename.return_value = "model.sdf"
@@ -80,7 +80,7 @@ class TestRobotCallHandler(unittest.TestCase):
 
             ret, status = self.handler.add_robot('id', "over/the/rainbow", True)
 
-            findFile.return_value = "/some/model/abs/path/model.sdf"
+            simUtil.find_file_in_paths.return_value = "/some/model/abs/path/model.sdf"
             self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"
 
             ret, status = self.handler.add_robot('id', 'name', 'over/the/rainbow')
@@ -91,8 +91,8 @@ class TestRobotCallHandler(unittest.TestCase):
         self.mocked_assembly.sim_config.token = 'my_awesome_token'
         self.mocked_assembly.sim_config.ctx_id = 0xFFFF
 
-        with patch("hbp_nrp_cleserver.server._RobotCallHandler.find_file_in_paths") as findFile, \
-            patch("hbp_nrp_cleserver.server._RobotCallHandler.get_model_basepath") as getpath:
+        with patch("hbp_nrp_cleserver.server._RobotCallHandler.SimUtil") as simUtil, \
+            patch("hbp_nrp_cleserver.server._RobotCallHandler.Settings") as setting:
 
             self.mocked_os.path.join.return_value = "/simdir/zip/abs/path/"
             self.mocked_os.path.basename.return_value = "model.sdf"
@@ -103,7 +103,7 @@ class TestRobotCallHandler(unittest.TestCase):
                 "model_name")
             self.handler.download_custom_robot.return_value = "some/other/path"
 
-            findFile.return_value = "/some/model/abs/path/model.sdf"
+            simUtil.find_file_in_paths.return_value = "/some/model/abs/path/model.sdf"
             self.mocked_os.path.join.return_value = "/some/tmp/dir/model.sdf"
 
             ret, status = self.handler.add_robot('id', 'model_name', 'over/the/rainbow')

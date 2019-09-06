@@ -44,13 +44,6 @@ pipelines:
           - touch hbp_nrp_commons/hbp_nrp_commons/generated/__init__.py
           - deactivate
 
-          # config.py (declare path and inject password)
-          - export PYTHONPATH=$PYTHONPATH:$PWD/config
-          - mkdir -p config
-          - cp hbp_nrp_backend/hbp_nrp_backend/config.py config
-          - export APP_SETTINGS=config.TestConfig
-          - sed -i "s/WRITE_THE_TEST_USER_PASSWORD_HERE/$neurorobotics_collab_test_password/g" config/config.py
-
           # version.txt
           - if [ -f "version.txt" ]; then sed -i -f version.txt hbp_nrp_backend/hbp_nrp_backend/version.py hbp_nrp_backend/requirements.txt; sed -i -f version.txt hbp_nrp_commons/hbp_nrp_commons/version.py hbp_nrp_commons/requirements.txt; sed -i -f version.txt hbp_nrp_cleserver/hbp_nrp_cleserver/version.py hbp_nrp_cleserver/requirements.txt; fi
 

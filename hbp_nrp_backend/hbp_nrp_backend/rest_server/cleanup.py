@@ -28,7 +28,7 @@ This module defines a job that runs in the background and looks for expired simu
 import datetime
 import time
 from hbp_nrp_backend.simulation_control import simulations, timezone
-from hbp_nrp_backend.config import Config
+from hbp_nrp_commons.workspace.Settings import Settings
 import logging
 
 __author__ = 'Georg Hinkel'
@@ -56,9 +56,9 @@ def remove_old_simulations():
     current_time = datetime.datetime.now(timezone)
     for sim in simulations:
         kill_time_reached = sim.kill_datetime is not None and sim.kill_datetime < current_time
-        max_simtime_reached = sim.creation_datetime + \
-                              datetime.timedelta(seconds=Config.MAX_SIMULATION_TIMEOUT) \
-                              < current_time
+        max_simtime_reached = (
+                sim.creation_datetime
+                + datetime.timedelta(seconds=Settings.MAX_SIMULATION_TIMEOUT) < current_time)
 
         if kill_time_reached or max_simtime_reached:
             logger.info("Stopping expired simulation " + str(sim.sim_id))

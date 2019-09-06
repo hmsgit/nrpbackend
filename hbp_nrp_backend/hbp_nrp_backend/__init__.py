@@ -3,7 +3,6 @@ This package contains the python code to run the REST web server and supportive 
 """
 
 from hbp_nrp_backend.version import VERSION as __version__  # pylint: disable=unused-import
-from hbp_nrp_backend import config
 import os
 import time
 import string

@@ -51,10 +51,10 @@
 #         self.m_subproc = MockUtil.fakeit(self, _base_path + 'subprocess')
 #         self.m_res_compile = MockUtil.fakeit(self, _base_path + 'compile_restricted')
 #         self.m_storage = MockUtil.fakeit(self, _base_path + 'StorageClient')
-#         self.m_basepath = MockUtil.fakeit(self, _base_path + 'get_model_basepath')
-#         self.m_basepath.return_value = '/model/base/path/'
-#         self.m_find_in_path = MockUtil.fakeit(self, _base_path + 'find_file_in_paths')
-#         self.m_find_in_path.return_value = '/model/base/path/xyz.model'
+#         self.m_settings = MockUtil.fakeit(self, _base_path + 'Settings')
+#         self.m_settings.nrp_models_directory = '/model/base/path/'
+#         self.m_simUtil = MockUtil.fakeit(self, _base_path + 'SimUtil')
+#         self.m_simUtil.find_file_in_paths.return_value = '/model/base/path/xyz.model'
 #
 #         self.m_ziputil = MockUtil.fakeit(self, _base_path + 'ZipUtil')
 #         self.m_server = MockUtil.fakeit(self, _base_path + 'ROSCLEServer')

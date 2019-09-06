@@ -50,6 +50,7 @@ from hbp_nrp_cleserver.bibi_config.bibi_configuration_script import generate_tf,
 
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 from hbp_nrp_commons.generated import exp_conf_api_gen, bibi_api_gen
+from hbp_nrp_commons.workspace.SimUtil import SimUtil
 
 logger = logging.getLogger(__name__)
 
@@ -190,11 +191,11 @@ class SimulationResetStorage(Resource):
         :param: the context_id for collab based simulations
         """
 
-        simulation_dir = cls.storage_client.get_simulation_directory()
-        cls.storage_client.clear_temp_sim_directory()
+        SimUtil.clear_dir(simulation.lifecycle.sim_dir)
 
         token = UserAuthentication.get_header_token()
-        _ = cls.storage_client.clone_all_experiment_files(token, experiment_id)
+        cls.storage_client.clone_all_experiment_files(
+            token, experiment_id, destination_dir=simulation.lifecycle.sim_dir)
 
         with open(simulation.lifecycle.experiment_path) as exc_file:
             exc = exp_conf_api_gen.CreateFromDocument(exc_file.read())
@@ -205,8 +206,8 @@ class SimulationResetStorage(Resource):
             bibi = bibi_api_gen.CreateFromDocument(bibi_file.read())
 
         cls.reset_brain(simulation, experiment_id, context_id)
-        cls.reset_transfer_functions(simulation, bibi, simulation_dir)
-        cls.reset_state_machines(simulation, exc, simulation_dir)
+        cls.reset_transfer_functions(simulation, bibi, simulation.lifecycle.sim_dir)
+        cls.reset_state_machines(simulation, exc, simulation.lifecycle.sim_dir)
 
     @classmethod
     def reset_brain(cls, simulation, experiment_id, context_id):

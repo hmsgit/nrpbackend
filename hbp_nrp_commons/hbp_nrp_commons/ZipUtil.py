@@ -58,20 +58,20 @@ class ZipUtil(object):
             try:
                 if not os.path.exists(extract_to):
                     os.makedirs(extract_to)
-                with zipfile.ZipFile(zip_abs_path) as zf:
-                    if not flatten:
-                        zf.extractall(extract_to)
-                    else:
-                        for zip_info in zf.infolist():
-                            if zip_info.filename[-1] == '/':
-                                continue  # skip directories
-                            zip_info.filename = os.path.basename(zip_info.filename)
-                            zf.extract(zip_info, extract_to)
-                        # for f in zf.namelist():
-                        #     f_name = os.path.basename(f)
-                        #     if f_name:
-                        #         with open(os.path.join(extract_to, f_name), 'w') as file_to_write:
-                        #             file_to_write.write(zf.read(f))
+
+                if not flatten:
+                    zf.extractall(extract_to)
+                else:
+                    for zip_info in zf.infolist():
+                        if zip_info.filename[-1] == '/':
+                            continue  # skip directories
+                        zip_info.filename = os.path.basename(zip_info.filename)
+                        zf.extract(zip_info, extract_to)
+                    # for f in zf.namelist():
+                    #     f_name = os.path.basename(f)
+                    #     if f_name:
+                    #         with open(os.path.join(extract_to, f_name), 'w') as file_to_write:
+                    #             file_to_write.write(zf.read(f))
             except IOError as ex:
                 logger.info("Extraction failed due to {err}".format(err=str(ex)))
 
