@@ -565,7 +565,7 @@ class ROSCLEServer(SimulationServer):
 
         prev_braintype, prev_brain_code, prev_data_type, prev_brain_pops = self.__get_brain(None)
         if return_value[0] != "":
-            # failed to set new brain, we re set previous valid brain
+            # failed to set new brain, we reset previous valid brain
             self.__set_brain(prev_braintype, prev_data_type, prev_brain_code, prev_brain_pops)
         else:
             self._notificator.publish_state(json.dumps({"action": "setbrain"}))
@@ -579,8 +579,12 @@ class ROSCLEServer(SimulationServer):
         Sets the neuronal network according to the given parameters
 
         :param brain_type: Type of the brain file ('h5' or 'py')
-        :param brain_data: Contents of the brain file. Encoding given in field data_type
         :param data_type: Type of the brain_data field ('text' or 'base64')
+        :param brain_data: Contents of the brain file. Encoding given in field data_type
+        :param brain_populations: A dictionary indexed by population names and containing neuron
+                                  indices. Neuron indices could be defined by individual integers,
+                                  lists of integers or python slices. Python slices are defined by a
+                                  dictionary containing the 'from', 'to' and 'step' values.
         """
         try:
             return_value = ["", 0, 0]

@@ -28,17 +28,19 @@ for loading and saving experiment brain files
 
 __author__ = 'Bernd Eckstein'
 
+import json
+
+import os
+import requests
+from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
-from flask import request
-
 from hbp_nrp_backend import NRPServicesWrongUserException
+from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
-from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_commons.bibi_functions import docstring_parameter
 
-import json
 
 # pylint: disable=no-self-use
 # because it seems to be buggy:
@@ -260,6 +262,14 @@ class SimulationBrainFile(Resource):
             raise NRPServicesWrongUserException()
 
         body = request.get_json(force=True)
+
+        file_url = body.get('urls', {}).get('fileUrl')
+        if file_url:
+            # TODO: fix server certificate and remove verify
+            with requests.get(file_url, verify=False) as h5:
+                filename = os.path.basename(file_url)
+                with open(os.path.join(simulation.lifecycle.sim_dir, filename), 'w') as f:
+                    f.write(h5.content)
         result = simulation.cle.set_simulation_brain(brain_type=body['brain_type'],
                                                      data=body['data'],
                                                      data_type=body['data_type'],
