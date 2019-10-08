@@ -44,7 +44,6 @@ from ._RobotCallHandler import RobotCallHandler
 
 from RestrictedPython.RCompile import RModule, RestrictionMutator
 
-
 # This package comes from the catkin package ROSCLEServicesDefinitions
 # in the GazeboRosPackages folder at the root of this CLE repository.
 from hbp_nrp_cleserver.server.SimulationServer import SimulationServer
@@ -53,10 +52,10 @@ from cle_ros_msgs.msg import CLEError, ExperimentPopulationInfo
 from cle_ros_msgs.msg import PopulationInfo, NeuronParameter, CSVRecordedFile
 from . import SERVICE_GET_TRANSFER_FUNCTIONS, SERVICE_EDIT_TRANSFER_FUNCTION, \
     SERVICE_ADD_TRANSFER_FUNCTION, SERVICE_DELETE_TRANSFER_FUNCTION, SERVICE_GET_BRAIN, \
-    SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_SET_POPULATIONS,\
-    SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_CLEAN_CSV_RECORDERS_FILES,\
+    SERVICE_SET_BRAIN, SERVICE_GET_POPULATIONS, SERVICE_SET_POPULATIONS, \
+    SERVICE_GET_CSV_RECORDERS_FILES, SERVICE_CLEAN_CSV_RECORDERS_FILES, \
     SERVICE_ACTIVATE_TRANSFER_FUNCTION, SERVICE_CONVERT_TRANSFER_FUNCTION_RAW_TO_STRUCTURED, \
-    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE,\
+    SERVICE_ADD_ROBOT, SERVICE_GET_ROBOTS, SERVICE_DEL_ROBOT, SERVICE_SET_EXC_ROBOT_POSE, \
     SERVICE_PREPARE_CUSTOM_MODEL
 from . import ros_handler
 import hbp_nrp_cleserver.bibi_config.StructuredTransferFunction as StructuredTransferFunction
@@ -203,7 +202,7 @@ class ROSCLEServer(SimulationServer):
         """
         self.__cle = value
 
-    def setup_handlers(self, assembly): # pragma: no cover
+    def setup_handlers(self, assembly):  # pragma: no cover
         """
         Sets up different call handlers for the current assembly.
 
@@ -328,11 +327,12 @@ class ROSCLEServer(SimulationServer):
         """
         Gets the populations available in the neural network
         """
-        return_val = srv.GetPopulationsResponse([PopulationInfo(str(p.name), str(p.celltype),
-                                                                ROSCLEServer.__convert_parameters(
-                                                                    p.parameters), p.gids,
-                                                                p.indices)
-                                                 for p in self.__cle.bca.get_populations()])
+        return_val = srv.GetPopulationsResponse(
+            [PopulationInfo(str(p.name), str(p.celltype),
+                            ROSCLEServer.__convert_parameters(
+                                p.parameters), p.gids, p.indices)
+             for p in self.__cle.bca.get_populations()]
+        )
         return return_val
 
     # pylint: disable=unused-argument, no-self-use
@@ -362,7 +362,8 @@ class ROSCLEServer(SimulationServer):
         :param parameters: A parameter dictionary
         :return: A list of ROS-compatible neuron parameters
         """
-        return [NeuronParameter(str(key), float(parameters[key])) for key in parameters]
+        return [NeuronParameter(str(k), v)
+                for k, v in parameters.iteritems() if isinstance(v, float)]
 
     # pylint: disable=unused-argument, no-self-use
     def __get_brain(self, request):
@@ -945,11 +946,11 @@ class ROSCLEServer(SimulationServer):
 
     def _create_state_message(self):
         return {
-                'realTime': int(self.__cle.real_time),
-                'transferFunctionsElapsedTime': self.__cle.tf_elapsed_time(),
-                'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),
-                'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
-            }
+            'realTime': int(self.__cle.real_time),
+            'transferFunctionsElapsedTime': self.__cle.tf_elapsed_time(),
+            'brainsimElapsedTime': self.__cle.brainsim_elapsed_time(),
+            'robotsimElapsedTime': self.__cle.robotsim_elapsed_time()
+        }
 
     def shutdown(self):
         """
@@ -1051,7 +1052,7 @@ class ROSCLEServer(SimulationServer):
             neurons_conf = request.populations
             network_conf_orig = {
                 p.name: self._get_population_value(p) for p in neurons_conf
-                }
+            }
             with self._notificator.task_notifier("Resetting the simulation", ""):
                 self._notificator.update_task("Restoring the 3D world", False, True)
                 self.__cle.reset_world(sdf_world_string)

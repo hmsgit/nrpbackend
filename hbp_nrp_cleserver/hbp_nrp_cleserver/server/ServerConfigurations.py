@@ -81,6 +81,21 @@ def brain_nest_adapters():
     return braincomm, braincontrol
 
 
+def brain_direct_nest_adapters():
+    """
+    Creates the adapter components for the neural simulator, configuration with direct NEST
+
+    :return: A tuple of the communication and control adapter for the neural simulator
+    """
+    import nest
+    from hbp_nrp_cle.brainsim.nest.NestControlAdapter import NestControlAdapter
+    from hbp_nrp_cle.brainsim.nest.NestCommunicationAdapter import \
+        NestCommunicationAdapter
+    braincontrol = NestControlAdapter(nest)
+    braincomm = NestCommunicationAdapter()
+    return braincomm, braincontrol
+
+
 def brain_nengo_adapters():
     """
     Creates the adapter components for the neural simulator, configuration with Nengo
@@ -148,6 +163,29 @@ class SynchronousNestSimulation(CLEGazeboSimulationAssembly):
         :return: A tuple of the communication and control adapter for the neural simulator
         """
         return brain_nest_adapters()
+
+
+class SynchronousDirectNestSimulation(CLEGazeboSimulationAssembly):
+    """
+    This class represents a synchronous simulation assembly using NEST as the neural simulator
+    synchronous to Gazebo
+    """
+
+    def _create_robot_adapters(self):
+        """
+        Creates the adapter components for the robot side
+
+        :return: A tuple of the communication and control adapter for the robot side
+        """
+        return robot_gazebo_ros_adapters()
+
+    def _create_brain_adapters(self):
+        """
+        Creates the adapter components for the neural simulator
+
+        :return: A tuple of the communication and control adapter for the neural simulator
+        """
+        return brain_direct_nest_adapters()
 
 
 class SynchronousSpinnakerSimulation(CLEGazeboSimulationAssembly):

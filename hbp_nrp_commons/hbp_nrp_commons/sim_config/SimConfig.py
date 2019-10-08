@@ -62,6 +62,7 @@ class SimulationType(Enum):  # pragma: no cover
     NENGO_SYNC = 0x11000004
     MUSIC_SYNC = 0x11000005
     ROBOT_ROS_SYNC = 0x11000006
+    NEST_DIRECT_SYNC = 0x11000007
 
 
 class ResourceType(Enum):  # pragma: no cover
@@ -300,6 +301,8 @@ class SimConfig(object):
                     SimulationType.MUSIC_SYNC,
                 bibi_parser.SimulationMode.SynchronousNengoSimulation: SimulationType.NENGO_SYNC,
                 bibi_parser.SimulationMode.SynchronousRobotRosNest: SimulationType.ROBOT_ROS_SYNC,
+                bibi_parser.SimulationMode.SynchronousDirectNestSimulation:
+                    SimulationType.NEST_DIRECT_SYNC,
             }[self._bibi_dom.mode]
         except KeyError:
             raise Exception("Unsupported multi-process simulation mode requested: {}"

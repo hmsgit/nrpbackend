@@ -184,6 +184,8 @@ class ROSCLESimulationFactory(object):
                 assembly = ServerConfigurations.SynchronousNengoSimulation
             elif sim_config.simulation_type is SimulationType.ROBOT_ROS_SYNC:
                 assembly = ServerConfigurations.SynchronousRobotRosNest
+            elif sim_config.simulation_type is SimulationType.NEST_DIRECT_SYNC:
+                assembly = ServerConfigurations.SynchronousDirectNestSimulation
 
         # distributed, multi-process launch (inline imports to avoid circular dependencies)
         else:
