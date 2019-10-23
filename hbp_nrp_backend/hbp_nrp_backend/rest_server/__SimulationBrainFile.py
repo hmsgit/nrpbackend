@@ -40,6 +40,7 @@ from hbp_nrp_backend.__UserAuthentication import UserAuthentication
 from hbp_nrp_backend.rest_server import ErrorMessages
 from hbp_nrp_backend.rest_server.__SimulationControl import _get_simulation_or_abort
 from hbp_nrp_commons.bibi_functions import docstring_parameter
+from hbp_nrp_backend.storage_client_api.StorageClient import StorageClient
 
 
 # pylint: disable=no-self-use
@@ -258,6 +259,7 @@ class SimulationBrainFile(Resource):
         """
 
         simulation = _get_simulation_or_abort(sim_id)
+        storage_client = StorageClient()
         if not UserAuthentication.can_modify(simulation):
             raise NRPServicesWrongUserException()
 
@@ -270,6 +272,13 @@ class SimulationBrainFile(Resource):
                 filename = os.path.basename(file_url)
                 with open(os.path.join(simulation.lifecycle.sim_dir, filename), 'w') as f:
                     f.write(h5.content)
+                storage_client.create_or_update(simulation.token,
+                                                simulation.experiment_id,
+                                                filename,
+                                                h5.content,
+                                                "text/plain"
+                                                )
+
         result = simulation.cle.set_simulation_brain(brain_type=body['brain_type'],
                                                      data=body['data'],
                                                      data_type=body['data_type'],

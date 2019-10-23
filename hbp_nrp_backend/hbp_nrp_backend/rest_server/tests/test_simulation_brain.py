@@ -30,7 +30,7 @@ __author__ = 'Bernd Eckstein'
 import unittest
 import json
 
-from mock import MagicMock, patch
+from mock import MagicMock, patch, mock_open
 from hbp_nrp_backend.simulation_control import simulations, Simulation
 from hbp_nrp_backend.rest_server.tests import RestTest
 from collections import defaultdict
@@ -46,6 +46,7 @@ class DefaultDotDict(defaultdict):
     Credits go to Zaar Hai
     http://tech.zarmory.com/2013/08/python-putting-dot-in-dict.html
     """
+
     def __init__(self, *args, **kwargs):
         super(DefaultDotDict, self).__init__(DefaultDotDict)
         if args or kwargs:
@@ -100,6 +101,16 @@ send_data = {
     'data_type': "text",
     'brain_populations': brain_populations_json
 }
+send_kg_data = {
+    'data': "Data",
+    'brain_type': "py",
+    'data_type': "text",
+    'brain_populations': brain_populations_json,
+    'urls': {
+        'fileUrl': 'http://fileUrl',
+        'fileLoader': 'http://fileLoader'
+    }
+}
 get_return_data = {
     'brain_type': "py",
     'data': "Data",
@@ -147,7 +158,7 @@ class TestSimulationBrain(RestTest):
                                                              data='Data',
                                                              data_type='text',
                                                              brain_populations=json.dumps(brain_populations_json)
-                                                            )
+                                                             )
 
         self.sim.cle.set_simulation_brain = MagicMock(return_value=set_ret_error)
         response = self.client.put('/simulation/0/brain', data=json.dumps(send_data))
@@ -158,6 +169,22 @@ class TestSimulationBrain(RestTest):
 
         response = self.client.put('/simulation/1/brain')
         self.assertEqual(response.status_code, 401, "Operation only allowed by simulation owner")
+
+    @patch('os.path.join')
+    @patch('hbp_nrp_backend.rest_server.__SimulationBrainFile.StorageClient.create_or_update')
+    @patch('hbp_nrp_backend.rest_server.__SimulationBrainFile.open', mock_open(), create=True)
+    def test_simulation_kg_brain_put(self, mocked_join, mocked_create_or_update):
+        with patch('hbp_nrp_backend.rest_server.__SimulationBrainFile.requests.get') as mock_get:
+            mock_get.return_value.__enter__.return_value = MagicMock()
+            response = self.client.put('/simulation/0/brain', data=json.dumps(send_kg_data))
+
+        self.assertEqual(self.sim.cle.set_simulation_brain.call_count, 1)
+
+        self.sim.cle.set_simulation_brain.assert_called_with(brain_type='py',
+                                                             data='Data',
+                                                             data_type='text',
+                                                             brain_populations=json.dumps(brain_populations_json)
+                                                             )
 
     def test_population_rename_feature(self):
         new_brain_populations_json = """
