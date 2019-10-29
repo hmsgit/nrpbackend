@@ -31,12 +31,18 @@ __author__ = 'GeorgHinkel'
 import unittest
 import json
 import datetime
+import threading
+import time
+from hbp_nrp_backend.rest_server.__SimulationService import SimulationService
 from mock import patch, MagicMock, PropertyMock
 from hbp_nrp_backend.simulation_control import simulations
 from hbp_nrp_backend.rest_server.tests import RestTest
 
 
 class TestSimulationService(RestTest):
+
+    response = []
+
     def setUp(self):
         self.now = datetime.datetime.now()
         # Ensure that the patcher is cleaned up correctly even in exceptional cases
@@ -44,6 +50,12 @@ class TestSimulationService(RestTest):
         self.patch_state = patch('hbp_nrp_backend.simulation_control.__Simulation.Simulation.state',
                                  new_callable=PropertyMock)
         self.mock_state = self.patch_state.start()
+
+    def _postService(self):
+        self.response = self.client.post('/simulation',
+                                         data=json.dumps({"experimentID": "my_cloned_experiment",
+                                                          "gzserverHost": "local",
+                                                          "reservation": "user_workshop"}))
 
     @patch('hbp_nrp_backend.simulation_control.__Simulation.datetime')
     @patch('hbp_nrp_backend.rest_server.__SimulationService.time')
@@ -56,13 +68,18 @@ class TestSimulationService(RestTest):
         mocked_time.time = MagicMock(return_value=0)
         self.mock_state.return_value = "initialized"
 
-        response = self.client.post('/simulation',
-                                    data=json.dumps({"experimentID": "my_cloned_experiment",
-                                                     "gzserverHost": "local",
-                                                     "reservation": "user_workshop"}))
+        # Check that thread_locking is working
+        self.response = []
+        post_sim_info_thread = threading.Thread(target=TestSimulationService._postService, args=(self,))
+        with SimulationService.comm_lock:
+            post_sim_info_thread.start()
+            time.sleep(2)
+            self.assertEqual(self.response, [])     # There should be no response when communication is locked
 
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.headers['Location'], 'http://localhost/simulation/0')
+        post_sim_info_thread.join()
+
+        self.assertEqual(self.response.status_code, 201)
+        self.assertEqual(self.response.headers['Location'], 'http://localhost/simulation/0')
         expected_response_data = {
             'owner': "default-owner",
             'state': "initialized",
@@ -77,10 +94,13 @@ class TestSimulationService(RestTest):
             'playbackPath': None
         }
         erd = json.dumps(expected_response_data)
-        self.assertEqual(response.data.strip(), erd)
+        self.assertEqual(self.response.data.strip(), erd)
         self.assertEqual(len(simulations), 1)
         simulation = simulations[0]
         self.assertEqual(simulation.experiment_id, 'my_cloned_experiment')
+
+    def _getService(self):
+        self.response = self.client.get('/simulation')
 
     def test_simulation_service_get(self):
         exp_id = '0a008f825ed94400110cba4700725e4dff2f55d1'
@@ -92,9 +112,18 @@ class TestSimulationService(RestTest):
         response = self.client.post('/simulation', data=param)
         self.assertEqual(response.status_code, 201)
 
-        response = self.client.get('/simulation')
+        # Check that thread_locking is working
+        self.response = []
+        with SimulationService.comm_lock:
+            get_sim_info_thread = threading.Thread(target=TestSimulationService._getService, args=(self,))
+            get_sim_info_thread.start()
+            time.sleep(2)
+            self.assertEqual(self.response, [])     # There should be no response when communication is locked
 
-        self.assertEqual(response.status_code, 200)
+        # Check response only after get call is complete
+        get_sim_info_thread.join()
+
+        self.assertEqual(self.response.status_code, 200)
         self.assertEqual(len(simulations), 1)
         simulation = simulations[0]
         self.assertEqual(simulation.gzserver_host, 'local')

@@ -39,6 +39,7 @@ from flask_restful_swagger import swagger
 import logging
 import time
 import random
+import threading
 
 # pylint: disable=R0201
 
@@ -49,6 +50,8 @@ class SimulationService(Resource):
     """
     The module to setup simulations
     """
+
+    comm_lock = threading.Lock()
 
     @swagger.model
     class _Experiment(object):
@@ -127,50 +130,54 @@ class SimulationService(Resource):
         :status 402: Another simulation is already running on the server
         :status 201: Simulation created successfully
         """
-        body = request.get_json(force=True)
-        sim_id = len(simulations)
-        if 'experimentID' not in body:
-            raise NRPServicesClientErrorException('Experiment ID not given.')
+        # Use context manager to lock access to simulations while a new simulation is created
+        with SimulationService.comm_lock:
+            body = request.get_json(force=True)
+            sim_id = len(simulations)
+            if 'experimentID' not in body:
+                raise NRPServicesClientErrorException('Experiment ID not given.')
 
-        if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
-            raise NRPServicesClientErrorException('Invalid gazebo server host.', error_code=401)
+            if ('gzserverHost' in body) and (body.get('gzserverHost') not in ['local', 'lugano']):
+                raise NRPServicesClientErrorException('Invalid gazebo server host.', error_code=401)
 
-        if True in [s.state not in ['stopped', 'failed'] for s in simulations]:
-            raise NRPServicesClientErrorException(
-                'Another simulation is already running on the server.', error_code=409)
+            if True in [s.state not in ['stopped', 'failed'] for s in simulations]:
+                raise NRPServicesClientErrorException(
+                    'Another simulation is already running on the server.', error_code=409)
 
-        if 'brainProcesses' in body and \
-                (not isinstance(body.get('brainProcesses'), int) or body.get('brainProcesses') < 1):
-            raise NRPServicesClientErrorException('Invalid number of brain processes.')
+            if 'brainProcesses' in body and \
+                    (not isinstance(body.get('brainProcesses'), int)
+                     or body.get('brainProcesses') < 1):
+                raise NRPServicesClientErrorException('Invalid number of brain processes.')
 
-        sim_gzserver_host = body.get('gzserverHost', 'local')
-        sim_reservation = body.get('reservation', None)
-        sim_experiment_id = body.get('experimentID', None)
-        sim_state = body.get('state', 'created')
-        playback_path = body.get('playbackPath', None)
-        sim_owner = UserAuthentication.get_user()
-        sim_brain_processes = body.get('brainProcesses', 1)
-        private = body.get('private', False)
-        ctx_id = body.get('ctxId', None)
-        token = UserAuthentication.get_header_token()
+            sim_gzserver_host = body.get('gzserverHost', 'local')
+            sim_reservation = body.get('reservation', None)
+            sim_experiment_id = body.get('experimentID', None)
+            sim_state = body.get('state', 'created')
+            playback_path = body.get('playbackPath', None)
+            sim_owner = UserAuthentication.get_user()
+            sim_brain_processes = body.get('brainProcesses', 1)
+            private = body.get('private', False)
+            ctx_id = body.get('ctxId', None)
+            token = UserAuthentication.get_header_token()
 
-        sim = Simulation(sim_id,
-                         sim_experiment_id,
-                         sim_owner,
-                         sim_gzserver_host,
-                         sim_reservation,
-                         sim_brain_processes,
-                         sim_state,
-                         playback_path=playback_path,
-                         private=private,
-                         ctx_id=ctx_id,
-                         token=token)
+            sim = Simulation(sim_id,
+                             sim_experiment_id,
+                             sim_owner,
+                             sim_gzserver_host,
+                             sim_reservation,
+                             sim_brain_processes,
+                             sim_state,
+                             playback_path=playback_path,
+                             private=private,
+                             ctx_id=ctx_id,
+                             token=token)
 
-        # TODO: remove me. I probably am not used anywhere
-        sim.creationUniqueID = body.get('creationUniqueID', str(time.time() + random.random()))
+            # TODO: remove me. I probably am not used anywhere
+            sim.creationUniqueID = body.get('creationUniqueID', str(time.time() + random.random()))
+
+            simulations.append(sim)
 
         sim.state = "initialized"
-        simulations.append(sim)
 
         return marshal(simulations[sim_id], Simulation.resource_fields), 201, {
             'location': api.url_for(SimulationControl, sim_id=sim_id),
@@ -209,4 +216,6 @@ class SimulationService(Resource):
 
         :status 200: Simulations retrieved successfully
         """
-        return simulations, 200
+        # Acquire lock before getting simulation
+        with SimulationService.comm_lock:
+            return simulations, 200
