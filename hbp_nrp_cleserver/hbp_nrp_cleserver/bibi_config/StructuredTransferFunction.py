@@ -68,7 +68,8 @@ def _generate_neurons(neurons):
     :param neurons: The population info
     :return: The code to be generated
     """
-    if neurons.type == ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION:
+    if (neurons.type == ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION or
+            neurons.type == ExperimentPopulationInfo.TYPE_POPULATION_SPINNAKER):
         return "nrp.brain.{0}".format(neurons.name)
     elif neurons.type == ExperimentPopulationInfo.TYPE_POPULATION_SLICE:
         if neurons.stop == neurons.start + 1:

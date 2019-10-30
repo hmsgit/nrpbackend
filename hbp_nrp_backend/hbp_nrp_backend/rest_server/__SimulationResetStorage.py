@@ -33,6 +33,7 @@ import logging
 import json
 
 from cle_ros_msgs import srv, msg
+from cle_ros_msgs.msg import ExperimentPopulationInfo
 from flask import request
 from flask_restful import Resource, fields
 from flask_restful_swagger import swagger
@@ -219,13 +220,16 @@ class SimulationResetStorage(Resource):
         :param context_id: the context ID for collab based simulations
         """
         brain_path, _, neurons_config = cls._get_brain_info_from_storage(experiment_id, context_id)
+
         # Convert the populations to a JSON dictionary
         for name, s in neurons_config.iteritems():
-            neurons_config[name] = {
-                'from': s.start,
-                'to': s.stop,
-                'step': s.step if s.step > 0 else 1
-            }
+            # Convert slice to a dictionary for Non-Spinnaker brains
+            experiment_population = SimulationResetStorage._get_experiment_population(name, s)
+            if (experiment_population.type != ExperimentPopulationInfo.TYPE_POPULATION_SPINNAKER):
+                neurons_config[name] = {
+                    'from': s.start,
+                    'to': s.stop,
+                    'step': s.step if s.step > 0 else 1}
 
         with open(brain_path, 'r') as brain_file:
             result_set_brain = simulation.cle.set_simulation_brain(
@@ -264,7 +268,7 @@ class SimulationResetStorage(Resource):
                                         experiment.experimentEvaluation.stateMachine
                                         if isinstance(sm, exp_conf_api_gen.SMACHStateMachine)})
 
-        sim.state_machine_manager.add_all(state_machine_paths, sim.sim_id)
+        sim.state_machine_manager.add_all(state_machine_paths, sim.sim_id, sim.lifecycle.sim_dir)
         sim.state_machine_manager.initialize_all()
 
     @staticmethod
@@ -322,10 +326,9 @@ class SimulationResetStorage(Resource):
 
         neurons_config = get_all_neurons_as_dict(bibi_file_obj.brainModel.populations)
 
-        neurons_config_clean = [
-            SimulationResetStorage._get_experiment_population(name, v)
-            for (name, v) in neurons_config.iteritems()
-        ]
+        neurons_config_clean = \
+            [SimulationResetStorage._get_experiment_population(name, v)
+             for (name, v) in neurons_config.iteritems()]
 
         return brain_filepath, neurons_config_clean, neurons_config
 
@@ -338,15 +341,17 @@ class SimulationResetStorage(Resource):
         :param value: The value describing the population
         :return:
         """
-        if value is None:
-            return msg.ExperimentPopulationInfo(
-                name=name, type=0, ids=[], start=0, stop=0, step=0)
         if isinstance(value, slice):
-            return msg.ExperimentPopulationInfo(
-                name=name, type=1, ids=[], start=value.start, stop=value.stop, step=value.step)
+            return msg.ExperimentPopulationInfo(name=name, type=1, ids=[],
+                                                start=value.start, stop=value.stop, step=value.step)
         if isinstance(value, list):
-            return msg.ExperimentPopulationInfo(
-                name=name, type=2, ids=value, start=0, stop=0, step=0)
+            return msg.ExperimentPopulationInfo(name=name, type=2, ids=value,
+                                                start=0, stop=0, step=0)
+
+        type_id = 3 if isinstance(value, basestring) else 0
+
+        return msg.ExperimentPopulationInfo(name=name, type=type_id, ids=[],
+                                            start=0, stop=0, step=0)
 
     @classmethod
     def _get_sdf_world_from_storage(cls, experiment_id, context_id):

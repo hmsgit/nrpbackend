@@ -595,6 +595,7 @@ class ROSCLEServer(SimulationServer):
                         brain_file.write(brain_data)
                     else:
                         brain_file.write(base64.decodestring(brain_data))
+
                 self.__cle.load_brain(tmp.name, **json.loads(brain_populations))
 
         except ValueError, e:
@@ -1123,12 +1124,14 @@ class ROSCLEServer(SimulationServer):
     @staticmethod
     def _get_population_value(population_info):
         """
-        Retrieves the population index from the given population info
+        Retrieves the population value given the type of the population
 
         :param population_info: The serialized population info object
-        :return: The index that the population info represents
+        :return: The population value
         """
-        if population_info.type == ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION:
+        if population_info.type == ExperimentPopulationInfo.TYPE_POPULATION_SPINNAKER:
+            return population_info.name
+        elif population_info.type == ExperimentPopulationInfo.TYPE_ENTIRE_POPULATION:
             return None
         elif population_info.type == ExperimentPopulationInfo.TYPE_POPULATION_SLICE:
             return slice(population_info.start, population_info.stop, population_info.step)
